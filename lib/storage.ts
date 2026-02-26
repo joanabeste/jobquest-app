@@ -85,11 +85,23 @@ export const questStorage = {
   },
 
   save: async (quest: JobQuest): Promise<void> => {
-    await apiFetch(`/api/quests/${quest.id}`, {
+    const res = await fetch(`/api/quests/${quest.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(quest),
     });
+    if (res.status === 404 || res.status === 500) {
+      await apiFetch('/api/quests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(quest),
+      });
+      return;
+    }
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: res.statusText }));
+      throw new Error(err.error || res.statusText);
+    }
   },
 
   delete: async (id: string): Promise<void> => {
@@ -185,11 +197,23 @@ export const careerCheckStorage = {
   },
 
   save: async (check: CareerCheck): Promise<void> => {
-    await apiFetch(`/api/career-checks/${check.id}`, {
+    const res = await fetch(`/api/career-checks/${check.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(check),
     });
+    if (res.status === 404 || res.status === 500) {
+      await apiFetch('/api/career-checks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(check),
+      });
+      return;
+    }
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: res.statusText }));
+      throw new Error(err.error || res.statusText);
+    }
   },
 
   delete: async (id: string): Promise<void> => {
@@ -266,11 +290,23 @@ export const formPageStorage = {
   },
 
   save: async (form: FormPage): Promise<void> => {
-    await apiFetch(`/api/form-pages/${form.id}`, {
+    const res = await fetch(`/api/form-pages/${form.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(form),
     });
+    if (res.status === 404 || res.status === 500) {
+      await apiFetch('/api/form-pages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      return;
+    }
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: res.statusText }));
+      throw new Error(err.error || res.statusText);
+    }
   },
 
   delete: async (id: string): Promise<void> => {

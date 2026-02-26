@@ -72,8 +72,11 @@ export default function RegisterPage() {
         password: form.password,
       });
       router.push('/dashboard');
-    } catch {
-      setError('Registrierung fehlgeschlagen. Bitte versuche es erneut.');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Unbekannter Fehler';
+      setError(msg === 'Email already registered'
+        ? 'Diese E-Mail ist bereits registriert.'
+        : `Registrierung fehlgeschlagen: ${msg}`);
       setSubmitting(false);
     }
   }
