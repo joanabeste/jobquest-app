@@ -1,0 +1,74 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { formPageStorage } from '@/lib/storage';
+import { FormPage } from '@/lib/types';
+import { useAuth } from '@/contexts/AuthContext';
+import { slugify } from '@/lib/utils';
+import FunnelEditor from '@/components/funnel-editor/FunnelEditor';
+
+export default function FormularEditorPage() {
+  const { id } = useParams<{ id: string }>();
+  const { company } = useAuth();
+  const router = useRouter();
+  const [formPage, setFormPage] = useState<FormPage | null>(null);
+  const [notFound, setNotFound] = useState(false);
+
+  useEffect(() => {
+    if (!company || !id) return;
+    const found = formPageStorage.getById(id);
+    if (!found || found.companyId !== company.id) { setNotFound(true); return; }
+    setFormPage(found);
+  }, [id, company]);
+
+  if (notFound) {
+    return (
+      <div className="min-h-[calc(100vh-3.5rem)] flex flex-col items-center justify-center gap-4">
+        <p className="text-slate-600 font-medium">Formular nicht gefunden.</p>
+        <button onClick={() => router.push('/dashboard')} className="btn-secondary">Zurück</button>
+      </div>
+    );
+  }
+
+  if (!formPage) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-violet-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  function handleTitleChange(title: string) {
+    if (!formPage) return;
+    const updated = { ...formPage, title, slug: slugify(title), updatedAt: new Date().toISOString() };
+    formPageStorage.save(updated);
+    setFormPage(updated);
+  }
+
+  function handlePublish() {
+    if (!formPage) return;
+    const newStatus = formPage.status === 'published' ? 'draft' : 'published';
+    const updated: FormPage = {
+      ...formPage, status: newStatus,
+      publishedAt: newStatus === 'published' ? new Date().toISOString() : formPage.publishedAt,
+      updatedAt: new Date().toISOString(),
+    };
+    formPageStorage.save(updated);
+    setFormPage(updated);
+  }
+
+  return (
+    <FunnelEditor
+      contentId={formPage.id}
+      contentType="form"
+      title={formPage.title}
+      onTitleChange={handleTitleChange}
+      slug={formPage.slug}
+      previewHref={`/formular/${formPage.slug}`}
+      status={formPage.status}
+      onPublish={handlePublish}
+      onBack={() => router.push('/dashboard')}
+    />
+  );
+}
