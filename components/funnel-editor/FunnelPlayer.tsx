@@ -149,7 +149,6 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
   const blocks        = flatBlocks(currentPage.nodes);
   const submitPage    = isSubmitPage(currentPage.nodes);
   const spinnerBlock  = blocks.find((bl) => bl.type === 'quest_spinner');
-  const sceneBlock    = blocks.find((bl) => bl.type === 'quest_scene');
   // avatar block removed
 
   // Which decision option is selected on this page?
@@ -299,7 +298,7 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
       </main>
 
       {/* ── Footer navigation ──────────────────────────────────────────────── */}
-      {!completed && !submitPage && !spinnerBlock && !sceneBlock && (
+      {!completed && !submitPage && !spinnerBlock && (
         <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-slate-200 px-4 py-4">
           <div className="max-w-lg mx-auto flex gap-3">
             {/* Back button – icon only, fixed width so Weiter is always at same position */}
@@ -802,7 +801,6 @@ function BlockRenderer({
       const imageUrl    = s(p.imageUrl);
       const subtext     = s(p.subtext);
       const accentText  = s(p.accentText);
-      const buttonText  = s(p.buttonText, 'Weiter');
       const bulletPoints = (p.bulletPoints as string[]) || [];
       return (
         <div>
@@ -831,13 +829,6 @@ function BlockRenderer({
                 ))}
               </ul>
             )}
-            <button
-              onClick={() => onNext()}
-              className="fp-btn w-full py-4 font-semibold text-sm flex items-center justify-between px-6"
-              style={{ borderRadius: br }}
-            >
-              {buttonText} <ArrowRight size={18} />
-            </button>
           </div>
         </div>
       );
