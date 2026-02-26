@@ -361,7 +361,7 @@ export default function EditorClient({ initialQuest }: Props) {
 
   const handleSave = useCallback(async () => {
     setSaving(true);
-    questStorage.save({ ...quest, updatedAt: new Date().toISOString() });
+    await questStorage.save({ ...quest, updatedAt: new Date().toISOString() });
     await new Promise((r) => setTimeout(r, 400));
     setSaving(false);
     setSaved(true);
@@ -379,7 +379,7 @@ export default function EditorClient({ initialQuest }: Props) {
       updatedAt: new Date().toISOString(),
     };
     setQuest(updated);
-    questStorage.save(updated);
+    await questStorage.save(updated);
     await new Promise((r) => setTimeout(r, 400));
     setPublishing(false);
     setJustPublished(true);

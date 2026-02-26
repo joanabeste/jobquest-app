@@ -80,9 +80,12 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
   // Reset dialog when page changes (must be before any conditional returns)
   useEffect(() => { setDialogVisible(0); }, [pageIndex]);
 
-  const careerCheck = doc.contentType === 'check' && contentDbId
-    ? (careerCheckStorage.getById(contentDbId) ?? null)
-    : null;
+  const [careerCheck, setCareerCheck] = useState<import('@/lib/types').CareerCheck | null>(null);
+  useEffect(() => {
+    if (doc.contentType === 'check' && contentDbId) {
+      careerCheckStorage.getById(contentDbId).then((c) => setCareerCheck(c ?? null));
+    }
+  }, [doc.contentType, contentDbId]);
   const dimensions: Dimension[] = careerCheck?.dimensions ?? [];
 
   const { primary, accent, br, css } = useCorporateDesign(company);

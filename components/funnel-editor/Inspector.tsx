@@ -749,6 +749,7 @@ function BlockPropsEditor({ node, props, onChange, pages }: {
               {leadFields.map((f, i) => (
                 <div key={f.id} className="bg-slate-50 rounded-xl p-2 space-y-1.5">
                   <div className="flex items-center gap-1">
+                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                     <select value={f.type} onChange={(e) => updateLeadField(f.id, { type: e.target.value as any })}
                       className="text-xs px-2 py-0.5 border border-slate-200 rounded focus:outline-none">
                       {LEAD_FIELD_TYPES.map((t) => (

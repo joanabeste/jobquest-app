@@ -395,13 +395,17 @@ export default function FormularPage() {
   const formSectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const fp = formPageStorage.getBySlug(slug);
-    if (!fp) { setNotFound(true); return; }
-    const co = companyStorage.getById(fp.companyId);
-    if (!co) { setNotFound(true); return; }
-    setFormPage(fp);
-    setCompany(co);
-    setFunnelDoc(funnelStorage.getByContentId(fp.id) ?? null);
+    async function load() {
+      const fp = await formPageStorage.getBySlug(slug);
+      if (!fp) { setNotFound(true); return; }
+      const co = await companyStorage.getById(fp.companyId);
+      if (!co) { setNotFound(true); return; }
+      setFormPage(fp);
+      setCompany(co);
+      const fd = await funnelStorage.getByContentId(fp.id);
+      setFunnelDoc(fd ?? null);
+    }
+    load();
   }, [slug]);
 
   if (notFound) {

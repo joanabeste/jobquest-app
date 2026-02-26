@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { questStorage, leadStorage, analyticsStorage, authSession } from "@/lib/storage";
+import { questStorage, leadStorage, analyticsStorage } from "@/lib/storage";
 import { JobQuest, Lead, AnalyticsEvent } from '@/lib/types';
 import { formatDateShort, exportLeadsAsCSV } from "@/lib/utils";
 import {
@@ -23,19 +23,30 @@ export default function StatsPage() {
   const [notAuthorized, setNotAuthorized] = useState(false);
 
   useEffect(() => {
-    const companyId = authSession.getCurrentCompanyId();
-    if (!companyId) {
-      router.replace('/login');
-      return;
+    async function load() {
+      // Fetch current session from auth API
+      let companyId: string | null = null;
+      try {
+        const res = await fetch('/api/auth/me');
+        if (res.ok) {
+          const data = await res.json();
+          companyId = data.companyId ?? null;
+        }
+      } catch { /* ignore */ }
+      if (!companyId) {
+        router.replace('/login');
+        return;
+      }
+      const found = await questStorage.getById(id);
+      if (!found || found.companyId !== companyId) {
+        setNotAuthorized(true);
+        return;
+      }
+      setQuest(found);
+      setLeads(await leadStorage.getByQuest(id));
+      setEvents(await analyticsStorage.getByQuest(id));
     }
-    const found = questStorage.getById(id);
-    if (!found || found.companyId !== companyId) {
-      setNotAuthorized(true);
-      return;
-    }
-    setQuest(found);
-    setLeads(leadStorage.getByQuest(id));
-    setEvents(analyticsStorage.getByQuest(id));
+    load();
   }, [id, router]);
 
   function getFilterDate(): Date {

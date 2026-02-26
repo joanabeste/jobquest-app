@@ -1,308 +1,387 @@
 import { Company, JobQuest, Lead, AnalyticsEvent, CareerCheck, CareerCheckLead, FormPage, FormSubmission, WorkspaceMember } from './types';
+import { createClient } from './supabase/client';
+import { questFromDb, leadToDb, analyticsToDb, careerCheckFromDb, careerCheckLeadToDb, formPageFromDb, formSubmissionToDb, companyFromDb } from './supabase/mappers';
 
-const KEYS = {
-  COMPANIES: 'jq_companies',
-  QUESTS: 'jq_quests',
-  LEADS: 'jq_leads',
-  ANALYTICS: 'jq_analytics',
-  CURRENT_COMPANY: 'jq_current_company',
-  CURRENT_MEMBER: 'jq_current_member',
-  MEMBERS: 'jq_members',
-  CAREER_CHECKS: 'jq_career_checks',
-  CAREER_CHECK_LEADS: 'jq_career_check_leads',
-  FORM_PAGES: 'jq_form_pages',
-  FORM_SUBMISSIONS: 'jq_form_submissions',
-};
+// ─── Helpers ────────────────────────────────────────────────────────────────
 
-function getItem<T>(key: string): T[] {
-  if (typeof window === 'undefined') return [];
-  try {
-    const data = localStorage.getItem(key);
-    return data ? JSON.parse(data) : [];
-  } catch {
-    return [];
+function supabase() {
+  return createClient();
+}
+
+async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
+  const res = await fetch(url, options);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(err.error || res.statusText);
   }
+  return res.json();
 }
 
-function setItem<T>(key: string, value: T[]): void {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem(key, JSON.stringify(value));
-}
+// ─── Company Storage ────────────────────────────────────────────────────────
 
 export const companyStorage = {
-  getAll: (): Company[] => getItem<Company>(KEYS.COMPANIES),
-
-  getById: (id: string): Company | undefined =>
-    companyStorage.getAll().find((c) => c.id === id),
-
-  getByEmail: (email: string): Company | undefined =>
-    companyStorage.getAll().find((c) => c.contactEmail === email),
-
-  save: (company: Company): void => {
-    const companies = companyStorage.getAll();
-    const idx = companies.findIndex((c) => c.id === company.id);
-    if (idx >= 0) companies[idx] = company;
-    else companies.push(company);
-    setItem(KEYS.COMPANIES, companies);
+  getAll: async (): Promise<Company[]> => {
+    return [];
   },
 
-  delete: (id: string): void => {
-    setItem(
-      KEYS.COMPANIES,
-      companyStorage.getAll().filter((c) => c.id !== id)
-    );
+  getById: async (id: string): Promise<Company | undefined> => {
+    const { data } = await supabase()
+      .from('companies')
+      .select('*')
+      .eq('id', id)
+      .single();
+    return data ? companyFromDb(data) : undefined;
+  },
+
+  getByEmail: async (email: string): Promise<Company | undefined> => {
+    const { data } = await supabase()
+      .from('companies')
+      .select('*')
+      .eq('contact_email', email)
+      .single();
+    return data ? companyFromDb(data) : undefined;
+  },
+
+  save: async (company: Company): Promise<void> => {
+    await apiFetch('/api/companies/me', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(company),
+    });
+  },
+
+  delete: async (_id: string): Promise<void> => {
+    await apiFetch('/api/companies/me/delete', { method: 'POST' });
   },
 };
+
+// ─── Quest Storage ──────────────────────────────────────────────────────────
 
 export const questStorage = {
-  getAll: (): JobQuest[] => getItem<JobQuest>(KEYS.QUESTS),
-
-  getByCompany: (companyId: string): JobQuest[] =>
-    questStorage.getAll().filter((q) => q.companyId === companyId),
-
-  getById: (id: string): JobQuest | undefined =>
-    questStorage.getAll().find((q) => q.id === id),
-
-  getBySlug: (slug: string): JobQuest | undefined =>
-    questStorage.getAll().find((q) => q.slug === slug && q.status === 'published'),
-
-  save: (quest: JobQuest): void => {
-    const quests = questStorage.getAll();
-    const idx = quests.findIndex((q) => q.id === quest.id);
-    if (idx >= 0) quests[idx] = quest;
-    else quests.push(quest);
-    setItem(KEYS.QUESTS, quests);
+  getAll: async (): Promise<JobQuest[]> => {
+    return apiFetch<JobQuest[]>('/api/quests');
   },
 
-  delete: (id: string): void => {
-    setItem(
-      KEYS.QUESTS,
-      questStorage.getAll().filter((q) => q.id !== id)
-    );
+  getByCompany: async (_companyId: string): Promise<JobQuest[]> => {
+    return apiFetch<JobQuest[]>('/api/quests');
   },
 
-  duplicate: (id: string, newId: string, newSlug: string): JobQuest | null => {
-    const original = questStorage.getById(id);
-    if (!original) return null;
-    const duplicate: JobQuest = {
-      ...original,
-      id: newId,
-      slug: newSlug,
-      title: `${original.title} (Kopie)`,
-      status: 'draft',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      publishedAt: undefined,
-      modules: original.modules.map((m) => ({ ...m, id: crypto.randomUUID() })),
-    };
-    questStorage.save(duplicate);
-    return duplicate;
+  getById: async (id: string): Promise<JobQuest | undefined> => {
+    try {
+      return await apiFetch<JobQuest>(`/api/quests/${id}`);
+    } catch {
+      return undefined;
+    }
+  },
+
+  getBySlug: async (slug: string): Promise<JobQuest | undefined> => {
+    const { data } = await supabase()
+      .from('job_quests')
+      .select('*')
+      .eq('slug', slug)
+      .eq('status', 'published')
+      .single();
+    return data ? questFromDb(data) : undefined;
+  },
+
+  save: async (quest: JobQuest): Promise<void> => {
+    await apiFetch(`/api/quests/${quest.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(quest),
+    });
+  },
+
+  delete: async (id: string): Promise<void> => {
+    await apiFetch(`/api/quests/${id}`, { method: 'DELETE' });
+  },
+
+  duplicate: async (id: string, newId: string, newSlug: string): Promise<JobQuest | null> => {
+    try {
+      return await apiFetch<JobQuest>(`/api/quests/${id}/duplicate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newId, newSlug }),
+      });
+    } catch {
+      return null;
+    }
   },
 };
+
+// ─── Lead Storage ───────────────────────────────────────────────────────────
 
 export const leadStorage = {
-  getAll: (): Lead[] => getItem<Lead>(KEYS.LEADS),
-
-  getByQuest: (questId: string): Lead[] =>
-    leadStorage.getAll().filter((l) => l.jobQuestId === questId),
-
-  getByCompany: (companyId: string): Lead[] =>
-    leadStorage.getAll().filter((l) => l.companyId === companyId),
-
-  save: (lead: Lead): void => {
-    const leads = leadStorage.getAll();
-    leads.push(lead);
-    setItem(KEYS.LEADS, leads);
+  getAll: async (): Promise<Lead[]> => {
+    return apiFetch<Lead[]>('/api/leads');
   },
 
-  deleteByCompany: (companyId: string): void => {
-    setItem(KEYS.LEADS, leadStorage.getAll().filter((l) => l.companyId !== companyId));
+  getByQuest: async (questId: string): Promise<Lead[]> => {
+    return apiFetch<Lead[]>(`/api/leads?questId=${questId}`);
+  },
+
+  getByCompany: async (_companyId: string): Promise<Lead[]> => {
+    return apiFetch<Lead[]>('/api/leads');
+  },
+
+  save: async (lead: Lead): Promise<void> => {
+    const { error } = await supabase()
+      .from('leads')
+      .insert(leadToDb(lead));
+    if (error) console.error('Lead save error:', error.message);
+  },
+
+  deleteByCompany: async (_companyId: string): Promise<void> => {
+    // Handled by cascade on company delete
   },
 };
+
+// ─── Analytics Storage ──────────────────────────────────────────────────────
 
 export const analyticsStorage = {
-  getAll: (): AnalyticsEvent[] => getItem<AnalyticsEvent>(KEYS.ANALYTICS),
+  getAll: async (): Promise<AnalyticsEvent[]> => {
+    return [];
+  },
 
-  getByQuest: (questId: string): AnalyticsEvent[] =>
-    analyticsStorage.getAll().filter((e) => e.jobQuestId === questId),
+  getByQuest: async (questId: string): Promise<AnalyticsEvent[]> => {
+    return apiFetch<AnalyticsEvent[]>(`/api/analytics?questId=${questId}`);
+  },
 
-  save: (event: AnalyticsEvent): void => {
-    const events = analyticsStorage.getAll();
-    events.push(event);
-    setItem(KEYS.ANALYTICS, events);
+  save: async (event: AnalyticsEvent): Promise<void> => {
+    const { error } = await supabase()
+      .from('analytics_events')
+      .insert(analyticsToDb(event));
+    if (error) console.error('Analytics save error:', error.message);
   },
 };
+
+// ─── Career Check Storage ───────────────────────────────────────────────────
 
 export const careerCheckStorage = {
-  getAll: (): CareerCheck[] => getItem<CareerCheck>(KEYS.CAREER_CHECKS),
-
-  getByCompany: (companyId: string): CareerCheck[] =>
-    careerCheckStorage.getAll().filter((c) => c.companyId === companyId),
-
-  getById: (id: string): CareerCheck | undefined =>
-    careerCheckStorage.getAll().find((c) => c.id === id),
-
-  getBySlug: (slug: string): CareerCheck | undefined =>
-    careerCheckStorage.getAll().find((c) => c.slug === slug && c.status === 'published'),
-
-  save: (check: CareerCheck): void => {
-    const all = careerCheckStorage.getAll();
-    const idx = all.findIndex((c) => c.id === check.id);
-    if (idx >= 0) all[idx] = check;
-    else all.push(check);
-    setItem(KEYS.CAREER_CHECKS, all);
+  getAll: async (): Promise<CareerCheck[]> => {
+    return apiFetch<CareerCheck[]>('/api/career-checks');
   },
 
-  delete: (id: string): void => {
-    setItem(KEYS.CAREER_CHECKS, careerCheckStorage.getAll().filter((c) => c.id !== id));
+  getByCompany: async (_companyId: string): Promise<CareerCheck[]> => {
+    return apiFetch<CareerCheck[]>('/api/career-checks');
   },
 
-  duplicate: (id: string, newId: string, newSlug: string): CareerCheck | null => {
-    const original = careerCheckStorage.getById(id);
-    if (!original) return null;
-    const dup: CareerCheck = {
-      ...original,
-      id: newId,
-      slug: newSlug,
-      title: `${original.title} (Kopie)`,
-      status: 'draft',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      publishedAt: undefined,
-      blocks: original.blocks.map((b) => ({ ...b, id: crypto.randomUUID() })),
-    };
-    careerCheckStorage.save(dup);
-    return dup;
+  getById: async (id: string): Promise<CareerCheck | undefined> => {
+    try {
+      return await apiFetch<CareerCheck>(`/api/career-checks/${id}`);
+    } catch {
+      return undefined;
+    }
+  },
+
+  getBySlug: async (slug: string): Promise<CareerCheck | undefined> => {
+    const { data } = await supabase()
+      .from('career_checks')
+      .select('*')
+      .eq('slug', slug)
+      .eq('status', 'published')
+      .single();
+    return data ? careerCheckFromDb(data) : undefined;
+  },
+
+  save: async (check: CareerCheck): Promise<void> => {
+    await apiFetch(`/api/career-checks/${check.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(check),
+    });
+  },
+
+  delete: async (id: string): Promise<void> => {
+    await apiFetch(`/api/career-checks/${id}`, { method: 'DELETE' });
+  },
+
+  duplicate: async (id: string, newId: string, newSlug: string): Promise<CareerCheck | null> => {
+    try {
+      return await apiFetch<CareerCheck>(`/api/career-checks/${id}/duplicate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newId, newSlug }),
+      });
+    } catch {
+      return null;
+    }
   },
 };
+
+// ─── Career Check Lead Storage ──────────────────────────────────────────────
 
 export const careerCheckLeadStorage = {
-  getAll: (): CareerCheckLead[] => getItem<CareerCheckLead>(KEYS.CAREER_CHECK_LEADS),
-
-  getByCheck: (careerCheckId: string): CareerCheckLead[] =>
-    careerCheckLeadStorage.getAll().filter((l) => l.careerCheckId === careerCheckId),
-
-  getByCompany: (companyId: string): CareerCheckLead[] =>
-    careerCheckLeadStorage.getAll().filter((l) => l.companyId === companyId),
-
-  save: (lead: CareerCheckLead): void => {
-    const all = careerCheckLeadStorage.getAll();
-    all.push(lead);
-    setItem(KEYS.CAREER_CHECK_LEADS, all);
+  getAll: async (): Promise<CareerCheckLead[]> => {
+    return apiFetch<CareerCheckLead[]>('/api/career-check-leads');
   },
 
-  deleteByCompany: (companyId: string): void => {
-    setItem(KEYS.CAREER_CHECK_LEADS, careerCheckLeadStorage.getAll().filter((l) => l.companyId !== companyId));
+  getByCheck: async (careerCheckId: string): Promise<CareerCheckLead[]> => {
+    return apiFetch<CareerCheckLead[]>(`/api/career-check-leads?checkId=${careerCheckId}`);
+  },
+
+  getByCompany: async (_companyId: string): Promise<CareerCheckLead[]> => {
+    return apiFetch<CareerCheckLead[]>('/api/career-check-leads');
+  },
+
+  save: async (lead: CareerCheckLead): Promise<void> => {
+    const { error } = await supabase()
+      .from('career_check_leads')
+      .insert(careerCheckLeadToDb(lead));
+    if (error) console.error('CareerCheckLead save error:', error.message);
+  },
+
+  deleteByCompany: async (_companyId: string): Promise<void> => {
+    // Handled by cascade
   },
 };
+
+// ─── Form Page Storage ──────────────────────────────────────────────────────
 
 export const formPageStorage = {
-  getAll: (): FormPage[] => getItem<FormPage>(KEYS.FORM_PAGES),
-
-  getByCompany: (companyId: string): FormPage[] =>
-    formPageStorage.getAll().filter((f) => f.companyId === companyId),
-
-  getById: (id: string): FormPage | undefined =>
-    formPageStorage.getAll().find((f) => f.id === id),
-
-  getBySlug: (slug: string): FormPage | undefined =>
-    formPageStorage.getAll().find((f) => f.slug === slug && f.status === 'published'),
-
-  save: (form: FormPage): void => {
-    const all = formPageStorage.getAll();
-    const idx = all.findIndex((f) => f.id === form.id);
-    if (idx >= 0) all[idx] = form;
-    else all.push(form);
-    setItem(KEYS.FORM_PAGES, all);
+  getAll: async (): Promise<FormPage[]> => {
+    return apiFetch<FormPage[]>('/api/form-pages');
   },
 
-  delete: (id: string): void => {
-    setItem(KEYS.FORM_PAGES, formPageStorage.getAll().filter((f) => f.id !== id));
+  getByCompany: async (_companyId: string): Promise<FormPage[]> => {
+    return apiFetch<FormPage[]>('/api/form-pages');
   },
 
-  duplicate: (id: string, newId: string, newSlug: string): FormPage | null => {
-    const original = formPageStorage.getById(id);
-    if (!original) return null;
-    const dup: FormPage = {
-      ...original,
-      id: newId,
-      slug: newSlug,
-      title: `${original.title} (Kopie)`,
-      status: 'draft',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      publishedAt: undefined,
-    };
-    formPageStorage.save(dup);
-    return dup;
+  getById: async (id: string): Promise<FormPage | undefined> => {
+    try {
+      return await apiFetch<FormPage>(`/api/form-pages/${id}`);
+    } catch {
+      return undefined;
+    }
+  },
+
+  getBySlug: async (slug: string): Promise<FormPage | undefined> => {
+    const { data } = await supabase()
+      .from('form_pages')
+      .select('*')
+      .eq('slug', slug)
+      .eq('status', 'published')
+      .single();
+    return data ? formPageFromDb(data) : undefined;
+  },
+
+  save: async (form: FormPage): Promise<void> => {
+    await apiFetch(`/api/form-pages/${form.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(form),
+    });
+  },
+
+  delete: async (id: string): Promise<void> => {
+    await apiFetch(`/api/form-pages/${id}`, { method: 'DELETE' });
+  },
+
+  duplicate: async (id: string, newId: string, newSlug: string): Promise<FormPage | null> => {
+    try {
+      return await apiFetch<FormPage>(`/api/form-pages/${id}/duplicate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newId, newSlug }),
+      });
+    } catch {
+      return null;
+    }
   },
 };
+
+// ─── Form Submission Storage ────────────────────────────────────────────────
 
 export const formSubmissionStorage = {
-  getAll: (): FormSubmission[] => getItem<FormSubmission>(KEYS.FORM_SUBMISSIONS),
-
-  getByForm: (formPageId: string): FormSubmission[] =>
-    formSubmissionStorage.getAll().filter((s) => s.formPageId === formPageId),
-
-  getByCompany: (companyId: string): FormSubmission[] =>
-    formSubmissionStorage.getAll().filter((s) => s.companyId === companyId),
-
-  save: (submission: FormSubmission): void => {
-    const all = formSubmissionStorage.getAll();
-    all.push(submission);
-    setItem(KEYS.FORM_SUBMISSIONS, all);
+  getAll: async (): Promise<FormSubmission[]> => {
+    return apiFetch<FormSubmission[]>('/api/form-submissions');
   },
 
-  deleteByCompany: (companyId: string): void => {
-    setItem(KEYS.FORM_SUBMISSIONS, formSubmissionStorage.getAll().filter((s) => s.companyId !== companyId));
+  getByForm: async (formPageId: string): Promise<FormSubmission[]> => {
+    return apiFetch<FormSubmission[]>(`/api/form-submissions?formId=${formPageId}`);
+  },
+
+  getByCompany: async (_companyId: string): Promise<FormSubmission[]> => {
+    return apiFetch<FormSubmission[]>('/api/form-submissions');
+  },
+
+  save: async (submission: FormSubmission): Promise<void> => {
+    const { error } = await supabase()
+      .from('form_submissions')
+      .insert(formSubmissionToDb(submission));
+    if (error) console.error('FormSubmission save error:', error.message);
+  },
+
+  deleteByCompany: async (_companyId: string): Promise<void> => {
+    // Handled by cascade
   },
 };
+
+// ─── Member Storage ─────────────────────────────────────────────────────────
 
 export const memberStorage = {
-  getAll: (): WorkspaceMember[] => getItem<WorkspaceMember>(KEYS.MEMBERS),
-
-  getByCompany: (companyId: string): WorkspaceMember[] =>
-    memberStorage.getAll().filter((m) => m.companyId === companyId),
-
-  getById: (id: string): WorkspaceMember | undefined =>
-    memberStorage.getAll().find((m) => m.id === id),
-
-  getByEmail: (email: string): WorkspaceMember | undefined =>
-    memberStorage.getAll().find((m) => m.email === email && m.status === 'active'),
-
-  save: (member: WorkspaceMember): void => {
-    const all = memberStorage.getAll();
-    const idx = all.findIndex((m) => m.id === member.id);
-    if (idx >= 0) all[idx] = member;
-    else all.push(member);
-    setItem(KEYS.MEMBERS, all);
+  getAll: async (): Promise<WorkspaceMember[]> => {
+    return apiFetch<WorkspaceMember[]>('/api/members');
   },
 
-  delete: (id: string): void => {
-    setItem(KEYS.MEMBERS, memberStorage.getAll().filter((m) => m.id !== id));
+  getByCompany: async (_companyId: string): Promise<WorkspaceMember[]> => {
+    return apiFetch<WorkspaceMember[]>('/api/members');
+  },
+
+  getById: async (id: string): Promise<WorkspaceMember | undefined> => {
+    try {
+      return await apiFetch<WorkspaceMember>(`/api/members/${id}`);
+    } catch {
+      return undefined;
+    }
+  },
+
+  getByEmail: async (_email: string): Promise<WorkspaceMember | undefined> => {
+    return undefined;
+  },
+
+  save: async (member: WorkspaceMember): Promise<void> => {
+    try {
+      await apiFetch(`/api/members/${member.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(member),
+      });
+    } catch {
+      await apiFetch('/api/members', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(member),
+      });
+    }
+  },
+
+  delete: async (id: string): Promise<void> => {
+    await apiFetch(`/api/members/${id}`, { method: 'DELETE' });
   },
 };
 
+// ─── Auth Session ───────────────────────────────────────────────────────────
+
 export const authSession = {
-  getCurrentMemberId: (): string | null => {
-    if (typeof window === 'undefined') return null;
-    return localStorage.getItem(KEYS.CURRENT_MEMBER);
+  getCurrentMemberId: async (): Promise<string | null> => {
+    try {
+      const data = await apiFetch<{ member: { id: string } | null }>('/api/auth/me');
+      return data.member?.id ?? null;
+    } catch {
+      return null;
+    }
   },
 
-  setCurrentMemberId: (id: string): void => {
-    if (typeof window === 'undefined') return;
-    localStorage.setItem(KEYS.CURRENT_MEMBER, id);
+  setCurrentMemberId: (_id: string): void => {
+    // No-op: session is managed via httpOnly cookie
   },
 
-  // Legacy: still needed for migration detection
   getCurrentCompanyId: (): string | null => {
-    if (typeof window === 'undefined') return null;
-    return localStorage.getItem(KEYS.CURRENT_COMPANY);
+    return null;
   },
 
-  clear: (): void => {
-    if (typeof window === 'undefined') return;
-    localStorage.removeItem(KEYS.CURRENT_MEMBER);
-    localStorage.removeItem(KEYS.CURRENT_COMPANY);
+  clear: async (): Promise<void> => {
+    await fetch('/api/auth/logout', { method: 'POST' });
   },
 };

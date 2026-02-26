@@ -46,12 +46,12 @@ export default function SettingsTeamPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [company]);
 
-  function reload() {
+  async function reload() {
     if (!company) return;
-    setMembers(memberStorage.getByCompany(company.id));
+    setMembers(await memberStorage.getByCompany(company.id));
   }
 
-  function handleInvite() {
+  async function handleInvite() {
     setInviteError('');
     if (!invite.name.trim() || !invite.email.trim() || !invite.password.trim()) {
       setInviteError('Alle Felder sind Pflichtfelder.');
@@ -77,25 +77,25 @@ export default function SettingsTeamPage() {
       createdAt: new Date().toISOString(),
       status: 'active',
     };
-    memberStorage.save(newMember);
-    reload();
+    await memberStorage.save(newMember);
+    await reload();
     setShowInvite(false);
     setInvite({ name: '', email: '', password: '', role: 'editor' });
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
   }
 
-  function handleRoleChange(member: WorkspaceMember, newRole: WorkspaceRole) {
+  async function handleRoleChange(member: WorkspaceMember, newRole: WorkspaceRole) {
     if (member.role === 'superadmin') return;
-    memberStorage.save({ ...member, role: newRole });
-    reload();
+    await memberStorage.save({ ...member, role: newRole });
+    await reload();
   }
 
-  function handleRemove(member: WorkspaceMember) {
+  async function handleRemove(member: WorkspaceMember) {
     if (member.role === 'superadmin' || member.role === 'platform_admin') return;
     if (member.id === currentMember?.id) return;
-    memberStorage.delete(member.id);
-    reload();
+    await memberStorage.delete(member.id);
+    await reload();
   }
 
   if (!company || !currentMember) return null;

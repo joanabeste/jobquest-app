@@ -46,11 +46,11 @@ export default function BerufsCheckLeadsPage() {
   const [search, setSearch] = useState('');
   const [selectedLead, setSelectedLead] = useState<CareerCheckLead | null>(null);
 
-  const load = useCallback(() => {
-    const c = careerCheckStorage.getById(id);
+  const load = useCallback(async () => {
+    const c = await careerCheckStorage.getById(id);
     if (!c || c.companyId !== company?.id) { router.push('/dashboard'); return; }
     setCheck(c);
-    const l = careerCheckLeadStorage.getByCheck(id);
+    const l = await careerCheckLeadStorage.getByCheck(id);
     setLeads(l.slice().sort((a, b) => b.submittedAt.localeCompare(a.submittedAt)));
   }, [id, company, router]);
 

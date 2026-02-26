@@ -17,9 +17,12 @@ export default function BerufsCheckEditorPage() {
 
   useEffect(() => {
     if (!company || !id) return;
-    const found = careerCheckStorage.getById(id);
-    if (!found || found.companyId !== company.id) { setNotFound(true); return; }
-    setCheck(found);
+    async function load() {
+      const found = await careerCheckStorage.getById(id);
+      if (!found || found.companyId !== company!.id) { setNotFound(true); return; }
+      setCheck(found);
+    }
+    load();
   }, [id, company]);
 
   if (notFound) {
@@ -39,14 +42,14 @@ export default function BerufsCheckEditorPage() {
     );
   }
 
-  function handleTitleChange(title: string) {
+  async function handleTitleChange(title: string) {
     if (!check) return;
     const updated = { ...check, title, slug: slugify(title), updatedAt: new Date().toISOString() };
-    careerCheckStorage.save(updated);
+    await careerCheckStorage.save(updated);
     setCheck(updated);
   }
 
-  function handlePublish() {
+  async function handlePublish() {
     if (!check) return;
     const newStatus = check.status === 'published' ? 'draft' : 'published';
     const updated: CareerCheck = {
@@ -54,7 +57,7 @@ export default function BerufsCheckEditorPage() {
       publishedAt: newStatus === 'published' ? new Date().toISOString() : check.publishedAt,
       updatedAt: new Date().toISOString(),
     };
-    careerCheckStorage.save(updated);
+    await careerCheckStorage.save(updated);
     setCheck(updated);
   }
 

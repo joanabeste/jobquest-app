@@ -52,25 +52,25 @@ export default function DashboardPage() {
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<'updated' | 'created' | 'title'>('updated');
 
-  const loadData = useCallback(() => {
+  const loadData = useCallback(async () => {
     if (!company) return;
 
-    const allQuests = questStorage.getByCompany(company.id);
+    const allQuests = await questStorage.getByCompany(company.id);
     setQuests(allQuests);
     const qCounts: Record<string, number> = {};
-    allQuests.forEach((q) => { qCounts[q.id] = leadStorage.getByQuest(q.id).length; });
+    for (const q of allQuests) { qCounts[q.id] = (await leadStorage.getByQuest(q.id)).length; }
     setLeadCounts(qCounts);
 
-    const allChecks = careerCheckStorage.getByCompany(company.id);
+    const allChecks = await careerCheckStorage.getByCompany(company.id);
     setChecks(allChecks);
     const cCounts: Record<string, number> = {};
-    allChecks.forEach((c) => { cCounts[c.id] = careerCheckLeadStorage.getByCheck(c.id).length; });
+    for (const c of allChecks) { cCounts[c.id] = (await careerCheckLeadStorage.getByCheck(c.id)).length; }
     setCheckLeadCounts(cCounts);
 
-    const allForms = formPageStorage.getByCompany(company.id);
+    const allForms = await formPageStorage.getByCompany(company.id);
     setForms(allForms);
     const fCounts: Record<string, number> = {};
-    allForms.forEach((f) => { fCounts[f.id] = formSubmissionStorage.getByForm(f.id).length; });
+    for (const f of allForms) { fCounts[f.id] = (await formSubmissionStorage.getByForm(f.id)).length; }
     setFormSubmissionCounts(fCounts);
   }, [company]);
 
@@ -80,7 +80,7 @@ export default function DashboardPage() {
   useEffect(() => { setSearch(''); }, [activeTab]);
 
   // ── JobQuest actions ──────────────────────────────────────────────────────
-  function handleCreateQuest() {
+  async function handleCreateQuest() {
     if (!company) return;
     const id = crypto.randomUUID();
     const newQuest: JobQuest = {
@@ -93,24 +93,24 @@ export default function DashboardPage() {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-    questStorage.save(newQuest);
+    await questStorage.save(newQuest);
     router.push(`/editor/${id}`);
   }
 
-  function handleDuplicateQuest(quest: JobQuest) {
+  async function handleDuplicateQuest(quest: JobQuest) {
     const newId = crypto.randomUUID();
-    questStorage.duplicate(quest.id, newId, generateSlug(quest.title));
-    loadData();
+    await questStorage.duplicate(quest.id, newId, generateSlug(quest.title));
+    await loadData();
   }
 
-  function handleDeleteQuest(id: string) {
-    questStorage.delete(id);
+  async function handleDeleteQuest(id: string) {
+    await questStorage.delete(id);
     setDeleteConfirmQuest(null);
-    loadData();
+    await loadData();
   }
 
   // ── Formular actions ──────────────────────────────────────────────────────
-  function handleCreateForm() {
+  async function handleCreateForm() {
     if (!company) return;
     const id = crypto.randomUUID();
     const newForm: FormPage = {
@@ -125,24 +125,24 @@ export default function DashboardPage() {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-    formPageStorage.save(newForm);
+    await formPageStorage.save(newForm);
     router.push(`/formular-editor/${id}`);
   }
 
-  function handleDuplicateForm(form: FormPage) {
+  async function handleDuplicateForm(form: FormPage) {
     const newId = crypto.randomUUID();
-    formPageStorage.duplicate(form.id, newId, generateSlug(form.title));
-    loadData();
+    await formPageStorage.duplicate(form.id, newId, generateSlug(form.title));
+    await loadData();
   }
 
-  function handleDeleteForm(id: string) {
-    formPageStorage.delete(id);
+  async function handleDeleteForm(id: string) {
+    await formPageStorage.delete(id);
     setDeleteConfirmForm(null);
-    loadData();
+    await loadData();
   }
 
   // ── Berufscheck actions ───────────────────────────────────────────────────
-  function handleCreateCheck() {
+  async function handleCreateCheck() {
     if (!company) return;
     const id = crypto.randomUUID();
     const newCheck: CareerCheck = {
@@ -156,20 +156,20 @@ export default function DashboardPage() {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-    careerCheckStorage.save(newCheck);
+    await careerCheckStorage.save(newCheck);
     router.push(`/berufscheck-editor/${id}`);
   }
 
-  function handleDuplicateCheck(check: CareerCheck) {
+  async function handleDuplicateCheck(check: CareerCheck) {
     const newId = crypto.randomUUID();
-    careerCheckStorage.duplicate(check.id, newId, generateSlug(check.title));
-    loadData();
+    await careerCheckStorage.duplicate(check.id, newId, generateSlug(check.title));
+    await loadData();
   }
 
-  function handleDeleteCheck(id: string) {
-    careerCheckStorage.delete(id);
+  async function handleDeleteCheck(id: string) {
+    await careerCheckStorage.delete(id);
     setDeleteConfirmCheck(null);
-    loadData();
+    await loadData();
   }
 
   // ── Filtered lists ────────────────────────────────────────────────────────

@@ -104,15 +104,16 @@ export default function LeadsPage() {
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all');
   const [selectedLead, setSelectedLead] = useState<UnifiedLead | null>(null);
 
-  const load = useCallback(() => {
+  const load = useCallback(async () => {
     if (!company) return;
 
     const unified: UnifiedLead[] = [];
 
     // JobQuest leads
-    const quests = questStorage.getByCompany(company.id);
+    const quests = await questStorage.getByCompany(company.id);
     const questMap = Object.fromEntries(quests.map((q) => [q.id, q.title]));
-    leadStorage.getByCompany(company.id).forEach((l) => {
+    const companyLeads = await leadStorage.getByCompany(company.id);
+    companyLeads.forEach((l) => {
       unified.push({
         id: l.id,
         source: 'jobquest',
@@ -128,9 +129,10 @@ export default function LeadsPage() {
     });
 
     // Berufscheck leads
-    const checks = careerCheckStorage.getByCompany(company.id);
+    const checks = await careerCheckStorage.getByCompany(company.id);
     const checkMap = Object.fromEntries(checks.map((c) => [c.id, c]));
-    careerCheckLeadStorage.getByCompany(company.id).forEach((l) => {
+    const companyCheckLeads = await careerCheckLeadStorage.getByCompany(company.id);
+    companyCheckLeads.forEach((l) => {
       const check = checkMap[l.careerCheckId];
       unified.push({
         id: l.id,
@@ -149,9 +151,10 @@ export default function LeadsPage() {
     });
 
     // Formular submissions
-    const formPages = formPageStorage.getByCompany(company.id);
+    const formPages = await formPageStorage.getByCompany(company.id);
     const formPageMap = Object.fromEntries(formPages.map((f) => [f.id, f]));
-    formSubmissionStorage.getByCompany(company.id).forEach((s) => {
+    const companySubmissions = await formSubmissionStorage.getByCompany(company.id);
+    companySubmissions.forEach((s) => {
       const fp = formPageMap[s.formPageId];
       const allFields = (fp?.formSteps ?? []).flatMap((step) => step.fields);
       const extracted = extractFromAnswers(s.answers, allFields);

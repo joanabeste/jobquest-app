@@ -17,9 +17,12 @@ export default function FormularEditorPage() {
 
   useEffect(() => {
     if (!company || !id) return;
-    const found = formPageStorage.getById(id);
-    if (!found || found.companyId !== company.id) { setNotFound(true); return; }
-    setFormPage(found);
+    async function load() {
+      const found = await formPageStorage.getById(id);
+      if (!found || found.companyId !== company!.id) { setNotFound(true); return; }
+      setFormPage(found);
+    }
+    load();
   }, [id, company]);
 
   if (notFound) {
@@ -39,14 +42,14 @@ export default function FormularEditorPage() {
     );
   }
 
-  function handleTitleChange(title: string) {
+  async function handleTitleChange(title: string) {
     if (!formPage) return;
     const updated = { ...formPage, title, slug: slugify(title), updatedAt: new Date().toISOString() };
-    formPageStorage.save(updated);
+    await formPageStorage.save(updated);
     setFormPage(updated);
   }
 
-  function handlePublish() {
+  async function handlePublish() {
     if (!formPage) return;
     const newStatus = formPage.status === 'published' ? 'draft' : 'published';
     const updated: FormPage = {
@@ -54,7 +57,7 @@ export default function FormularEditorPage() {
       publishedAt: newStatus === 'published' ? new Date().toISOString() : formPage.publishedAt,
       updatedAt: new Date().toISOString(),
     };
-    formPageStorage.save(updated);
+    await formPageStorage.save(updated);
     setFormPage(updated);
   }
 

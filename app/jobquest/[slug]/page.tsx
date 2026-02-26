@@ -17,15 +17,19 @@ export default function PublicQuestPage() {
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
-    if (!slug) return;
-    const found = questStorage.getBySlug(slug);
-    if (!found) { setNotFound(true); return; }
-    const comp = companyStorage.getById(found.companyId);
-    if (!comp) { setNotFound(true); return; }
-    setQuest(found);
-    setCompany(comp);
-    // Check if a FunnelDoc exists for this quest
-    setFunnelDoc(funnelStorage.getByContentId(found.id) ?? null);
+    async function load() {
+      if (!slug) return;
+      const found = await questStorage.getBySlug(slug);
+      if (!found) { setNotFound(true); return; }
+      const comp = await companyStorage.getById(found.companyId);
+      if (!comp) { setNotFound(true); return; }
+      setQuest(found);
+      setCompany(comp);
+      // Check if a FunnelDoc exists for this quest
+      const fd = await funnelStorage.getByContentId(found.id);
+      setFunnelDoc(fd ?? null);
+    }
+    load();
   }, [slug]);
 
   if (notFound) {

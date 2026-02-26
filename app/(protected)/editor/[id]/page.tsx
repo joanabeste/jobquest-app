@@ -17,9 +17,12 @@ export default function EditorPage() {
 
   useEffect(() => {
     if (!company || !id) return;
-    const found = questStorage.getById(id);
-    if (!found || found.companyId !== company.id) { setNotFound(true); return; }
-    setQuest(found);
+    async function load() {
+      const found = await questStorage.getById(id);
+      if (!found || found.companyId !== company!.id) { setNotFound(true); return; }
+      setQuest(found);
+    }
+    load();
   }, [id, company]);
 
   if (notFound) {
@@ -39,14 +42,14 @@ export default function EditorPage() {
     );
   }
 
-  function handleTitleChange(title: string) {
+  async function handleTitleChange(title: string) {
     if (!quest) return;
     const updated = { ...quest, title, slug: slugify(title), updatedAt: new Date().toISOString() };
-    questStorage.save(updated);
+    await questStorage.save(updated);
     setQuest(updated);
   }
 
-  function handlePublish() {
+  async function handlePublish() {
     if (!quest) return;
     const newStatus = quest.status === 'published' ? 'draft' : 'published';
     const updated: JobQuest = {
@@ -54,7 +57,7 @@ export default function EditorPage() {
       publishedAt: newStatus === 'published' ? new Date().toISOString() : quest.publishedAt,
       updatedAt: new Date().toISOString(),
     };
-    questStorage.save(updated);
+    await questStorage.save(updated);
     setQuest(updated);
   }
 

@@ -200,8 +200,8 @@ export function BerufsCheckEditorClient({ checkId }: { checkId: string }) {
   const [titleEditing, setTitleEditing] = useState(false);
   const refs = useRef<Record<string, HTMLInputElement | HTMLTextAreaElement | null>>({});
 
-  const loadCheck = useCallback(() => {
-    const c = careerCheckStorage.getById(checkId);
+  const loadCheck = useCallback(async () => {
+    const c = await careerCheckStorage.getById(checkId);
     if (!c) { router.push('/dashboard'); return; }
     setCheck(c);
     // Show wizard if no dimensions defined yet

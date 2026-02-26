@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { memberStorage, companyStorage, questStorage, careerCheckStorage, formPageStorage } from '@/lib/storage';
+import { memberStorage } from '@/lib/storage';
 import { ROLE_LABELS, ROLE_COLORS } from '@/lib/types';
 import {
   KeyRound, Trash2, Building2, UserCog, CreditCard,
@@ -29,7 +29,7 @@ export default function EinstellungenPage() {
   const [pwError, setPwError] = useState('');
   const [pwDone, setPwDone] = useState(false);
 
-  function handleChangePw() {
+  async function handleChangePw() {
     setPwError('');
     if (!currentMember) return;
     if (oldPw !== currentMember.password) {
@@ -45,9 +45,9 @@ export default function EinstellungenPage() {
       return;
     }
     const updated = { ...currentMember, password: newPw };
-    memberStorage.save(updated);
+    await memberStorage.save(updated);
     if (company && company.contactEmail === currentMember.email) {
-      updateCompany({ ...company, password: newPw });
+      await updateCompany({ ...company, password: newPw });
     }
     setPwDone(true);
     setOldPw('');
@@ -60,19 +60,15 @@ export default function EinstellungenPage() {
   const [deleteConfirm, setDeleteConfirm] = useState('');
   const required = isSuperAdmin ? 'LÖSCHEN' : (currentMember?.name ?? '');
 
-  function handleDeleteAccount() {
+  async function handleDeleteAccount() {
     if (!currentMember || !company) return;
     if (isSuperAdmin) {
-      const compId = company.id;
-      questStorage.getByCompany(compId).forEach((q) => questStorage.delete(q.id));
-      careerCheckStorage.getByCompany(compId).forEach((c) => careerCheckStorage.delete(c.id));
-      formPageStorage.getByCompany(compId).forEach((f) => formPageStorage.delete(f.id));
-      memberStorage.getByCompany(compId).forEach((m) => memberStorage.delete(m.id));
-      companyStorage.delete(compId);
+      // Server-side cascade handles everything
+      await fetch('/api/companies/me/delete', { method: 'POST' });
     } else {
-      memberStorage.delete(currentMember.id);
+      await memberStorage.delete(currentMember.id);
     }
-    logout();
+    await logout();
     router.push('/login');
   }
 

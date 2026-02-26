@@ -67,12 +67,16 @@ export default function BerufsCheckPlayer() {
   const [scores, setScores] = useState<Record<string, number>>({});
 
   useEffect(() => {
-    const c = careerCheckStorage.getBySlug(slug);
-    if (!c) { setNotFound(true); return; }
-    setCheck(c);
-    const co = companyStorage.getById(c.companyId);
-    setCompany(co ?? null);
-    setFunnelDoc(funnelStorage.getByContentId(c.id) ?? null);
+    async function load() {
+      const c = await careerCheckStorage.getBySlug(slug);
+      if (!c) { setNotFound(true); return; }
+      setCheck(c);
+      const co = await companyStorage.getById(c.companyId);
+      setCompany(co ?? null);
+      const fd = await funnelStorage.getByContentId(c.id);
+      setFunnelDoc(fd ?? null);
+    }
+    load();
   }, [slug]);
 
   if (notFound) return <NotFound />;

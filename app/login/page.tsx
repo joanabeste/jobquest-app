@@ -24,7 +24,7 @@ export default function LoginPage() {
     setError('');
     setSubmitting(true);
     await new Promise((r) => setTimeout(r, 300));
-    const ok = login(email, password);
+    const ok = await login(email, password);
     if (ok) {
       router.push('/dashboard');
     } else {

@@ -10,11 +10,9 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { companyStorage, memberStorage, authSession } from '@/lib/storage';
-import { Company, WorkspaceMember, DEV_PASSWORD } from '@/lib/types';
+import { Company, DEV_PASSWORD } from '@/lib/types';
 import { Terminal, LogIn, Building2, Lock, Eye, EyeOff, Users, Globe, AlertTriangle } from 'lucide-react';
 
-const DEV_MEMBER_NAME = 'Developer';
 const DEV_MEMBER_EMAIL = 'dev@jobquest.internal';
 
 export default function DevPage() {
@@ -29,14 +27,18 @@ export default function DevPage() {
 
   useEffect(() => {
     if (unlocked) {
-      const all = companyStorage.getAll();
-      setCompanies(all);
-      const counts: Record<string, number> = {};
-      all.forEach((c) => {
-        counts[c.id] = memberStorage.getByCompany(c.id).filter((m) => m.role !== 'platform_admin').length;
-      });
-      setMemberCounts(counts);
+      const load = async () => {
+        try {
+          const res = await fetch(`/api/dev/companies?pw=${encodeURIComponent(password)}`);
+          if (!res.ok) return;
+          const data = await res.json();
+          setCompanies(data.companies ?? []);
+          setMemberCounts(data.memberCounts ?? {});
+        } catch { /* ignore */ }
+      };
+      load();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [unlocked]);
 
   function handleUnlock() {
@@ -49,30 +51,18 @@ export default function DevPage() {
     }
   }
 
-  function handleJoin(company: Company) {
+  async function handleJoin(company: Company) {
     setLoggingIn(company.id);
-
-    // Find or create the platform_admin member for this company
-    let devMember = memberStorage.getAll().find(
-      (m) => m.companyId === company.id && m.role === 'platform_admin'
-    );
-
-    if (!devMember) {
-      devMember = {
-        id: crypto.randomUUID(),
-        companyId: company.id,
-        name: DEV_MEMBER_NAME,
-        email: DEV_MEMBER_EMAIL,
-        password: DEV_PASSWORD,
-        role: 'platform_admin',
-        createdAt: new Date().toISOString(),
-        status: 'active',
-      } satisfies WorkspaceMember;
-      memberStorage.save(devMember);
-    }
-
-    authSession.setCurrentMemberId(devMember.id);
-    router.push('/dashboard');
+    try {
+      const res = await fetch('/api/dev/join', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ companyId: company.id, pw: password }),
+      });
+      if (res.ok) {
+        router.push('/dashboard');
+      }
+    } catch { /* ignore */ }
   }
 
   // ── Password gate ─────────────────────────────────────────────────────────

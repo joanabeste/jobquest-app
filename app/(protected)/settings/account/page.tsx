@@ -27,7 +27,7 @@ export default function SettingsAccountPage() {
   const isPlatformAdmin = currentMember.role === 'platform_admin';
   const deleteRequired = isSuperAdmin ? 'LÖSCHEN' : currentMember.name;
 
-  function handleSavePassword() {
+  async function handleSavePassword() {
     setPwError('');
     if (oldPw !== currentMember!.password) {
       setPwError('Das aktuelle Passwort ist falsch.');
@@ -42,28 +42,32 @@ export default function SettingsAccountPage() {
       return;
     }
     const updated = { ...currentMember!, password: newPw };
-    memberStorage.save(updated);
+    await memberStorage.save(updated);
     if (company!.contactEmail === currentMember!.email) {
-      updateCompany({ ...company!, password: newPw });
+      await updateCompany({ ...company!, password: newPw });
     }
     setPwDone(true);
     setOldPw(''); setNewPw(''); setConfirmPw('');
     setTimeout(() => setPwDone(false), 3000);
   }
 
-  function handleDeleteAccount() {
+  async function handleDeleteAccount() {
     if (!currentMember || !company) return;
     if (isSuperAdmin) {
       const compId = company.id;
-      questStorage.getByCompany(compId).forEach((q) => questStorage.delete(q.id));
-      careerCheckStorage.getByCompany(compId).forEach((c) => careerCheckStorage.delete(c.id));
-      formPageStorage.getByCompany(compId).forEach((f) => formPageStorage.delete(f.id));
-      memberStorage.getByCompany(compId).forEach((m) => memberStorage.delete(m.id));
-      companyStorage.delete(compId);
+      const quests = await questStorage.getByCompany(compId);
+      for (const q of quests) { await questStorage.delete(q.id); }
+      const checks = await careerCheckStorage.getByCompany(compId);
+      for (const c of checks) { await careerCheckStorage.delete(c.id); }
+      const forms = await formPageStorage.getByCompany(compId);
+      for (const f of forms) { await formPageStorage.delete(f.id); }
+      const members = await memberStorage.getByCompany(compId);
+      for (const m of members) { await memberStorage.delete(m.id); }
+      await companyStorage.delete(compId);
     } else {
-      memberStorage.delete(currentMember.id);
+      await memberStorage.delete(currentMember.id);
     }
-    logout();
+    await logout();
     router.push('/login');
   }
 

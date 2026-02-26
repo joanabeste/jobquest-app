@@ -62,7 +62,7 @@ export default function RegisterPage() {
     await new Promise((r) => setTimeout(r, 300));
 
     try {
-      register({
+      await register({
         name: form.name,
         industry: form.industry,
         location: form.location,

@@ -67,9 +67,39 @@ export interface FunnelEditorProps {
 // ─── Main Editor ──────────────────────────────────────────────────────────────
 export default function FunnelEditor({
   contentId, contentType, title, onTitleChange,
-  previewHref, status, onPublish, onBack, extraPanel,
+  slug, previewHref, status, onPublish, onBack, extraPanel,
 }: FunnelEditorProps) {
-  const [initialDoc] = useState(() => funnelStorage.getByContentId(contentId) ?? createFunnelDoc(contentId, contentType));
+  const [initialDoc, setInitialDoc] = useState<FunnelDoc | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      const existing = await funnelStorage.getByContentIdAuth(contentId);
+      setInitialDoc(existing ?? createFunnelDoc(contentId, contentType));
+      setLoading(false);
+    }
+    load();
+  }, [contentId, contentType]);
+
+  if (loading || !initialDoc) {
+    return (
+      <div className="flex items-center justify-center h-[calc(100vh-3.5rem)] bg-slate-50">
+        <div className="w-8 h-8 rounded-full border-2 border-violet-600 border-t-transparent animate-spin" />
+      </div>
+    );
+  }
+
+  return <FunnelEditorInner
+    initialDoc={initialDoc}
+    contentType={contentType} title={title} onTitleChange={onTitleChange}
+    slug={slug} previewHref={previewHref} status={status} onPublish={onPublish} onBack={onBack} extraPanel={extraPanel}
+  />;
+}
+
+function FunnelEditorInner({
+  initialDoc, contentType, title, onTitleChange,
+  slug: _slug, previewHref, status, onPublish, onBack, extraPanel,
+}: Omit<FunnelEditorProps, 'contentId'> & { initialDoc: FunnelDoc }) {
   const { doc, push, undo, redo, canUndo, canRedo } = useHistory(initialDoc);
 
   const [activePageId, setActivePageId] = useState(doc.pages[0]?.id ?? '');
@@ -90,12 +120,14 @@ export default function FunnelEditor({
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
-    autosaveTimer.current = setTimeout(() => funnelStorage.save(doc), 1000);
+    autosaveTimer.current = setTimeout(async () => {
+      await funnelStorage.save(doc);
+    }, 1000);
     return () => { if (autosaveTimer.current) clearTimeout(autosaveTimer.current); };
   }, [doc]);
 
-  function save() {
-    funnelStorage.save(doc);
+  async function save() {
+    await funnelStorage.save(doc);
     setSavedBriefly(true);
     setTimeout(() => setSavedBriefly(false), 2000);
   }

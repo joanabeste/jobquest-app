@@ -1,42 +1,21 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { Company, WorkspaceMember, WorkspaceRole, Permission, can as canRole } from '@/lib/types';
-import { companyStorage, authSession, memberStorage, questStorage, careerCheckStorage, formPageStorage, leadStorage, careerCheckLeadStorage, formSubmissionStorage } from '@/lib/storage';
-import { funnelStorage } from '@/lib/funnel-storage';
 
 interface AuthContextType {
   company: Company | null;
   currentMember: WorkspaceMember | null;
   isLoading: boolean;
-  login: (email: string, password: string) => boolean;
-  logout: () => void;
-  updateCompany: (company: Company) => void;
-  register: (data: Omit<Company, 'id' | 'createdAt'>) => Company;
-  deleteAccount: () => void;
+  login: (email: string, password: string) => Promise<boolean>;
+  logout: () => Promise<void>;
+  updateCompany: (company: Company) => Promise<void>;
+  register: (data: Omit<Company, 'id' | 'createdAt'>) => Promise<Company>;
+  deleteAccount: () => Promise<void>;
   can: (permission: Permission) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
-
-/** Ensure a company has at least one superadmin member. Creates one from legacy data if missing. */
-function ensureSuperAdmin(company: Company): WorkspaceMember {
-  const existing = memberStorage.getByCompany(company.id).find((m) => m.role === 'superadmin');
-  if (existing) return existing;
-
-  const member: WorkspaceMember = {
-    id: crypto.randomUUID(),
-    companyId: company.id,
-    name: company.contactName,
-    email: company.contactEmail,
-    password: company.password,
-    role: 'superadmin',
-    createdAt: company.createdAt,
-    status: 'active',
-  };
-  memberStorage.save(member);
-  return member;
-}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [company, setCompany] = useState<Company | null>(null);
@@ -44,143 +23,86 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Try to restore session from stored member ID
-    const memberId = authSession.getCurrentMemberId();
-    if (memberId) {
-      const member = memberStorage.getById(memberId);
-      if (member) {
-        const comp = companyStorage.getById(member.companyId);
-        if (comp) {
-          setCurrentMember(member);
-          setCompany(comp);
-          setIsLoading(false);
-          return;
+    async function restoreSession() {
+      try {
+        const res = await fetch('/api/auth/me');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.member && data.company) {
+            setCurrentMember(data.member);
+            setCompany(data.company);
+          }
         }
+      } catch {
+        // No session
       }
+      setIsLoading(false);
     }
-
-    // Legacy migration: old session stored companyId directly
-    const companyId = authSession.getCurrentCompanyId();
-    if (companyId) {
-      const comp = companyStorage.getById(companyId);
-      if (comp) {
-        const member = ensureSuperAdmin(comp);
-        authSession.setCurrentMemberId(member.id);
-        setCurrentMember(member);
-        setCompany(comp);
-        setIsLoading(false);
-        return;
-      }
-    }
-
-    setIsLoading(false);
+    restoreSession();
   }, []);
 
-  const login = (email: string, password: string): boolean => {
-    // 1. Try members table first
-    const member = memberStorage.getByEmail(email);
-    if (member && member.password === password) {
-      const comp = companyStorage.getById(member.companyId);
-      if (comp) {
-        setCurrentMember(member);
-        setCompany(comp);
-        authSession.setCurrentMemberId(member.id);
-        return true;
-      }
-    }
-
-    // 2. Legacy fallback: Company.contactEmail + Company.password
-    const comp = companyStorage.getByEmail(email);
-    if (comp && comp.password === password) {
-      const superAdmin = ensureSuperAdmin(comp);
-      setCurrentMember(superAdmin);
-      setCompany(comp);
-      authSession.setCurrentMemberId(superAdmin.id);
+  const login = useCallback(async (email: string, password: string): Promise<boolean> => {
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      if (!res.ok) return false;
+      const data = await res.json();
+      setCurrentMember(data.member);
+      setCompany(data.company);
       return true;
+    } catch {
+      return false;
     }
+  }, []);
 
-    return false;
-  };
-
-  const logout = () => {
+  const logout = useCallback(async () => {
+    await fetch('/api/auth/logout', { method: 'POST' });
     setCompany(null);
     setCurrentMember(null);
-    authSession.clear();
-  };
+  }, []);
 
-  const updateCompany = (updated: Company) => {
-    companyStorage.save(updated);
-    setCompany(updated);
-  };
+  const updateCompany = useCallback(async (updated: Company) => {
+    const res = await fetch('/api/companies/me', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updated),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setCompany(data);
+    }
+  }, []);
 
-  const register = (data: Omit<Company, 'id' | 'createdAt'>): Company => {
-    const newCompany: Company = {
-      ...data,
-      id: crypto.randomUUID(),
-      createdAt: new Date().toISOString(),
-    };
-    companyStorage.save(newCompany);
+  const register = useCallback(async (data: Omit<Company, 'id' | 'createdAt'>): Promise<Company> => {
+    const res = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Registration failed');
+    }
+    const result = await res.json();
+    setCompany(result.company);
+    setCurrentMember(result.member);
+    return result.company;
+  }, []);
 
-    // Create the superadmin member for the registering user
-    const member: WorkspaceMember = {
-      id: crypto.randomUUID(),
-      companyId: newCompany.id,
-      name: data.contactName,
-      email: data.contactEmail,
-      password: data.password,
-      role: 'superadmin',
-      createdAt: newCompany.createdAt,
-      status: 'active',
-    };
-    memberStorage.save(member);
-
-    setCompany(newCompany);
-    setCurrentMember(member);
-    authSession.setCurrentMemberId(member.id);
-    return newCompany;
-  };
-
-  const deleteAccount = () => {
+  const deleteAccount = useCallback(async () => {
     if (!company) return;
-    const companyId = company.id;
+    const res = await fetch('/api/companies/me/delete', { method: 'POST' });
+    if (res.ok) {
+      setCompany(null);
+      setCurrentMember(null);
+    }
+  }, [company]);
 
-    // Collect all content IDs first (for funnel doc cleanup)
-    const quests = questStorage.getByCompany(companyId);
-    const checks = careerCheckStorage.getByCompany(companyId);
-    const forms = formPageStorage.getByCompany(companyId);
-    const contentIds = [
-      ...quests.map((q) => q.id),
-      ...checks.map((c) => c.id),
-      ...forms.map((f) => f.id),
-    ];
-
-    // Delete all content
-    quests.forEach((q) => questStorage.delete(q.id));
-    checks.forEach((c) => careerCheckStorage.delete(c.id));
-    forms.forEach((f) => formPageStorage.delete(f.id));
-
-    // Delete leads and submissions
-    leadStorage.deleteByCompany(companyId);
-    careerCheckLeadStorage.deleteByCompany(companyId);
-    formSubmissionStorage.deleteByCompany(companyId);
-
-    // Delete funnel docs
-    funnelStorage.deleteForContentIds(contentIds);
-
-    // Delete members
-    memberStorage.getByCompany(companyId).forEach((m) => memberStorage.delete(m.id));
-
-    // Delete company
-    companyStorage.delete(companyId);
-
-    // Clear session + state
-    authSession.clear();
-    setCompany(null);
-    setCurrentMember(null);
-  };
-
-  const checkCan = (permission: Permission): boolean =>
-    canRole(currentMember?.role as WorkspaceRole | undefined, permission);
+  const checkCan = useCallback((permission: Permission): boolean =>
+    canRole(currentMember?.role as WorkspaceRole | undefined, permission), [currentMember]);
 
   return (
     <AuthContext.Provider value={{

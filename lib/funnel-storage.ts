@@ -1,31 +1,40 @@
 import { FunnelDoc } from './funnel-types';
+import { createClient } from './supabase/client';
+import { funnelDocFromDb } from './supabase/mappers';
 
-const KEY = 'jq_funnel_docs';
-
-function getAll(): Record<string, FunnelDoc> {
-  if (typeof window === 'undefined') return {};
-  try { return JSON.parse(localStorage.getItem(KEY) || '{}'); } catch { return {}; }
+function supabase() {
+  return createClient();
 }
 
 export const funnelStorage = {
-  getByContentId(contentId: string): FunnelDoc | null {
-    return Object.values(getAll()).find((d) => d.contentId === contentId) ?? null;
+  getByContentId: async (contentId: string): Promise<FunnelDoc | null> => {
+    const { data } = await supabase()
+      .from('funnel_docs')
+      .select('*')
+      .eq('content_id', contentId)
+      .single();
+    return data ? funnelDocFromDb(data) : null;
   },
-  save(doc: FunnelDoc): void {
-    const all = getAll();
-    all[doc.id] = { ...doc, updatedAt: new Date().toISOString() };
-    localStorage.setItem(KEY, JSON.stringify(all));
+
+  getByContentIdAuth: async (contentId: string): Promise<FunnelDoc | null> => {
+    const res = await fetch(`/api/funnel-docs?contentId=${contentId}`);
+    if (!res.ok) return null;
+    return res.json();
   },
-  delete(id: string): void {
-    const all = getAll();
-    delete all[id];
-    localStorage.setItem(KEY, JSON.stringify(all));
+
+  save: async (doc: FunnelDoc): Promise<void> => {
+    await fetch('/api/funnel-docs', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(doc),
+    });
   },
-  deleteForContentIds(contentIds: string[]): void {
-    const all = getAll();
-    const filtered = Object.fromEntries(
-      Object.entries(all).filter(([, doc]) => !contentIds.includes(doc.contentId))
-    );
-    localStorage.setItem(KEY, JSON.stringify(filtered));
+
+  delete: async (id: string): Promise<void> => {
+    await fetch(`/api/funnel-docs/${id}`, { method: 'DELETE' });
+  },
+
+  deleteForContentIds: async (_contentIds: string[]): Promise<void> => {
+    // Handled by company delete API or cascade
   },
 };
