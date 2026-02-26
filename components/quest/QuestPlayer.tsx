@@ -225,7 +225,7 @@ export default function QuestPlayer({ quest, company }: Props) {
       </div>
 
       {/* Content */}
-      <main className="flex-1 max-w-lg mx-auto w-full px-4 py-6">
+      <main className={`flex-1 max-w-lg mx-auto w-full px-4 py-6 ${!leadSubmitted ? 'pb-24' : ''}`}>
         <div className="slide-in">
           {isLeadStep ? (
             leadSubmitted ? (
@@ -257,31 +257,33 @@ export default function QuestPlayer({ quest, company }: Props) {
 
       {/* Navigation */}
       {!leadSubmitted && (
-        <footer className="bg-white border-t border-slate-200 px-4 py-3 flex items-center justify-between sticky bottom-0">
-          <button
-            onClick={handlePrev}
-            disabled={step === 0}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              step === 0 ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600 hover:bg-slate-100'
-            }`}
-          >
-            <ChevronLeft size={16} /> Zurück
-          </button>
-
-          {!isLeadStep && (
+        <footer className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-slate-200 px-4 py-3 z-10">
+          <div className="max-w-lg mx-auto flex items-center justify-between">
             <button
-              onClick={handleNext}
-              disabled={!canProceed()}
-              className={`flex items-center gap-1.5 px-5 py-2 rounded-lg text-sm font-semibold transition-all ${
-                canProceed()
-                  ? 'quest-btn-next text-white shadow-md'
-                  : 'bg-slate-100 text-slate-300 cursor-not-allowed'
+              onClick={handlePrev}
+              disabled={step === 0}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                step === 0 ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600 hover:bg-slate-100'
               }`}
             >
-              {isLastContentStep ? 'Weiter zur Bewerbung' : 'Weiter'}
-              <ChevronRight size={16} />
+              <ChevronLeft size={16} /> Zurück
             </button>
-          )}
+
+            {!isLeadStep && (
+              <button
+                onClick={handleNext}
+                disabled={!canProceed()}
+                className={`flex items-center gap-1.5 px-5 py-2 rounded-lg text-sm font-semibold transition-all ${
+                  canProceed()
+                    ? 'quest-btn-next text-white shadow-md'
+                    : 'bg-slate-100 text-slate-300 cursor-not-allowed'
+                }`}
+              >
+                {isLastContentStep ? 'Weiter zur Bewerbung' : 'Weiter'}
+                <ChevronRight size={16} />
+              </button>
+            )}
+          </div>
         </footer>
       )}
 

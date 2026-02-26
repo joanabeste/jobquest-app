@@ -268,10 +268,10 @@ export default function DashboardPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-1 border-b border-slate-200 mb-6">
+      <div className="flex items-center gap-1 border-b border-slate-200 mb-6 overflow-x-auto">
         <button
           onClick={() => setActiveTab('jobquests')}
-          className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+          className={`px-3 sm:px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
             activeTab === 'jobquests'
               ? 'border-violet-600 text-violet-600'
               : 'border-transparent text-slate-500 hover:text-slate-700'
@@ -279,29 +279,29 @@ export default function DashboardPage() {
         >
           JobQuests
           {publishedQuestCount > 0 && (
-            <span className="ml-2 text-xs bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded-full">
-              {publishedQuestCount} live
+            <span className="ml-1.5 text-xs bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded-full">
+              {publishedQuestCount}
             </span>
           )}
         </button>
         <button
           onClick={() => setActiveTab('berufschecks')}
-          className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+          className={`px-3 sm:px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
             activeTab === 'berufschecks'
               ? 'border-violet-600 text-violet-600'
               : 'border-transparent text-slate-500 hover:text-slate-700'
           }`}
         >
-          Berufschecks
+          Checks
           {publishedCheckCount > 0 && (
-            <span className="ml-2 text-xs bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded-full">
-              {publishedCheckCount} live
+            <span className="ml-1.5 text-xs bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded-full">
+              {publishedCheckCount}
             </span>
           )}
         </button>
         <button
           onClick={() => setActiveTab('formulare')}
-          className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+          className={`px-3 sm:px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
             activeTab === 'formulare'
               ? 'border-violet-600 text-violet-600'
               : 'border-transparent text-slate-500 hover:text-slate-700'
@@ -309,8 +309,8 @@ export default function DashboardPage() {
         >
           Formulare
           {publishedFormCount > 0 && (
-            <span className="ml-2 text-xs bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded-full">
-              {publishedFormCount} live
+            <span className="ml-1.5 text-xs bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded-full">
+              {publishedFormCount}
             </span>
           )}
         </button>
