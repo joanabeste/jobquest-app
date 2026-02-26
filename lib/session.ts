@@ -5,13 +5,13 @@ import crypto from 'crypto';
 const COOKIE_NAME = 'jq_session';
 const SECRET = () => process.env.SESSION_SECRET || 'dev-fallback-secret-do-not-use-in-prod';
 
-function sign(value: string): string {
+export function sign(value: string): string {
   const hmac = crypto.createHmac('sha256', SECRET());
   hmac.update(value);
   return value + '.' + hmac.digest('base64url');
 }
 
-function unsign(signed: string): string | null {
+export function unsign(signed: string): string | null {
   const idx = signed.lastIndexOf('.');
   if (idx < 0) return null;
   const value = signed.slice(0, idx);
