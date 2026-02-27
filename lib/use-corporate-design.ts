@@ -8,8 +8,8 @@ import { Company, DEFAULT_CORPORATE_DESIGN } from '@/lib/types';
  */
 export function useCorporateDesign(company: Company) {
   const design = company.corporateDesign ?? DEFAULT_CORPORATE_DESIGN;
-  const primary = design.primaryColor;
-  const accent  = design.accentColor;
+  const primary = design.primaryColor || DEFAULT_CORPORATE_DESIGN.primaryColor;
+  const accent  = design.accentColor || DEFAULT_CORPORATE_DESIGN.accentColor;
   const br      = `${design.borderRadius ?? 12}px`;
 
   const hfName = design.headingFontName ?? 'system';

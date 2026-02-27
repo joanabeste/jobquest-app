@@ -33,9 +33,9 @@ export default function QuestPlayer({ quest, company }: Props) {
   const [sequence, setSequence] = useState<QuestModule[]>([...quest.modules]);
 
   const design = company.corporateDesign ?? DEFAULT_CORPORATE_DESIGN;
-  const primary = design.primaryColor;
-  const textColor = design.textColor;
-  const headingColor = design.headingColor;
+  const primary = design.primaryColor || DEFAULT_CORPORATE_DESIGN.primaryColor;
+  const textColor = design.textColor || DEFAULT_CORPORATE_DESIGN.textColor;
+  const headingColor = design.headingColor || DEFAULT_CORPORATE_DESIGN.headingColor;
   const br = `${design.borderRadius}px`;
   const headingFontName = design.headingFontName ?? 'system';
   const bodyFontName = design.bodyFontName ?? 'system';

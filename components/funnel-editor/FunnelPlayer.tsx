@@ -314,8 +314,8 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
             <button
               onClick={() => goNext(weiterTarget)}
               disabled={!weiterEnabled}
-              className="fp-btn flex-1 py-3.5 font-semibold text-sm disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              style={{ borderRadius: br }}
+              className="fp-btn flex-1 py-3.5 font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              style={{ borderRadius: br, background: primary, color: '#fff' }}
             >
               {isLastPage ? 'Fertig' : 'Weiter'} {!isLastPage && <ChevronRight size={15} />}
             </button>
@@ -737,19 +737,23 @@ function BlockRenderer({
     case 'button': {
       const url  = s(p.url);
       const text = s(p.text);
-      const cls  = s(p.variant, 'primary') === 'secondary' ? 'fp-btn-sec' : 'fp-btn';
+      const isSec = s(p.variant, 'primary') === 'secondary';
+      const cls  = isSec ? 'fp-btn-sec' : 'fp-btn';
+      const btnStyle = isSec
+        ? { borderRadius: br, border: `2px solid ${primary}`, color: primary }
+        : { borderRadius: br, background: primary, color: '#fff' };
       return (
         <div className="px-5 py-3">
           {url ? (
             <a href={url} target="_blank" rel="noopener noreferrer"
               className={`inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold transition-all ${cls}`}
-              style={{ borderRadius: br }}>
+              style={btnStyle}>
               {text} <ArrowRight size={15} />
             </a>
           ) : (
             <button onClick={() => onNext()}
               className={`inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold ${cls}`}
-              style={{ borderRadius: br }}>
+              style={btnStyle}>
               {text}
             </button>
           )}
@@ -1019,7 +1023,7 @@ function BlockRenderer({
           </div>
           {!!fileUrl && (
             <a href={fileUrl} download={fileName} target="_blank" rel="noopener noreferrer"
-              className="fp-btn px-4 py-2 text-xs font-semibold flex-shrink-0" style={{ borderRadius: br }}>
+              className="fp-btn px-4 py-2 text-xs font-semibold flex-shrink-0" style={{ borderRadius: br, background: primary, color: '#fff' }}>
               {s(p.buttonText, 'Download')}
             </a>
           )}
@@ -1058,7 +1062,7 @@ function BlockRenderer({
     case 'quest_lead':
       return leadSubmitted
         ? <CompletionScreen company={company} headline={s(p.headline, 'Vielen Dank!')} text={s(p.subtext)} primary={primary} />
-        : <LeadFormBlock props={p} company={company} br={br} leadForm={leadForm} setLeadForm={setLeadForm} onSubmit={(form, cf) => onLeadSubmit(form, cf)} />;
+        : <LeadFormBlock props={p} company={company} br={br} primary={primary} leadForm={leadForm} setLeadForm={setLeadForm} onSubmit={(form, cf) => onLeadSubmit(form, cf)} />;
 
     // ── BerufsCheck blocks ────────────────────────────────────────────────────
     case 'check_intro': {
@@ -1072,7 +1076,7 @@ function BlockRenderer({
           <h1 className="text-2xl font-bold mb-3 leading-tight">{s(p.headline)}</h1>
           <p className="text-sm text-white/70 mb-8 leading-relaxed">{s(p.subtext)}</p>
           <div>
-            <button onClick={() => onNext()} className="fp-btn px-10 py-3.5 font-semibold text-base" style={{ borderRadius: br }}>
+            <button onClick={() => onNext()} className="fp-btn px-10 py-3.5 font-semibold text-base" style={{ borderRadius: br, background: primary, color: '#fff' }}>
               {s(p.buttonText, 'Jetzt starten')}
             </button>
           </div>
@@ -1139,7 +1143,7 @@ function BlockRenderer({
     case 'check_lead':
       return leadSubmitted
         ? <CompletionScreen company={company} headline={s(p.headline, 'Vielen Dank!')} text="" primary={primary} />
-        : <LeadFormBlock props={p} company={company} br={br} leadForm={leadForm} setLeadForm={setLeadForm} onSubmit={(form) => onLeadSubmit(form)} />;
+        : <LeadFormBlock props={p} company={company} br={br} primary={primary} leadForm={leadForm} setLeadForm={setLeadForm} onSubmit={(form) => onLeadSubmit(form)} />;
 
     case 'check_ergebnis': {
       const scoreVals = Object.values(scores);
@@ -1268,6 +1272,7 @@ function BlockRenderer({
             props={p}
             company={company}
             br={br}
+            primary={primary}
             leadForm={leadForm}
             setLeadForm={setLeadForm}
             onSubmit={(form) => onFormSubmit(s(p.thankYouHeadline, 'Vielen Dank!'), s(p.thankYouText), form)}
@@ -1279,8 +1284,8 @@ function BlockRenderer({
 }
 
 // ─── Lead form block (check_lead / quest_lead) ────────────────────────────────
-function LeadFormBlock({ props: p, company, br, leadForm, setLeadForm, onSubmit }: {
-  props: Record<string, unknown>; company: Company; br: string;
+function LeadFormBlock({ props: p, company, br, primary, leadForm, setLeadForm, onSubmit }: {
+  props: Record<string, unknown>; company: Company; br: string; primary: string;
   leadForm: LeadForm; setLeadForm: (f: LeadForm) => void;
   onSubmit: (form: LeadForm, customFields?: Record<string, string>) => void;
 }) {
@@ -1383,8 +1388,8 @@ function LeadFormBlock({ props: p, company, br, leadForm, setLeadForm, onSubmit 
         </label>
       </div>
       <button onClick={handleSubmit} disabled={!canSubmit}
-        className="fp-btn w-full mt-4 py-3.5 font-semibold text-sm disabled:opacity-40 disabled:cursor-not-allowed"
-        style={{ borderRadius: br }}>
+        className="fp-btn w-full mt-4 py-3.5 font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+        style={{ borderRadius: br, background: primary, color: '#fff' }}>
         {s(p.buttonText, 'Abschicken')}
       </button>
     </div>
