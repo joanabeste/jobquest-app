@@ -32,7 +32,13 @@ export async function POST(req: NextRequest) {
       email_confirm: true,
     });
     if (authError || !authData.user) {
-      return NextResponse.json({ error: authError?.message || 'Auth user creation failed' }, { status: 500 });
+      const msg = authError?.message ?? 'Auth user creation failed';
+      console.error('[register] auth createUser', msg);
+      // Supabase returns this when the email is already in auth.users
+      if (msg.toLowerCase().includes('already') || msg.toLowerCase().includes('exists')) {
+        return NextResponse.json({ error: 'Email already registered' }, { status: 409 });
+      }
+      return NextResponse.json({ error: msg }, { status: 500 });
     }
 
     const userId = authData.user.id;
@@ -59,7 +65,7 @@ export async function POST(req: NextRequest) {
     if (companyError) {
       await admin.auth.admin.deleteUser(userId);
       console.error('[register] company insert', companyError);
-      return NextResponse.json({ error: 'Registration failed' }, { status: 500 });
+      return NextResponse.json({ error: `company_insert: ${companyError.message}` }, { status: 500 });
     }
 
     const { error: memberError } = await admin
@@ -77,7 +83,7 @@ export async function POST(req: NextRequest) {
       await admin.auth.admin.deleteUser(userId);
       await admin.from('companies').delete().eq('id', companyId);
       console.error('[register] member insert', memberError);
-      return NextResponse.json({ error: 'Registration failed' }, { status: 500 });
+      return NextResponse.json({ error: `member_insert: ${memberError.message}` }, { status: 500 });
     }
 
     // Sign in to set session cookies

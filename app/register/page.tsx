@@ -5,20 +5,17 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { Eye, EyeOff, Building2, UserPlus } from 'lucide-react';
-import { INDUSTRY_OPTIONS } from '@/lib/types';
 
 export default function RegisterPage() {
   const { register, company, isLoading } = useAuth();
   const router = useRouter();
   const [showPw, setShowPw] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
   const [form, setForm] = useState({
     name: '',
-    industry: '',
-    location: '',
-    logo: '',
     contactName: '',
     contactEmail: '',
     password: '',
@@ -31,18 +28,6 @@ export default function RegisterPage() {
 
   function handleChange(field: string, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
-  }
-
-  function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 2 * 1024 * 1024) {
-      setError('Logo darf maximal 2 MB groß sein.');
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => handleChange('logo', reader.result as string);
-    reader.readAsDataURL(file);
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -64,9 +49,6 @@ export default function RegisterPage() {
     try {
       await register({
         name: form.name,
-        industry: form.industry,
-        location: form.location,
-        logo: form.logo || undefined,
         contactName: form.contactName,
         contactEmail: form.contactEmail,
         password: form.password,
@@ -74,9 +56,15 @@ export default function RegisterPage() {
       router.push('/dashboard');
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Unbekannter Fehler';
-      setError(msg === 'Email already registered'
-        ? 'Diese E-Mail ist bereits registriert.'
-        : `Registrierung fehlgeschlagen: ${msg}`);
+      if (msg === 'Email already registered') {
+        setError('Diese E-Mail-Adresse ist bereits registriert.');
+      } else if (msg.toLowerCase().includes('password')) {
+        setError('Das Passwort erfüllt nicht die Anforderungen (mindestens 6 Zeichen).');
+      } else if (msg.startsWith('company_insert:') || msg.startsWith('member_insert:')) {
+        setError(`Datenbankfehler: ${msg}`);
+      } else {
+        setError(`Registrierung fehlgeschlagen: ${msg}`);
+      }
       setSubmitting(false);
     }
   }
@@ -118,46 +106,6 @@ export default function RegisterPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
-                <div>
-                  <label className="label">Branche *</label>
-                  <select
-                    className="input-field"
-                    value={form.industry}
-                    onChange={(e) => handleChange('industry', e.target.value)}
-                    required
-                  >
-                    <option value="">Bitte wählen</option>
-                    {INDUSTRY_OPTIONS.map((o) => (
-                      <option key={o} value={o}>{o}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="label">Standort *</label>
-                  <input
-                    type="text"
-                    className="input-field"
-                    placeholder="Berlin"
-                    value={form.location}
-                    onChange={(e) => handleChange('location', e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="mt-3">
-                <label className="label">Firmenlogo (optional)</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleLogoChange}
-                  className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 cursor-pointer"
-                />
-                {form.logo && (
-                  <img src={form.logo} alt="Logo Vorschau" className="mt-2 h-12 object-contain rounded-lg border border-slate-200 p-1 bg-white" />
-                )}
-              </div>
             </div>
 
             {/* Ansprechpartner */}
@@ -217,14 +165,23 @@ export default function RegisterPage() {
                 </div>
                 <div>
                   <label className="label">Passwort bestätigen *</label>
-                  <input
-                    type={showPw ? 'text' : 'password'}
-                    className="input-field"
-                    placeholder="Passwort wiederholen"
-                    value={form.confirmPassword}
-                    onChange={(e) => handleChange('confirmPassword', e.target.value)}
-                    required
-                  />
+                  <div className="relative">
+                    <input
+                      type={showConfirm ? 'text' : 'password'}
+                      className="input-field pr-10"
+                      placeholder="Passwort wiederholen"
+                      value={form.confirmPassword}
+                      onChange={(e) => handleChange('confirmPassword', e.target.value)}
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirm(!showConfirm)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    >
+                      {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
