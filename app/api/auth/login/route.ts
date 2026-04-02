@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { createSessionResponse } from '@/lib/session';
 import { memberFromDb, companyFromDb } from '@/lib/supabase/mappers';
 
 export async function POST(req: NextRequest) {
@@ -10,84 +10,40 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Email and password required' }, { status: 400 });
     }
 
-    const supabase = createAdminClient();
+    const supabase = createServerSupabaseClient();
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
-    // Try member login (primary)
-    const { data: memberRow } = await supabase
+    if (error || !data.user) {
+      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+    }
+
+    const admin = createAdminClient();
+    const { data: memberRow } = await admin
       .from('workspace_members')
       .select('*')
-      .eq('email', email)
-      .eq('status', 'active')
+      .eq('id', data.user.id)
       .single();
 
-    if (memberRow && memberRow.password === password) {
-      const member = memberFromDb(memberRow);
-      const { data: companyRow } = await supabase
-        .from('companies')
-        .select('*')
-        .eq('id', memberRow.company_id)
-        .single();
-      if (!companyRow) {
-        return NextResponse.json({ error: 'Company not found' }, { status: 404 });
-      }
-      return createSessionResponse(member.id, {
-        member,
-        company: companyFromDb(companyRow),
-      });
+    if (!memberRow) {
+      return NextResponse.json({ error: 'Member not found' }, { status: 404 });
     }
 
-    // Fallback: legacy company login
-    const { data: companyRow } = await supabase
+    const { data: companyRow } = await admin
       .from('companies')
       .select('*')
-      .eq('contact_email', email)
+      .eq('id', memberRow.company_id)
       .single();
 
-    if (companyRow && companyRow.password === password) {
-      const company = companyFromDb(companyRow);
-
-      // Ensure superadmin member exists
-      const { data: existingMember } = await supabase
-        .from('workspace_members')
-        .select('*')
-        .eq('company_id', companyRow.id)
-        .eq('role', 'superadmin')
-        .eq('status', 'active')
-        .single();
-
-      let memberId: string;
-      if (existingMember) {
-        memberId = existingMember.id;
-      } else {
-        const newId = crypto.randomUUID();
-        await supabase.from('workspace_members').insert({
-          id: newId,
-          company_id: companyRow.id,
-          name: companyRow.contact_name,
-          email: companyRow.contact_email,
-          password: companyRow.password,
-          role: 'superadmin',
-          status: 'active',
-          created_at: companyRow.created_at,
-        });
-        memberId = newId;
-      }
-
-      const { data: memberRow2 } = await supabase
-        .from('workspace_members')
-        .select('*')
-        .eq('id', memberId)
-        .single();
-
-      return createSessionResponse(memberId, {
-        member: memberRow2 ? memberFromDb(memberRow2) : null,
-        company,
-      });
+    if (!companyRow) {
+      return NextResponse.json({ error: 'Company not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+    return NextResponse.json({
+      member: memberFromDb(memberRow),
+      company: companyFromDb(companyRow),
+    });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error('[login]', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

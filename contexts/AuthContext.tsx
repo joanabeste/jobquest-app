@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { Company, WorkspaceMember, WorkspaceRole, Permission, can as canRole } from '@/lib/types';
+import { apiFetch } from '@/lib/api-fetch';
 
 interface AuthContextType {
   company: Company | null;
@@ -65,28 +66,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const updateCompany = useCallback(async (updated: Company) => {
-    const res = await fetch('/api/companies/me', {
+    const data = await apiFetch<Company>('/api/companies/me', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updated),
     });
-    if (res.ok) {
-      const data = await res.json();
-      setCompany(data);
-    }
+    setCompany(data);
   }, []);
 
   const register = useCallback(async (data: Omit<Company, 'id' | 'createdAt'>): Promise<Company> => {
-    const res = await fetch('/api/auth/register', {
+    const result = await apiFetch<{ company: Company; member: WorkspaceMember }>('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error || 'Registration failed');
-    }
-    const result = await res.json();
     setCompany(result.company);
     setCurrentMember(result.member);
     return result.company;
@@ -94,11 +87,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const deleteAccount = useCallback(async () => {
     if (!company) return;
-    const res = await fetch('/api/companies/me/delete', { method: 'POST' });
-    if (res.ok) {
-      setCompany(null);
-      setCurrentMember(null);
-    }
+    await apiFetch('/api/companies/me/delete', { method: 'POST' });
+    setCompany(null);
+    setCurrentMember(null);
   }, [company]);
 
   const checkCan = useCallback((permission: Permission): boolean =>

@@ -8,9 +8,9 @@
  * platform_admin members are invisible to regular workspace users.
  */
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Company, DEV_PASSWORD } from '@/lib/types';
+import { Company } from '@/lib/types';
 import { Terminal, LogIn, Building2, Lock, Eye, EyeOff, Users, Globe, AlertTriangle } from 'lucide-react';
 
 const DEV_MEMBER_EMAIL = 'dev@jobquest.internal';
@@ -22,32 +22,22 @@ export default function DevPage() {
   const [showPw, setShowPw] = useState(false);
   const [pwError, setPwError] = useState('');
   const [companies, setCompanies] = useState<Company[]>([]);
-  const [memberCounts, setMemberCounts] = useState<Record<string, number>>({});
   const [loggingIn, setLoggingIn] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (unlocked) {
-      const load = async () => {
-        try {
-          const res = await fetch(`/api/dev/companies?pw=${encodeURIComponent(password)}`);
-          if (!res.ok) return;
-          const data = await res.json();
-          setCompanies(data.companies ?? []);
-          setMemberCounts(data.memberCounts ?? {});
-        } catch { /* ignore */ }
-      };
-      load();
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [unlocked]);
-
-  function handleUnlock() {
-    if (password === DEV_PASSWORD) {
+  async function handleUnlock() {
+    try {
+      const res = await fetch(`/api/dev/companies?pw=${encodeURIComponent(password)}`);
+      if (!res.ok) {
+        setPwError('Falsches Passwort.');
+        setPassword('');
+        return;
+      }
+      const data = await res.json();
+      setCompanies(Array.isArray(data) ? data : []);
       setUnlocked(true);
       setPwError('');
-    } else {
-      setPwError('Falsches Passwort.');
-      setPassword('');
+    } catch {
+      setPwError('Verbindungsfehler.');
     }
   }
 
@@ -57,12 +47,13 @@ export default function DevPage() {
       const res = await fetch('/api/dev/join', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ companyId: company.id, pw: password }),
+        body: JSON.stringify({ companyId: company.id, devPassword: password }),
       });
       if (res.ok) {
         router.push('/dashboard');
       }
     } catch { /* ignore */ }
+    setLoggingIn(null);
   }
 
   // ── Password gate ─────────────────────────────────────────────────────────
@@ -135,7 +126,7 @@ export default function DevPage() {
           <div>
             <h1 className="text-lg font-mono font-semibold text-slate-200">Dev Panel</h1>
             <p className="text-xs font-mono text-slate-500">
-              {companies.length} workspace{companies.length !== 1 ? 's' : ''} in localStorage
+              {companies.length} workspace{companies.length !== 1 ? 's' : ''}
             </p>
           </div>
         </div>
@@ -176,7 +167,7 @@ export default function DevPage() {
                   <div className="flex items-center gap-3 mt-0.5">
                     <span className="text-xs font-mono text-slate-500 flex items-center gap-1">
                       <Users size={11} />
-                      {memberCounts[company.id] ?? 0} Mitglieder
+                      {(company as Company & { memberCount?: number }).memberCount ?? 0} Mitglieder
                     </span>
                     <span className="text-xs font-mono text-slate-500 flex items-center gap-1">
                       <Globe size={11} />

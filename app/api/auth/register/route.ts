@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { createSessionResponse } from '@/lib/session';
+import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { companyToDb } from '@/lib/supabase/mappers';
 import type { Company, WorkspaceMember } from '@/lib/types';
 
@@ -13,10 +13,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Required fields missing' }, { status: 400 });
     }
 
-    const supabase = createAdminClient();
+    const admin = createAdminClient();
 
-    // Check if email already exists
-    const { data: existing } = await supabase
+    // Check if email already exists in companies
+    const { data: existing } = await admin
       .from('companies')
       .select('id')
       .eq('contact_email', contactEmail)
@@ -25,8 +25,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Email already registered' }, { status: 409 });
     }
 
+    // Create user in Supabase Auth
+    const { data: authData, error: authError } = await admin.auth.admin.createUser({
+      email: contactEmail,
+      password,
+      email_confirm: true,
+    });
+    if (authError || !authData.user) {
+      return NextResponse.json({ error: authError?.message || 'Auth user creation failed' }, { status: 500 });
+    }
+
+    const userId = authData.user.id;
     const companyId = crypto.randomUUID();
-    const memberId = crypto.randomUUID();
     const now = new Date().toISOString();
 
     const company: Company = {
@@ -39,48 +49,54 @@ export async function POST(req: NextRequest) {
       imprintUrl,
       contactName: contactName || '',
       contactEmail,
-      password,
       createdAt: now,
       corporateDesign,
     };
 
-    const { error: companyError } = await supabase
+    const { error: companyError } = await admin
       .from('companies')
       .insert(companyToDb(company));
     if (companyError) {
-      return NextResponse.json({ error: companyError.message }, { status: 500 });
+      await admin.auth.admin.deleteUser(userId);
+      console.error('[register] company insert', companyError);
+      return NextResponse.json({ error: 'Registration failed' }, { status: 500 });
     }
 
-    const member: WorkspaceMember = {
-      id: memberId,
-      companyId,
-      name: contactName || name,
-      email: contactEmail,
-      password,
-      role: 'superadmin',
-      createdAt: now,
-      status: 'active',
-    };
-
-    const { error: memberError } = await supabase
+    const { error: memberError } = await admin
       .from('workspace_members')
       .insert({
-        id: memberId,
+        id: userId,
         company_id: companyId,
-        name: member.name,
-        email: member.email,
-        password: member.password,
+        name: contactName || name,
+        email: contactEmail,
         role: 'superadmin',
         status: 'active',
         created_at: now,
       });
     if (memberError) {
-      return NextResponse.json({ error: memberError.message }, { status: 500 });
+      await admin.auth.admin.deleteUser(userId);
+      await admin.from('companies').delete().eq('id', companyId);
+      console.error('[register] member insert', memberError);
+      return NextResponse.json({ error: 'Registration failed' }, { status: 500 });
     }
 
-    return createSessionResponse(memberId, { member, company });
+    // Sign in to set session cookies
+    const supabase = createServerSupabaseClient();
+    await supabase.auth.signInWithPassword({ email: contactEmail, password });
+
+    const member: WorkspaceMember = {
+      id: userId,
+      companyId,
+      name: contactName || name,
+      email: contactEmail,
+      role: 'superadmin',
+      status: 'active',
+      createdAt: now,
+    };
+
+    return NextResponse.json({ member, company });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error('[register]', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

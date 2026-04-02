@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getSessionMemberId } from './session';
+import { createServerSupabaseClient } from './supabase/server';
 import { createAdminClient } from './supabase/admin';
 import { memberFromDb, companyFromDb } from './supabase/mappers';
 import type { Company, WorkspaceMember } from './types';
@@ -10,18 +10,20 @@ export interface SessionData {
 }
 
 export async function getSession(): Promise<SessionData | null> {
-  const memberId = getSessionMemberId();
-  if (!memberId) return null;
+  const supabase = createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
 
-  const supabase = createAdminClient();
-  const { data: memberRow } = await supabase
+  const admin = createAdminClient();
+  const { data: memberRow } = await admin
     .from('workspace_members')
     .select('*')
-    .eq('id', memberId)
+    .eq('id', user.id)
+    .eq('status', 'active')
     .single();
   if (!memberRow) return null;
 
-  const { data: companyRow } = await supabase
+  const { data: companyRow } = await admin
     .from('companies')
     .select('*')
     .eq('id', memberRow.company_id)

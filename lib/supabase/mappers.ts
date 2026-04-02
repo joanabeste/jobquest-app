@@ -1,8 +1,8 @@
 import type { Company, JobQuest, Lead, AnalyticsEvent, CareerCheck, CareerCheckLead, FormPage, FormSubmission, WorkspaceMember } from '../types';
 import type { FunnelDoc } from '../funnel-types';
 
-// Since both admin and browser Supabase clients are untyped (to avoid RLS 'never' issues),
-// all fromDb functions accept `any` row input and all toDb functions return plain objects.
+// fromDb functions intentionally use `any` — the Supabase clients are untyped
+// to avoid RLS 'never' issues, so row shapes cannot be statically verified here.
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 // ─── Company ────────────────────────────────────────────────────────────────
@@ -18,7 +18,6 @@ export function companyFromDb(row: any): Company {
     imprintUrl: row.imprint_url ?? undefined,
     contactName: row.contact_name,
     contactEmail: row.contact_email,
-    password: row.password,
     createdAt: row.created_at,
     corporateDesign: row.corporate_design ?? undefined,
   };
@@ -35,7 +34,6 @@ export function companyToDb(c: Company): Record<string, unknown> {
     imprint_url: c.imprintUrl ?? null,
     contact_name: c.contactName,
     contact_email: c.contactEmail,
-    password: c.password,
     corporate_design: c.corporateDesign ?? {},
     created_at: c.createdAt,
   };
@@ -49,7 +47,6 @@ export function memberFromDb(row: any): WorkspaceMember {
     companyId: row.company_id,
     name: row.name,
     email: row.email,
-    password: row.password,
     role: row.role,
     invitedBy: row.invited_by ?? undefined,
     status: row.status,
@@ -63,7 +60,6 @@ export function memberToDb(m: WorkspaceMember): Record<string, unknown> {
     company_id: m.companyId,
     name: m.name,
     email: m.email,
-    password: m.password,
     role: m.role,
     invited_by: m.invitedBy ?? null,
     status: m.status,

@@ -3,10 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { WorkspaceMember, WorkspaceRole, ROLE_LABELS, ROLE_COLORS, VISIBLE_ROLES } from '@/lib/types';
-import { memberStorage } from '@/lib/storage';
 import {
   Users, UserPlus, Trash2, Shield, Eye, Edit3, Crown,
-  ChevronDown, X, Check, AlertTriangle, CheckCircle,
+  ChevronDown, X, Check, AlertTriangle, CheckCircle, Copy, Link,
 } from 'lucide-react';
 
 const ROLE_ORDER: WorkspaceRole[] = ['superadmin', 'admin', 'editor', 'viewer'];
@@ -36,10 +35,11 @@ export default function SettingsTeamPage() {
   const [invite, setInvite] = useState({
     name: '',
     email: '',
-    password: '',
     role: 'editor' as WorkspaceRole,
   });
   const [inviteError, setInviteError] = useState('');
+  const [inviteLink, setInviteLink] = useState('');
+  const [linkCopied, setLinkCopied] = useState(false);
 
   useEffect(() => {
     if (company) reload();
@@ -47,54 +47,62 @@ export default function SettingsTeamPage() {
   }, [company]);
 
   async function reload() {
-    if (!company) return;
-    setMembers(await memberStorage.getByCompany(company.id));
+    const res = await fetch('/api/members');
+    if (res.ok) setMembers(await res.json());
   }
 
   async function handleInvite() {
     setInviteError('');
-    if (!invite.name.trim() || !invite.email.trim() || !invite.password.trim()) {
-      setInviteError('Alle Felder sind Pflichtfelder.');
+    setInviteLink('');
+    if (!invite.name.trim() || !invite.email.trim()) {
+      setInviteError('Name und E-Mail sind Pflichtfelder.');
       return;
     }
-    if (invite.password.length < 6) {
-      setInviteError('Passwort muss mindestens 6 Zeichen lang sein.');
-      return;
-    }
-    const existing = members.find((m) => m.email === invite.email);
+    const existing = members.find((m) => m.email === invite.email.trim().toLowerCase());
     if (existing) {
       setInviteError('Diese E-Mail-Adresse ist bereits im Workspace vorhanden.');
       return;
     }
-    const newMember: WorkspaceMember = {
-      id: crypto.randomUUID(),
-      companyId: company!.id,
-      name: invite.name.trim(),
-      email: invite.email.trim().toLowerCase(),
-      password: invite.password,
-      role: invite.role,
-      invitedBy: currentMember?.id,
-      createdAt: new Date().toISOString(),
-      status: 'active',
-    };
-    await memberStorage.save(newMember);
+    const res = await fetch('/api/members/invite', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: invite.name.trim(),
+        email: invite.email.trim().toLowerCase(),
+        role: invite.role,
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      setInviteError(err.error || 'Fehler beim Einladen.');
+      return;
+    }
+    const result = await res.json();
     await reload();
     setShowInvite(false);
-    setInvite({ name: '', email: '', password: '', role: 'editor' });
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+    setInvite({ name: '', email: '', role: 'editor' });
+    if (result.inviteLink) {
+      setInviteLink(result.inviteLink);
+    } else {
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    }
   }
 
   async function handleRoleChange(member: WorkspaceMember, newRole: WorkspaceRole) {
     if (member.role === 'superadmin') return;
-    await memberStorage.save({ ...member, role: newRole });
+    await fetch(`/api/members/${member.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ role: newRole }),
+    });
     await reload();
   }
 
   async function handleRemove(member: WorkspaceMember) {
     if (member.role === 'superadmin' || member.role === 'platform_admin') return;
     if (member.id === currentMember?.id) return;
-    await memberStorage.delete(member.id);
+    await fetch(`/api/members/${member.id}`, { method: 'DELETE' });
     await reload();
   }
 
@@ -129,7 +137,37 @@ export default function SettingsTeamPage() {
       {saved && (
         <div className="mb-4 flex items-center gap-2 text-sm text-green-700 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
           <CheckCircle size={16} />
-          Mitglied wurde erfolgreich hinzugefügt.
+          Einladung wurde gesendet.
+        </div>
+      )}
+
+      {inviteLink && (
+        <div className="mb-4 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+          <div className="flex items-center gap-2 text-sm font-medium text-amber-800 mb-2">
+            <Link size={15} />
+            E-Mail-Versand nicht konfiguriert — Link manuell weitergeben:
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              readOnly
+              value={inviteLink}
+              className="flex-1 text-xs bg-white border border-amber-200 rounded-lg px-3 py-1.5 text-slate-600 font-mono truncate"
+            />
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(inviteLink);
+                setLinkCopied(true);
+                setTimeout(() => setLinkCopied(false), 2000);
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-800 text-xs font-medium transition-colors flex-shrink-0"
+            >
+              {linkCopied ? <Check size={13} /> : <Copy size={13} />}
+              {linkCopied ? 'Kopiert!' : 'Kopieren'}
+            </button>
+            <button onClick={() => setInviteLink('')} className="text-amber-400 hover:text-amber-600">
+              <X size={16} />
+            </button>
+          </div>
         </div>
       )}
 
@@ -189,14 +227,6 @@ export default function SettingsTeamPage() {
                   value={invite.email} onChange={(e) => setInvite((p) => ({ ...p, email: e.target.value }))} />
               </div>
               <div>
-                <label className="label">Initiales Passwort *</label>
-                <input type="text" className="input-field font-mono" placeholder="Mindestens 6 Zeichen"
-                  value={invite.password} onChange={(e) => setInvite((p) => ({ ...p, password: e.target.value }))} />
-                <p className="text-xs text-slate-400 mt-1">
-                  Teile dieses Passwort mit der Person – sie kann es nach dem Einloggen nicht ändern (localStorage-Demo).
-                </p>
-              </div>
-              <div>
                 <label className="label">Rolle *</label>
                 <div className="grid grid-cols-2 gap-2 mt-1">
                   {VISIBLE_ROLES.filter((r) => r !== 'superadmin').map((role) => (
@@ -227,7 +257,7 @@ export default function SettingsTeamPage() {
                 </button>
                 <button onClick={handleInvite} className="flex-1 btn-primary justify-center">
                   <UserPlus size={15} />
-                  Hinzufügen
+                  Einladung senden
                 </button>
               </div>
             </div>
@@ -259,6 +289,9 @@ function MemberRow({ member, isSelf, isSuperAdmin, canManage, onRoleChange, onRe
         <div className="flex items-center gap-2">
           <p className="text-sm font-medium text-slate-900 truncate">{member.name}</p>
           {isSelf && <span className="text-xs text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-md">Du</span>}
+          {member.status === 'pending' && (
+            <span className="text-xs text-amber-600 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-md">Ausstehend</span>
+          )}
         </div>
         <p className="text-xs text-slate-400 truncate">{member.email}</p>
       </div>

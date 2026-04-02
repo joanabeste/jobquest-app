@@ -17,7 +17,7 @@ export async function PUT(req: NextRequest) {
   const company: Company = await req.json();
   const supabase = createAdminClient();
   const dbData = companyToDb({ ...company, id: session.company.id });
-  const { id: _id, ...updateData } = dbData; // eslint-disable-line @typescript-eslint/no-unused-vars
+  const { id: _id, ...updateData } = dbData;
 
   const { data, error } = await supabase
     .from('companies')

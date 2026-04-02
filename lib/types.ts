@@ -153,7 +153,6 @@ export interface Company {
   imprintUrl?: string;
   contactName: string;
   contactEmail: string;
-  password: string;
   createdAt: string;
   corporateDesign?: CorporateDesign;
 }
@@ -502,7 +501,6 @@ export interface WorkspaceMember {
   companyId: string;
   name: string;
   email: string;
-  password: string;
   role: WorkspaceRole;
   invitedBy?: string; // memberId of the inviting user
   createdAt: string;
@@ -559,7 +557,6 @@ export function can(role: WorkspaceRole | undefined, permission: Permission): bo
   return ROLE_PERMISSIONS[role].includes(permission);
 }
 
-export const DEV_PASSWORD = 'jq-dev-2026';
 
 export const INDUSTRY_OPTIONS = [
   'Handwerk',

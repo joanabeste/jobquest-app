@@ -19,7 +19,6 @@ create table public.companies (
   imprint_url     text,
   contact_name    text not null,
   contact_email   text not null,
-  password        text not null,
   corporate_design jsonb default '{}'::jsonb,
   created_at      timestamptz not null default now()
 );
@@ -34,7 +33,6 @@ create table public.workspace_members (
   company_id  uuid not null references public.companies(id) on delete cascade,
   name        text not null,
   email       text not null,
-  password    text not null,
   role        text not null default 'viewer'
               check (role in ('platform_admin', 'superadmin', 'admin', 'editor', 'viewer')),
   invited_by  uuid references public.workspace_members(id) on delete set null,

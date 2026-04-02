@@ -27,7 +27,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   const quest: JobQuest = await req.json();
   const supabase = createAdminClient();
   const dbData = questToDb({ ...quest, id: params.id, companyId: session.company.id });
-  const { id: _id, created_at: _ca, ...updateData } = dbData; // eslint-disable-line @typescript-eslint/no-unused-vars
+  const { id: _id, created_at: _ca, ...updateData } = dbData;
 
   const { data, error } = await supabase
     .from('job_quests')

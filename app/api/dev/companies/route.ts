@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { companyFromDb, memberFromDb } from '@/lib/supabase/mappers';
-import { DEV_PASSWORD } from '@/lib/types';
 
 export async function GET(req: NextRequest) {
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
+
   const devPw = req.nextUrl.searchParams.get('pw');
-  if (devPw !== DEV_PASSWORD) {
+  if (!process.env.DEV_PASSWORD || devPw !== process.env.DEV_PASSWORD) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

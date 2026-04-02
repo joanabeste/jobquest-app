@@ -1,19 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { createSessionResponse } from '@/lib/session';
+import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { memberFromDb, companyFromDb } from '@/lib/supabase/mappers';
-import { DEV_PASSWORD } from '@/lib/types';
 
 export async function POST(req: NextRequest) {
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
+
   const { companyId, devPassword } = await req.json();
-  if (devPassword !== DEV_PASSWORD) {
+  if (!process.env.DEV_PASSWORD || devPassword !== process.env.DEV_PASSWORD) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const supabase = createAdminClient();
+  const admin = createAdminClient();
 
   // Check if platform_admin already exists for this company
-  const { data: existing } = await supabase
+  const { data: existing } = await admin
     .from('workspace_members')
     .select('*')
     .eq('company_id', companyId)
@@ -21,29 +24,40 @@ export async function POST(req: NextRequest) {
     .single();
 
   let memberId: string;
+  const devEmail = `dev-${companyId.slice(0, 8)}@jobquest.dev`;
+
   if (existing) {
     memberId = existing.id;
   } else {
-    memberId = crypto.randomUUID();
-    await supabase.from('workspace_members').insert({
+    // Create auth user for the dev account
+    const { data: authData, error: authError } = await admin.auth.admin.createUser({
+      email: devEmail,
+      password: process.env.DEV_PASSWORD,
+      email_confirm: true,
+    });
+    if (authError || !authData.user) {
+      return NextResponse.json({ error: authError?.message || 'Auth creation failed' }, { status: 500 });
+    }
+    memberId = authData.user.id;
+
+    await admin.from('workspace_members').insert({
       id: memberId,
       company_id: companyId,
       name: 'Developer',
-      email: `dev-${memberId.slice(0, 8)}@jobquest.dev`,
-      password: DEV_PASSWORD,
+      email: devEmail,
       role: 'platform_admin',
       status: 'active',
       created_at: new Date().toISOString(),
     });
   }
 
-  const { data: memberRow } = await supabase
+  const { data: memberRow } = await admin
     .from('workspace_members')
     .select('*')
     .eq('id', memberId)
     .single();
 
-  const { data: companyRow } = await supabase
+  const { data: companyRow } = await admin
     .from('companies')
     .select('*')
     .eq('id', companyId)
@@ -53,7 +67,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
-  return createSessionResponse(memberId, {
+  // Sign in to set session cookies
+  const supabase = createServerSupabaseClient();
+  await supabase.auth.signInWithPassword({ email: devEmail, password: process.env.DEV_PASSWORD });
+
+  return NextResponse.json({
     member: memberFromDb(memberRow),
     company: companyFromDb(companyRow),
   });

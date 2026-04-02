@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { memberStorage } from '@/lib/storage';
+import { createClient } from '@/lib/supabase/client';
 import { ROLE_LABELS, ROLE_COLORS } from '@/lib/types';
 import {
   KeyRound, Trash2, Building2, UserCog, CreditCard,
@@ -32,10 +32,6 @@ export default function EinstellungenPage() {
   async function handleChangePw() {
     setPwError('');
     if (!currentMember) return;
-    if (oldPw !== currentMember.password) {
-      setPwError('Das aktuelle Passwort ist falsch.');
-      return;
-    }
     if (newPw.length < 6) {
       setPwError('Neues Passwort muss mindestens 6 Zeichen lang sein.');
       return;
@@ -44,10 +40,19 @@ export default function EinstellungenPage() {
       setPwError('Die Passwörter stimmen nicht überein.');
       return;
     }
-    const updated = { ...currentMember, password: newPw };
-    await memberStorage.save(updated);
-    if (company && company.contactEmail === currentMember.email) {
-      await updateCompany({ ...company, password: newPw });
+    const supabase = createClient();
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: currentMember.email,
+      password: oldPw,
+    });
+    if (signInError) {
+      setPwError('Das aktuelle Passwort ist falsch.');
+      return;
+    }
+    const { error: updateError } = await supabase.auth.updateUser({ password: newPw });
+    if (updateError) {
+      setPwError(updateError.message);
+      return;
     }
     setPwDone(true);
     setOldPw('');
@@ -66,7 +71,7 @@ export default function EinstellungenPage() {
       // Server-side cascade handles everything
       await fetch('/api/companies/me/delete', { method: 'POST' });
     } else {
-      await memberStorage.delete(currentMember.id);
+      await fetch(`/api/members/${currentMember.id}`, { method: 'DELETE' });
     }
     await logout();
     router.push('/login');

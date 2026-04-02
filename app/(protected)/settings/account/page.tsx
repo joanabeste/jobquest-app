@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { memberStorage, companyStorage, questStorage, careerCheckStorage, formPageStorage } from '@/lib/storage';
+import { createClient } from '@/lib/supabase/client';
 import { KeyRound, Trash2, Eye, EyeOff, CheckCircle, AlertTriangle, UserCog } from 'lucide-react';
 
 export default function SettingsAccountPage() {
@@ -29,10 +29,6 @@ export default function SettingsAccountPage() {
 
   async function handleSavePassword() {
     setPwError('');
-    if (oldPw !== currentMember!.password) {
-      setPwError('Das aktuelle Passwort ist falsch.');
-      return;
-    }
     if (newPw.length < 6) {
       setPwError('Neues Passwort muss mindestens 6 Zeichen lang sein.');
       return;
@@ -41,10 +37,20 @@ export default function SettingsAccountPage() {
       setPwError('Die Passwörter stimmen nicht überein.');
       return;
     }
-    const updated = { ...currentMember!, password: newPw };
-    await memberStorage.save(updated);
-    if (company!.contactEmail === currentMember!.email) {
-      await updateCompany({ ...company!, password: newPw });
+    const supabase = createClient();
+    // Verify old password
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: currentMember!.email,
+      password: oldPw,
+    });
+    if (signInError) {
+      setPwError('Das aktuelle Passwort ist falsch.');
+      return;
+    }
+    const { error: updateError } = await supabase.auth.updateUser({ password: newPw });
+    if (updateError) {
+      setPwError(updateError.message);
+      return;
     }
     setPwDone(true);
     setOldPw(''); setNewPw(''); setConfirmPw('');
@@ -54,18 +60,9 @@ export default function SettingsAccountPage() {
   async function handleDeleteAccount() {
     if (!currentMember || !company) return;
     if (isSuperAdmin) {
-      const compId = company.id;
-      const quests = await questStorage.getByCompany(compId);
-      for (const q of quests) { await questStorage.delete(q.id); }
-      const checks = await careerCheckStorage.getByCompany(compId);
-      for (const c of checks) { await careerCheckStorage.delete(c.id); }
-      const forms = await formPageStorage.getByCompany(compId);
-      for (const f of forms) { await formPageStorage.delete(f.id); }
-      const members = await memberStorage.getByCompany(compId);
-      for (const m of members) { await memberStorage.delete(m.id); }
-      await companyStorage.delete(compId);
+      await fetch('/api/companies/me/delete', { method: 'POST' });
     } else {
-      await memberStorage.delete(currentMember.id);
+      await fetch(`/api/members/${currentMember.id}`, { method: 'DELETE' });
     }
     await logout();
     router.push('/login');

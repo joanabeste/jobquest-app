@@ -1,31 +1,27 @@
 import { Company, JobQuest, Lead, AnalyticsEvent, CareerCheck, CareerCheckLead, FormPage, FormSubmission, WorkspaceMember } from './types';
 import { createClient } from './supabase/client';
 import { questFromDb, leadToDb, analyticsToDb, careerCheckFromDb, careerCheckLeadToDb, formPageFromDb, formSubmissionToDb, companyFromDb } from './supabase/mappers';
+import { apiFetch } from './api-fetch';
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
-
-function supabase() {
-  return createClient();
-}
-
-async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(url, options);
+// PUT an existing record; fall back to POST if it doesn't exist yet (404/500).
+async function apiUpsert<T>(putUrl: string, postUrl: string, body: T): Promise<void> {
+  const json = { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) };
+  const res = await fetch(putUrl, json);
+  if (res.status === 404 || res.status === 500) {
+    await apiFetch(postUrl, { ...json, method: 'POST' });
+    return;
+  }
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }));
     throw new Error(err.error || res.statusText);
   }
-  return res.json();
 }
 
 // ─── Company Storage ────────────────────────────────────────────────────────
 
 export const companyStorage = {
-  getAll: async (): Promise<Company[]> => {
-    return [];
-  },
-
   getById: async (id: string): Promise<Company | undefined> => {
-    const { data } = await supabase()
+    const { data } = await createClient()
       .from('companies')
       .select('*')
       .eq('id', id)
@@ -34,7 +30,7 @@ export const companyStorage = {
   },
 
   getByEmail: async (email: string): Promise<Company | undefined> => {
-    const { data } = await supabase()
+    const { data } = await createClient()
       .from('companies')
       .select('*')
       .eq('contact_email', email)
@@ -62,9 +58,7 @@ export const questStorage = {
     return apiFetch<JobQuest[]>('/api/quests');
   },
 
-  getByCompany: async (_companyId: string): Promise<JobQuest[]> => {
-    return apiFetch<JobQuest[]>('/api/quests');
-  },
+  getByCompany: (_companyId: string) => questStorage.getAll(),
 
   getById: async (id: string): Promise<JobQuest | undefined> => {
     try {
@@ -75,7 +69,7 @@ export const questStorage = {
   },
 
   getBySlug: async (slug: string): Promise<JobQuest | undefined> => {
-    const { data } = await supabase()
+    const { data } = await createClient()
       .from('job_quests')
       .select('*')
       .eq('slug', slug)
@@ -85,23 +79,7 @@ export const questStorage = {
   },
 
   save: async (quest: JobQuest): Promise<void> => {
-    const res = await fetch(`/api/quests/${quest.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(quest),
-    });
-    if (res.status === 404 || res.status === 500) {
-      await apiFetch('/api/quests', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(quest),
-      });
-      return;
-    }
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ error: res.statusText }));
-      throw new Error(err.error || res.statusText);
-    }
+    await apiUpsert(`/api/quests/${quest.id}`, '/api/quests', quest);
   },
 
   delete: async (id: string): Promise<void> => {
@@ -132,38 +110,28 @@ export const leadStorage = {
     return apiFetch<Lead[]>(`/api/leads?questId=${questId}`);
   },
 
-  getByCompany: async (_companyId: string): Promise<Lead[]> => {
-    return apiFetch<Lead[]>('/api/leads');
-  },
+  getByCompany: (_companyId: string) => leadStorage.getAll(),
 
   save: async (lead: Lead): Promise<void> => {
-    const { error } = await supabase()
+    const { error } = await createClient()
       .from('leads')
       .insert(leadToDb(lead));
-    if (error) console.error('Lead save error:', error.message);
-  },
-
-  deleteByCompany: async (_companyId: string): Promise<void> => {
-    // Handled by cascade on company delete
+    if (error) throw new Error(error.message);
   },
 };
 
 // ─── Analytics Storage ──────────────────────────────────────────────────────
 
 export const analyticsStorage = {
-  getAll: async (): Promise<AnalyticsEvent[]> => {
-    return [];
-  },
-
   getByQuest: async (questId: string): Promise<AnalyticsEvent[]> => {
     return apiFetch<AnalyticsEvent[]>(`/api/analytics?questId=${questId}`);
   },
 
   save: async (event: AnalyticsEvent): Promise<void> => {
-    const { error } = await supabase()
+    const { error } = await createClient()
       .from('analytics_events')
       .insert(analyticsToDb(event));
-    if (error) console.error('Analytics save error:', error.message);
+    if (error) throw new Error(error.message);
   },
 };
 
@@ -174,9 +142,7 @@ export const careerCheckStorage = {
     return apiFetch<CareerCheck[]>('/api/career-checks');
   },
 
-  getByCompany: async (_companyId: string): Promise<CareerCheck[]> => {
-    return apiFetch<CareerCheck[]>('/api/career-checks');
-  },
+  getByCompany: (_companyId: string) => careerCheckStorage.getAll(),
 
   getById: async (id: string): Promise<CareerCheck | undefined> => {
     try {
@@ -187,7 +153,7 @@ export const careerCheckStorage = {
   },
 
   getBySlug: async (slug: string): Promise<CareerCheck | undefined> => {
-    const { data } = await supabase()
+    const { data } = await createClient()
       .from('career_checks')
       .select('*')
       .eq('slug', slug)
@@ -197,23 +163,7 @@ export const careerCheckStorage = {
   },
 
   save: async (check: CareerCheck): Promise<void> => {
-    const res = await fetch(`/api/career-checks/${check.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(check),
-    });
-    if (res.status === 404 || res.status === 500) {
-      await apiFetch('/api/career-checks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(check),
-      });
-      return;
-    }
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ error: res.statusText }));
-      throw new Error(err.error || res.statusText);
-    }
+    await apiUpsert(`/api/career-checks/${check.id}`, '/api/career-checks', check);
   },
 
   delete: async (id: string): Promise<void> => {
@@ -244,19 +194,13 @@ export const careerCheckLeadStorage = {
     return apiFetch<CareerCheckLead[]>(`/api/career-check-leads?checkId=${careerCheckId}`);
   },
 
-  getByCompany: async (_companyId: string): Promise<CareerCheckLead[]> => {
-    return apiFetch<CareerCheckLead[]>('/api/career-check-leads');
-  },
+  getByCompany: (_companyId: string) => careerCheckLeadStorage.getAll(),
 
   save: async (lead: CareerCheckLead): Promise<void> => {
-    const { error } = await supabase()
+    const { error } = await createClient()
       .from('career_check_leads')
       .insert(careerCheckLeadToDb(lead));
-    if (error) console.error('CareerCheckLead save error:', error.message);
-  },
-
-  deleteByCompany: async (_companyId: string): Promise<void> => {
-    // Handled by cascade
+    if (error) throw new Error(error.message);
   },
 };
 
@@ -267,9 +211,7 @@ export const formPageStorage = {
     return apiFetch<FormPage[]>('/api/form-pages');
   },
 
-  getByCompany: async (_companyId: string): Promise<FormPage[]> => {
-    return apiFetch<FormPage[]>('/api/form-pages');
-  },
+  getByCompany: (_companyId: string) => formPageStorage.getAll(),
 
   getById: async (id: string): Promise<FormPage | undefined> => {
     try {
@@ -280,7 +222,7 @@ export const formPageStorage = {
   },
 
   getBySlug: async (slug: string): Promise<FormPage | undefined> => {
-    const { data } = await supabase()
+    const { data } = await createClient()
       .from('form_pages')
       .select('*')
       .eq('slug', slug)
@@ -290,23 +232,7 @@ export const formPageStorage = {
   },
 
   save: async (form: FormPage): Promise<void> => {
-    const res = await fetch(`/api/form-pages/${form.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
-    });
-    if (res.status === 404 || res.status === 500) {
-      await apiFetch('/api/form-pages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      });
-      return;
-    }
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ error: res.statusText }));
-      throw new Error(err.error || res.statusText);
-    }
+    await apiUpsert(`/api/form-pages/${form.id}`, '/api/form-pages', form);
   },
 
   delete: async (id: string): Promise<void> => {
@@ -337,19 +263,13 @@ export const formSubmissionStorage = {
     return apiFetch<FormSubmission[]>(`/api/form-submissions?formId=${formPageId}`);
   },
 
-  getByCompany: async (_companyId: string): Promise<FormSubmission[]> => {
-    return apiFetch<FormSubmission[]>('/api/form-submissions');
-  },
+  getByCompany: (_companyId: string) => formSubmissionStorage.getAll(),
 
   save: async (submission: FormSubmission): Promise<void> => {
-    const { error } = await supabase()
+    const { error } = await createClient()
       .from('form_submissions')
       .insert(formSubmissionToDb(submission));
-    if (error) console.error('FormSubmission save error:', error.message);
-  },
-
-  deleteByCompany: async (_companyId: string): Promise<void> => {
-    // Handled by cascade
+    if (error) throw new Error(error.message);
   },
 };
 
@@ -360,9 +280,7 @@ export const memberStorage = {
     return apiFetch<WorkspaceMember[]>('/api/members');
   },
 
-  getByCompany: async (_companyId: string): Promise<WorkspaceMember[]> => {
-    return apiFetch<WorkspaceMember[]>('/api/members');
-  },
+  getByCompany: (_companyId: string) => memberStorage.getAll(),
 
   getById: async (id: string): Promise<WorkspaceMember | undefined> => {
     try {
@@ -372,24 +290,8 @@ export const memberStorage = {
     }
   },
 
-  getByEmail: async (_email: string): Promise<WorkspaceMember | undefined> => {
-    return undefined;
-  },
-
   save: async (member: WorkspaceMember): Promise<void> => {
-    try {
-      await apiFetch(`/api/members/${member.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(member),
-      });
-    } catch {
-      await apiFetch('/api/members', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(member),
-      });
-    }
+    await apiUpsert(`/api/members/${member.id}`, '/api/members', member);
   },
 
   delete: async (id: string): Promise<void> => {
@@ -397,27 +299,3 @@ export const memberStorage = {
   },
 };
 
-// ─── Auth Session ───────────────────────────────────────────────────────────
-
-export const authSession = {
-  getCurrentMemberId: async (): Promise<string | null> => {
-    try {
-      const data = await apiFetch<{ member: { id: string } | null }>('/api/auth/me');
-      return data.member?.id ?? null;
-    } catch {
-      return null;
-    }
-  },
-
-  setCurrentMemberId: (_id: string): void => {
-    // No-op: session is managed via httpOnly cookie
-  },
-
-  getCurrentCompanyId: (): string | null => {
-    return null;
-  },
-
-  clear: async (): Promise<void> => {
-    await fetch('/api/auth/logout', { method: 'POST' });
-  },
-};

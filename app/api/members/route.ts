@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getSession, unauthorized } from '@/lib/api-auth';
 import { memberFromDb } from '@/lib/supabase/mappers';
-import type { WorkspaceMember } from '@/lib/types';
 
 export async function GET() {
   const session = await getSession();
@@ -19,25 +18,29 @@ export async function GET() {
   return NextResponse.json(data!.map(memberFromDb));
 }
 
+// Used as apiUpsert fallback when a member record is missing from the DB.
+// Auth user must already exist (created via /api/members/invite).
 export async function POST(req: NextRequest) {
   const session = await getSession();
   if (!session) return unauthorized();
 
-  const member: WorkspaceMember = await req.json();
-  const supabase = createAdminClient();
+  const { id, name, email, role, invitedBy, status } = await req.json();
+  if (!name || !email || !role) {
+    return NextResponse.json({ error: 'name, email and role are required' }, { status: 400 });
+  }
 
-  const { data, error } = await supabase
+  const admin = createAdminClient();
+  const { data, error } = await admin
     .from('workspace_members')
     .insert({
-      id: member.id,
+      ...(id ? { id } : {}),
       company_id: session.company.id,
-      name: member.name,
-      email: member.email,
-      password: member.password,
-      role: member.role,
-      invited_by: member.invitedBy ?? null,
-      status: member.status || 'active',
-      created_at: member.createdAt || new Date().toISOString(),
+      name,
+      email,
+      role,
+      invited_by: invitedBy ?? null,
+      status: status ?? 'active',
+      created_at: new Date().toISOString(),
     })
     .select()
     .single();

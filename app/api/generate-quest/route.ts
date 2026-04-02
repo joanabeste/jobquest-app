@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getSession, unauthorized } from '@/lib/api-auth';
 
 const SYSTEM_PROMPT = `Du bist ein kreativer Storyteller und Experte für interaktive Recruiting-Erlebnisse. Deine Aufgabe: Erstelle eine packende, authentische JobQuest – eine interaktive Story, die Bewerber in einen echten Arbeitstag des Berufs eintauchen lässt.
 
@@ -188,6 +189,9 @@ const DEFAULT_LEAD_FIELDS = [
 ];
 
 export async function POST(req: NextRequest) {
+  const session = await getSession();
+  if (!session) return unauthorized();
+
   const { beruf, notes } = await req.json() as { beruf?: string; notes?: string };
 
   if (!beruf?.trim()) {
