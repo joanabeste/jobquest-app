@@ -812,7 +812,7 @@ function BlockRenderer({
             // eslint-disable-next-line @next/next/no-img-element
             <img src={imageUrl} alt="" className="w-full max-h-72 object-cover" />
           ) : (
-            <div className="h-3" style={{ background: `linear-gradient(90deg, ${primary}, ${accent})` }} />
+            <div className="h-3" style={{ background: primary }} />
           )}
           <div className="px-6 pt-8 pb-6 bg-white text-center">
             <h1 className="fp-heading text-2xl font-bold uppercase leading-tight mb-4">{si(p.title)}</h1>
@@ -1068,7 +1068,7 @@ function BlockRenderer({
     case 'check_intro': {
       const imageUrl = s(p.imageUrl);
       return (
-        <div className="px-6 py-10 text-white text-center min-h-[320px] flex flex-col justify-center" style={{ background: `linear-gradient(135deg, ${primary}, ${accent})` }}>
+        <div className="px-6 py-10 text-white text-center min-h-[320px] flex flex-col justify-center" style={{ background: primary }}>
           {!!imageUrl && (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={imageUrl} alt="" className="w-full max-h-48 object-cover rounded-xl mb-4 opacity-90" />

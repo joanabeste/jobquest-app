@@ -102,16 +102,21 @@ export default function Canvas({
 
   if (!page) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-slate-200">
+      <div className="flex-1 flex items-center justify-center bg-[#e8eaed]">
         <p className="text-slate-400 text-sm">Keine Seite ausgewählt</p>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 overflow-y-auto bg-slate-200" onClick={onDeselectNode}>
+    <div className="flex-1 overflow-y-auto bg-[#e8eaed]" onClick={onDeselectNode}>
+      {/* Page label */}
+      <div className="flex items-center justify-center pt-5 pb-2 pointer-events-none">
+        <span className="text-[11px] font-medium text-slate-400 tracking-wide">{page.name}</span>
+      </div>
+
       {/* Page container – white, looks like the live output */}
-      <div className="max-w-[480px] mx-auto my-8 rounded-2xl shadow-2xl overflow-hidden min-h-[200px] ring-1 ring-black/5">
+      <div className="max-w-[480px] mx-auto mb-10 rounded-2xl shadow-2xl overflow-hidden min-h-[200px] ring-1 ring-black/8">
         <div className="bg-white">
           <DndContext
             sensors={sensors}
