@@ -13,6 +13,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Required fields missing' }, { status: 400 });
     }
 
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.error('[register] Missing Supabase env vars');
+      return NextResponse.json({ error: 'Server misconfigured: missing Supabase credentials' }, { status: 500 });
+    }
+
     const admin = createAdminClient();
 
     // Check if email already exists in companies
@@ -102,7 +107,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ member, company });
   } catch (err: unknown) {
-    console.error('[register]', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[register] unhandled exception:', msg);
+    return NextResponse.json({ error: `Serverfehler: ${msg}` }, { status: 500 });
   }
 }
