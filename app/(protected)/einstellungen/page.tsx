@@ -13,7 +13,7 @@ import {
 import Link from 'next/link';
 
 export default function EinstellungenPage() {
-  const { company, currentMember, logout, can, updateCompany } = useAuth();
+  const { company, currentMember, logout, can } = useAuth();
   const router = useRouter();
 
   const role = currentMember?.role;

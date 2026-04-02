@@ -146,8 +146,8 @@ export const DEFAULT_CORPORATE_DESIGN: CorporateDesign = {
 export interface Company {
   id: string;
   name: string;
-  industry: string;
-  location: string;
+  industry?: string;
+  location?: string;
   logo?: string;
   privacyUrl?: string;
   imprintUrl?: string;

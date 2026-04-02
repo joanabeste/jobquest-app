@@ -11,7 +11,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
   updateCompany: (company: Company) => Promise<void>;
-  register: (data: Omit<Company, 'id' | 'createdAt'>) => Promise<Company>;
+  register: (data: Omit<Company, 'id' | 'createdAt'> & { password: string }) => Promise<Company>;
   deleteAccount: () => Promise<void>;
   can: (permission: Permission) => boolean;
 }
@@ -74,7 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setCompany(data);
   }, []);
 
-  const register = useCallback(async (data: Omit<Company, 'id' | 'createdAt'>): Promise<Company> => {
+  const register = useCallback(async (data: Omit<Company, 'id' | 'createdAt'> & { password: string }): Promise<Company> => {
     const result = await apiFetch<{ company: Company; member: WorkspaceMember }>('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

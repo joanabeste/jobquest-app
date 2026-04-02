@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { KeyRound, Trash2, Eye, EyeOff, CheckCircle, AlertTriangle, UserCog } from 'lucide-react';
 
 export default function SettingsAccountPage() {
-  const { company, currentMember, logout, updateCompany } = useAuth();
+  const { company, currentMember, logout } = useAuth();
   const router = useRouter();
 
   const [oldPw, setOldPw] = useState('');
