@@ -40,9 +40,9 @@ export default function PageSidebar({
   }
 
   return (
-    <aside className="w-44 flex-shrink-0 border-r border-slate-200 bg-white flex flex-col">
+    <aside className="w-56 flex-shrink-0 border-r border-slate-200 bg-white flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2.5 border-b border-slate-100 flex-shrink-0">
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-100 flex-shrink-0">
         <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Seiten</span>
         <button
           onClick={onAddPage}
@@ -53,7 +53,7 @@ export default function PageSidebar({
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto min-h-0 py-1.5 px-1.5">
+      <div className="flex-1 overflow-y-auto min-h-0 py-2 px-2">
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={pages.map((p) => p.id)} strategy={verticalListSortingStrategy}>
             {pages.map((page, index) => (
@@ -75,8 +75,8 @@ export default function PageSidebar({
       </div>
 
       {/* Footer – total count */}
-      <div className="px-3 py-2 border-t border-slate-100 flex-shrink-0">
-        <span className="text-[10px] text-slate-400">{pages.length} Seite{pages.length !== 1 ? 'n' : ''}</span>
+      <div className="px-4 py-2 border-t border-slate-100 flex-shrink-0">
+        <span className="text-[10px] text-slate-300">{pages.length} Seite{pages.length !== 1 ? 'n' : ''}</span>
       </div>
     </aside>
   );
@@ -121,9 +121,9 @@ function SortablePage({
       ref={setNodeRef}
       style={style}
       onClick={onSelect}
-      className={`group relative flex items-center gap-2 px-2 py-2 rounded-xl cursor-pointer transition-all mb-0.5 ${
+      className={`group relative flex items-center gap-2 px-2 py-2.5 rounded-xl cursor-pointer transition-all mb-0.5 ${
         isActive
-          ? 'bg-violet-50 shadow-sm ring-1 ring-violet-100'
+          ? 'bg-violet-50 shadow-[inset_3px_0_0_#7c3aed]'
           : 'hover:bg-slate-50'
       } ${isDragging ? 'z-50' : ''}`}
     >
@@ -137,13 +137,13 @@ function SortablePage({
       </button>
 
       {/* Page number badge */}
-      <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 text-[11px] font-bold transition-colors ${
-        isActive ? 'bg-violet-600 text-white shadow-sm' : 'bg-slate-100 text-slate-500 group-hover:bg-slate-200'
+      <div className={`w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 text-[11px] font-semibold transition-colors ${
+        isActive ? 'bg-violet-500 text-white' : 'bg-slate-100 text-slate-400 group-hover:bg-slate-200'
       }`}>
         {pageIndex + 1}
       </div>
 
-      {/* Name + info */}
+      {/* Name + metadata */}
       <div className="flex-1 min-w-0">
         {editing ? (
           <input
@@ -155,7 +155,7 @@ function SortablePage({
               if (e.key === 'Enter') commitEdit();
               if (e.key === 'Escape') { setEditing(false); setEditValue(page.name); }
             }}
-            className="w-full text-xs bg-white border border-violet-300 rounded px-1 py-0.5 outline-none focus:ring-1 focus:ring-violet-400"
+            className="w-full text-[13px] bg-white border border-violet-300 rounded-lg px-2 py-0.5 outline-none focus:ring-1 focus:ring-violet-400"
             onClick={(e) => e.stopPropagation()}
             autoFocus
           />
@@ -163,26 +163,26 @@ function SortablePage({
           <p
             onClick={isActive ? startEdit : undefined}
             onDoubleClick={!isActive ? startEdit : undefined}
-            className={`text-xs truncate leading-tight ${
-              isActive ? 'font-semibold text-slate-900 cursor-text' : 'text-slate-700'
+            className={`text-[13px] truncate leading-tight ${
+              isActive ? 'font-semibold text-slate-900 cursor-text' : 'font-medium text-slate-600'
             }`}
           >
             {page.name}
           </p>
         )}
         <div className="flex items-center gap-1.5 mt-0.5">
-          <span className="text-[10px] text-slate-400">
+          <span className="text-[10px] text-slate-300">
             {page.nodes.length} Block{page.nodes.length !== 1 ? 's' : ''}
           </span>
           {hasConnection && (
             <span title="Hat explizite Weiterleitung">
-              <GitBranch size={9} className="text-violet-400" />
+              <GitBranch size={9} className="text-violet-300" />
             </span>
           )}
         </div>
       </div>
 
-      {/* Actions */}
+      {/* Actions – on hover only */}
       <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
         <button
           onClick={(e) => { e.stopPropagation(); onDuplicate(); }}
