@@ -720,18 +720,26 @@ export default function NodeView({
     ? BLOCK_LABELS[node.type]
     : `${(node as LayoutNode).columns.length} Spalten`;
 
-  const showControls = isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100';
+  // Hover: label fades in at reduced opacity; Selected: label always fully visible
+  const labelOpacity   = isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-80';
+  // Actions appear on both hover and selected
+  const actionOpacity  = isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100';
 
   return (
     <div
       onClick={(e) => { e.stopPropagation(); onSelect(); }}
-      className={`relative group transition-all cursor-default
+      className={`relative group transition-all duration-100 cursor-default
         ${isSelected
-          ? 'ring-2 ring-violet-500 ring-offset-0 z-10 bg-violet-500/[0.02]'
-          : 'hover:ring-1 hover:ring-violet-300'}
+          ? 'ring-2 ring-violet-500 ring-offset-0 z-10'
+          : 'hover:ring-1 hover:ring-violet-300/50'}
         ${isDragging ? 'opacity-40' : ''}
       `}
     >
+      {/* Selected: thin violet accent bar at top — strong "active" signal */}
+      {isSelected && (
+        <div className="absolute top-0 inset-x-0 h-0.5 bg-violet-500 z-30 pointer-events-none" />
+      )}
+
       {/* Block content – matches player output */}
       {node.kind === 'block' ? (
         <BlockPreview
@@ -752,32 +760,37 @@ export default function NodeView({
         </div>
       )}
 
-      {/* Label badge – top-left, hover/selected only */}
-      <div className={`absolute top-1.5 left-1.5 flex items-center gap-1 z-20 transition-opacity pointer-events-none ${showControls}`}>
+      {/* Label badge – top-left
+          Hover: semi-transparent, softly visible
+          Selected: solid, always shown */}
+      <div className={`absolute top-2 left-2 flex items-center gap-1 z-20 transition-opacity duration-100 pointer-events-none ${labelOpacity}`}>
         {dragHandle && (
-          <span className="pointer-events-auto flex items-center bg-violet-700/80 text-white/80 hover:text-white rounded p-0.5 backdrop-blur-sm">
+          <span className={`pointer-events-auto flex items-center rounded p-0.5 transition-colors
+            ${isSelected ? 'bg-violet-700 text-white' : 'bg-violet-700/75 text-white/80 hover:text-white backdrop-blur-sm'}`}>
             {dragHandle}
           </span>
         )}
-        <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-violet-600/90 backdrop-blur-sm pointer-events-none">
+        <span className={`flex items-center gap-1 px-1.5 py-0.5 rounded pointer-events-none transition-colors
+          ${isSelected ? 'bg-violet-600 shadow-sm' : 'bg-violet-600/75 backdrop-blur-sm'}`}>
           {Icon && <Icon size={9} className="text-white flex-shrink-0" />}
           <span className="text-[9px] font-bold uppercase tracking-widest text-white leading-none">{label}</span>
         </span>
       </div>
 
-      {/* Action buttons – top-right, hover/selected only */}
+      {/* Action buttons – top-right
+          Same visibility as label on hover; always shown on selected */}
       {!isLocked && (
-        <div className={`absolute top-1.5 right-1.5 flex items-center gap-0.5 z-20 transition-opacity ${showControls}`}>
+        <div className={`absolute top-2 right-2 flex items-center gap-0.5 z-20 transition-opacity duration-100 ${actionOpacity}`}>
           <button
             onClick={(e) => { e.stopPropagation(); onDuplicate(); }}
-            className="p-1 rounded bg-white/95 shadow-sm text-slate-500 hover:text-violet-600 hover:bg-white transition-colors"
+            className="p-1 rounded bg-white shadow-sm border border-slate-100 text-slate-400 hover:text-violet-600 hover:border-violet-200 transition-colors"
             title="Duplizieren (⌘D)"
           >
             <Copy size={11} />
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); onDelete(); }}
-            className="p-1 rounded bg-white/95 shadow-sm text-slate-500 hover:text-red-500 hover:bg-white transition-colors"
+            className="p-1 rounded bg-white shadow-sm border border-slate-100 text-slate-400 hover:text-red-500 hover:border-red-200 transition-colors"
             title="Löschen"
           >
             <Trash2 size={11} />
