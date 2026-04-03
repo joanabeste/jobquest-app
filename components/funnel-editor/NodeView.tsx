@@ -696,6 +696,25 @@ function BlockPreview({ node, onUpdate }: {
   }
 }
 
+// ─── Style wrapper – mirrors StyledBlock in FunnelPlayer ─────────────────────
+function StyleWrapper({ style, children }: { style?: FunnelStyle; children: React.ReactNode }) {
+  const hasStyle = style && Object.values(style).some((v) => v !== undefined && v !== 0 && v !== '');
+  if (!hasStyle) return <>{children}</>;
+  return (
+    <div style={{
+      paddingTop:      style!.paddingTop    ? `${style!.paddingTop}px`    : undefined,
+      paddingRight:    style!.paddingRight  ? `${style!.paddingRight}px`  : undefined,
+      paddingBottom:   style!.paddingBottom ? `${style!.paddingBottom}px` : undefined,
+      paddingLeft:     style!.paddingLeft   ? `${style!.paddingLeft}px`   : undefined,
+      backgroundColor: style!.backgroundColor || undefined,
+      borderRadius:    style!.borderRadius  ? `${style!.borderRadius}px`  : undefined,
+      textAlign:       style!.textAlign     || undefined,
+    }}>
+      {children}
+    </div>
+  );
+}
+
 // ─── NodeView ─────────────────────────────────────────────────────────────────
 interface NodeViewProps {
   node: FunnelNode;
@@ -742,10 +761,12 @@ export default function NodeView({
 
       {/* Block content – matches player output */}
       {node.kind === 'block' ? (
-        <BlockPreview
-          node={node}
-          onUpdate={onUpdate ? (p) => onUpdate({ props: p }) : undefined}
-        />
+        <StyleWrapper style={node.style}>
+          <BlockPreview
+            node={node}
+            onUpdate={onUpdate ? (p) => onUpdate({ props: p }) : undefined}
+          />
+        </StyleWrapper>
       ) : (
         <div className="p-3 bg-white">
           {renderColumns ? renderColumns(node) : (
