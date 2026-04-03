@@ -62,5 +62,8 @@ export function useCorporateDesign(company: Company) {
     return () => links.forEach((l) => document.head.removeChild(l));
   }, [hfName, bfName, design.headingFontData, design.bodyFontData]);
 
-  return { primary, accent, br, css };
+  const headingColor = design.headingColor ?? DEFAULT_CORPORATE_DESIGN.headingColor;
+  const textColor    = design.textColor    ?? DEFAULT_CORPORATE_DESIGN.textColor;
+
+  return { primary, accent, headingColor, textColor, br, css };
 }

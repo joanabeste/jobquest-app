@@ -6,6 +6,9 @@ import { BubbleMenu } from '@tiptap/react/menus';
 import StarterKit from '@tiptap/starter-kit';
 import TiptapTextAlign from '@tiptap/extension-text-align';
 import TiptapUnderline from '@tiptap/extension-underline';
+import { TextStyle } from '@tiptap/extension-text-style';
+import { Color } from '@tiptap/extension-color';
+import { Extension } from '@tiptap/core';
 import {
   Type, AlignLeft, MousePointer2, ImageIcon, Minus, Video,
   Play, MessageSquare, GitBranch, HelpCircle, Info, FileText,
@@ -17,6 +20,30 @@ import {
 } from 'lucide-react';
 import { BlockNode, FunnelBlockType, LayoutNode, FunnelNode, BLOCK_LABELS, FunnelStyle } from '@/lib/funnel-types';
 import { useCi } from '@/lib/ci-context';
+
+// Custom extension: adds fontSize + fontWeight attributes to textStyle mark
+const FontSizeWeight = Extension.create({
+  name: 'fontSizeWeight',
+  addGlobalAttributes() {
+    return [{
+      types: ['textStyle'],
+      attributes: {
+        fontSize: {
+          default: null,
+          parseHTML: (el: HTMLElement) => el.style.fontSize || null,
+          renderHTML: (attrs: Record<string, string | null>) =>
+            attrs.fontSize ? { style: `font-size:${attrs.fontSize}` } : {},
+        },
+        fontWeight: {
+          default: null,
+          parseHTML: (el: HTMLElement) => el.style.fontWeight || null,
+          renderHTML: (attrs: Record<string, string | null>) =>
+            attrs.fontWeight ? { style: `font-weight:${attrs.fontWeight}` } : {},
+        },
+      },
+    }];
+  },
+});
 
 const BLOCK_META: Record<FunnelBlockType, { icon: React.ElementType; color: string; bg: string }> = {
   heading:             { icon: Type,          color: 'text-slate-600',   bg: 'bg-slate-100' },
@@ -69,6 +96,13 @@ function ToolBtn({ active, onClick, title, children }: {
   );
 }
 
+const PRESETS = [
+  { label: 'N',  size: null,    weight: null  },
+  { label: 'H2', size: '20px',  weight: '700' },
+  { label: 'H3', size: '16px',  weight: '600' },
+  { label: 'XS', size: '11px',  weight: null  },
+] as const;
+
 // ─── Rich inline-editable field ───────────────────────────────────────────────
 function RichEd({ v, up, cl, ph }: {
   v: string;
@@ -76,6 +110,7 @@ function RichEd({ v, up, cl, ph }: {
   cl?: string;
   ph?: string;
 }) {
+  const { primary, accent, headingColor, textColor } = useCi();
   const toHtml = (raw: string) => raw.startsWith('<') ? raw : (raw ? `<p>${raw}</p>` : '<p></p>');
 
   const editor = useEditor({
@@ -83,6 +118,9 @@ function RichEd({ v, up, cl, ph }: {
       StarterKit.configure({ heading: false, codeBlock: false, blockquote: false }),
       TiptapUnderline,
       TiptapTextAlign.configure({ types: ['paragraph'] }),
+      TextStyle,
+      Color,
+      FontSizeWeight,
     ],
     content: toHtml(v),
     editorProps: {
@@ -93,6 +131,7 @@ function RichEd({ v, up, cl, ph }: {
     },
     onUpdate: ({ editor }) => up?.(editor.getHTML()),
     editable: !!up,
+    immediatelyRender: false,
   });
 
   // Sync external changes (e.g. undo, prop panel edits) when not focused
@@ -111,6 +150,24 @@ function RichEd({ v, up, cl, ph }: {
     return <span className={cl}>{v}</span>;
   }
 
+  const ciColors = [
+    { label: 'Überschrift', value: headingColor },
+    { label: 'Text',        value: textColor    },
+    { label: 'Primär',      value: primary      },
+    { label: 'Akzent',      value: accent       },
+  ];
+
+  function isPresetActive(p: typeof PRESETS[number]) {
+    const a = editor?.getAttributes('textStyle') ?? {};
+    return !p.size && !p.weight
+      ? !a.fontSize && !a.fontWeight
+      : a.fontSize === p.size && a.fontWeight === p.weight;
+  }
+
+  function applyPreset(p: typeof PRESETS[number]) {
+    editor?.chain().focus().setMark('textStyle', { fontSize: p.size ?? null, fontWeight: p.weight ?? null }).run();
+  }
+
   return (
     <div className="relative" onClick={(e) => e.stopPropagation()}>
       {editor && (
@@ -119,6 +176,19 @@ function RichEd({ v, up, cl, ph }: {
           options={{ placement: 'top' }}
           className="flex items-center gap-0.5 bg-white shadow-xl rounded-lg border border-slate-200 p-1"
         >
+          {/* Stil-Presets */}
+          {PRESETS.map(p => (
+            <button
+              key={p.label}
+              onMouseDown={e => { e.preventDefault(); applyPreset(p); }}
+              title={p.label === 'N' ? 'Normal' : p.label === 'XS' ? 'Klein' : p.label}
+              className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors ${
+                isPresetActive(p) ? 'bg-violet-100 text-violet-700' : 'text-slate-500 hover:bg-slate-100'
+              }`}
+            >{p.label}</button>
+          ))}
+          <div className="w-px h-4 bg-slate-200 mx-0.5" />
+          {/* B / I / U */}
           <ToolBtn active={editor.isActive('bold')} onClick={() => editor.chain().focus().toggleBold().run()} title="Fett (Ctrl+B)">
             <Bold size={12} />
           </ToolBtn>
@@ -129,6 +199,7 @@ function RichEd({ v, up, cl, ph }: {
             <UnderlineIcon size={12} />
           </ToolBtn>
           <div className="w-px h-4 bg-slate-200 mx-0.5" />
+          {/* Ausrichtung */}
           <ToolBtn active={editor.isActive({ textAlign: 'left' })} onClick={() => editor.chain().focus().setTextAlign('left').run()} title="Links">
             <AlignLeftIcon size={12} />
           </ToolBtn>
@@ -138,6 +209,20 @@ function RichEd({ v, up, cl, ph }: {
           <ToolBtn active={editor.isActive({ textAlign: 'right' })} onClick={() => editor.chain().focus().setTextAlign('right').run()} title="Rechts">
             <AlignRight size={12} />
           </ToolBtn>
+          <div className="w-px h-4 bg-slate-200 mx-0.5" />
+          {/* CI-Farb-Swatches */}
+          {ciColors.map(c => (
+            <button
+              key={c.value}
+              onMouseDown={e => { e.preventDefault(); editor.chain().focus().setColor(c.value).run(); }}
+              title={c.label}
+              className={`w-4 h-4 rounded-full border-2 transition-all flex-shrink-0 ${
+                editor.isActive('textStyle', { color: c.value })
+                  ? 'border-slate-500 scale-110' : 'border-transparent hover:border-slate-300'
+              }`}
+              style={{ background: c.value }}
+            />
+          ))}
         </BubbleMenu>
       )}
       <EditorContent editor={editor} />
