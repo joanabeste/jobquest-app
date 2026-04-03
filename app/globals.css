@@ -38,6 +38,18 @@ body {
   }
 }
 
+/* ─── Tiptap editor ─────────────────────────────────────────────────────────── */
+.rte-editor p { margin-bottom: 0; }
+.rte-editor p + p { margin-top: 0.2rem; }
+/* Placeholder for empty editor */
+.rte-editor p.is-empty:first-child::before {
+  content: attr(data-placeholder);
+  opacity: 0.3;
+  pointer-events: none;
+  float: left;
+  height: 0;
+}
+
 /* ─── Rich-text output (paragraph block) ───────────────────────────────────── */
 .rte h2 { font-size: 1.2rem; font-weight: 700; margin-top: 0.75rem; margin-bottom: 0.35rem; line-height: 1.3; }
 .rte h3 { font-size: 1rem; font-weight: 600; margin-top: 0.5rem; margin-bottom: 0.25rem; }

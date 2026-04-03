@@ -1,14 +1,22 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useEditor, EditorContent } from '@tiptap/react';
+import { BubbleMenu } from '@tiptap/react/menus';
+import StarterKit from '@tiptap/starter-kit';
+import TiptapTextAlign from '@tiptap/extension-text-align';
+import TiptapUnderline from '@tiptap/extension-underline';
 import {
   Type, AlignLeft, MousePointer2, ImageIcon, Minus, Video,
   Play, MessageSquare, GitBranch, HelpCircle, Info, FileText,
   User, Sliders, List, CheckSquare, Phone, Trophy,
   Layout, Zap, ArrowRight, Copy, Trash2,
   FileDown, Send, Star, Timer, ChevronRight,
+  Bold, Italic, Underline as UnderlineIcon,
+  AlignLeft as AlignLeftIcon, AlignCenter, AlignRight,
 } from 'lucide-react';
 import { BlockNode, FunnelBlockType, LayoutNode, FunnelNode, BLOCK_LABELS, FunnelStyle } from '@/lib/funnel-types';
+import { useCi } from '@/lib/ci-context';
 
 const BLOCK_META: Record<FunnelBlockType, { icon: React.ElementType; color: string; bg: string }> = {
   heading:             { icon: Type,          color: 'text-slate-600',   bg: 'bg-slate-100' },
@@ -44,46 +52,116 @@ const BLOCK_META: Record<FunnelBlockType, { icon: React.ElementType; color: stri
 
 export { BLOCK_META };
 
-// ─── Inline-editable field ────────────────────────────────────────────────────
-function Ed({ v, up, cl, ph, multi = false }: {
+// ─── Toolbar button ───────────────────────────────────────────────────────────
+function ToolBtn({ active, onClick, title, children }: {
+  active: boolean; onClick: () => void; title: string; children: React.ReactNode;
+}) {
+  return (
+    <button
+      onMouseDown={(e) => { e.preventDefault(); onClick(); }}
+      title={title}
+      className={`p-1.5 rounded transition-colors ${
+        active ? 'bg-violet-100 text-violet-700' : 'text-slate-500 hover:bg-slate-100'
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+// ─── Rich inline-editable field ───────────────────────────────────────────────
+function RichEd({ v, up, cl, ph }: {
   v: string;
   up?: (val: string) => void;
   cl?: string;
   ph?: string;
-  multi?: boolean;
+}) {
+  const toHtml = (raw: string) => raw.startsWith('<') ? raw : (raw ? `<p>${raw}</p>` : '<p></p>');
+
+  const editor = useEditor({
+    extensions: [
+      StarterKit.configure({ heading: false, codeBlock: false, blockquote: false }),
+      TiptapUnderline,
+      TiptapTextAlign.configure({ types: ['paragraph'] }),
+    ],
+    content: toHtml(v),
+    editorProps: {
+      attributes: {
+        class: `${cl ?? ''} outline-none rte-editor`,
+        'data-placeholder': ph ?? '',
+      },
+    },
+    onUpdate: ({ editor }) => up?.(editor.getHTML()),
+    editable: !!up,
+  });
+
+  // Sync external changes (e.g. undo, prop panel edits) when not focused
+  useEffect(() => {
+    if (!editor || editor.isFocused) return;
+    const next = toHtml(v);
+    if (editor.getHTML() !== next) {
+      editor.commands.setContent(next, { emitUpdate: false });
+    }
+  }, [v, editor]);
+
+  // Read-only render
+  if (!up) {
+    if (!v) return <span className={cl} style={{ opacity: 0.3 }}>{ph}</span>;
+    if (v.startsWith('<')) return <div className={`${cl ?? ''} rte`} dangerouslySetInnerHTML={{ __html: v }} />;
+    return <span className={cl}>{v}</span>;
+  }
+
+  return (
+    <div className="relative" onClick={(e) => e.stopPropagation()}>
+      {editor && (
+        <BubbleMenu
+          editor={editor}
+          options={{ placement: 'top' }}
+          className="flex items-center gap-0.5 bg-white shadow-xl rounded-lg border border-slate-200 p-1"
+        >
+          <ToolBtn active={editor.isActive('bold')} onClick={() => editor.chain().focus().toggleBold().run()} title="Fett (Ctrl+B)">
+            <Bold size={12} />
+          </ToolBtn>
+          <ToolBtn active={editor.isActive('italic')} onClick={() => editor.chain().focus().toggleItalic().run()} title="Kursiv (Ctrl+I)">
+            <Italic size={12} />
+          </ToolBtn>
+          <ToolBtn active={editor.isActive('underline')} onClick={() => editor.chain().focus().toggleUnderline().run()} title="Unterstrichen (Ctrl+U)">
+            <UnderlineIcon size={12} />
+          </ToolBtn>
+          <div className="w-px h-4 bg-slate-200 mx-0.5" />
+          <ToolBtn active={editor.isActive({ textAlign: 'left' })} onClick={() => editor.chain().focus().setTextAlign('left').run()} title="Links">
+            <AlignLeftIcon size={12} />
+          </ToolBtn>
+          <ToolBtn active={editor.isActive({ textAlign: 'center' })} onClick={() => editor.chain().focus().setTextAlign('center').run()} title="Zentriert">
+            <AlignCenter size={12} />
+          </ToolBtn>
+          <ToolBtn active={editor.isActive({ textAlign: 'right' })} onClick={() => editor.chain().focus().setTextAlign('right').run()} title="Rechts">
+            <AlignRight size={12} />
+          </ToolBtn>
+        </BubbleMenu>
+      )}
+      <EditorContent editor={editor} />
+    </div>
+  );
+}
+
+// ─── Simple inline input (for short labels: button text, CTA, etc.) ───────────
+function Ed({ v, up, cl, ph }: {
+  v: string;
+  up?: (val: string) => void;
+  cl?: string;
+  ph?: string;
 }) {
   const inheritStyle: React.CSSProperties = { font: 'inherit', letterSpacing: 'inherit', color: 'inherit' };
   const base = 'bg-transparent border-0 outline-none focus:ring-0 w-full p-0 m-0';
-
-  if (!up) {
-    if (multi) return <p className={cl}>{v || <span style={{ opacity: 0.3 }}>{ph}</span>}</p>;
-    return <span className={cl}>{v || <span style={{ opacity: 0.3 }}>{ph}</span>}</span>;
-  }
-
-  if (multi) {
-    return (
-      <textarea
-        value={v}
-        onChange={(e) => up(e.target.value)}
-        placeholder={ph}
-        className={`${base} resize-none overflow-hidden block ${cl ?? ''}`}
-        style={{ ...inheritStyle, minHeight: '1.4em' }}
-        rows={1}
-        onInput={(e) => {
-          const el = e.currentTarget;
-          el.style.height = '0';
-          el.style.height = el.scrollHeight + 'px';
-        }}
-      />
-    );
-  }
-
+  if (!up) return <span className={cl}>{v || <span style={{ opacity: 0.3 }}>{ph}</span>}</span>;
   return (
     <input
       type="text"
       value={v}
       onChange={(e) => up(e.target.value)}
       placeholder={ph}
+      onClick={(e) => e.stopPropagation()}
       className={`${base} ${cl ?? ''}`}
       style={inheritStyle}
     />
@@ -110,6 +188,7 @@ function BlockPreview({ node, onUpdate }: {
   node: BlockNode;
   onUpdate?: (props: Record<string, unknown>) => void;
 }) {
+  const { primary, br } = useCi();
   const p = node.props;
   const up = onUpdate ? (key: string) => (val: string) => onUpdate({ [key]: val }) : undefined;
 
@@ -120,7 +199,7 @@ function BlockPreview({ node, onUpdate }: {
     case 'heading':
       return (
         <div className="px-5 py-4">
-          <Ed
+          <RichEd
             v={(p.text as string) ?? ''}
             up={up?.('text')}
             ph="Überschrift"
@@ -132,25 +211,35 @@ function BlockPreview({ node, onUpdate }: {
     case 'paragraph':
       return (
         <div className="px-5 py-3">
-          {(p.text as string)
-            ? <div className="text-sm text-slate-600 leading-relaxed rte" dangerouslySetInnerHTML={{ __html: p.text as string }} />
-            : <p className="text-sm text-slate-400 italic">Text…</p>}
+          <RichEd
+            v={(p.text as string) ?? ''}
+            up={up?.('text')}
+            ph="Text…"
+            cl="text-sm text-slate-600 leading-relaxed"
+          />
         </div>
       );
 
-    case 'button':
+    case 'button': {
+      const isPrimary = p.variant !== 'secondary' && p.variant !== 'outline';
+      const isOutline = p.variant === 'outline';
       return (
         <div className="px-5 py-3">
-          <span className={`inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold ${
-            p.variant === 'primary' ? 'bg-violet-600 text-white' :
-            p.variant === 'secondary' ? 'bg-slate-100 text-slate-700 border border-slate-200' :
-            'border-2 border-violet-600 text-violet-600'
-          }`}>
+          <span
+            className="inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold"
+            style={{
+              borderRadius: br,
+              ...(isPrimary ? { background: primary, color: '#fff' } :
+                  isOutline  ? { border: `2px solid ${primary}`, color: primary } :
+                               { background: '#f1f5f9', color: '#334155', border: '1px solid #e2e8f0' }),
+            }}
+          >
             <Ed v={(p.text as string) ?? ''} up={up?.('text')} ph="Button" />
             <ArrowRight size={14} className="flex-shrink-0" />
           </span>
         </div>
       );
+    }
 
     case 'image':
       return (
@@ -187,17 +276,15 @@ function BlockPreview({ node, onUpdate }: {
           {hasImg
             // eslint-disable-next-line @next/next/no-img-element
             ? <img src={p.imageUrl as string} alt="" className="w-full max-h-48 object-cover" />
-            : <div className="h-3 bg-violet-600" />
+            : <div className="h-3" style={{ background: primary }} />
           }
           <div className="px-6 pt-6 pb-5 text-center bg-white">
-            <Ed v={(p.title as string) ?? ''} up={up?.('title')} ph="Titel" cl="font-bold text-2xl uppercase leading-tight" />
+            <RichEd v={(p.title as string) ?? ''} up={up?.('title')} ph="Titel" cl="font-bold text-2xl uppercase leading-tight" />
             {!!(p.accentText as string) && (
-              <p className="text-sm font-bold uppercase tracking-wide text-violet-600 mt-1">{p.accentText as string}</p>
+              <p className="text-sm font-bold uppercase tracking-wide mt-1" style={{ color: primary }}>{p.accentText as string}</p>
             )}
-            {!!(p.description as string) && (
-              <p className="text-sm text-slate-500 mt-2 leading-relaxed">{p.description as string}</p>
-            )}
-            <div className="mt-4 bg-violet-600 text-white text-sm font-semibold py-3 px-6 rounded-xl inline-block">
+            <RichEd v={(p.description as string) ?? ''} up={up?.('description')} ph="Beschreibung…" cl="text-sm text-slate-500 mt-2 leading-relaxed" />
+            <div className="mt-4 text-white text-sm font-semibold py-3 px-6 inline-block" style={{ background: primary, borderRadius: br }}>
               {(p.buttonText as string) || 'Alles klar, verstanden!'}
             </div>
           </div>
@@ -234,7 +321,7 @@ function BlockPreview({ node, onUpdate }: {
       const opts = (p.options as { id: string; text: string }[]) || [];
       return (
         <div className="mx-4 my-3">
-          <Ed v={(p.question as string) ?? ''} up={up?.('question')} ph="Was würdest du tun?" cl="text-base font-semibold text-slate-800 mb-4 block text-center" />
+          <RichEd v={(p.question as string) ?? ''} up={up?.('question')} ph="Was würdest du tun?" cl="text-base font-semibold text-slate-800 mb-4 block text-center" />
           <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-2 space-y-1.5">
             {opts.map((o) => (
               <div key={o.id} className="flex items-center gap-2 px-4 py-3 bg-slate-50 rounded-lg border border-slate-100">
@@ -251,7 +338,7 @@ function BlockPreview({ node, onUpdate }: {
       const opts = (p.options as { id: string; text: string; correct: boolean }[]) || [];
       return (
         <div className="mx-4 my-3 bg-white border border-slate-200 rounded-xl shadow-sm p-5">
-          <Ed v={(p.question as string) ?? ''} up={up?.('question')} ph="Frage?" cl="text-base font-semibold text-slate-800 mb-3 block" />
+          <RichEd v={(p.question as string) ?? ''} up={up?.('question')} ph="Frage?" cl="text-base font-semibold text-slate-800 mb-3 block" />
           <div className="space-y-2">
             {opts.slice(0, 4).map((o) => (
               <div key={o.id} className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm border ${
@@ -269,15 +356,15 @@ function BlockPreview({ node, onUpdate }: {
     case 'quest_info':
       return (
         <div className="mx-4 my-3 bg-sky-50 border border-sky-200 rounded-xl px-5 py-4">
-          <Ed v={(p.title as string) ?? ''} up={up?.('title')} ph="Info" cl="font-semibold text-sky-900 mb-1.5 block" />
-          <Ed v={(p.text as string) ?? ''} up={up?.('text')} ph="Text…" cl="text-sm text-sky-700 leading-relaxed" multi />
+          <RichEd v={(p.title as string) ?? ''} up={up?.('title')} ph="Info" cl="font-semibold text-sky-900 mb-1.5 block" />
+          <RichEd v={(p.text as string) ?? ''} up={up?.('text')} ph="Text…" cl="text-sm text-sky-700 leading-relaxed" />
         </div>
       );
 
     case 'quest_freetext':
       return (
         <div className="px-5 py-4">
-          <Ed v={(p.text as string) ?? ''} up={up?.('text')} ph="Freitext…" cl="text-sm text-slate-600 leading-relaxed" multi />
+          <RichEd v={(p.text as string) ?? ''} up={up?.('text')} ph="Freitext…" cl="text-sm text-slate-600 leading-relaxed" />
         </div>
       );
 
@@ -300,7 +387,7 @@ function BlockPreview({ node, onUpdate }: {
     case 'quest_vorname':
       return (
         <div className="mx-4 my-3 bg-white border border-slate-200 rounded-xl shadow-sm p-6">
-          <Ed v={(p.question as string) ?? ''} up={up?.('question')} ph="Wie heißt du?" cl="text-xl font-bold text-slate-800 mb-4 block" />
+          <RichEd v={(p.question as string) ?? ''} up={up?.('question')} ph="Wie heißt du?" cl="text-xl font-bold text-slate-800 mb-4 block" />
           <div className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl flex items-center">
             <span className="text-sm text-slate-400">{(p.placeholder as string) || 'Dein Vorname…'}</span>
           </div>
@@ -320,7 +407,7 @@ function BlockPreview({ node, onUpdate }: {
       const emoji = (p.emoji as string) || '⭐';
       return (
         <div className="mx-4 my-3 bg-white border border-slate-200 rounded-xl shadow-sm p-5 text-center">
-          <p className="text-base font-semibold text-slate-700 mb-4">{(p.question as string) || 'Bewertung'}</p>
+          <RichEd v={(p.question as string) ?? ''} up={up?.('question')} ph="Bewertung" cl="text-base font-semibold text-slate-700 mb-4 block" />
           <div className="flex justify-center gap-1.5">
             {Array.from({ length: count }, (_, i) => (
               <span key={i} className="text-3xl leading-none" style={{ opacity: i < 3 ? 1 : 0.25 }}>{emoji}</span>
@@ -333,14 +420,14 @@ function BlockPreview({ node, onUpdate }: {
     case 'quest_lead': {
       const fields = (p.fields as FieldDef[]) || [];
       return (
-        <div className="bg-violet-700 px-5 py-5 text-white">
-          <Ed v={(p.headline as string) ?? ''} up={up?.('headline')} ph="Interessiert?" cl="font-bold text-base" />
-          <Ed v={(p.subtext as string) ?? ''} up={up?.('subtext')} ph="Kontaktdaten hinterlassen" cl="text-sm text-violet-200 mt-1 block" multi />
+        <div className="px-5 py-5 text-white" style={{ background: primary }}>
+          <RichEd v={(p.headline as string) ?? ''} up={up?.('headline')} ph="Interessiert?" cl="font-bold text-base" />
+          <RichEd v={(p.subtext as string) ?? ''} up={up?.('subtext')} ph="Kontaktdaten hinterlassen" cl="text-sm text-white/70 mt-1 block" />
           <div className="mt-4 space-y-2">
-            <FieldRows fields={fields} placeholderBg="bg-white/20" textColor="text-violet-300" />
+            <FieldRows fields={fields} placeholderBg="bg-white/20" textColor="text-white/60" />
           </div>
-          <div className="mt-4 px-6 py-3 bg-white rounded-xl inline-block">
-            <Ed v={(p.buttonText as string) ?? ''} up={up?.('buttonText')} ph="Jetzt bewerben" cl="text-sm font-semibold text-violet-700" />
+          <div className="mt-4 px-6 py-3 bg-white inline-block text-sm font-semibold" style={{ borderRadius: br, color: primary }}>
+            <Ed v={(p.buttonText as string) ?? ''} up={up?.('buttonText')} ph="Jetzt bewerben" cl="" />
           </div>
         </div>
       );
@@ -350,12 +437,12 @@ function BlockPreview({ node, onUpdate }: {
 
     case 'check_intro':
       return (
-        <div className="px-6 py-10 text-white text-center bg-violet-600 min-h-[220px] flex flex-col justify-center">
-          <Ed v={(p.headline as string) ?? ''} up={up?.('headline')} ph="Intro" cl="font-bold text-2xl leading-tight mb-2 block" />
-          <Ed v={(p.subtext as string) ?? ''} up={up?.('subtext')} ph="Untertext" cl="text-sm text-violet-200 mb-6 block" multi />
+        <div className="px-6 py-10 text-white text-center min-h-[220px] flex flex-col justify-center" style={{ background: primary }}>
+          <RichEd v={(p.headline as string) ?? ''} up={up?.('headline')} ph="Intro" cl="font-bold text-2xl leading-tight mb-2 block" />
+          <RichEd v={(p.subtext as string) ?? ''} up={up?.('subtext')} ph="Untertext" cl="text-sm text-white/70 mb-6 block" />
           <div>
-            <span className="inline-block px-8 py-3 bg-white rounded-xl text-violet-700 text-sm font-semibold">
-              <Ed v={(p.buttonText as string) ?? ''} up={up?.('buttonText')} ph="Jetzt starten" cl="text-violet-700" />
+            <span className="inline-block px-8 py-3 bg-white text-sm font-semibold" style={{ borderRadius: br, color: primary }}>
+              <Ed v={(p.buttonText as string) ?? ''} up={up?.('buttonText')} ph="Jetzt starten" cl="" />
             </span>
           </div>
         </div>
@@ -364,7 +451,7 @@ function BlockPreview({ node, onUpdate }: {
     case 'check_vorname':
       return (
         <div className="mx-4 my-3 bg-white border border-slate-200 rounded-xl shadow-sm p-6">
-          <Ed v={(p.question as string) ?? ''} up={up?.('question')} ph="Wie heißt du?" cl="text-xl font-bold text-slate-800 mb-4 block" />
+          <RichEd v={(p.question as string) ?? ''} up={up?.('question')} ph="Wie heißt du?" cl="text-xl font-bold text-slate-800 mb-4 block" />
           <div className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl flex items-center">
             <span className="text-sm text-slate-400">{(p.placeholder as string) || 'Vorname…'}</span>
           </div>
@@ -377,11 +464,11 @@ function BlockPreview({ node, onUpdate }: {
       const opts = (p.options as { id: string; text: string }[]) || [];
       return (
         <div className="mx-4 my-3 bg-white border border-slate-200 rounded-xl shadow-sm p-5">
-          <Ed v={(p.question as string) ?? ''} up={up?.('question')} ph="Frage?" cl="text-base font-semibold text-slate-800 mb-4 block" />
+          <RichEd v={(p.question as string) ?? ''} up={up?.('question')} ph="Frage?" cl="text-base font-semibold text-slate-800 mb-4 block" />
           {isSlider ? (
             <div>
-              <div className="h-3 bg-violet-100 rounded-full relative">
-                <div className="absolute left-1/3 top-1/2 -translate-y-1/2 w-4 h-4 bg-violet-600 rounded-full shadow" />
+              <div className="h-3 bg-slate-100 rounded-full relative">
+                <div className="absolute left-1/3 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full shadow" style={{ background: primary }} />
               </div>
               <div className="flex justify-between mt-2">
                 <span className="text-xs text-slate-400">{(p.sliderLabelMin as string) || '0'}</span>
@@ -405,11 +492,11 @@ function BlockPreview({ node, onUpdate }: {
     case 'check_selbst':
       return (
         <div className="mx-4 my-3 bg-white border border-slate-200 rounded-xl shadow-sm p-5">
-          <Ed v={(p.question as string) ?? ''} up={up?.('question')} ph="Wie schätzt du dich ein?" cl="text-base font-semibold text-slate-800 mb-4 block" />
+          <RichEd v={(p.question as string) ?? ''} up={up?.('question')} ph="Wie schätzt du dich ein?" cl="text-base font-semibold text-slate-800 mb-4 block" />
           <div className="flex items-center gap-3">
             <span className="text-xs text-slate-400 flex-shrink-0">{(p.sliderLabelMin as string) || '0'}</span>
             <div className="flex-1 h-3 bg-slate-200 rounded-full relative">
-              <div className="absolute left-1/2 top-1/2 -translate-y-1/2 w-4 h-4 bg-violet-600 rounded-full shadow" />
+              <div className="absolute left-1/2 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full shadow" style={{ background: primary }} />
             </div>
             <span className="text-xs text-slate-400 flex-shrink-0">{(p.sliderLabelMax as string) || '10'}</span>
           </div>
@@ -421,7 +508,7 @@ function BlockPreview({ node, onUpdate }: {
       const rows = fields.length > 0 ? fields : [{ id: 'fallback', label: 'E-Mail', placeholder: 'E-Mail-Adresse' }];
       return (
         <div className="px-5 py-5 bg-rose-50 border-t-2 border-rose-100">
-          <Ed v={(p.headline as string) ?? ''} up={up?.('headline')} ph="Kontakt" cl="font-bold text-base text-rose-800 mb-3 block" />
+          <RichEd v={(p.headline as string) ?? ''} up={up?.('headline')} ph="Kontakt" cl="font-bold text-base text-rose-800 mb-3 block" />
           <div className="space-y-2">
             {rows.map((f) => (
               <div key={f.id} className="h-10 bg-white border border-rose-200 rounded-lg flex items-center px-3">
@@ -437,7 +524,7 @@ function BlockPreview({ node, onUpdate }: {
       return (
         <div className="px-5 py-5 bg-amber-50">
           <Trophy size={24} className="text-amber-500 mb-2" />
-          <Ed v={(p.headline as string) ?? ''} up={up?.('headline')} ph="Dein Ergebnis!" cl="text-xl font-bold text-amber-800 mb-3 block" />
+          <RichEd v={(p.headline as string) ?? ''} up={up?.('headline')} ph="Dein Ergebnis!" cl="text-xl font-bold text-amber-800 mb-3 block" />
           {!!p.showDimensionBars && (
             <div className="space-y-2.5">
               {['Dimension A', 'Dimension B'].map((d) => (
@@ -457,11 +544,11 @@ function BlockPreview({ node, onUpdate }: {
 
     case 'form_hero':
       return (
-        <div className="bg-violet-600 px-6 py-10 text-white min-h-[200px] flex flex-col justify-center">
-          <Ed v={(p.headline as string) ?? ''} up={up?.('headline')} ph="Hero" cl="font-bold text-2xl mb-2 block" />
-          <Ed v={(p.subtext as string) ?? ''} up={up?.('subtext')} ph="Untertext" cl="text-sm text-violet-200 mb-6 block" multi />
-          <span className="inline-block px-6 py-3 bg-white rounded-xl text-violet-700 text-sm font-semibold self-start">
-            <Ed v={(p.ctaText as string) ?? ''} up={up?.('ctaText')} ph="CTA" cl="text-violet-700" />
+        <div className="px-6 py-10 text-white min-h-[200px] flex flex-col justify-center" style={{ background: primary }}>
+          <RichEd v={(p.headline as string) ?? ''} up={up?.('headline')} ph="Hero" cl="font-bold text-2xl mb-2 block" />
+          <RichEd v={(p.subtext as string) ?? ''} up={up?.('subtext')} ph="Untertext" cl="text-sm text-white/70 mb-6 block" />
+          <span className="inline-block px-6 py-3 bg-white text-sm font-semibold self-start" style={{ borderRadius: br, color: primary }}>
+            <Ed v={(p.ctaText as string) ?? ''} up={up?.('ctaText')} ph="CTA" cl="" />
           </span>
         </div>
       );
@@ -469,13 +556,8 @@ function BlockPreview({ node, onUpdate }: {
     case 'form_text':
       return (
         <div className="px-5 py-4">
-          {!!(p.headline as string) && (
-            <Ed v={(p.headline as string) ?? ''} up={up?.('headline')} ph="Überschrift" cl="text-xl font-bold text-slate-900 mb-2 block" />
-          )}
-          {!(p.headline as string) && up && (
-            <Ed v="" up={up('headline')} ph="Überschrift (optional)" cl="text-xl font-bold text-slate-900 mb-2 block" />
-          )}
-          <Ed v={(p.content as string) ?? ''} up={up?.('content')} ph="Text…" cl="text-sm text-slate-600 leading-relaxed" multi />
+          <RichEd v={(p.headline as string) ?? ''} up={up?.('headline')} ph="Überschrift (optional)" cl="text-xl font-bold text-slate-900 mb-2 block" />
+          <RichEd v={(p.content as string) ?? ''} up={up?.('content')} ph="Text…" cl="text-sm text-slate-600 leading-relaxed" />
         </div>
       );
 
@@ -494,7 +576,7 @@ function BlockPreview({ node, onUpdate }: {
       const fields = (p.fields as { id: string; label: string }[]) || [];
       return (
         <div className="px-5 py-4">
-          <Ed v={(p.title as string) ?? ''} up={up?.('title')} ph="Schritt" cl="text-base font-bold text-slate-800 mb-3 block" />
+          <RichEd v={(p.title as string) ?? ''} up={up?.('title')} ph="Schritt" cl="text-base font-bold text-slate-800 mb-3 block" />
           <div className="space-y-2">
             {fields.slice(0, 3).map((f) => (
               <div key={f.id} className="h-10 bg-white rounded-xl border-2 border-slate-200 flex items-center px-3">
@@ -511,14 +593,14 @@ function BlockPreview({ node, onUpdate }: {
     case 'form_config': {
       const fields = (p.fields as FieldDef[]) || [];
       return (
-        <div className="bg-violet-700 px-5 py-5 text-white">
-          <Ed v={(p.headline as string) ?? ''} up={up?.('headline')} ph="Interessiert?" cl="font-bold text-base" />
-          <Ed v={(p.subtext as string) ?? ''} up={up?.('subtext')} ph="Kontaktdaten hinterlassen" cl="text-sm text-violet-200 mt-1 block" multi />
+        <div className="px-5 py-5 text-white" style={{ background: primary }}>
+          <RichEd v={(p.headline as string) ?? ''} up={up?.('headline')} ph="Interessiert?" cl="font-bold text-base" />
+          <RichEd v={(p.subtext as string) ?? ''} up={up?.('subtext')} ph="Kontaktdaten hinterlassen" cl="text-sm text-white/70 mt-1 block" />
           <div className="mt-4 space-y-2">
-            <FieldRows fields={fields} placeholderBg="bg-white/20" textColor="text-violet-300" />
+            <FieldRows fields={fields} placeholderBg="bg-white/20" textColor="text-white/60" />
           </div>
-          <div className="mt-4 px-6 py-3 bg-white rounded-xl inline-block">
-            <Ed v={(p.buttonText as string) ?? ''} up={up?.('buttonText')} ph="Jetzt bewerben" cl="text-sm font-semibold text-violet-700" />
+          <div className="mt-4 px-6 py-3 bg-white inline-block text-sm font-semibold" style={{ borderRadius: br, color: primary }}>
+            <Ed v={(p.buttonText as string) ?? ''} up={up?.('buttonText')} ph="Jetzt bewerben" cl="" />
           </div>
         </div>
       );

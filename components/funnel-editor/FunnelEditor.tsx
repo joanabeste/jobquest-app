@@ -11,6 +11,9 @@ import {
   reorderRootNodes, reorderColumnNodes, moveNodeBetweenContainers,
   createBlockNode,
 } from '@/lib/funnel-ops';
+import { useAuth } from '@/contexts/AuthContext';
+import { useCorporateDesign } from '@/lib/use-corporate-design';
+import { CIContext } from '@/lib/ci-context';
 import PageSidebar from './PageSidebar';
 import BlockPanel from './BlockPanel';
 import Canvas from './Canvas';
@@ -101,6 +104,9 @@ function FunnelEditorInner({
   initialDoc, contentType, title, onTitleChange,
   slug: _slug, previewHref, status, onPublish, onBack, extraPanel,
 }: Omit<FunnelEditorProps, 'contentId'> & { initialDoc: FunnelDoc }) {
+  const { company } = useAuth();
+  const ci = useCorporateDesign(company ?? { id: '', name: '', contactName: '', contactEmail: '', createdAt: '' });
+
   const { doc, push, undo, redo, canUndo, canRedo } = useHistory(initialDoc);
 
   const [activePageId, setActivePageId] = useState(doc.pages[0]?.id ?? '');
@@ -426,6 +432,7 @@ function FunnelEditorInner({
       </header>
 
       {/* ── Body ───────────────────────────────────────────────────────────── */}
+      <CIContext.Provider value={ci}>
       <div className="flex flex-1 min-h-0">
         {view === 'flow' ? (
           <FlowView
@@ -489,6 +496,7 @@ function FunnelEditorInner({
           </>
         )}
       </div>
+      </CIContext.Provider>
     </div>
 
     {showGenerateModal && (
