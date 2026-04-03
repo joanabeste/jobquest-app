@@ -183,11 +183,6 @@ function FunnelEditorInner({
   }
 
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  function isNodeLocked(_nodeId: string): boolean {
-    return false;
-  }
-
   function handleDelete(nodeId: string) {
     push(deleteNode(doc, activePageId, nodeId));
     if (selectedNodeId === nodeId) setSelectedNodeId(null);
@@ -469,8 +464,7 @@ function FunnelEditorInner({
             {/* Right – Inspector */}
             <Inspector
               node={selectedNode}
-              contentType={contentType}
-              isLocked={selectedNodeId ? isNodeLocked(selectedNodeId) : false}
+              isLocked={false}
               onUpdate={(patch) => selectedNodeId && handleUpdateNode(selectedNodeId, patch)}
               onDelete={() => selectedNodeId && handleDelete(selectedNodeId)}
               onDuplicate={() => selectedNodeId && handleDuplicate(selectedNodeId)}

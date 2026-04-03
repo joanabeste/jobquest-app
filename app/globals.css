@@ -79,6 +79,11 @@ body {
     @apply w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-violet-400 focus:border-violet-300 transition-all;
   }
 
+  /* Compact inputs inside list-item editors (dialog lines, options, fields) */
+  .mini-input {
+    @apply px-2 py-1 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-violet-400;
+  }
+
   .label {
     @apply block text-sm font-medium text-slate-700 mb-1;
   }

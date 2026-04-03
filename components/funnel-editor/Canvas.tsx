@@ -12,7 +12,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import {
-  FunnelPage, FunnelNode, LayoutNode, InsertTarget, FunnelContentType,
+  FunnelPage, FunnelNode, LayoutNode, Column, InsertTarget, FunnelContentType,
   FunnelBlockType, BlockNode, FunnelStyle,
 } from '@/lib/funnel-types';
 import NodeView from './NodeView';
@@ -285,7 +285,7 @@ function ColumnDropZone({
   column, insertTarget, selectedNodeId,
   onSelectNode, onDeleteNode, onDuplicateNode, onUpdateNode, onSetInsertTarget,
 }: {
-  column: import('@/lib/funnel-types').Column;
+  column: Column;
   insertTarget: InsertTarget | null; selectedNodeId: string | null;
   onSelectNode: (id: string) => void; onDeleteNode: (id: string) => void;
   onDuplicateNode: (id: string) => void;

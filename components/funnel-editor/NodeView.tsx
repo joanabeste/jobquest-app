@@ -698,17 +698,18 @@ function BlockPreview({ node, onUpdate }: {
 
 // ─── Style wrapper – mirrors StyledBlock in FunnelPlayer ─────────────────────
 function StyleWrapper({ style, children }: { style?: FunnelStyle; children: React.ReactNode }) {
-  const hasStyle = style && Object.values(style).some((v) => v !== undefined && v !== 0 && v !== '');
+  if (!style) return <>{children}</>;
+  const hasStyle = Object.values(style).some((v) => v !== undefined && v !== 0 && v !== '');
   if (!hasStyle) return <>{children}</>;
   return (
     <div style={{
-      paddingTop:      style!.paddingTop    ? `${style!.paddingTop}px`    : undefined,
-      paddingRight:    style!.paddingRight  ? `${style!.paddingRight}px`  : undefined,
-      paddingBottom:   style!.paddingBottom ? `${style!.paddingBottom}px` : undefined,
-      paddingLeft:     style!.paddingLeft   ? `${style!.paddingLeft}px`   : undefined,
-      backgroundColor: style!.backgroundColor || undefined,
-      borderRadius:    style!.borderRadius  ? `${style!.borderRadius}px`  : undefined,
-      textAlign:       style!.textAlign     || undefined,
+      paddingTop:      style.paddingTop    ? `${style.paddingTop}px`    : undefined,
+      paddingRight:    style.paddingRight  ? `${style.paddingRight}px`  : undefined,
+      paddingBottom:   style.paddingBottom ? `${style.paddingBottom}px` : undefined,
+      paddingLeft:     style.paddingLeft   ? `${style.paddingLeft}px`   : undefined,
+      backgroundColor: style.backgroundColor || undefined,
+      borderRadius:    style.borderRadius  ? `${style.borderRadius}px`  : undefined,
+      textAlign:       style.textAlign     || undefined,
     }}>
       {children}
     </div>

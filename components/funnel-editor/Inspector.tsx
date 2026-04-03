@@ -2,12 +2,11 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Trash2, Copy, MousePointer2, Plus, X, Lock, Bold, Italic, Underline, List, Palette, ChevronDown, ChevronUp } from 'lucide-react';
-import { FunnelNode, FunnelStyle, FunnelContentType, FunnelPage, BLOCK_LABELS } from '@/lib/funnel-types';
+import { FunnelNode, FunnelStyle, FunnelPage, BLOCK_LABELS } from '@/lib/funnel-types';
 import { BLOCK_META } from './NodeView';
 
 interface InspectorProps {
   node: FunnelNode | null;
-  contentType: FunnelContentType;
   isLocked?: boolean;
   onUpdate: (patch: { props?: Record<string, unknown>; style?: Partial<FunnelStyle> }) => void;
   onDelete: () => void;
@@ -879,7 +878,7 @@ function DialogEditor({ props, onChange }: { props: Record<string, unknown>; onC
               {/* Speaker + delete */}
               <div className="flex items-center gap-1">
                 <input value={l.speaker} onChange={(e) => updateLine(l.id, { speaker: e.target.value })}
-                  className="flex-1 px-2 py-1 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-violet-400" placeholder="Sprecher" />
+                  className="flex-1 mini-input" placeholder="Sprecher" />
                 <button onClick={() => onChange({ lines: lines.filter((_, idx) => idx !== i) })}
                   disabled={lines.length <= 1} className="p-0.5 rounded hover:bg-red-100 text-slate-400 hover:text-red-500 disabled:opacity-30">
                   <X size={12} />
@@ -887,7 +886,7 @@ function DialogEditor({ props, onChange }: { props: Record<string, unknown>; onC
               </div>
               {/* Text */}
               <textarea value={l.text} onChange={(e) => updateLine(l.id, { text: e.target.value })}
-                rows={2} className="w-full px-2 py-1 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-violet-400 resize-none" placeholder="Text…" />
+                rows={2} className="w-full mini-input resize-none" placeholder="Text…" />
               {/* Image upload */}
               <ImageUploadField label="Bild (optional)" value={l.imageUrl ?? ''} onChange={(v) => updateLine(l.id, { imageUrl: v })} />
             </div>
@@ -911,12 +910,12 @@ function DialogEditor({ props, onChange }: { props: Record<string, unknown>; onC
                 <div key={c.id} className="bg-slate-50 rounded-xl p-2 space-y-1.5">
                   <div className="flex gap-1">
                     <input value={c.text} onChange={(e) => updateChoice(i, { text: e.target.value })}
-                      className="flex-1 px-2 py-1 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-violet-400" placeholder="Antworttext" />
+                      className="flex-1 mini-input" placeholder="Antworttext" />
                     <button onClick={() => onChange({ choices: choices.filter((_, j) => j !== i) })}
                       className="p-0.5 rounded hover:bg-red-100 text-slate-400 hover:text-red-500"><X size={12} /></button>
                   </div>
                   <input value={c.reaction ?? ''} onChange={(e) => updateChoice(i, { reaction: e.target.value })}
-                    className="w-full px-2 py-1 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-violet-400" placeholder="Reaktion des Sprechers (optional)" />
+                    className="w-full mini-input" placeholder="Reaktion des Sprechers (optional)" />
                 </div>
               ))}
             </div>
@@ -941,14 +940,14 @@ function DialogEditor({ props, onChange }: { props: Record<string, unknown>; onC
           {hasInput && (
             <div className="space-y-1.5">
               <input value={input?.placeholder ?? ''} onChange={(e) => onChange({ input: { ...input, placeholder: e.target.value } })}
-                className="w-full px-2 py-1 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-violet-400" placeholder="Platzhalter…" />
+                className="w-full mini-input" placeholder="Platzhalter…" />
               <select value={input?.captures ?? ''} onChange={(e) => onChange({ input: { ...input, captures: e.target.value || undefined } })}
-                className="w-full px-2 py-1 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-violet-400">
+                className="w-full mini-input">
                 <option value="">Kein Capture</option>
                 <option value="firstName">Vorname speichern (als &#123;&#123;name&#125;&#125;)</option>
               </select>
               <textarea value={input?.followUpText ?? ''} onChange={(e) => onChange({ input: { ...input, followUpText: e.target.value } })}
-                rows={2} className="w-full px-2 py-1 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-violet-400 resize-none" placeholder="Reaktion des Sprechers nach Eingabe (optional)…" />
+                rows={2} className="w-full mini-input resize-none" placeholder="Reaktion des Sprechers nach Eingabe (optional)…" />
             </div>
           )}
         </div>
@@ -980,19 +979,19 @@ function DecisionEditor({ props, onChange, pages }: {
             <div key={o.id} className="bg-slate-50 rounded-xl p-2 space-y-1.5">
               <div className="flex gap-1">
                 <input value={o.text} onChange={(e) => updateOpt(i, { text: e.target.value })}
-                  className="flex-1 px-2 py-1 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-violet-400" placeholder="Optionstext" />
+                  className="flex-1 mini-input" placeholder="Optionstext" />
                 <button onClick={() => onChange({ options: options.filter((_, j) => j !== i) })} disabled={options.length <= 1}
                   className="p-0.5 rounded hover:bg-red-100 text-slate-400 hover:text-red-500 disabled:opacity-30"><X size={12} /></button>
               </div>
               <input value={o.reaction} onChange={(e) => updateOpt(i, { reaction: e.target.value })}
-                className="w-full px-2 py-1 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-violet-400" placeholder="Reaktion nach Auswahl" />
+                className="w-full mini-input" placeholder="Reaktion nach Auswahl" />
               {pages && pages.length > 1 && (
                 <div className="flex items-center gap-1.5 pt-0.5">
                   <span className="text-[10px] text-slate-400 flex-shrink-0">→ Weiter zu</span>
                   <select
                     value={o.targetPageId ?? ''}
                     onChange={(e) => updateOpt(i, { targetPageId: e.target.value || undefined })}
-                    className="flex-1 px-2 py-1 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-violet-400"
+                    className="flex-1 mini-input"
                   >
                     <option value="">Nächste Seite</option>
                     {pages.map((pg) => (
@@ -1028,12 +1027,12 @@ function QuizEditor({ props, onChange }: { props: Record<string, unknown>; onCha
                   onChange={(e) => onChange({ options: options.map((x, j) => j === i ? { ...x, correct: e.target.checked } : x) })}
                   className="accent-emerald-600" title="Richtige Antwort" />
                 <input value={o.text} onChange={(e) => onChange({ options: options.map((x, j) => j === i ? { ...x, text: e.target.value } : x) })}
-                  className="flex-1 px-2 py-1 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-violet-400" />
+                  className="flex-1 mini-input" />
                 <button onClick={() => onChange({ options: options.filter((_, j) => j !== i) })} disabled={options.length <= 1}
                   className="p-0.5 rounded hover:bg-red-100 text-slate-400 hover:text-red-500 disabled:opacity-30"><X size={12} /></button>
               </div>
               <input value={o.feedback} onChange={(e) => onChange({ options: options.map((x, j) => j === i ? { ...x, feedback: e.target.value } : x) })}
-                className="w-full px-2 py-1 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-violet-400" placeholder="Feedback nach Auswahl" />
+                className="w-full mini-input" placeholder="Feedback nach Auswahl" />
             </div>
           ))}
         </div>
@@ -1065,7 +1064,7 @@ function FrageEditor({ props, onChange }: { props: Record<string, unknown>; onCh
             {options.map((o, i) => (
               <div key={o.id} className="flex gap-1">
                 <input value={o.text} onChange={(e) => onChange({ options: options.map((x, j) => j === i ? { ...x, text: e.target.value } : x) })}
-                  className="flex-1 px-2 py-1 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-violet-400" />
+                  className="flex-1 mini-input" />
                 <button onClick={() => onChange({ options: options.filter((_, j) => j !== i) })} disabled={options.length <= 1}
                   className="p-0.5 rounded hover:bg-red-100 text-slate-400 hover:text-red-500 disabled:opacity-30"><X size={12} /></button>
               </div>
@@ -1097,7 +1096,7 @@ function ErgebnisfrageEditor({ props, onChange }: { props: Record<string, unknow
           {options.map((o, i) => (
             <div key={o.id} className="flex gap-1">
               <input value={o.text} onChange={(e) => onChange({ options: options.map((x, j) => j === i ? { ...x, text: e.target.value } : x) })}
-                className="flex-1 px-2 py-1 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-violet-400" />
+                className="flex-1 mini-input" />
               <button onClick={() => onChange({ options: options.filter((_, j) => j !== i) })} disabled={options.length <= 1}
                 className="p-0.5 rounded hover:bg-red-100 text-slate-400 hover:text-red-500 disabled:opacity-30"><X size={12} /></button>
             </div>
