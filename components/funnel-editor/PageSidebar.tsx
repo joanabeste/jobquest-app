@@ -40,10 +40,10 @@ export default function PageSidebar({
   }
 
   return (
-    <aside className="w-52 flex-shrink-0 border-r border-slate-200 bg-white flex flex-col">
+    <aside className="w-44 flex-shrink-0 border-r border-slate-200 bg-white flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2.5 border-b border-slate-100 flex-shrink-0">
-        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Seiten</span>
+        <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Seiten</span>
         <button
           onClick={onAddPage}
           className="w-6 h-6 rounded-lg bg-violet-50 hover:bg-violet-100 text-violet-500 hover:text-violet-700 flex items-center justify-center transition-colors"

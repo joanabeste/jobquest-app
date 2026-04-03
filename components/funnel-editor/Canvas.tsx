@@ -102,21 +102,21 @@ export default function Canvas({
 
   if (!page) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-[#e8eaed]">
+      <div className="flex-1 flex items-center justify-center bg-slate-100">
         <p className="text-slate-400 text-sm">Keine Seite ausgewählt</p>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 overflow-y-auto bg-[#e8eaed]" onClick={onDeselectNode}>
+    <div className="flex-1 overflow-y-auto bg-slate-100" onClick={onDeselectNode}>
       {/* Page label */}
       <div className="flex items-center justify-center pt-5 pb-2 pointer-events-none">
         <span className="text-[11px] font-medium text-slate-400 tracking-wide">{page.name}</span>
       </div>
 
       {/* Page container – white, looks like the live output */}
-      <div className="max-w-[480px] mx-auto mb-10 rounded-2xl shadow-2xl overflow-hidden min-h-[200px] ring-1 ring-black/8">
+      <div className="max-w-[480px] mx-auto mb-10 rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.10)] overflow-hidden min-h-[200px] ring-1 ring-black/6">
         <div className="bg-white">
           <DndContext
             sensors={sensors}
@@ -191,6 +191,21 @@ export default function Canvas({
           </DndContext>
         </div>
       </div>
+
+      {/* Persistent add-block button at bottom (when page has blocks) */}
+      {page.nodes.length > 0 && (
+        <div className="flex justify-center pb-6 pt-1">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onSetInsertTarget({ location: 'root', afterId: page.nodes.at(-1)?.id ?? null });
+            }}
+            className="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold text-slate-500 hover:text-violet-700 bg-white hover:bg-violet-50 border border-slate-200 hover:border-violet-300 shadow-sm transition-all"
+          >
+            <Plus size={13} /> Block hinzufügen
+          </button>
+        </div>
+      )}
 
       {/* Block library popup */}
       {insertTarget && (
@@ -358,34 +373,37 @@ function SortableColumnNode({
   );
 }
 
-// ─── Insert zone – minimal, line + button on hover ────────────────────────────
+// ─── Insert zone – always visible line + button ───────────────────────────────
 function InsertZone({
   target, active, onActivate, compact,
 }: {
   target: InsertTarget; active: boolean; onActivate: (t: InsertTarget) => void; compact?: boolean;
 }) {
   const [hover, setHover] = useState(false);
-  const show = hover || active;
+  const emphasis = hover || active;
 
   return (
     <div
-      className={`relative flex items-center justify-center ${compact ? 'h-3' : 'h-4'}`}
+      className={`relative flex items-center justify-center ${compact ? 'h-5' : 'h-6'}`}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
     >
-      {/* Thin line */}
-      <div className={`absolute inset-x-0 top-1/2 -translate-y-1/2 h-px transition-colors ${show ? 'bg-violet-400' : 'bg-transparent'}`} />
-      {/* Insert button */}
+      {/* Always-visible faint line */}
+      <div className={`absolute inset-x-4 top-1/2 -translate-y-1/2 h-px transition-colors ${
+        emphasis ? 'bg-violet-400' : 'bg-slate-200'
+      }`} />
+      {/* + button — faint by default, vivid on hover/active */}
       <button
         onClick={(e) => { e.stopPropagation(); onActivate(target); }}
-        className={`relative flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold z-10 transition-all ${
-          show
-            ? 'bg-violet-600 text-white shadow opacity-100'
-            : 'opacity-0 pointer-events-none'
+        className={`relative flex items-center justify-center gap-1 rounded-full text-[10px] font-semibold z-10 transition-all ${
+          compact ? 'w-4 h-4' : 'w-5 h-5'
+        } ${
+          emphasis
+            ? 'bg-violet-600 text-white shadow-sm scale-105'
+            : 'bg-white border border-slate-200 text-slate-400 hover:border-violet-300 hover:text-violet-500'
         }`}
       >
-        <Plus size={9} />
-        {!compact && 'Block'}
+        <Plus size={compact ? 8 : 9} />
       </button>
     </div>
   );

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Save, Globe, Eye, Undo2, Redo2, Check, Sparkles, Copy, GitBranch, LayoutTemplate } from 'lucide-react';
-import { FunnelDoc, FunnelContentType, FunnelPage, InsertTarget, FunnelNode, FunnelStyle, FunnelBlockType, BlockNode } from '@/lib/funnel-types';
+import { FunnelDoc, FunnelContentType, FunnelPage, InsertTarget, FunnelNode, FunnelStyle, BlockNode } from '@/lib/funnel-types';
 import { funnelStorage } from '@/lib/funnel-storage';
 import {
   createFunnelDoc, insertNode, deleteNode, updateNode, duplicateNode,
@@ -15,7 +15,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useCorporateDesign } from '@/lib/use-corporate-design';
 import { CIContext } from '@/lib/ci-context';
 import PageSidebar from './PageSidebar';
-import BlockPanel from './BlockPanel';
 import Canvas from './Canvas';
 import Inspector from './Inspector';
 import GenerateQuestModal from './GenerateQuestModal';
@@ -281,14 +280,7 @@ function FunnelEditorInner({
     push(updateNode(doc, pageId, nodeId, { props: { ...node.props, options } }));
   }
 
-  // ── insert from block panel (appends after selected node or at end) ─────────
-  function handleInsertFromPanel(type: FunnelBlockType, props: Record<string, unknown>) {
-    const afterId = selectedNodeId ?? (activePage?.nodes.at(-1)?.id ?? null);
-    const target: InsertTarget = { location: 'root', afterId };
-    handleInsertBlock(type, props, target);
-  }
-
-// ── AI generation ───────────────────────────────────────────────────────────
+  // ── AI generation ───────────────────────────────────────────────────────────
   function handleGenerateQuest(pages: FunnelPage[]) {
     const next = { ...doc, pages };
     push(next);
@@ -317,7 +309,7 @@ function FunnelEditorInner({
     <>
     <div className="flex flex-col h-[calc(100vh-3.5rem)] bg-slate-50">
       {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <header className="h-13 flex items-center gap-2 px-3 bg-white border-b border-slate-200 flex-shrink-0 z-20" style={{ height: 52 }}>
+      <header className="h-[52px] flex items-center gap-2 px-3 bg-white border-b border-slate-200 flex-shrink-0 z-20">
 
         {/* Back */}
         <button onClick={onBack} title="Zurück"
@@ -454,12 +446,6 @@ function FunnelEditorInner({
               onRenamePage={handleRenamePage}
               onReorderPages={handleReorderPages}
               onDuplicatePage={handleDuplicatePage}
-            />
-
-            {/* Left – Block panel */}
-            <BlockPanel
-              contentType={contentType}
-              onInsertBlock={handleInsertFromPanel}
             />
 
             {/* Center – Canvas */}

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Trash2, Copy, MousePointer2, Plus, X, Lock, Bold, Italic, Underline, List, Palette, ChevronDown, ChevronRight, ChevronUp } from 'lucide-react';
+import { Trash2, Copy, MousePointer2, Plus, X, Lock, Bold, Italic, Underline, List, Palette, ChevronDown, ChevronUp } from 'lucide-react';
 import { FunnelNode, FunnelStyle, FunnelContentType, FunnelPage, BLOCK_LABELS } from '@/lib/funnel-types';
 import { BLOCK_META } from './NodeView';
 
@@ -440,7 +440,9 @@ function BlockPropsEditor({ node, props, onChange, pages }: {
           <ImageUploadField value={(props.imageUrl as string) ?? ''} onChange={(v) => onChange({ imageUrl: v })} label="Bild (oben)" />
           <Field label="Titel"><input value={(props.title as string) ?? ''} onChange={(e) => onChange({ title: e.target.value })} className="input-field text-sm" /></Field>
           <Field label="Beschreibung"><textarea value={(props.description as string) ?? ''} onChange={(e) => onChange({ description: e.target.value })} rows={3} className="input-field text-sm resize-none" /></Field>
-          <Field label="Button-Text"><input value={(props.buttonText as string) ?? ''} onChange={(e) => onChange({ buttonText: e.target.value })} className="input-field text-sm" placeholder="Alles klar, verstanden!" /></Field>
+          <Section label="Verhalten" collapsible defaultOpen={true}>
+            <Field label="Button-Text"><input value={(props.buttonText as string) ?? ''} onChange={(e) => onChange({ buttonText: e.target.value })} className="input-field text-sm" placeholder="Alles klar, verstanden!" /></Field>
+          </Section>
           <Section label="Erweitert" collapsible defaultOpen={false}>
             <Field label="Subtext"><input value={(props.subtext as string) ?? ''} onChange={(e) => onChange({ subtext: e.target.value })} className="input-field text-sm" placeholder="Erlebe virtuell einen typischen Arbeitstag als:" /></Field>
             <Field label="Akzenttext"><input value={(props.accentText as string) ?? ''} onChange={(e) => onChange({ accentText: e.target.value })} className="input-field text-sm" placeholder="BERUFSBEZEICHNUNG" /></Field>
@@ -486,9 +488,11 @@ function BlockPropsEditor({ node, props, onChange, pages }: {
           <Field label="Dateiname">
             <input value={(props.fileName as string) ?? ''} onChange={(e) => onChange({ fileName: e.target.value })} className="input-field text-sm" placeholder="dokument.pdf" />
           </Field>
-          <Field label="Button-Text">
-            <input value={(props.buttonText as string) ?? ''} onChange={(e) => onChange({ buttonText: e.target.value })} className="input-field text-sm" />
-          </Field>
+          <Section label="Verhalten" collapsible defaultOpen={true}>
+            <Field label="Button-Text">
+              <input value={(props.buttonText as string) ?? ''} onChange={(e) => onChange({ buttonText: e.target.value })} className="input-field text-sm" />
+            </Field>
+          </Section>
         </div>
       );
 
@@ -553,13 +557,17 @@ function BlockPropsEditor({ node, props, onChange, pages }: {
           <Field label="Untertext">
             <textarea value={(props.subtext as string) ?? ''} onChange={(e) => onChange({ subtext: e.target.value })} rows={2} className="input-field text-sm resize-none" />
           </Field>
-          <Field label="Button-Text">
-            <input value={(props.buttonText as string) ?? ''} onChange={(e) => onChange({ buttonText: e.target.value })} className="input-field text-sm" />
-          </Field>
-          <Field label="Datenschutz-Text">
-            <textarea value={(props.privacyText as string) ?? ''} onChange={(e) => onChange({ privacyText: e.target.value })} rows={3} className="input-field text-sm resize-none" />
-            <p className="text-[10px] text-slate-400 mt-1">&#123;company&#125; → Firmenname</p>
-          </Field>
+          <Section label="Verhalten" collapsible defaultOpen={true}>
+            <Field label="Button-Text">
+              <input value={(props.buttonText as string) ?? ''} onChange={(e) => onChange({ buttonText: e.target.value })} className="input-field text-sm" />
+            </Field>
+          </Section>
+          <Section label="Erweitert" collapsible defaultOpen={false}>
+            <Field label="Datenschutz-Text">
+              <textarea value={(props.privacyText as string) ?? ''} onChange={(e) => onChange({ privacyText: e.target.value })} rows={3} className="input-field text-sm resize-none" />
+              <p className="text-[10px] text-slate-400 mt-1">&#123;company&#125; → Firmenname</p>
+            </Field>
+          </Section>
           {/* Flexible fields builder */}
           <div className="border-t border-slate-100 pt-3">
             <div className="flex items-center justify-between mb-2">
@@ -634,10 +642,12 @@ function BlockPropsEditor({ node, props, onChange, pages }: {
     case 'check_intro':
       return (
         <div className="space-y-3">
+          <ImageUploadField value={(props.imageUrl as string) ?? ''} onChange={(v) => onChange({ imageUrl: v })} label="Bild" />
           <Field label="Überschrift"><input value={(props.headline as string) ?? ''} onChange={(e) => onChange({ headline: e.target.value })} className="input-field text-sm" /></Field>
           <Field label="Untertext"><textarea value={(props.subtext as string) ?? ''} onChange={(e) => onChange({ subtext: e.target.value })} rows={2} className="input-field text-sm resize-none" /></Field>
-          <Field label="Button-Text"><input value={(props.buttonText as string) ?? ''} onChange={(e) => onChange({ buttonText: e.target.value })} className="input-field text-sm" /></Field>
-          <ImageUploadField value={(props.imageUrl as string) ?? ''} onChange={(v) => onChange({ imageUrl: v })} label="Bild" />
+          <Section label="Verhalten" collapsible defaultOpen={true}>
+            <Field label="Button-Text"><input value={(props.buttonText as string) ?? ''} onChange={(e) => onChange({ buttonText: e.target.value })} className="input-field text-sm" /></Field>
+          </Section>
         </div>
       );
 
@@ -645,7 +655,9 @@ function BlockPropsEditor({ node, props, onChange, pages }: {
       return (
         <div className="space-y-3">
           <Field label="Frage"><input value={(props.question as string) ?? ''} onChange={(e) => onChange({ question: e.target.value })} className="input-field text-sm" /></Field>
-          <Field label="Button-Text"><input value={(props.buttonText as string) ?? ''} onChange={(e) => onChange({ buttonText: e.target.value })} className="input-field text-sm" /></Field>
+          <Section label="Verhalten" collapsible defaultOpen={true}>
+            <Field label="Button-Text"><input value={(props.buttonText as string) ?? ''} onChange={(e) => onChange({ buttonText: e.target.value })} className="input-field text-sm" /></Field>
+          </Section>
           <Section label="Erweitert" collapsible defaultOpen={false}>
             <Field label="Platzhalter"><input value={(props.placeholder as string) ?? ''} onChange={(e) => onChange({ placeholder: e.target.value })} className="input-field text-sm" /></Field>
           </Section>
@@ -677,15 +689,19 @@ function BlockPropsEditor({ node, props, onChange, pages }: {
         <div className="space-y-3">
           <Field label="Überschrift"><input value={(props.headline as string) ?? ''} onChange={(e) => onChange({ headline: e.target.value })} className="input-field text-sm" /></Field>
           <Field label="Untertext"><textarea value={(props.subtext as string) ?? ''} onChange={(e) => onChange({ subtext: e.target.value })} rows={2} className="input-field text-sm resize-none" /></Field>
-          <Field label="Button-Text"><input value={(props.buttonText as string) ?? ''} onChange={(e) => onChange({ buttonText: e.target.value })} className="input-field text-sm" /></Field>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" checked={!!(props.showPhone)} onChange={(e) => onChange({ showPhone: e.target.checked })} className="accent-violet-600" />
-            <span className="text-xs text-slate-700">Telefon-Feld anzeigen</span>
-          </label>
-          <Field label="Datenschutz-Text">
-            <textarea value={(props.privacyText as string) ?? ''} onChange={(e) => onChange({ privacyText: e.target.value })} rows={3} className="input-field text-sm resize-none" />
-            <p className="text-[10px] text-slate-400 mt-1">&#123;company&#125; → Firmenname</p>
-          </Field>
+          <Section label="Verhalten" collapsible defaultOpen={true}>
+            <Field label="Button-Text"><input value={(props.buttonText as string) ?? ''} onChange={(e) => onChange({ buttonText: e.target.value })} className="input-field text-sm" /></Field>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={!!(props.showPhone)} onChange={(e) => onChange({ showPhone: e.target.checked })} className="accent-violet-600" />
+              <span className="text-xs text-slate-700">Telefon-Feld anzeigen</span>
+            </label>
+          </Section>
+          <Section label="Erweitert" collapsible defaultOpen={false}>
+            <Field label="Datenschutz-Text">
+              <textarea value={(props.privacyText as string) ?? ''} onChange={(e) => onChange({ privacyText: e.target.value })} rows={3} className="input-field text-sm resize-none" />
+              <p className="text-[10px] text-slate-400 mt-1">&#123;company&#125; → Firmenname</p>
+            </Field>
+          </Section>
         </div>
       );
 
@@ -694,10 +710,12 @@ function BlockPropsEditor({ node, props, onChange, pages }: {
         <div className="space-y-3">
           <Field label="Überschrift"><input value={(props.headline as string) ?? ''} onChange={(e) => onChange({ headline: e.target.value })} className="input-field text-sm" /><p className="text-[10px] text-slate-400 mt-1">&#123;name&#125; → Vorname</p></Field>
           <Field label="Untertext"><textarea value={(props.subtext as string) ?? ''} onChange={(e) => onChange({ subtext: e.target.value })} rows={2} className="input-field text-sm resize-none" /></Field>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" checked={!!(props.showDimensionBars)} onChange={(e) => onChange({ showDimensionBars: e.target.checked })} className="accent-violet-600" />
-            <span className="text-xs text-slate-700">Dimensions-Balken anzeigen</span>
-          </label>
+          <Section label="Erweitert" collapsible defaultOpen={false}>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={!!(props.showDimensionBars)} onChange={(e) => onChange({ showDimensionBars: e.target.checked })} className="accent-violet-600" />
+              <span className="text-xs text-slate-700">Dimensions-Balken anzeigen</span>
+            </label>
+          </Section>
         </div>
       );
 
@@ -705,10 +723,12 @@ function BlockPropsEditor({ node, props, onChange, pages }: {
     case 'form_hero':
       return (
         <div className="space-y-3">
+          <ImageUploadField value={(props.imageUrl as string) ?? ''} onChange={(v) => onChange({ imageUrl: v })} label="Hintergrundbild" />
           <Field label="Überschrift"><input value={(props.headline as string) ?? ''} onChange={(e) => onChange({ headline: e.target.value })} className="input-field text-sm" /></Field>
           <Field label="Untertext"><textarea value={(props.subtext as string) ?? ''} onChange={(e) => onChange({ subtext: e.target.value })} rows={2} className="input-field text-sm resize-none" /></Field>
-          <Field label="Button-Text"><input value={(props.ctaText as string) ?? ''} onChange={(e) => onChange({ ctaText: e.target.value })} className="input-field text-sm" /></Field>
-          <ImageUploadField value={(props.imageUrl as string) ?? ''} onChange={(v) => onChange({ imageUrl: v })} label="Hintergrundbild" />
+          <Section label="Verhalten" collapsible defaultOpen={true}>
+            <Field label="Button-Text"><input value={(props.ctaText as string) ?? ''} onChange={(e) => onChange({ ctaText: e.target.value })} className="input-field text-sm" /></Field>
+          </Section>
         </div>
       );
 
@@ -761,13 +781,17 @@ function BlockPropsEditor({ node, props, onChange, pages }: {
           <Field label="Untertext">
             <textarea value={(props.subtext as string) ?? ''} onChange={(e) => onChange({ subtext: e.target.value })} rows={2} className="input-field text-sm resize-none" />
           </Field>
-          <Field label="Button-Text">
-            <input value={(props.buttonText as string) ?? ''} onChange={(e) => onChange({ buttonText: e.target.value })} className="input-field text-sm" />
-          </Field>
-          <Field label="Datenschutz-Text">
-            <textarea value={(props.privacyText as string) ?? ''} onChange={(e) => onChange({ privacyText: e.target.value })} rows={3} className="input-field text-sm resize-none" />
-            <p className="text-[10px] text-slate-400 mt-1">&#123;company&#125; → Firmenname</p>
-          </Field>
+          <Section label="Verhalten" collapsible defaultOpen={true}>
+            <Field label="Button-Text">
+              <input value={(props.buttonText as string) ?? ''} onChange={(e) => onChange({ buttonText: e.target.value })} className="input-field text-sm" />
+            </Field>
+          </Section>
+          <Section label="Erweitert" collapsible defaultOpen={false}>
+            <Field label="Datenschutz-Text">
+              <textarea value={(props.privacyText as string) ?? ''} onChange={(e) => onChange({ privacyText: e.target.value })} rows={3} className="input-field text-sm resize-none" />
+              <p className="text-[10px] text-slate-400 mt-1">&#123;company&#125; → Firmenname</p>
+            </Field>
+          </Section>
           {/* Flexible fields builder */}
           <div className="border-t border-slate-100 pt-3">
             <div className="flex items-center justify-between mb-2">
@@ -1211,7 +1235,7 @@ function Section({ label, children, collapsible, defaultOpen = true }: {
           className="w-full flex items-center justify-between px-3 py-2 hover:bg-slate-50 transition-colors"
         >
           <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">{label}</span>
-          {open ? <ChevronDown size={12} className="text-slate-300" /> : <ChevronRight size={12} className="text-slate-300" />}
+          {open ? <ChevronUp size={12} className="text-slate-400" /> : <ChevronDown size={12} className="text-slate-400" />}
         </button>
         {open && <div className="px-3 pb-3 pt-1 space-y-3 border-t border-slate-100">{children}</div>}
       </div>
