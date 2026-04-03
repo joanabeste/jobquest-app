@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Trash2, Copy, MousePointer2, Plus, X, Lock, Bold, Italic, Underline, List, Palette, ChevronUp, ChevronDown } from 'lucide-react';
+import { Trash2, Copy, MousePointer2, Plus, X, Lock, Bold, Italic, Underline, List, Palette, ChevronDown, ChevronRight, ChevronUp } from 'lucide-react';
 import { FunnelNode, FunnelStyle, FunnelContentType, FunnelPage, BLOCK_LABELS } from '@/lib/funnel-types';
+import { BLOCK_META } from './NodeView';
 
 interface InspectorProps {
   node: FunnelNode | null;
@@ -20,7 +21,17 @@ interface InspectorProps {
 export default function Inspector({ node, isLocked, onUpdate, onDelete, onDuplicate, extraPanel, pages, currentPage, onUpdatePage }: InspectorProps) {
   const [tab, setTab] = useState<'props' | 'style' | 'page'>('props');
 
+  // When a block is selected switch to props tab; when deselected switch to page tab
+  useEffect(() => {
+    if (node) {
+      setTab('props');
+    } else {
+      setTab('page');
+    }
+  }, [node?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const label = node ? (node.kind === 'block' ? BLOCK_LABELS[node.type] : 'Layout') : null;
+  const blockMeta = node?.kind === 'block' ? BLOCK_META[node.type] : null;
   const props = node?.kind === 'block' ? node.props : {};
   const style = node?.style ?? {};
 
@@ -36,12 +47,14 @@ export default function Inspector({ node, isLocked, onUpdate, onDelete, onDuplic
 
       {/* Header – only when block selected */}
       {node && (
-        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 flex-shrink-0">
-          <div>
-            <p className="text-xs font-semibold text-slate-800">{label}</p>
-            <p className="text-[10px] text-slate-400 font-mono truncate max-w-[160px]">{node.id.slice(0, 8)}…</p>
-          </div>
-          <div className="flex items-center gap-1">
+        <div className="flex items-center gap-3 px-3 py-2.5 border-b border-slate-100 flex-shrink-0">
+          {blockMeta && (
+            <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${blockMeta.bg}`}>
+              {(() => { const Icon = blockMeta.icon; return <Icon size={13} className={blockMeta.color} />; })()}
+            </div>
+          )}
+          <p className="flex-1 text-sm font-semibold text-slate-800 truncate">{label}</p>
+          <div className="flex items-center gap-0.5 flex-shrink-0">
             {isLocked ? (
               <span className="flex items-center gap-1 px-2 py-1 bg-violet-50 rounded-lg text-[10px] font-medium text-violet-600">
                 <Lock size={10} /> Gesperrt
@@ -50,11 +63,11 @@ export default function Inspector({ node, isLocked, onUpdate, onDelete, onDuplic
               <>
                 <button onClick={onDuplicate} title="Duplizieren (⌘D)"
                   className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors">
-                  <Copy size={14} />
+                  <Copy size={13} />
                 </button>
                 <button onClick={onDelete} title="Löschen (Backspace)"
                   className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors">
-                  <Trash2 size={14} />
+                  <Trash2 size={13} />
                 </button>
               </>
             )}
@@ -65,7 +78,7 @@ export default function Inspector({ node, isLocked, onUpdate, onDelete, onDuplic
       {/* Tabs */}
       <div className="flex border-b border-slate-100 flex-shrink-0">
         {node && <TabBtn active={tab === 'props'} onClick={() => setTab('props')}>Inhalt</TabBtn>}
-        {node?.kind === 'block' && <TabBtn active={tab === 'style'} onClick={() => setTab('style')}>Style</TabBtn>}
+        {node?.kind === 'block' && <TabBtn active={tab === 'style'} onClick={() => setTab('style')}>Darstellung</TabBtn>}
         <TabBtn active={tab === 'page'} onClick={() => setTab('page')}>Seite</TabBtn>
       </div>
 
@@ -97,10 +110,15 @@ export default function Inspector({ node, isLocked, onUpdate, onDelete, onDuplic
             <StyleEditor style={style} onChange={updateStyle} />
           </div>
         ) : !node ? (
-          <div className="flex flex-col items-center justify-center text-center p-6 pt-10">
-            <MousePointer2 size={28} className="text-slate-200 mb-3" />
-            <p className="text-sm font-medium text-slate-500">Kein Block ausgewählt</p>
-            <p className="text-xs text-slate-400 mt-1">Klicke einen Block im Canvas an.</p>
+          <div className="flex flex-col items-center justify-center text-center px-5 py-10 gap-3">
+            <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center">
+              <MousePointer2 size={18} className="text-slate-300" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-slate-600">Block auswählen</p>
+              <p className="text-xs text-slate-400 mt-1 leading-relaxed">Klick auf einen Block im Canvas, um ihn zu bearbeiten.</p>
+            </div>
+            <p className="text-[10px] text-slate-300 mt-1">Neue Blöcke über [+] im Canvas einfügen</p>
           </div>
         ) : null}
 
@@ -326,10 +344,6 @@ function BlockPropsEditor({ node, props, onChange, pages }: {
             <input value={(props.text as string) ?? ''} onChange={(e) => onChange({ text: e.target.value })}
               className="input-field text-sm" />
           </Field>
-          <Field label="URL (optional)">
-            <input value={(props.url as string) ?? ''} onChange={(e) => onChange({ url: e.target.value })}
-              className="input-field text-sm" placeholder="https://…" />
-          </Field>
           <Field label="Stil">
             <select value={(props.variant as string) ?? 'primary'}
               onChange={(e) => onChange({ variant: e.target.value })} className="input-field text-sm">
@@ -338,6 +352,12 @@ function BlockPropsEditor({ node, props, onChange, pages }: {
               <option value="outline">Outline</option>
             </select>
           </Field>
+          <Section label="Verhalten" collapsible defaultOpen={!!(props.url)}>
+            <Field label="URL (optional)">
+              <input value={(props.url as string) ?? ''} onChange={(e) => onChange({ url: e.target.value })}
+                className="input-field text-sm" placeholder="https://…" />
+            </Field>
+          </Section>
         </div>
       );
 
@@ -379,14 +399,16 @@ function BlockPropsEditor({ node, props, onChange, pages }: {
               ))}
             </div>
           </Field>
-          <Field label="Alt-Text">
-            <input value={(props.alt as string) ?? ''} onChange={(e) => onChange({ alt: e.target.value })}
-              className="input-field text-sm" />
-          </Field>
-          <Field label="Bildunterschrift">
-            <input value={(props.caption as string) ?? ''} onChange={(e) => onChange({ caption: e.target.value })}
-              className="input-field text-sm" />
-          </Field>
+          <Section label="Erweitert" collapsible defaultOpen={false}>
+            <Field label="Alt-Text">
+              <input value={(props.alt as string) ?? ''} onChange={(e) => onChange({ alt: e.target.value })}
+                className="input-field text-sm" />
+            </Field>
+            <Field label="Bildunterschrift">
+              <input value={(props.caption as string) ?? ''} onChange={(e) => onChange({ caption: e.target.value })}
+                className="input-field text-sm" />
+            </Field>
+          </Section>
         </div>
       );
     }
@@ -416,11 +438,13 @@ function BlockPropsEditor({ node, props, onChange, pages }: {
       return (
         <div className="space-y-3">
           <ImageUploadField value={(props.imageUrl as string) ?? ''} onChange={(v) => onChange({ imageUrl: v })} label="Bild (oben)" />
-          <Field label="Titel (groß, fett)"><input value={(props.title as string) ?? ''} onChange={(e) => onChange({ title: e.target.value })} className="input-field text-sm" /></Field>
-          <Field label="Subtext"><input value={(props.subtext as string) ?? ''} onChange={(e) => onChange({ subtext: e.target.value })} className="input-field text-sm" placeholder="Erlebe virtuell einen typischen Arbeitstag als:" /></Field>
-          <Field label="Akzenttext (Berufsbezeichnung)"><input value={(props.accentText as string) ?? ''} onChange={(e) => onChange({ accentText: e.target.value })} className="input-field text-sm" placeholder="BERUFSBEZEICHNUNG" /></Field>
+          <Field label="Titel"><input value={(props.title as string) ?? ''} onChange={(e) => onChange({ title: e.target.value })} className="input-field text-sm" /></Field>
           <Field label="Beschreibung"><textarea value={(props.description as string) ?? ''} onChange={(e) => onChange({ description: e.target.value })} rows={3} className="input-field text-sm resize-none" /></Field>
           <Field label="Button-Text"><input value={(props.buttonText as string) ?? ''} onChange={(e) => onChange({ buttonText: e.target.value })} className="input-field text-sm" placeholder="Alles klar, verstanden!" /></Field>
+          <Section label="Erweitert" collapsible defaultOpen={false}>
+            <Field label="Subtext"><input value={(props.subtext as string) ?? ''} onChange={(e) => onChange({ subtext: e.target.value })} className="input-field text-sm" placeholder="Erlebe virtuell einen typischen Arbeitstag als:" /></Field>
+            <Field label="Akzenttext"><input value={(props.accentText as string) ?? ''} onChange={(e) => onChange({ accentText: e.target.value })} className="input-field text-sm" placeholder="BERUFSBEZEICHNUNG" /></Field>
+          </Section>
         </div>
       );
 
@@ -472,7 +496,9 @@ function BlockPropsEditor({ node, props, onChange, pages }: {
       return (
         <div className="space-y-3">
           <Field label="Frage"><input value={(props.question as string) ?? ''} onChange={(e) => onChange({ question: e.target.value })} className="input-field text-sm" /></Field>
-          <Field label="Platzhalter"><input value={(props.placeholder as string) ?? ''} onChange={(e) => onChange({ placeholder: e.target.value })} className="input-field text-sm" /></Field>
+          <Section label="Erweitert" collapsible defaultOpen={false}>
+            <Field label="Platzhalter"><input value={(props.placeholder as string) ?? ''} onChange={(e) => onChange({ placeholder: e.target.value })} className="input-field text-sm" /></Field>
+          </Section>
         </div>
       );
 
@@ -482,8 +508,10 @@ function BlockPropsEditor({ node, props, onChange, pages }: {
       return (
         <div className="space-y-3">
           <Field label="Ladetext"><input value={(props.text as string) ?? ''} onChange={(e) => onChange({ text: e.target.value })} className="input-field text-sm" placeholder="Einen Moment…" /></Field>
-          <Field label="Fertig-Text"><input value={(props.doneText as string) ?? ''} onChange={(e) => onChange({ doneText: e.target.value })} className="input-field text-sm" placeholder="Geschafft!" /></Field>
           <p className="text-[10px] text-slate-400">Geht automatisch nach 2 Sekunden weiter.</p>
+          <Section label="Erweitert" collapsible defaultOpen={false}>
+            <Field label="Fertig-Text"><input value={(props.doneText as string) ?? ''} onChange={(e) => onChange({ doneText: e.target.value })} className="input-field text-sm" placeholder="Geschafft!" /></Field>
+          </Section>
         </div>
       );
 
@@ -491,8 +519,10 @@ function BlockPropsEditor({ node, props, onChange, pages }: {
       return (
         <div className="space-y-3">
           <Field label="Frage"><input value={(props.question as string) ?? ''} onChange={(e) => onChange({ question: e.target.value })} className="input-field text-sm" /></Field>
-          <Field label="Emoji"><input value={(props.emoji as string) ?? '⭐'} onChange={(e) => onChange({ emoji: e.target.value })} className="input-field text-sm w-20" placeholder="⭐" /></Field>
-          <NumberInput label="Anzahl (1–10)" value={(props.count as number) ?? 5} onChange={(v) => onChange({ count: Math.min(10, Math.max(1, v)) })} />
+          <Section label="Erweitert" collapsible defaultOpen={false}>
+            <Field label="Emoji"><input value={(props.emoji as string) ?? '⭐'} onChange={(e) => onChange({ emoji: e.target.value })} className="input-field text-sm w-20" placeholder="⭐" /></Field>
+            <NumberInput label="Anzahl (1–10)" value={(props.count as number) ?? 5} onChange={(v) => onChange({ count: Math.min(10, Math.max(1, v)) })} />
+          </Section>
         </div>
       );
 
@@ -615,8 +645,10 @@ function BlockPropsEditor({ node, props, onChange, pages }: {
       return (
         <div className="space-y-3">
           <Field label="Frage"><input value={(props.question as string) ?? ''} onChange={(e) => onChange({ question: e.target.value })} className="input-field text-sm" /></Field>
-          <Field label="Platzhalter"><input value={(props.placeholder as string) ?? ''} onChange={(e) => onChange({ placeholder: e.target.value })} className="input-field text-sm" /></Field>
           <Field label="Button-Text"><input value={(props.buttonText as string) ?? ''} onChange={(e) => onChange({ buttonText: e.target.value })} className="input-field text-sm" /></Field>
+          <Section label="Erweitert" collapsible defaultOpen={false}>
+            <Field label="Platzhalter"><input value={(props.placeholder as string) ?? ''} onChange={(e) => onChange({ placeholder: e.target.value })} className="input-field text-sm" /></Field>
+          </Section>
         </div>
       );
 
@@ -1164,7 +1196,27 @@ function ImageUploadField({ label, value, onChange }: { label: string; value: st
   );
 }
 
-function Section({ label, children }: { label: string; children: React.ReactNode }) {
+function Section({ label, children, collapsible, defaultOpen = true }: {
+  label: string;
+  children: React.ReactNode;
+  collapsible?: boolean;
+  defaultOpen?: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  if (collapsible) {
+    return (
+      <div className="border border-slate-100 rounded-xl overflow-hidden">
+        <button
+          onClick={() => setOpen((o) => !o)}
+          className="w-full flex items-center justify-between px-3 py-2 hover:bg-slate-50 transition-colors"
+        >
+          <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">{label}</span>
+          {open ? <ChevronDown size={12} className="text-slate-300" /> : <ChevronRight size={12} className="text-slate-300" />}
+        </button>
+        {open && <div className="px-3 pb-3 pt-1 space-y-3 border-t border-slate-100">{children}</div>}
+      </div>
+    );
+  }
   return (
     <div>
       <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">{label}</p>

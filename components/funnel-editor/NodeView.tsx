@@ -727,8 +727,8 @@ export default function NodeView({
       onClick={(e) => { e.stopPropagation(); onSelect(); }}
       className={`relative group transition-all cursor-default
         ${isSelected
-          ? 'shadow-[inset_0_0_0_2px_#7c3aed] z-10'
-          : 'hover:shadow-[inset_0_0_0_1.5px_rgba(124,58,237,0.3)]'}
+          ? 'ring-2 ring-violet-500 ring-offset-0 z-10 bg-violet-500/[0.02]'
+          : 'hover:ring-1 hover:ring-violet-300'}
         ${isDragging ? 'opacity-40' : ''}
       `}
     >
