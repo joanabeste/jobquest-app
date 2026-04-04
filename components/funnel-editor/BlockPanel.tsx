@@ -1,6 +1,6 @@
 'use client';
 
-import { FunnelBlockType, FunnelContentType, BLOCK_CATALOG, DEFAULT_BLOCK_PROPS } from '@/lib/funnel-types';
+import { FunnelBlockType, FunnelContentType, BLOCK_CATALOG, getDefaultProps } from '@/lib/funnel-types';
 import { BLOCK_META } from './NodeView';
 
 interface BlockPanelProps {
@@ -31,7 +31,7 @@ export default function BlockPanel({ contentType, onInsertBlock }: BlockPanelPro
                 return (
                   <button
                     key={block.type}
-                    onClick={() => onInsertBlock(block.type, { ...DEFAULT_BLOCK_PROPS[block.type] })}
+                    onClick={() => onInsertBlock(block.type, getDefaultProps(block.type))}
                     className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-violet-50 transition-colors text-left group mb-0.5"
                     title={block.description}
                   >

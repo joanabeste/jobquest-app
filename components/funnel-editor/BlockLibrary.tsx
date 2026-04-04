@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Search, X } from 'lucide-react';
-import { FunnelContentType, FunnelBlockType, BLOCK_CATALOG, DEFAULT_BLOCK_PROPS } from '@/lib/funnel-types';
+import { FunnelContentType, FunnelBlockType, BLOCK_CATALOG, getDefaultProps } from '@/lib/funnel-types';
 import { BLOCK_META } from './NodeView';
 
 interface BlockLibraryProps {
@@ -107,7 +107,7 @@ export default function BlockLibrary({ contentType, onInsertBlock, onClose }: Bl
                   <button
                     key={block.type}
                     onClick={() => {
-                      onInsertBlock(block.type, { ...DEFAULT_BLOCK_PROPS[block.type] });
+                      onInsertBlock(block.type, getDefaultProps(block.type));
                     }}
                     className="w-full flex items-center gap-2.5 px-3 py-1.5 hover:bg-violet-50 active:bg-violet-100 transition-colors text-left group"
                   >

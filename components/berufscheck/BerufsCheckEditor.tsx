@@ -9,7 +9,7 @@ import {
   CareerCheck, BerufsCheckBlock, BerufsCheckBlockType,
   Dimension, BLOCK_LABELS, DIMENSION_COLORS,
 } from '@/lib/types';
-import { DEFAULT_BLOCK_PROPS } from '@/lib/funnel-types';
+import { getDefaultProps } from '@/lib/funnel-types';
 import {
   ArrowLeft, Plus, Trash2, GripVertical, ChevronUp, ChevronDown,
   Eye, Globe, Settings, List, Copy, Check, Sparkles, ArrowRight,
@@ -30,7 +30,7 @@ function createBlock(type: BerufsCheckBlockType): BerufsCheckBlock {
     case 'frage':              return { id: uid(), type: 'frage', frageType: 'single_choice', question: 'Neue Frage', options: [{ id: uid(), text: 'Option A', scores: {} }, { id: uid(), text: 'Option B', scores: {} }] };
     case 'ergebnisfrage':      return { id: uid(), type: 'ergebnisfrage', question: 'Welche Aussage trifft am ehesten auf dich zu?', options: [{ id: uid(), text: 'Option A', scores: {} }, { id: uid(), text: 'Option B', scores: {} }] };
     case 'text':               return { id: uid(), type: 'text', headline: '', content: 'Hier steht dein Text...', buttonText: 'Weiter' };
-    case 'lead':               return { id: uid(), type: 'lead', ...DEFAULT_BLOCK_PROPS.check_lead } as BerufsCheckBlock;
+    case 'lead':               return { id: uid(), type: 'lead', ...getDefaultProps('check_lead') } as BerufsCheckBlock;
     case 'ergebnis':           return { id: uid(), type: 'ergebnis', headline: 'Dein Ergebnis, {{name}}!', subtext: 'Hier siehst du, welche Berufsfelder am besten zu dir passen.', showDimensionBars: true };
     case 'button':             return { id: uid(), type: 'button', text: 'Mehr erfahren', url: '', style: 'primary' };
   }

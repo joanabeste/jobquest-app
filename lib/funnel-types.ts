@@ -135,7 +135,7 @@ function contactLeadDefault() {
       { id: uid(), type: 'text',  label: 'Vorname',   placeholder: 'Vorname',                  required: true  },
       { id: uid(), type: 'text',  label: 'Nachname',  placeholder: 'Nachname',                 required: false },
       { id: uid(), type: 'email', label: 'E-Mail',    placeholder: 'E-Mail-Adresse',           required: true  },
-      { id: uid(), type: 'phone', label: 'Telefon',   placeholder: 'Telefonnummer (optional)', required: false },
+      { id: uid(), type: 'tel',   label: 'Telefon',   placeholder: 'Telefonnummer (optional)', required: false },
     ],
   };
 }
