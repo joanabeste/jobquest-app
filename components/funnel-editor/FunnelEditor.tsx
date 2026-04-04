@@ -444,7 +444,7 @@ function FunnelEditorInner({
             />
 
             {/* Center – Canvas */}
-            <FunnelEditorContext.Provider value={{ selectedFieldId, setSelectedFieldId }}>
+            <FunnelEditorContext.Provider value={{ selectedFieldId, setSelectedFieldId, availableVars }}>
             <Canvas
               page={activePage ?? null}
               contentType={contentType}

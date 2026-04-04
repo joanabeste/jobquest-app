@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { sanitizeHtml } from '@/lib/sanitize';
 import { useEditor, EditorContent } from '@tiptap/react';
 import { BubbleMenu } from '@tiptap/react/menus';
@@ -21,6 +22,7 @@ import {
 } from 'lucide-react';
 import { BlockNode, FunnelBlockType, LayoutNode, FunnelNode, BLOCK_LABELS, FunnelStyle, LeadFieldDef } from '@/lib/funnel-types';
 import { useCi } from '@/lib/ci-context';
+import { useFunnelEditorCtx } from './FunnelEditorContext';
 import InlineLeadFields from './InlineLeadFields';
 
 // Custom extension: adds fontSize + fontWeight attributes to textStyle mark
@@ -113,7 +115,20 @@ function RichEd({ v, up, cl, ph }: {
   cl?: string;
   ph?: string;
 }) {
+  const { availableVars } = useFunnelEditorCtx();
   const toHtml = (raw: string) => raw.startsWith('<') ? raw : (raw ? `<p>${raw}</p>` : '<p></p>');
+
+  // @ mention state
+  const [mentionFilter, setMentionFilter] = useState('');
+  const [showMention, setShowMention] = useState(false);
+  const [mentionPos, setMentionPos] = useState<{ top: number; left: number } | null>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  const filteredVars = availableVars.filter(
+    (va) =>
+      va.key.toLowerCase().startsWith(mentionFilter.toLowerCase()) ||
+      va.label.toLowerCase().startsWith(mentionFilter.toLowerCase()),
+  );
 
   const editor = useEditor({
     extensions: [
@@ -131,10 +146,43 @@ function RichEd({ v, up, cl, ph }: {
         'data-placeholder': ph ?? '',
       },
     },
-    onUpdate: ({ editor }) => up?.(editor.getHTML()),
+    onUpdate: ({ editor: ed }) => {
+      up?.(ed.getHTML());
+      // Detect @mention in text before cursor
+      if (!up) return;
+      const { from } = ed.state.selection;
+      const textBefore = ed.state.doc.textBetween(Math.max(0, from - 30), from, ' ');
+      const match = textBefore.match(/@(\w*)$/);
+      if (match) {
+        setMentionFilter(match[1]);
+        // Position dropdown near cursor using a selection rect
+        const domSel = window.getSelection();
+        if (domSel && domSel.rangeCount > 0) {
+          const rect = domSel.getRangeAt(0).getBoundingClientRect();
+          setMentionPos({ top: rect.bottom + 6, left: rect.left });
+        }
+        setShowMention(true);
+      } else {
+        setShowMention(false);
+      }
+    },
     editable: !!up,
     immediatelyRender: false,
   });
+
+  function insertVar(key: string) {
+    if (!editor) return;
+    const { from } = editor.state.selection;
+    const textBefore = editor.state.doc.textBetween(Math.max(0, from - 30), from, ' ');
+    const match = textBefore.match(/@(\w*)$/);
+    if (!match) return;
+    const deleteFrom = from - match[0].length;
+    editor.chain().focus()
+      .deleteRange({ from: deleteFrom, to: from })
+      .insertContent(`@${key}`)
+      .run();
+    setShowMention(false);
+  }
 
   // Sync external changes (e.g. undo, prop panel edits) when not focused
   useEffect(() => {
@@ -164,7 +212,7 @@ function RichEd({ v, up, cl, ph }: {
   }
 
   return (
-    <div className="relative" onClick={(e) => e.stopPropagation()}>
+    <div className="relative" ref={wrapRef} onClick={(e) => e.stopPropagation()}>
       {editor && (
         <BubbleMenu
           editor={editor}
@@ -207,6 +255,29 @@ function RichEd({ v, up, cl, ph }: {
         </BubbleMenu>
       )}
       <EditorContent editor={editor} />
+      {/* @ mention dropdown */}
+      {showMention && mentionPos && filteredVars.length > 0 && createPortal(
+        <div
+          style={{ position: 'fixed', top: mentionPos.top, left: mentionPos.left, zIndex: 9999, minWidth: 200 }}
+          className="bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden"
+          onMouseDown={(e) => e.preventDefault()}
+        >
+          <div className="px-3 py-1.5 border-b border-slate-100 bg-slate-50">
+            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Variable einfügen</span>
+          </div>
+          {filteredVars.map((va) => (
+            <button
+              key={va.key}
+              onMouseDown={() => insertVar(va.key)}
+              className="w-full flex items-center gap-3 px-3 py-2 hover:bg-violet-50 transition-colors text-left"
+            >
+              <span className="text-violet-600 font-mono text-xs font-semibold">@{va.key}</span>
+              <span className="text-xs text-slate-400">{va.label}</span>
+            </button>
+          ))}
+        </div>,
+        document.body,
+      )}
     </div>
   );
 }
