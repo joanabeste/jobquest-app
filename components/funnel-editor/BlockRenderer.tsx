@@ -507,9 +507,10 @@ export function BlockRenderer({
       const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
       const embedUrl   = ytMatch    ? `https://www.youtube-nocookie.com/embed/${ytMatch[1]}`
         : vimeoMatch ? `https://player.vimeo.com/video/${vimeoMatch[1]}` : url;
+      const videoBr    = node.style?.borderRadius ? `${node.style.borderRadius}px` : br;
       return url ? (
         <div className="px-5 py-3">
-          <div className="aspect-video overflow-hidden bg-black shadow-md" style={{ borderRadius: br }}>
+          <div className="aspect-video overflow-hidden bg-black shadow-md" style={{ borderRadius: videoBr }}>
             <iframe src={embedUrl} className="w-full h-full" allowFullScreen title="Video" />
           </div>
           {b(p.caption) && <p className="text-xs text-slate-400 text-center mt-1">{s(p.caption)}</p>}

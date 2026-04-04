@@ -375,14 +375,15 @@ function BlockPreview({ node, onUpdate }: {
       const vimeoMatch = vUrl.match(/vimeo\.com\/(\d+)/);
       const embedUrl   = ytMatch    ? `https://www.youtube-nocookie.com/embed/${ytMatch[1]}`
         : vimeoMatch ? `https://player.vimeo.com/video/${vimeoMatch[1]}` : vUrl;
+      const videoBr    = node.style?.borderRadius ? `${node.style.borderRadius}px` : br;
       return vUrl ? (
         <div className="px-5 py-3 pointer-events-none">
-          <div className="aspect-video overflow-hidden bg-black shadow-md" style={{ borderRadius: br }}>
+          <div className="aspect-video overflow-hidden bg-black shadow-md" style={{ borderRadius: videoBr }}>
             <iframe src={embedUrl} className="w-full h-full" title="Video" />
           </div>
         </div>
       ) : (
-        <div className="bg-slate-900 h-32 flex flex-col items-center justify-center gap-2">
+        <div className="h-32 flex flex-col items-center justify-center gap-2 bg-slate-900" style={{ borderRadius: videoBr }}>
           <Video size={24} className="text-slate-500" />
           <p className="text-xs text-slate-500">Video-URL eingeben</p>
         </div>
