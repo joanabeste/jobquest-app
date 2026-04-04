@@ -1,10 +1,10 @@
 'use client';
 
 import { ChevronDown, ChevronUp, Plus, X } from 'lucide-react';
-import { LeadFieldDef } from '@/lib/funnel-types';
+import { LeadFieldDef, LeadFieldType } from '@/lib/funnel-types';
 
-const LEAD_FIELD_TYPES = ['text', 'email', 'tel', 'textarea', 'checkbox', 'select'] as const;
-const LEAD_FIELD_LABELS: Record<string, string> = {
+const LEAD_FIELD_TYPES: LeadFieldType[] = ['text', 'email', 'tel', 'textarea', 'checkbox', 'select'];
+const LEAD_FIELD_LABELS: Record<LeadFieldType, string> = {
   text: 'Text',
   email: 'E-Mail',
   tel: 'Telefon',
@@ -66,7 +66,7 @@ export default function LeadFieldBuilder({ fields, onChange }: LeadFieldBuilderP
                   value={f.type}
                   onChange={(e) =>
                     updateField(f.id, {
-                      type: e.target.value,
+                      type: e.target.value as LeadFieldType,
                       options: e.target.value === 'select' ? (f.options ?? ['Option 1', 'Option 2']) : f.options,
                     })
                   }

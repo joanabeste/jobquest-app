@@ -65,7 +65,8 @@ export function createCrudRoute<T extends { id: string; companyId: string }>(
 
     const { id } = await params;
     const supabase = createAdminClient();
-    await supabase.from(opts.table).delete().eq('id', id).eq('company_id', session.company.id);
+    const { error } = await supabase.from(opts.table).delete().eq('id', id).eq('company_id', session.company.id);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ ok: true });
   }
 

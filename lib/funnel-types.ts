@@ -90,12 +90,16 @@ export interface FunnelDoc {
 }
 
 // ─── Lead / Form field definition ────────────────────────────────────────────
+// Note: LeadFieldType is distinct from FormFieldType (lib/types.ts) — lead
+// capture forms support 'tel' and 'checkbox', static forms use 'phone'/'radio'.
+export type LeadFieldType = 'text' | 'email' | 'tel' | 'textarea' | 'checkbox' | 'select';
+
 export interface LeadFieldDef {
   id: string;
-  type: string;
+  type: LeadFieldType;
   label: string;
   placeholder?: string;
-  required?: boolean;
+  required: boolean;
   options?: string[];
 }
 
@@ -114,20 +118,49 @@ export interface BlockTypeConfig {
 }
 
 // ─── Default props per block type ─────────────────────────────────────────────
-// Shared contact/lead defaults used across Quest, Check and Form
-const CONTACT_LEAD_DEFAULT = {
-  headline: 'Interessiert?',
-  subtext: 'Hinterlasse deine Kontaktdaten – wir melden uns bei dir.',
-  buttonText: 'Jetzt bewerben',
-  privacyText: 'Ich stimme zu, dass @companyName meine Daten speichert und mich kontaktiert.',
-  fields: [
-    { id: crypto.randomUUID(), type: 'text', label: 'Vorname', placeholder: 'Vorname', required: true },
-    { id: crypto.randomUUID(), type: 'text', label: 'Nachname', placeholder: 'Nachname', required: false },
-    { id: crypto.randomUUID(), type: 'email', label: 'E-Mail', placeholder: 'E-Mail-Adresse', required: true },
-    { id: crypto.randomUUID(), type: 'tel', label: 'Telefon', placeholder: 'Telefonnummer (optional)', required: false },
-  ],
-};
+// IMPORTANT: blocks with nested items (lines, options, fields) must generate
+// fresh UUIDs on each use to avoid duplicate React keys and editor state bugs.
+// Call getDefaultProps(type) when creating a new block — never spread the
+// static DEFAULT_BLOCK_PROPS directly for these block types.
 
+function uid() { return crypto.randomUUID(); }
+
+function contactLeadDefault() {
+  return {
+    headline: 'Interessiert?',
+    subtext: 'Hinterlasse deine Kontaktdaten – wir melden uns bei dir.',
+    buttonText: 'Jetzt bewerben',
+    privacyText: 'Ich stimme zu, dass @companyName meine Daten speichert und mich kontaktiert.',
+    fields: [
+      { id: uid(), type: 'text',  label: 'Vorname',   placeholder: 'Vorname',                  required: true  },
+      { id: uid(), type: 'text',  label: 'Nachname',  placeholder: 'Nachname',                 required: false },
+      { id: uid(), type: 'email', label: 'E-Mail',    placeholder: 'E-Mail-Adresse',           required: true  },
+      { id: uid(), type: 'phone', label: 'Telefon',   placeholder: 'Telefonnummer (optional)', required: false },
+    ],
+  };
+}
+
+/**
+ * Returns default props for a block type with freshly generated IDs.
+ * Use this whenever creating a new block — not the static DEFAULT_BLOCK_PROPS.
+ */
+export function getDefaultProps(type: FunnelBlockType): Record<string, unknown> {
+  switch (type) {
+    case 'quest_dialog':        return { title: '', lines: [{ id: uid(), speaker: 'Recruiter', text: 'Hallo!' }] };
+    case 'quest_decision':      return { question: 'Was würdest du tun?', options: [{ id: uid(), text: 'Option A', emoji: '', reaction: 'Gute Wahl!' }] };
+    case 'quest_quiz':          return { question: 'Frage?', options: [{ id: uid(), text: 'Antwort A', correct: true, feedback: 'Richtig!' }] };
+    case 'quest_lead':          return contactLeadDefault();
+    case 'check_frage':         return { frageType: 'single_choice', question: 'Frage?', options: [{ id: uid(), text: 'Option A', scores: {} }] };
+    case 'check_ergebnisfrage': return { question: 'Ergebnisfrage?', options: [{ id: uid(), text: 'Option A', scores: {} }] };
+    case 'check_lead':          return contactLeadDefault();
+    case 'form_config':         return contactLeadDefault();
+    // All other block types have no nested items with IDs — safe to return static values.
+    default:                    return DEFAULT_BLOCK_PROPS[type];
+  }
+}
+
+// Static defaults — safe for catalog display. Do NOT use for block creation
+// if the block type has nested items with IDs (see getDefaultProps above).
 export const DEFAULT_BLOCK_PROPS: Record<FunnelBlockType, Record<string, unknown>> = {
   heading:             { text: 'Überschrift', level: 2 },
   paragraph:           { text: '<p>Dein Text hier…</p>' },
@@ -136,28 +169,28 @@ export const DEFAULT_BLOCK_PROPS: Record<FunnelBlockType, Record<string, unknown
   spacer:              { height: 32 },
   video:               { url: '', caption: '' },
   quest_scene:         { title: 'Willkommen!', subtext: 'Erlebe virtuell einen typischen Arbeitstag als:', accentText: 'BERUFSBEZEICHNUNG', description: 'In wenigen Minuten bekommst du einen kleinen Einblick in den Arbeitsalltag und kannst selbst Entscheidungen treffen.', imageUrl: '', buttonText: 'Alles klar, verstanden!', bulletPoints: [] },
-  quest_dialog:        { title: '', lines: [{ id: crypto.randomUUID(), speaker: 'Recruiter', text: 'Hallo!' }] },
-  quest_decision:      { question: 'Was würdest du tun?', options: [{ id: crypto.randomUUID(), text: 'Option A', emoji: '', reaction: 'Gute Wahl!' }] },
-  quest_quiz:          { question: 'Frage?', options: [{ id: crypto.randomUUID(), text: 'Antwort A', correct: true, feedback: 'Richtig!' }] },
+  quest_dialog:        { title: '', lines: [] },
+  quest_decision:      { question: 'Was würdest du tun?', options: [] },
+  quest_quiz:          { question: 'Frage?', options: [] },
   quest_info:          { title: 'Info', text: 'Informationstext' },
   quest_freetext:      { text: 'Freitext' },
   quest_file:          { title: 'Datei', fileUrl: '', fileName: 'dokument.pdf', buttonText: 'Herunterladen' },
   quest_spinner:       { text: 'Einen Moment…', doneText: 'Geschafft!' },
   quest_rating:        { question: 'Wie war dein Erlebnis?', emoji: '⭐', count: 5 },
   quest_vorname:       { question: 'Wie heißt du?', placeholder: 'Dein Vorname…' },
-  quest_lead:          CONTACT_LEAD_DEFAULT,
+  quest_lead:          { headline: 'Interessiert?', subtext: 'Hinterlasse deine Kontaktdaten – wir melden uns bei dir.', buttonText: 'Jetzt bewerben', privacyText: 'Ich stimme zu, dass @companyName meine Daten speichert und mich kontaktiert.', fields: [] },
   check_intro:         { headline: 'Bist du geeignet?', subtext: 'Mache jetzt den Check.', imageUrl: '', buttonText: 'Jetzt starten' },
   check_vorname:       { question: 'Wie heißt du?', placeholder: 'Dein Vorname', buttonText: 'Weiter' },
-  check_frage:         { frageType: 'single_choice', question: 'Frage?', options: [{ id: crypto.randomUUID(), text: 'Option A', scores: {} }] },
-  check_ergebnisfrage: { question: 'Ergebnisfrage?', options: [{ id: crypto.randomUUID(), text: 'Option A', scores: {} }] },
+  check_frage:         { frageType: 'single_choice', question: 'Frage?', options: [] },
+  check_ergebnisfrage: { question: 'Ergebnisfrage?', options: [] },
   check_selbst:        { question: 'Wie schätzt du dich ein?', sliderMin: 0, sliderMax: 10, sliderStep: 1, sliderLabelMin: 'Gar nicht', sliderLabelMax: 'Sehr' },
-  check_lead:          CONTACT_LEAD_DEFAULT,
+  check_lead:          { headline: 'Interessiert?', subtext: 'Hinterlasse deine Kontaktdaten – wir melden uns bei dir.', buttonText: 'Jetzt bewerben', privacyText: 'Ich stimme zu, dass @companyName meine Daten speichert und mich kontaktiert.', fields: [] },
   check_ergebnis:      { headline: 'Dein Ergebnis, @firstName!', subtext: 'Basierend auf deinen Antworten.', showDimensionBars: true },
   form_hero:           { headline: 'Jetzt anfragen', subtext: 'Wir melden uns bei dir.', imageUrl: '', ctaText: 'Jetzt anfragen' },
   form_text:           { headline: '', content: 'Ihr Text hier…' },
   form_image:          { imageUrl: '', caption: '' },
   form_step:           { title: 'Deine Angaben', description: '', fields: [] },
-  form_config:         CONTACT_LEAD_DEFAULT,
+  form_config:         { headline: 'Interessiert?', subtext: 'Hinterlasse deine Kontaktdaten – wir melden uns bei dir.', buttonText: 'Jetzt bewerben', privacyText: 'Ich stimme zu, dass @companyName meine Daten speichert und mich kontaktiert.', fields: [] },
 };
 
 // ─── Block type catalog per content type ─────────────────────────────────────

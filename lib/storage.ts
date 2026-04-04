@@ -27,7 +27,8 @@ function createContentStorage<T extends { id: string; title?: string }, S extend
   return {
     getAll: (): Promise<T[]> => apiFetch<T[]>(`/api/${endpoint}`),
 
-    getByCompany: (_companyId: string) => createContentStorage<T, S>(endpoint, supabaseTable, fromDb, supabaseSlugField).getAll(),
+    // companyId is filtered server-side via session — parameter kept for API compatibility.
+    getByCompany: (_companyId: string): Promise<T[]> => apiFetch<T[]>(`/api/${endpoint}`),
 
     getById: async (id: string): Promise<T | undefined> => {
       try {
