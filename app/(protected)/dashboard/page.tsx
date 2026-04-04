@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { questStorage, leadStorage, careerCheckStorage, careerCheckLeadStorage, formPageStorage, formSubmissionStorage } from '@/lib/storage';
 import { JobQuest, CareerCheck, FormPage, DEFAULT_FORM_CONFIG } from '@/lib/types';
 import { generateSlug, formatDateShort } from '@/lib/utils';
+import { useContentList } from '@/hooks/useContentList';
 import {
   Plus,
   Edit2,
@@ -32,54 +33,32 @@ export default function DashboardPage() {
   const router = useRouter();
 
   const [activeTab, setActiveTab] = useState<ActiveTab>('jobquests');
-
-  // JobQuest state
-  const [quests, setQuests] = useState<JobQuest[]>([]);
-  const [leadCounts, setLeadCounts] = useState<Record<string, number>>({});
-  const [deleteConfirmQuest, setDeleteConfirmQuest] = useState<string | null>(null);
-
-  // Berufscheck state
-  const [checks, setChecks] = useState<CareerCheck[]>([]);
-  const [checkLeadCounts, setCheckLeadCounts] = useState<Record<string, number>>({});
-  const [deleteConfirmCheck, setDeleteConfirmCheck] = useState<string | null>(null);
-
-  // Formular state
-  const [forms, setForms] = useState<FormPage[]>([]);
-  const [formSubmissionCounts, setFormSubmissionCounts] = useState<Record<string, number>>({});
-  const [deleteConfirmForm, setDeleteConfirmForm] = useState<string | null>(null);
-
-  // Shared UI state
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<'updated' | 'created' | 'title'>('updated');
 
-  const loadData = useCallback(async () => {
+  const questList = useContentList<JobQuest>({
+    storage: questStorage,
+    getCount: (id) => leadStorage.getByQuest(id).then((l) => l.length),
+  });
+  const checkList = useContentList<CareerCheck>({
+    storage: careerCheckStorage,
+    getCount: (id) => careerCheckLeadStorage.getByCheck(id).then((l) => l.length),
+  });
+  const formList = useContentList<FormPage>({
+    storage: formPageStorage,
+    getCount: (id) => formSubmissionStorage.getByForm(id).then((s) => s.length),
+  });
+
+  useEffect(() => {
     if (!company) return;
-
-    const allQuests = await questStorage.getByCompany(company.id);
-    setQuests(allQuests);
-    const qCounts: Record<string, number> = {};
-    for (const q of allQuests) { qCounts[q.id] = (await leadStorage.getByQuest(q.id)).length; }
-    setLeadCounts(qCounts);
-
-    const allChecks = await careerCheckStorage.getByCompany(company.id);
-    setChecks(allChecks);
-    const cCounts: Record<string, number> = {};
-    for (const c of allChecks) { cCounts[c.id] = (await careerCheckLeadStorage.getByCheck(c.id)).length; }
-    setCheckLeadCounts(cCounts);
-
-    const allForms = await formPageStorage.getByCompany(company.id);
-    setForms(allForms);
-    const fCounts: Record<string, number> = {};
-    for (const f of allForms) { fCounts[f.id] = (await formSubmissionStorage.getByForm(f.id)).length; }
-    setFormSubmissionCounts(fCounts);
+    questList.reload();
+    checkList.reload();
+    formList.reload();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [company]);
 
-  useEffect(() => { loadData(); }, [loadData]);
-
-  // Reset search when switching tabs
   useEffect(() => { setSearch(''); }, [activeTab]);
 
-  // ── JobQuest actions ──────────────────────────────────────────────────────
   async function handleCreateQuest() {
     if (!company) return;
     const id = crypto.randomUUID();
@@ -97,19 +76,24 @@ export default function DashboardPage() {
     router.push(`/editor/${id}`);
   }
 
-  async function handleDuplicateQuest(quest: JobQuest) {
-    const newId = crypto.randomUUID();
-    await questStorage.duplicate(quest.id, newId, generateSlug(quest.title));
-    await loadData();
+  async function handleCreateCheck() {
+    if (!company) return;
+    const id = crypto.randomUUID();
+    const newCheck: CareerCheck = {
+      id,
+      companyId: company.id,
+      title: 'Neuer Berufscheck',
+      slug: generateSlug('neuer-berufscheck'),
+      status: 'draft',
+      blocks: [],
+      dimensions: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    await careerCheckStorage.save(newCheck);
+    router.push(`/berufscheck-editor/${id}`);
   }
 
-  async function handleDeleteQuest(id: string) {
-    await questStorage.delete(id);
-    setDeleteConfirmQuest(null);
-    await loadData();
-  }
-
-  // ── Formular actions ──────────────────────────────────────────────────────
   async function handleCreateForm() {
     if (!company) return;
     const id = crypto.randomUUID();
@@ -129,49 +113,6 @@ export default function DashboardPage() {
     router.push(`/formular-editor/${id}`);
   }
 
-  async function handleDuplicateForm(form: FormPage) {
-    const newId = crypto.randomUUID();
-    await formPageStorage.duplicate(form.id, newId, generateSlug(form.title));
-    await loadData();
-  }
-
-  async function handleDeleteForm(id: string) {
-    await formPageStorage.delete(id);
-    setDeleteConfirmForm(null);
-    await loadData();
-  }
-
-  // ── Berufscheck actions ───────────────────────────────────────────────────
-  async function handleCreateCheck() {
-    if (!company) return;
-    const id = crypto.randomUUID();
-    const newCheck: CareerCheck = {
-      id,
-      companyId: company.id,
-      title: 'Neuer Berufscheck',
-      slug: generateSlug('neuer-berufscheck'),
-      status: 'draft',
-      blocks: [],
-      dimensions: [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    await careerCheckStorage.save(newCheck);
-    router.push(`/berufscheck-editor/${id}`);
-  }
-
-  async function handleDuplicateCheck(check: CareerCheck) {
-    const newId = crypto.randomUUID();
-    await careerCheckStorage.duplicate(check.id, newId, generateSlug(check.title));
-    await loadData();
-  }
-
-  async function handleDeleteCheck(id: string) {
-    await careerCheckStorage.delete(id);
-    setDeleteConfirmCheck(null);
-    await loadData();
-  }
-
   // ── Filtered lists ────────────────────────────────────────────────────────
   function sortItems<T extends { title: string; createdAt: string; updatedAt: string }>(items: T[]) {
     return [...items]
@@ -183,16 +124,16 @@ export default function DashboardPage() {
       });
   }
 
-  const filteredQuests = sortItems(quests);
-  const filteredChecks = sortItems(checks);
-  const filteredForms = sortItems(forms);
+  const filteredQuests = sortItems(questList.items);
+  const filteredChecks = sortItems(checkList.items);
+  const filteredForms = sortItems(formList.items);
 
-  const publishedQuestCount = quests.filter((q) => q.status === 'published').length;
-  const publishedCheckCount = checks.filter((c) => c.status === 'published').length;
-  const publishedFormCount = forms.filter((f) => f.status === 'published').length;
-  const totalLeads = Object.values(leadCounts).reduce((a, b) => a + b, 0)
-    + Object.values(checkLeadCounts).reduce((a, b) => a + b, 0)
-    + Object.values(formSubmissionCounts).reduce((a, b) => a + b, 0);
+  const publishedQuestCount = questList.items.filter((q) => q.status === 'published').length;
+  const publishedCheckCount = checkList.items.filter((c) => c.status === 'published').length;
+  const publishedFormCount = formList.items.filter((f) => f.status === 'published').length;
+  const totalLeads = Object.values(questList.counts).reduce((a, b) => a + b, 0)
+    + Object.values(checkList.counts).reduce((a, b) => a + b, 0)
+    + Object.values(formList.counts).reduce((a, b) => a + b, 0);
 
   return (
     <div className="max-w-6xl mx-auto px-4 md:px-6 py-8">
@@ -227,9 +168,9 @@ export default function DashboardPage() {
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
         {[
-          { label: 'JobQuests', value: quests.length, icon: FileText, color: 'violet', tab: 'jobquests' as ActiveTab },
-          { label: 'Berufschecks', value: checks.length, icon: CheckSquare, color: 'indigo', tab: 'berufschecks' as ActiveTab },
-          { label: 'Formulare', value: forms.length, icon: ClipboardList, color: 'emerald', tab: 'formulare' as ActiveTab },
+          { label: 'JobQuests', value: questList.items.length, icon: FileText, color: 'violet', tab: 'jobquests' as ActiveTab },
+          { label: 'Berufschecks', value: checkList.items.length, icon: CheckSquare, color: 'indigo', tab: 'berufschecks' as ActiveTab },
+          { label: 'Formulare', value: formList.items.length, icon: ClipboardList, color: 'emerald', tab: 'formulare' as ActiveTab },
           { label: 'Kontakte gesamt', value: totalLeads, icon: Users, color: 'blue', tab: null },
         ].map(({ label, value, icon: Icon, color, tab }) => {
           const inner = (
@@ -350,12 +291,12 @@ export default function DashboardPage() {
       {activeTab === 'jobquests' ? (
         <QuestList
           quests={filteredQuests}
-          allQuests={quests}
-          leadCounts={leadCounts}
-          deleteConfirm={deleteConfirmQuest}
-          setDeleteConfirm={setDeleteConfirmQuest}
-          onDuplicate={handleDuplicateQuest}
-          onDelete={handleDeleteQuest}
+          allQuests={questList.items}
+          leadCounts={questList.counts}
+          deleteConfirm={questList.deleteConfirm}
+          setDeleteConfirm={questList.setDeleteConfirm}
+          onDuplicate={questList.handleDuplicate}
+          onDelete={questList.handleDelete}
           onCreate={handleCreateQuest}
           search={search}
           canCreate={can('create_content')}
@@ -364,12 +305,12 @@ export default function DashboardPage() {
       ) : activeTab === 'berufschecks' ? (
         <CheckList
           checks={filteredChecks}
-          allChecks={checks}
-          leadCounts={checkLeadCounts}
-          deleteConfirm={deleteConfirmCheck}
-          setDeleteConfirm={setDeleteConfirmCheck}
-          onDuplicate={handleDuplicateCheck}
-          onDelete={handleDeleteCheck}
+          allChecks={checkList.items}
+          leadCounts={checkList.counts}
+          deleteConfirm={checkList.deleteConfirm}
+          setDeleteConfirm={checkList.setDeleteConfirm}
+          onDuplicate={checkList.handleDuplicate}
+          onDelete={checkList.handleDelete}
           onCreate={handleCreateCheck}
           search={search}
           canCreate={can('create_content')}
@@ -378,12 +319,12 @@ export default function DashboardPage() {
       ) : (
         <FormList
           forms={filteredForms}
-          allForms={forms}
-          submissionCounts={formSubmissionCounts}
-          deleteConfirm={deleteConfirmForm}
-          setDeleteConfirm={setDeleteConfirmForm}
-          onDuplicate={handleDuplicateForm}
-          onDelete={handleDeleteForm}
+          allForms={formList.items}
+          submissionCounts={formList.counts}
+          deleteConfirm={formList.deleteConfirm}
+          setDeleteConfirm={formList.setDeleteConfirm}
+          onDuplicate={formList.handleDuplicate}
+          onDelete={formList.handleDelete}
           onCreate={handleCreateForm}
           search={search}
           canCreate={can('create_content')}

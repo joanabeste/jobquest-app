@@ -17,6 +17,58 @@ async function apiUpsert<T>(putUrl: string, postUrl: string, body: T): Promise<v
   }
 }
 
+/** Generic CRUD storage factory for content types (quest, career-check, form-page). */
+function createContentStorage<T extends { id: string; title?: string }, S extends { slug: string }>(
+  endpoint: string,
+  supabaseTable: string,
+  fromDb: (row: Record<string, unknown>) => T,
+  supabaseSlugField = 'slug',
+) {
+  return {
+    getAll: (): Promise<T[]> => apiFetch<T[]>(`/api/${endpoint}`),
+
+    getByCompany: (_companyId: string) => createContentStorage<T, S>(endpoint, supabaseTable, fromDb, supabaseSlugField).getAll(),
+
+    getById: async (id: string): Promise<T | undefined> => {
+      try {
+        return await apiFetch<T>(`/api/${endpoint}/${id}`);
+      } catch {
+        return undefined;
+      }
+    },
+
+    getBySlug: async (slug: string): Promise<T | undefined> => {
+      const { data } = await createClient()
+        .from(supabaseTable)
+        .select('*')
+        .eq(supabaseSlugField, slug)
+        .eq('status', 'published')
+        .single();
+      return data ? fromDb(data as Record<string, unknown>) : undefined;
+    },
+
+    save: async (item: T & { id: string }): Promise<void> => {
+      await apiUpsert(`/api/${endpoint}/${item.id}`, `/api/${endpoint}`, item);
+    },
+
+    delete: async (id: string): Promise<void> => {
+      await apiFetch(`/api/${endpoint}/${id}`, { method: 'DELETE' });
+    },
+
+    duplicate: async (id: string, newId: string, newSlug: string): Promise<T | null> => {
+      try {
+        return await apiFetch<T>(`/api/${endpoint}/${id}/duplicate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ newId, newSlug }),
+        });
+      } catch {
+        return null;
+      }
+    },
+  };
+}
+
 // ─── Company Storage ────────────────────────────────────────────────────────
 
 export const companyStorage = {
@@ -53,51 +105,11 @@ export const companyStorage = {
 
 // ─── Quest Storage ──────────────────────────────────────────────────────────
 
-export const questStorage = {
-  getAll: async (): Promise<JobQuest[]> => {
-    return apiFetch<JobQuest[]>('/api/quests');
-  },
-
-  getByCompany: (_companyId: string) => questStorage.getAll(),
-
-  getById: async (id: string): Promise<JobQuest | undefined> => {
-    try {
-      return await apiFetch<JobQuest>(`/api/quests/${id}`);
-    } catch {
-      return undefined;
-    }
-  },
-
-  getBySlug: async (slug: string): Promise<JobQuest | undefined> => {
-    const { data } = await createClient()
-      .from('job_quests')
-      .select('*')
-      .eq('slug', slug)
-      .eq('status', 'published')
-      .single();
-    return data ? questFromDb(data) : undefined;
-  },
-
-  save: async (quest: JobQuest): Promise<void> => {
-    await apiUpsert(`/api/quests/${quest.id}`, '/api/quests', quest);
-  },
-
-  delete: async (id: string): Promise<void> => {
-    await apiFetch(`/api/quests/${id}`, { method: 'DELETE' });
-  },
-
-  duplicate: async (id: string, newId: string, newSlug: string): Promise<JobQuest | null> => {
-    try {
-      return await apiFetch<JobQuest>(`/api/quests/${id}/duplicate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ newId, newSlug }),
-      });
-    } catch {
-      return null;
-    }
-  },
-};
+export const questStorage = createContentStorage<JobQuest, { slug: string }>(
+  'quests',
+  'job_quests',
+  (row) => questFromDb(row as Parameters<typeof questFromDb>[0]),
+);
 
 // ─── Lead Storage ───────────────────────────────────────────────────────────
 
@@ -137,51 +149,11 @@ export const analyticsStorage = {
 
 // ─── Career Check Storage ───────────────────────────────────────────────────
 
-export const careerCheckStorage = {
-  getAll: async (): Promise<CareerCheck[]> => {
-    return apiFetch<CareerCheck[]>('/api/career-checks');
-  },
-
-  getByCompany: (_companyId: string) => careerCheckStorage.getAll(),
-
-  getById: async (id: string): Promise<CareerCheck | undefined> => {
-    try {
-      return await apiFetch<CareerCheck>(`/api/career-checks/${id}`);
-    } catch {
-      return undefined;
-    }
-  },
-
-  getBySlug: async (slug: string): Promise<CareerCheck | undefined> => {
-    const { data } = await createClient()
-      .from('career_checks')
-      .select('*')
-      .eq('slug', slug)
-      .eq('status', 'published')
-      .single();
-    return data ? careerCheckFromDb(data) : undefined;
-  },
-
-  save: async (check: CareerCheck): Promise<void> => {
-    await apiUpsert(`/api/career-checks/${check.id}`, '/api/career-checks', check);
-  },
-
-  delete: async (id: string): Promise<void> => {
-    await apiFetch(`/api/career-checks/${id}`, { method: 'DELETE' });
-  },
-
-  duplicate: async (id: string, newId: string, newSlug: string): Promise<CareerCheck | null> => {
-    try {
-      return await apiFetch<CareerCheck>(`/api/career-checks/${id}/duplicate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ newId, newSlug }),
-      });
-    } catch {
-      return null;
-    }
-  },
-};
+export const careerCheckStorage = createContentStorage<CareerCheck, { slug: string }>(
+  'career-checks',
+  'career_checks',
+  (row) => careerCheckFromDb(row as Parameters<typeof careerCheckFromDb>[0]),
+);
 
 // ─── Career Check Lead Storage ──────────────────────────────────────────────
 
@@ -206,51 +178,11 @@ export const careerCheckLeadStorage = {
 
 // ─── Form Page Storage ──────────────────────────────────────────────────────
 
-export const formPageStorage = {
-  getAll: async (): Promise<FormPage[]> => {
-    return apiFetch<FormPage[]>('/api/form-pages');
-  },
-
-  getByCompany: (_companyId: string) => formPageStorage.getAll(),
-
-  getById: async (id: string): Promise<FormPage | undefined> => {
-    try {
-      return await apiFetch<FormPage>(`/api/form-pages/${id}`);
-    } catch {
-      return undefined;
-    }
-  },
-
-  getBySlug: async (slug: string): Promise<FormPage | undefined> => {
-    const { data } = await createClient()
-      .from('form_pages')
-      .select('*')
-      .eq('slug', slug)
-      .eq('status', 'published')
-      .single();
-    return data ? formPageFromDb(data) : undefined;
-  },
-
-  save: async (form: FormPage): Promise<void> => {
-    await apiUpsert(`/api/form-pages/${form.id}`, '/api/form-pages', form);
-  },
-
-  delete: async (id: string): Promise<void> => {
-    await apiFetch(`/api/form-pages/${id}`, { method: 'DELETE' });
-  },
-
-  duplicate: async (id: string, newId: string, newSlug: string): Promise<FormPage | null> => {
-    try {
-      return await apiFetch<FormPage>(`/api/form-pages/${id}/duplicate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ newId, newSlug }),
-      });
-    } catch {
-      return null;
-    }
-  },
-};
+export const formPageStorage = createContentStorage<FormPage, { slug: string }>(
+  'form-pages',
+  'form_pages',
+  (row) => formPageFromDb(row as Parameters<typeof formPageFromDb>[0]),
+);
 
 // ─── Form Submission Storage ────────────────────────────────────────────────
 

@@ -1,12 +1,19 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Trash2, Copy, MousePointer2, Plus, X, Lock, ChevronDown, ChevronUp } from 'lucide-react';
+import { Trash2, Copy, MousePointer2, Lock } from 'lucide-react';
 import RichTextEditor from './RichTextEditor';
-import { FunnelNode, FunnelStyle, FunnelPage, BLOCK_LABELS } from '@/lib/funnel-types';
+import { FunnelNode, FunnelStyle, FunnelPage, BLOCK_LABELS, LeadFieldDef } from '@/lib/funnel-types';
 import { BLOCK_META } from './NodeView';
 import { VarInput, VarTextarea } from './VarInput';
 import { type VariableDef, CONTEXT_VARIABLES } from '@/lib/funnel-variables';
+import LeadFieldBuilder from './LeadFieldBuilder';
+import { Field, NumberInput, ImageUploadField, Section } from './inspectors/shared';
+import { DialogEditor } from './inspectors/DialogEditor';
+import { DecisionEditor } from './inspectors/DecisionEditor';
+import { QuizEditor } from './inspectors/QuizEditor';
+import { FrageEditor, ErgebnisfrageEditor } from './inspectors/FrageEditor';
+import { FormStepEditor } from './inspectors/FormStepEditor';
 
 interface InspectorProps {
   node: FunnelNode | null;
@@ -442,21 +449,7 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars }: {
         </div>
       );
 
-    case 'quest_lead': {
-      const leadFields = (props.fields as LeadFieldDef[]) ?? [];
-      const LEAD_FIELD_TYPES = ['text', 'email', 'tel', 'textarea', 'checkbox', 'select'] as const;
-      const LEAD_FIELD_LABELS: Record<string, string> = { text: 'Text', email: 'E-Mail', tel: 'Telefon', textarea: 'Mehrzeilig', checkbox: 'Checkbox', select: 'Dropdown' };
-      const addLeadField = () => onChange({ fields: [...leadFields, { id: crypto.randomUUID(), type: 'text', label: 'Neues Feld', required: false }] });
-      const updateLeadField = (id: string, patch: Partial<LeadFieldDef>) => onChange({ fields: leadFields.map((f) => f.id === id ? { ...f, ...patch } : f) });
-      const removeLeadField = (id: string) => onChange({ fields: leadFields.filter((f) => f.id !== id) });
-      const moveLeadField = (id: string, dir: -1 | 1) => {
-        const idx = leadFields.findIndex((f) => f.id === id);
-        const newIdx = idx + dir;
-        if (newIdx < 0 || newIdx >= leadFields.length) return;
-        const arr = [...leadFields];
-        [arr[idx], arr[newIdx]] = [arr[newIdx], arr[idx]];
-        onChange({ fields: arr });
-      };
+    case 'quest_lead':
       return (
         <div className="space-y-3">
           <div className="flex items-center gap-1.5 px-2.5 py-2 bg-violet-50 rounded-xl">
@@ -479,75 +472,12 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars }: {
               <VarTextarea value={(props.privacyText as string) ?? ''} onChange={(v) => onChange({ privacyText: v })} rows={3} variables={availableVars} />
             </Field>
           </Section>
-          {/* Flexible fields builder */}
-          <div className="border-t border-slate-100 pt-3">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Formularfelder</p>
-              <button onClick={addLeadField} className="flex items-center gap-1 text-[10px] text-violet-600 font-medium hover:text-violet-800 transition-colors">
-                <Plus size={11} /> Feld hinzufügen
-              </button>
-            </div>
-            {leadFields.length === 0 ? (
-              <p className="text-[10px] text-slate-400 italic text-center py-3 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                Noch keine Felder – klicke auf Feld hinzufügen
-              </p>
-            ) : (
-              <div className="space-y-2">
-                {leadFields.map((f, idx) => (
-                  <div key={f.id} className="bg-slate-50 border border-slate-200 rounded-xl p-2 space-y-1.5">
-                    {/* Row 1: type selector + pflicht + reorder + delete */}
-                    <div className="flex gap-1 items-center">
-                      <select value={f.type} onChange={(e) => updateLeadField(f.id, { type: e.target.value, options: e.target.value === 'select' ? (f.options ?? ['Option 1', 'Option 2']) : f.options })}
-                        className="flex-1 px-2 py-1 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none">
-                        {LEAD_FIELD_TYPES.map((t) => <option key={t} value={t}>{LEAD_FIELD_LABELS[t]}</option>)}
-                      </select>
-                      <label className="flex items-center gap-1 text-[10px] text-slate-500 flex-shrink-0">
-                        <input type="checkbox" checked={!!(f.required)} onChange={(e) => updateLeadField(f.id, { required: e.target.checked })} className="accent-violet-600" />
-                        Pflicht
-                      </label>
-                      <div className="flex flex-col gap-0.5">
-                        <button onClick={() => moveLeadField(f.id, -1)} disabled={idx === 0}
-                          className="p-0.5 rounded hover:bg-slate-200 text-slate-400 hover:text-slate-600 disabled:opacity-30 disabled:cursor-not-allowed">
-                          <ChevronUp size={10} />
-                        </button>
-                        <button onClick={() => moveLeadField(f.id, 1)} disabled={idx === leadFields.length - 1}
-                          className="p-0.5 rounded hover:bg-slate-200 text-slate-400 hover:text-slate-600 disabled:opacity-30 disabled:cursor-not-allowed">
-                          <ChevronDown size={10} />
-                        </button>
-                      </div>
-                      <button onClick={() => removeLeadField(f.id)} className="p-0.5 rounded hover:bg-red-100 text-slate-400 hover:text-red-500 transition-colors">
-                        <X size={12} />
-                      </button>
-                    </div>
-                    {/* Row 2: label */}
-                    <input value={f.label} onChange={(e) => updateLeadField(f.id, { label: e.target.value })}
-                      className="w-full px-2 py-1 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none" placeholder="Beschriftung" />
-                    {/* Row 3: placeholder (not for checkbox/select) */}
-                    {f.type !== 'checkbox' && f.type !== 'select' && (
-                      <input value={f.placeholder ?? ''} onChange={(e) => updateLeadField(f.id, { placeholder: e.target.value })}
-                        className="w-full px-2 py-1 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none" placeholder="Platzhalter (optional)" />
-                    )}
-                    {/* Row 4: dropdown options (one per line) */}
-                    {f.type === 'select' && (
-                      <div>
-                        <p className="text-[10px] text-slate-400 mb-1">Optionen (eine pro Zeile)</p>
-                        <textarea
-                          value={(f.options ?? []).join('\n')}
-                          onChange={(e) => updateLeadField(f.id, { options: e.target.value.split('\n') })}
-                          rows={3}
-                          className="w-full px-2 py-1 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none resize-none"
-                          placeholder={"Option 1\nOption 2\nOption 3"}
-                        />
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          <LeadFieldBuilder
+            fields={(props.fields as LeadFieldDef[]) ?? []}
+            onChange={(fields) => onChange({ fields })}
+          />
         </div>
       );
-    }
 
     // ── BerufsCheck ──
     case 'check_intro':
@@ -663,22 +593,7 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars }: {
     case 'form_step':
       return <FormStepEditor props={props} onChange={onChange} />;
 
-    case 'form_config': {
-      // identical UI to quest_lead inspector
-      const leadFields = (props.fields as LeadFieldDef[]) ?? [];
-      const LEAD_FIELD_TYPES = ['text', 'email', 'tel', 'textarea', 'checkbox', 'select'] as const;
-      const LEAD_FIELD_LABELS: Record<string, string> = { text: 'Text', email: 'E-Mail', tel: 'Telefon', textarea: 'Mehrzeilig', checkbox: 'Checkbox', select: 'Dropdown' };
-      const addLeadField = () => onChange({ fields: [...leadFields, { id: crypto.randomUUID(), type: 'text', label: 'Neues Feld', required: false }] });
-      const updateLeadField = (id: string, patch: Partial<LeadFieldDef>) => onChange({ fields: leadFields.map((f) => f.id === id ? { ...f, ...patch } : f) });
-      const removeLeadField = (id: string) => onChange({ fields: leadFields.filter((f) => f.id !== id) });
-      const moveLeadField = (id: string, dir: -1 | 1) => {
-        const idx = leadFields.findIndex((f) => f.id === id);
-        const newIdx = idx + dir;
-        if (newIdx < 0 || newIdx >= leadFields.length) return;
-        const arr = [...leadFields];
-        [arr[idx], arr[newIdx]] = [arr[newIdx], arr[idx]];
-        onChange({ fields: arr });
-      };
+    case 'form_config':
       return (
         <div className="space-y-3">
           <div className="flex items-center gap-1.5 px-2.5 py-2 bg-violet-50 rounded-xl">
@@ -701,459 +616,15 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars }: {
               <VarTextarea value={(props.privacyText as string) ?? ''} onChange={(v) => onChange({ privacyText: v })} rows={3} variables={availableVars} />
             </Field>
           </Section>
-          {/* Flexible fields builder */}
-          <div className="border-t border-slate-100 pt-3">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Formularfelder</p>
-              <button onClick={addLeadField} className="flex items-center gap-1 text-[10px] text-violet-600 font-medium hover:text-violet-800 transition-colors">
-                <Plus size={11} /> Feld hinzufügen
-              </button>
-            </div>
-            {leadFields.length === 0 && <p className="text-[10px] text-slate-300 italic">Keine Felder</p>}
-            <div className="space-y-2">
-              {leadFields.map((f, i) => (
-                <div key={f.id} className="bg-slate-50 rounded-xl p-2 space-y-1.5">
-                  <div className="flex items-center gap-1">
-                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                    <select value={f.type} onChange={(e) => updateLeadField(f.id, { type: e.target.value as any })}
-                      className="text-xs px-2 py-0.5 border border-slate-200 rounded focus:outline-none">
-                      {LEAD_FIELD_TYPES.map((t) => (
-                        <option key={t} value={t}>{LEAD_FIELD_LABELS[t]}</option>
-                      ))}
-                    </select>
-                    <input value={f.label} onChange={(e) => updateLeadField(f.id, { label: e.target.value })}
-                      className="flex-1 px-2 py-1 text-xs border border-slate-200 rounded" placeholder="Label" />
-                    <button onClick={() => moveLeadField(f.id, -1)} disabled={i === 0} className="p-0.5 rounded hover:bg-slate-200 transition-colors">
-                      <ChevronUp size={12} className="text-slate-400" />
-                    </button>
-                    <button onClick={() => moveLeadField(f.id, 1)} disabled={i === leadFields.length - 1} className="p-0.5 rounded hover:bg-slate-200 transition-colors">
-                      <ChevronDown size={12} className="text-slate-400" />
-                    </button>
-                    <button onClick={() => removeLeadField(f.id)} className="p-0.5 rounded hover:bg-red-100 transition-colors">
-                      <Trash2 size={12} className="text-red-400" />
-                    </button>
-                  </div>
-                  {f.type === 'select' && (
-                    <input value={(f.options as string[] | undefined)?.join(', ') ?? ''} onChange={(e) => updateLeadField(f.id, { options: e.target.value.split(',').map((s) => s.trim()) })}
-                      className="w-full px-2 py-1 text-xs border border-slate-200 rounded" placeholder="Optionen, mit Komma getrennt" />
-                  )}
-                  {f.type === 'textarea' && (
-                    <textarea value={f.placeholder as string || ''} onChange={(e) => updateLeadField(f.id, { placeholder: e.target.value })}
-                      rows={2} className="w-full px-2 py-1 text-xs border border-slate-200 rounded resize-none" placeholder="Platzhalter" />
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
+          <LeadFieldBuilder
+            fields={(props.fields as LeadFieldDef[]) ?? []}
+            onChange={(fields) => onChange({ fields })}
+          />
         </div>
       );
-    }
 
     default:
       return <p className="text-xs text-slate-400">Kein Editor für diesen Blocktyp.</p>;
   }
 }
 
-// ─── Sub-editors ──────────────────────────────────────────────────────────────
-type DialogLineDef = { id: string; speaker: string; text: string; imageUrl?: string };
-
-function DialogEditor({ props, onChange }: { props: Record<string, unknown>; onChange: (p: Record<string, unknown>) => void }) {
-  const lines = (props.lines as DialogLineDef[]) ?? [];
-  const choices = (props.choices as { id: string; text: string; reaction?: string }[]) ?? [];
-  const input = (props.input as { placeholder?: string; captures?: string; followUpText?: string } | undefined) ?? null;
-  const hasChoices = choices.length > 0;
-  const hasInput = !!input;
-
-  function updateLine(id: string, patch: Partial<DialogLineDef>) {
-    onChange({ lines: lines.map((l) => l.id === id ? { ...l, ...patch } : l) });
-  }
-  function updateChoice(i: number, patch: Partial<{ text: string; reaction: string }>) {
-    onChange({ choices: choices.map((c, j) => j === i ? { ...c, ...patch } : c) });
-  }
-
-  return (
-    <div className="space-y-3">
-      <Field label="Titel (optional)"><input value={(props.title as string) ?? ''} onChange={(e) => onChange({ title: e.target.value })} className="input-field text-sm" /></Field>
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Zeilen</p>
-          <button onClick={() => onChange({ lines: [...lines, { id: crypto.randomUUID(), speaker: 'Sprecher', text: '', imageUrl: '' }] })}
-            className="flex items-center gap-1 text-[10px] text-violet-600 hover:text-violet-700 font-medium">
-            <Plus size={11} /> Zeile
-          </button>
-        </div>
-        <div className="space-y-2">
-          {lines.map((l, i) => (
-            <div key={l.id} className="bg-slate-50 rounded-xl p-2 space-y-1.5">
-              {/* Speaker + delete */}
-              <div className="flex items-center gap-1">
-                <input value={l.speaker} onChange={(e) => updateLine(l.id, { speaker: e.target.value })}
-                  className="flex-1 mini-input" placeholder="Sprecher" />
-                <button onClick={() => onChange({ lines: lines.filter((_, idx) => idx !== i) })}
-                  disabled={lines.length <= 1} className="p-0.5 rounded hover:bg-red-100 text-slate-400 hover:text-red-500 disabled:opacity-30">
-                  <X size={12} />
-                </button>
-              </div>
-              {/* Text */}
-              <textarea value={l.text} onChange={(e) => updateLine(l.id, { text: e.target.value })}
-                rows={2} className="w-full mini-input resize-none" placeholder="Text…" />
-              {/* Image upload */}
-              <ImageUploadField label="Bild (optional)" value={l.imageUrl ?? ''} onChange={(v) => updateLine(l.id, { imageUrl: v })} />
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Antwortoptionen (Choices) – mutually exclusive with Input */}
-      {!hasInput && (
-        <div className="border-t border-slate-100 pt-3">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Antwortoptionen</p>
-            <button onClick={() => onChange({ choices: [...choices, { id: crypto.randomUUID(), text: '', reaction: '' }] })}
-              className="flex items-center gap-1 text-[10px] text-violet-600 hover:text-violet-700 font-medium">
-              <Plus size={11} /> Option
-            </button>
-          </div>
-          {hasChoices && (
-            <div className="space-y-2">
-              {choices.map((c, i) => (
-                <div key={c.id} className="bg-slate-50 rounded-xl p-2 space-y-1.5">
-                  <div className="flex gap-1">
-                    <input value={c.text} onChange={(e) => updateChoice(i, { text: e.target.value })}
-                      className="flex-1 mini-input" placeholder="Antworttext" />
-                    <button onClick={() => onChange({ choices: choices.filter((_, j) => j !== i) })}
-                      className="p-0.5 rounded hover:bg-red-100 text-slate-400 hover:text-red-500"><X size={12} /></button>
-                  </div>
-                  <input value={c.reaction ?? ''} onChange={(e) => updateChoice(i, { reaction: e.target.value })}
-                    className="w-full mini-input" placeholder="Reaktion des Sprechers (optional)" />
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Eingabefeld – mutually exclusive with Choices */}
-      {!hasChoices && (
-        <div className="border-t border-slate-100 pt-3">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Eingabefeld</p>
-            <button
-              onClick={() => hasInput
-                ? onChange({ input: undefined })
-                : onChange({ input: { placeholder: 'Dein Vorname…', captures: 'firstName', followUpText: '' } })}
-              className={`text-[10px] font-medium px-2 py-0.5 rounded-full transition-colors ${hasInput ? 'bg-violet-100 text-violet-700 hover:bg-red-50 hover:text-red-600' : 'text-slate-400 hover:text-violet-600'}`}
-            >
-              {hasInput ? '× Entfernen' : '+ Hinzufügen'}
-            </button>
-          </div>
-          {hasInput && (
-            <div className="space-y-1.5">
-              <input value={input?.placeholder ?? ''} onChange={(e) => onChange({ input: { ...input, placeholder: e.target.value } })}
-                className="w-full mini-input" placeholder="Platzhalter…" />
-              <select value={input?.captures ?? ''} onChange={(e) => onChange({ input: { ...input, captures: e.target.value || undefined } })}
-                className="w-full mini-input">
-                <option value="">Kein Capture</option>
-                <option value="firstName">Vorname speichern (als &#123;&#123;name&#125;&#125;)</option>
-              </select>
-              <textarea value={input?.followUpText ?? ''} onChange={(e) => onChange({ input: { ...input, followUpText: e.target.value } })}
-                rows={2} className="w-full mini-input resize-none" placeholder="Reaktion des Sprechers nach Eingabe (optional)…" />
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function DecisionEditor({ props, onChange, pages }: {
-  props: Record<string, unknown>;
-  onChange: (p: Record<string, unknown>) => void;
-  pages?: FunnelPage[];
-}) {
-  const options = (props.options as { id: string; text: string; reaction: string; targetPageId?: string }[]) ?? [];
-  function updateOpt(i: number, patch: Partial<typeof options[0]>) {
-    onChange({ options: options.map((x, j) => j === i ? { ...x, ...patch } : x) });
-  }
-  return (
-    <div className="space-y-3">
-      <Field label="Frage"><input value={(props.question as string) ?? ''} onChange={(e) => onChange({ question: e.target.value })} className="input-field text-sm" /></Field>
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Optionen</p>
-          <button onClick={() => onChange({ options: [...options, { id: crypto.randomUUID(), text: 'Option', reaction: '' }] })}
-            className="flex items-center gap-1 text-[10px] text-violet-600 font-medium"><Plus size={11} /> Option</button>
-        </div>
-        <div className="space-y-2">
-          {options.map((o, i) => (
-            <div key={o.id} className="bg-slate-50 rounded-xl p-2 space-y-1.5">
-              <div className="flex gap-1">
-                <input value={o.text} onChange={(e) => updateOpt(i, { text: e.target.value })}
-                  className="flex-1 mini-input" placeholder="Optionstext" />
-                <button onClick={() => onChange({ options: options.filter((_, j) => j !== i) })} disabled={options.length <= 1}
-                  className="p-0.5 rounded hover:bg-red-100 text-slate-400 hover:text-red-500 disabled:opacity-30"><X size={12} /></button>
-              </div>
-              <input value={o.reaction} onChange={(e) => updateOpt(i, { reaction: e.target.value })}
-                className="w-full mini-input" placeholder="Reaktion nach Auswahl" />
-              {pages && pages.length > 1 && (
-                <div className="flex items-center gap-1.5 pt-0.5">
-                  <span className="text-[10px] text-slate-400 flex-shrink-0">→ Weiter zu</span>
-                  <select
-                    value={o.targetPageId ?? ''}
-                    onChange={(e) => updateOpt(i, { targetPageId: e.target.value || undefined })}
-                    className="flex-1 mini-input"
-                  >
-                    <option value="">Nächste Seite</option>
-                    {pages.map((pg) => (
-                      <option key={pg.id} value={pg.id}>{pg.name}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function QuizEditor({ props, onChange }: { props: Record<string, unknown>; onChange: (p: Record<string, unknown>) => void }) {
-  const options = (props.options as { id: string; text: string; correct: boolean; feedback: string }[]) ?? [];
-  return (
-    <div className="space-y-3">
-      <Field label="Frage"><input value={(props.question as string) ?? ''} onChange={(e) => onChange({ question: e.target.value })} className="input-field text-sm" /></Field>
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Antworten</p>
-          <button onClick={() => onChange({ options: [...options, { id: crypto.randomUUID(), text: 'Antwort', correct: false, feedback: '' }] })}
-            className="flex items-center gap-1 text-[10px] text-violet-600 font-medium"><Plus size={11} /> Antwort</button>
-        </div>
-        <div className="space-y-2">
-          {options.map((o, i) => (
-            <div key={o.id} className={`rounded-xl p-2 space-y-1.5 border ${o.correct ? 'bg-emerald-50 border-emerald-200' : 'bg-slate-50 border-slate-200'}`}>
-              <div className="flex gap-1 items-center">
-                <input type="checkbox" checked={o.correct}
-                  onChange={(e) => onChange({ options: options.map((x, j) => j === i ? { ...x, correct: e.target.checked } : x) })}
-                  className="accent-emerald-600" title="Richtige Antwort" />
-                <input value={o.text} onChange={(e) => onChange({ options: options.map((x, j) => j === i ? { ...x, text: e.target.value } : x) })}
-                  className="flex-1 mini-input" />
-                <button onClick={() => onChange({ options: options.filter((_, j) => j !== i) })} disabled={options.length <= 1}
-                  className="p-0.5 rounded hover:bg-red-100 text-slate-400 hover:text-red-500 disabled:opacity-30"><X size={12} /></button>
-              </div>
-              <input value={o.feedback} onChange={(e) => onChange({ options: options.map((x, j) => j === i ? { ...x, feedback: e.target.value } : x) })}
-                className="w-full mini-input" placeholder="Feedback nach Auswahl" />
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function FrageEditor({ props, onChange }: { props: Record<string, unknown>; onChange: (p: Record<string, unknown>) => void }) {
-  const frageType = (props.frageType as string) ?? 'single_choice';
-  const options = (props.options as { id: string; text: string; scores: Record<string, number> }[]) ?? [];
-  return (
-    <div className="space-y-3">
-      <Field label="Typ">
-        <select value={frageType} onChange={(e) => onChange({ frageType: e.target.value })} className="input-field text-sm">
-          <option value="single_choice">Einfachauswahl</option>
-          <option value="slider">Slider</option>
-        </select>
-      </Field>
-      <Field label="Frage"><input value={(props.question as string) ?? ''} onChange={(e) => onChange({ question: e.target.value })} className="input-field text-sm" /></Field>
-      {frageType === 'single_choice' ? (
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Optionen</p>
-            <button onClick={() => onChange({ options: [...options, { id: crypto.randomUUID(), text: 'Option', scores: {} }] })}
-              className="flex items-center gap-1 text-[10px] text-violet-600 font-medium"><Plus size={11} /> Option</button>
-          </div>
-          <div className="space-y-1.5">
-            {options.map((o, i) => (
-              <div key={o.id} className="flex gap-1">
-                <input value={o.text} onChange={(e) => onChange({ options: options.map((x, j) => j === i ? { ...x, text: e.target.value } : x) })}
-                  className="flex-1 mini-input" />
-                <button onClick={() => onChange({ options: options.filter((_, j) => j !== i) })} disabled={options.length <= 1}
-                  className="p-0.5 rounded hover:bg-red-100 text-slate-400 hover:text-red-500 disabled:opacity-30"><X size={12} /></button>
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 gap-2">
-          <NumberInput label="Min" value={(props.sliderMin as number) ?? 0} onChange={(v) => onChange({ sliderMin: v })} />
-          <NumberInput label="Max" value={(props.sliderMax as number) ?? 10} onChange={(v) => onChange({ sliderMax: v })} />
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ErgebnisfrageEditor({ props, onChange }: { props: Record<string, unknown>; onChange: (p: Record<string, unknown>) => void }) {
-  const options = (props.options as { id: string; text: string; scores: Record<string, number> }[]) ?? [];
-  return (
-    <div className="space-y-3">
-      <Field label="Frage"><input value={(props.question as string) ?? ''} onChange={(e) => onChange({ question: e.target.value })} className="input-field text-sm" /></Field>
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Optionen</p>
-          <button onClick={() => onChange({ options: [...options, { id: crypto.randomUUID(), text: 'Option', scores: {} }] })}
-            className="flex items-center gap-1 text-[10px] text-violet-600 font-medium"><Plus size={11} /> Option</button>
-        </div>
-        <div className="space-y-1.5">
-          {options.map((o, i) => (
-            <div key={o.id} className="flex gap-1">
-              <input value={o.text} onChange={(e) => onChange({ options: options.map((x, j) => j === i ? { ...x, text: e.target.value } : x) })}
-                className="flex-1 mini-input" />
-              <button onClick={() => onChange({ options: options.filter((_, j) => j !== i) })} disabled={options.length <= 1}
-                className="p-0.5 rounded hover:bg-red-100 text-slate-400 hover:text-red-500 disabled:opacity-30"><X size={12} /></button>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-type FormFieldDef = { id: string; type: string; label: string; placeholder?: string; required: boolean; options?: string[] };
-type LeadFieldDef = { id: string; type: string; label: string; placeholder?: string; required?: boolean; options?: string[]; };
-
-function FormStepEditor({ props, onChange }: { props: Record<string, unknown>; onChange: (p: Record<string, unknown>) => void }) {
-  const fields = (props.fields as FormFieldDef[]) ?? [];
-  const FIELD_TYPES = ['text', 'email', 'phone', 'textarea', 'select', 'radio'] as const;
-  const FIELD_LABELS: Record<string, string> = { text: 'Textfeld', email: 'E-Mail', phone: 'Telefon', textarea: 'Mehrzeilig', select: 'Auswahl', radio: 'Einfachauswahl' };
-
-  function addField() {
-    onChange({ fields: [...fields, { id: crypto.randomUUID(), type: 'text', label: 'Feld', required: false }] });
-  }
-  function updateField(id: string, patch: Partial<FormFieldDef>) {
-    onChange({ fields: fields.map((f) => f.id === id ? { ...f, ...patch } : f) });
-  }
-  function removeField(id: string) {
-    onChange({ fields: fields.filter((f) => f.id !== id) });
-  }
-
-  return (
-    <div className="space-y-3">
-      <Field label="Schritt-Titel"><input value={(props.title as string) ?? ''} onChange={(e) => onChange({ title: e.target.value })} className="input-field text-sm" /></Field>
-      <Field label="Beschreibung"><textarea value={(props.description as string) ?? ''} onChange={(e) => onChange({ description: e.target.value })} rows={2} className="input-field text-sm resize-none" /></Field>
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Felder ({fields.length})</p>
-          <button onClick={addField} className="flex items-center gap-1 text-[10px] text-violet-600 font-medium"><Plus size={11} /> Feld</button>
-        </div>
-        <div className="space-y-2">
-          {fields.map((f) => (
-            <div key={f.id} className="bg-slate-50 border border-slate-200 rounded-xl p-2 space-y-1.5">
-              <div className="flex gap-1 items-center">
-                <select value={f.type} onChange={(e) => updateField(f.id, { type: e.target.value })}
-                  className="flex-1 px-2 py-1 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none">
-                  {FIELD_TYPES.map((t) => <option key={t} value={t}>{FIELD_LABELS[t]}</option>)}
-                </select>
-                <label className="flex items-center gap-1 text-[10px] text-slate-500 flex-shrink-0">
-                  <input type="checkbox" checked={f.required} onChange={(e) => updateField(f.id, { required: e.target.checked })} className="accent-violet-600" />
-                  Pflicht
-                </label>
-                <button onClick={() => removeField(f.id)} className="p-0.5 rounded hover:bg-red-100 text-slate-400 hover:text-red-500"><X size={12} /></button>
-              </div>
-              <input value={f.label} onChange={(e) => updateField(f.id, { label: e.target.value })}
-                className="w-full px-2 py-1 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none" placeholder="Beschriftung" />
-              {(f.type === 'select' || f.type === 'radio') && (
-                <div className="space-y-1">
-                  {(f.options ?? []).map((opt, i) => (
-                    <div key={i} className="flex gap-1">
-                      <input value={opt} onChange={(e) => { const o = [...(f.options ?? [])]; o[i] = e.target.value; updateField(f.id, { options: o }); }}
-                        className="flex-1 px-2 py-1 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none" placeholder={`Option ${i + 1}`} />
-                      <button onClick={() => updateField(f.id, { options: (f.options ?? []).filter((_, j) => j !== i) })}
-                        disabled={(f.options ?? []).length <= 1} className="p-0.5 rounded text-slate-400 hover:text-red-500 disabled:opacity-30"><X size={11} /></button>
-                    </div>
-                  ))}
-                  <button onClick={() => updateField(f.id, { options: [...(f.options ?? []), `Option ${(f.options ?? []).length + 1}`] })}
-                    className="text-[10px] text-violet-600 font-medium flex items-center gap-1"><Plus size={10} /> Option</button>
-                </div>
-              )}
-            </div>
-          ))}
-          {fields.length === 0 && <p className="text-[10px] text-slate-300 text-center py-3 italic">Noch keine Felder</p>}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Shared UI primitives ─────────────────────────────────────────────────────
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="space-y-1">
-      <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">{label}</label>
-      {children}
-    </div>
-  );
-}
-
-function NumberInput({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
-  return (
-    <Field label={label}>
-      <input type="number" value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="input-field text-sm" />
-    </Field>
-  );
-}
-
-function ImageUploadField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
-  function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => onChange(reader.result as string);
-    reader.readAsDataURL(file);
-  }
-  return (
-    <Field label={label}>
-      {value && (
-        <div className="relative w-full h-24 rounded-xl overflow-hidden border border-slate-200 mb-1.5">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={value} alt="" className="w-full h-full object-cover" />
-          <button onClick={() => onChange('')}
-            className="absolute top-1.5 right-1.5 p-1 bg-white rounded-lg shadow text-slate-500 hover:text-red-500 transition-colors">
-            <X size={12} />
-          </button>
-        </div>
-      )}
-      <input type="file" accept="image/*" onChange={handleUpload}
-        className="block text-[10px] text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[10px] file:font-medium file:bg-slate-100 file:text-slate-600 hover:file:bg-slate-200 cursor-pointer" />
-    </Field>
-  );
-}
-
-function Section({ label, children, collapsible, defaultOpen = true }: {
-  label: string;
-  children: React.ReactNode;
-  collapsible?: boolean;
-  defaultOpen?: boolean;
-}) {
-  const [open, setOpen] = useState(defaultOpen);
-  if (collapsible) {
-    return (
-      <div className="border border-slate-100 rounded-xl overflow-hidden">
-        <button
-          onClick={() => setOpen((o) => !o)}
-          className="w-full flex items-center justify-between px-3 py-2 hover:bg-slate-50 transition-colors"
-        >
-          <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">{label}</span>
-          {open ? <ChevronUp size={12} className="text-slate-400" /> : <ChevronDown size={12} className="text-slate-400" />}
-        </button>
-        {open && <div className="px-3 pb-3 pt-1 space-y-3 border-t border-slate-100">{children}</div>}
-      </div>
-    );
-  }
-  return (
-    <div>
-      <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">{label}</p>
-      {children}
-    </div>
-  );
-}

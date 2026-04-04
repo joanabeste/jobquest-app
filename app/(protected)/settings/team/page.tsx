@@ -47,8 +47,13 @@ export default function SettingsTeamPage() {
   }, [company]);
 
   async function reload() {
-    const res = await fetch('/api/members');
-    if (res.ok) setMembers(await res.json());
+    try {
+      const res = await fetch('/api/members');
+      if (res.ok) setMembers(await res.json());
+      else console.error('[Team] reload failed:', res.status);
+    } catch (err) {
+      console.error('[Team] reload failed:', err);
+    }
   }
 
   async function handleInvite() {

@@ -89,6 +89,16 @@ export interface FunnelDoc {
   updatedAt: string;
 }
 
+// ─── Lead / Form field definition ────────────────────────────────────────────
+export interface LeadFieldDef {
+  id: string;
+  type: string;
+  label: string;
+  placeholder?: string;
+  required?: boolean;
+  options?: string[];
+}
+
 // ─── Insert Target ───────────────────────────────────────────────────────────
 export type InsertTarget =
   | { location: 'root'; afterId: string | null }

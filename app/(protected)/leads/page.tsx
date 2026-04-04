@@ -106,8 +106,8 @@ export default function LeadsPage() {
 
   const load = useCallback(async () => {
     if (!company) return;
-
     const unified: UnifiedLead[] = [];
+    try {
 
     // JobQuest leads
     const quests = await questStorage.getByCompany(company.id);
@@ -174,8 +174,11 @@ export default function LeadsPage() {
       });
     });
 
-    unified.sort((a, b) => b.submittedAt.localeCompare(a.submittedAt));
-    setAllLeads(unified);
+      unified.sort((a, b) => b.submittedAt.localeCompare(a.submittedAt));
+      setAllLeads(unified);
+    } catch (err) {
+      console.error('[LeadsPage] load failed:', err);
+    }
   }, [company]);
 
   useEffect(() => { load(); }, [load]);
