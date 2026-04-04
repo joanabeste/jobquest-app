@@ -532,7 +532,7 @@ export function BlockRenderer({
             <div className="h-3" style={{ background: primary }} />
           )}
           <div className="px-6 pt-8 pb-6 bg-white text-center">
-            <h1 className="fp-heading text-2xl font-bold uppercase leading-tight mb-4" dangerouslySetInnerHTML={{ __html: sh(inlineHtml(si(p.title))) }} />
+            <h1 className="fp-heading leading-tight mb-4" dangerouslySetInnerHTML={{ __html: sh(inlineHtml(si(p.title))) }} />
             {!!subtext && <div className="text-sm text-slate-600 mb-3 leading-relaxed rte" dangerouslySetInnerHTML={{ __html: sh(si(subtext)) }} />}
             {!!accentText && (
               <p className="text-sm font-bold uppercase tracking-wide mb-4" style={{ color: primary }}>{accentText}</p>

@@ -100,9 +100,10 @@ function ToolBtn({ active, onClick, title, children }: {
 
 const PRESETS = [
   { label: 'N',  size: null,    weight: null  },
-  { label: 'H2', size: '20px',  weight: '700' },
-  { label: 'H3', size: '16px',  weight: '600' },
   { label: 'XS', size: '11px',  weight: null  },
+  { label: 'S',  size: '13px',  weight: null  },
+  { label: 'M',  size: '16px',  weight: null  },
+  { label: 'L',  size: '20px',  weight: '600' },
 ] as const;
 
 // ─── Rich inline-editable field ───────────────────────────────────────────────
@@ -112,7 +113,6 @@ function RichEd({ v, up, cl, ph }: {
   cl?: string;
   ph?: string;
 }) {
-  const { primary, accent, headingColor, textColor } = useCi();
   const toHtml = (raw: string) => raw.startsWith('<') ? raw : (raw ? `<p>${raw}</p>` : '<p></p>');
 
   const editor = useEditor({
@@ -152,13 +152,6 @@ function RichEd({ v, up, cl, ph }: {
     return <span className={cl}>{v}</span>;
   }
 
-  const ciColors = [
-    { label: 'Überschrift', value: headingColor },
-    { label: 'Text',        value: textColor    },
-    { label: 'Primär',      value: primary      },
-    { label: 'Akzent',      value: accent       },
-  ];
-
   function isPresetActive(p: typeof PRESETS[number]) {
     const a = editor?.getAttributes('textStyle') ?? {};
     return !p.size && !p.weight
@@ -178,18 +171,6 @@ function RichEd({ v, up, cl, ph }: {
           options={{ placement: 'top' }}
           className="flex items-center gap-0.5 bg-white shadow-xl rounded-lg border border-slate-200 p-1"
         >
-          {/* Stil-Presets */}
-          {PRESETS.map(p => (
-            <button
-              key={p.label}
-              onMouseDown={e => { e.preventDefault(); applyPreset(p); }}
-              title={p.label === 'N' ? 'Normal' : p.label === 'XS' ? 'Klein' : p.label}
-              className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors ${
-                isPresetActive(p) ? 'bg-violet-100 text-violet-700' : 'text-slate-500 hover:bg-slate-100'
-              }`}
-            >{p.label}</button>
-          ))}
-          <div className="w-px h-4 bg-slate-200 mx-0.5" />
           {/* B / I / U */}
           <ToolBtn active={editor.isActive('bold')} onClick={() => editor.chain().focus().toggleBold().run()} title="Fett (Ctrl+B)">
             <Bold size={12} />
@@ -201,6 +182,18 @@ function RichEd({ v, up, cl, ph }: {
             <UnderlineIcon size={12} />
           </ToolBtn>
           <div className="w-px h-4 bg-slate-200 mx-0.5" />
+          {/* Größen-Presets */}
+          {PRESETS.map(p => (
+            <button
+              key={p.label}
+              onMouseDown={e => { e.preventDefault(); applyPreset(p); }}
+              title={p.label === 'N' ? 'Normal' : p.label}
+              className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors ${
+                isPresetActive(p) ? 'bg-violet-100 text-violet-700' : 'text-slate-500 hover:bg-slate-100'
+              }`}
+            >{p.label}</button>
+          ))}
+          <div className="w-px h-4 bg-slate-200 mx-0.5" />
           {/* Ausrichtung */}
           <ToolBtn active={editor.isActive({ textAlign: 'left' })} onClick={() => editor.chain().focus().setTextAlign('left').run()} title="Links">
             <AlignLeftIcon size={12} />
@@ -211,20 +204,6 @@ function RichEd({ v, up, cl, ph }: {
           <ToolBtn active={editor.isActive({ textAlign: 'right' })} onClick={() => editor.chain().focus().setTextAlign('right').run()} title="Rechts">
             <AlignRight size={12} />
           </ToolBtn>
-          <div className="w-px h-4 bg-slate-200 mx-0.5" />
-          {/* CI-Farb-Swatches */}
-          {ciColors.map(c => (
-            <button
-              key={c.value}
-              onMouseDown={e => { e.preventDefault(); editor.chain().focus().setColor(c.value).run(); }}
-              title={c.label}
-              className={`w-4 h-4 rounded-full border-2 transition-all flex-shrink-0 ${
-                editor.isActive('textStyle', { color: c.value })
-                  ? 'border-slate-500 scale-110' : 'border-transparent hover:border-slate-300'
-              }`}
-              style={{ background: c.value }}
-            />
-          ))}
         </BubbleMenu>
       )}
       <EditorContent editor={editor} />
@@ -422,7 +401,7 @@ function BlockPreview({ node, onUpdate }: {
             : <div className="h-3" style={{ background: primary }} />
           }
           <div className="px-6 pt-6 pb-5 text-center bg-white">
-            <RichEd v={(p.title as string) ?? ''} up={up?.('title')} ph="Titel" cl="font-bold text-2xl uppercase leading-tight" />
+            <RichEd v={(p.title as string) ?? ''} up={up?.('title')} ph="Titel" cl="font-bold text-2xl leading-tight" />
             {!!(p.accentText as string) && (
               <p className="text-sm font-bold uppercase tracking-wide mt-1" style={{ color: primary }}>{p.accentText as string}</p>
             )}
