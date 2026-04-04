@@ -84,7 +84,7 @@ function FunnelEditorInner({
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
   const [insertTarget, setInsertTarget] = useState<InsertTarget | null>(null);
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saved'>('idle');
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [showEmailConfig, setShowEmailConfig] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -111,22 +111,7 @@ function FunnelEditorInner({
 
   // reset field selection when the selected block changes
 
-  // autosave debounce
-  const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => {
-    setSaveStatus('saving');
-    if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
-    autosaveTimer.current = setTimeout(async () => {
-      try {
-        await funnelStorage.save(doc);
-        setSaveStatus('saved');
-        if (savedTimer.current) clearTimeout(savedTimer.current);
-        savedTimer.current = setTimeout(() => setSaveStatus('idle'), 2000);
-      } catch { setSaveStatus('idle'); }
-    }, 1000);
-    return () => { if (autosaveTimer.current) clearTimeout(autosaveTimer.current); };
-  }, [doc]);
 
   async function save() {
     await funnelStorage.save(doc);
@@ -413,14 +398,10 @@ function FunnelEditorInner({
           className={`flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-semibold rounded-lg transition-all flex-shrink-0 ${
             saveStatus === 'saved'
               ? 'text-emerald-700 bg-emerald-50'
-              : saveStatus === 'saving'
-              ? 'text-slate-400 bg-slate-100 cursor-default'
               : 'bg-violet-600 text-white hover:bg-violet-700 shadow-sm shadow-violet-200'
           }`}>
           {saveStatus === 'saved'
             ? <><Check size={13} /> Gespeichert</>
-            : saveStatus === 'saving'
-            ? <><Save size={13} /> Speichern…</>
             : <><Save size={13} /> Speichern</>}
         </button>
 
