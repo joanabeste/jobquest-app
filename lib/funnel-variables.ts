@@ -22,7 +22,9 @@ export interface VariableDef {
 
 // ─── Always-available context variables ───────────────────────────────────────
 export const CONTEXT_VARIABLES: VariableDef[] = [
-  { key: 'companyName', label: 'Firmenname' },
+  { key: 'companyName',    label: 'Firmenname'       },
+  { key: 'datenschutzUrl', label: 'Datenschutz-URL'  },
+  { key: 'impressumUrl',   label: 'Impressum-URL'    },
 ];
 
 // ─── Variables produced by block types ────────────────────────────────────────

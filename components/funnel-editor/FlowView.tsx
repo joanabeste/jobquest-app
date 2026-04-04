@@ -192,9 +192,9 @@ function PageNode({ data, selected }: NodeProps<Node<PageNodeData>>) {
   );
 }
 
-// ─── Custom Edge with delete button ──────────────────────────────────────────
+// ─── Unified edge — same look for all connections, delete button only on overrides ──
 
-function DeletableEdge({
+function SmartEdge({
   id, sourceX, sourceY, targetX, targetY,
   sourcePosition, targetPosition,
   style, markerEnd, label, data, selected,
@@ -204,7 +204,9 @@ function DeletableEdge({
     sourceX, sourceY, sourcePosition,
     targetX, targetY, targetPosition,
   });
-  const color = (data as { color?: string } | undefined)?.color;
+  const d = data as { color?: string; canDelete?: boolean } | undefined;
+  const color = d?.color;
+  const canDelete = d?.canDelete ?? false;
   const hasLabel = Boolean(label);
 
   return (
@@ -229,7 +231,7 @@ function DeletableEdge({
             {label as string}
           </div>
         )}
-        {selected && (
+        {selected && canDelete && (
           <button
             onClick={(e) => { e.stopPropagation(); deleteElements({ edges: [{ id }] }); }}
             title="Verbindung löschen"
@@ -249,7 +251,7 @@ function DeletableEdge({
 }
 
 const nodeTypes = { pageNode: PageNode };
-const edgeTypes = { deletable: DeletableEdge };
+const edgeTypes = { smart: SmartEdge };
 
 // ─── Hierarchical layout ──────────────────────────────────────────────────────
 
@@ -379,35 +381,31 @@ function buildNodes(doc: FunnelDoc, prevNodes?: Node<PageNodeData>[]): Node<Page
   });
 }
 
+const EDGE_STROKE = '#94a3b8';
+const EDGE_STROKE_W = 2;
+
 function buildEdges(doc: FunnelDoc): Edge[] {
   const edges: Edge[] = [];
 
   doc.pages.forEach((page, pageIdx) => {
-    const nextPage = doc.pages[pageIdx + 1];
+    // Effective "Weiter →" target: explicit override OR sequential next
+    const isOverride = Boolean(page.nextPageId);
+    const effectiveNextId = page.nextPageId ?? doc.pages[pageIdx + 1]?.id;
 
-    if (page.nextPageId) {
+    if (effectiveNextId) {
       edges.push({
         id: `next-${page.id}`,
         source: page.id,
         sourceHandle: 'next',
-        target: page.nextPageId,
+        target: effectiveNextId,
         targetHandle: 'in',
-        type: 'deletable',
-        style: { stroke: '#94a3b8', strokeWidth: 2 },
-        markerEnd: { type: MarkerType.ArrowClosed, color: '#94a3b8' },
-      });
-    } else if (nextPage) {
-      edges.push({
-        id: `implicit-${page.id}`,
-        source: page.id,
-        sourceHandle: 'next',
-        target: nextPage.id,
-        targetHandle: 'in',
-        type: 'smoothstep',
-        style: { stroke: '#dde3ea', strokeWidth: 1.5, strokeDasharray: '6 4' },
-        markerEnd: { type: MarkerType.Arrow, color: '#dde3ea' },
-        deletable: false,
-        selectable: false,
+        type: 'smart',
+        style: { stroke: EDGE_STROKE, strokeWidth: EDGE_STROKE_W },
+        markerEnd: { type: MarkerType.ArrowClosed, color: EDGE_STROKE },
+        // Override connections can be deleted; sequential ones cannot
+        deletable: isOverride,
+        selectable: isOverride,
+        data: { canDelete: isOverride },
       });
     }
 
@@ -425,11 +423,12 @@ function buildEdges(doc: FunnelDoc): Edge[] {
             sourceHandle: `opt-${opt.id}`,
             target: opt.targetPageId,
             targetHandle: 'in',
-            type: 'deletable',
+            type: 'smart',
             label: opt.text || `Option ${i + 1}`,
-            data: { color },
-            style: { stroke: color, strokeWidth: 2 },
+            data: { color, canDelete: true },
+            style: { stroke: color, strokeWidth: EDGE_STROKE_W },
             markerEnd: { type: MarkerType.ArrowClosed, color },
+            deletable: true,
           });
         }
       });
@@ -544,24 +543,18 @@ export default function FlowView({ doc, onSelectPage, onUpdatePage, onUpdateDeci
 
         {/* Top-right: hints */}
         <Panel position="top-right">
-          <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-sm border border-slate-200 px-3 py-2 text-[11px] text-slate-400 space-y-1.5">
+          <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-sm border border-slate-200 px-3 py-2 text-[11px] text-slate-400 space-y-1">
             <div className="flex items-center gap-1.5 font-medium text-slate-500">
               <MousePointer2 size={11} />
               Doppelklick → Seite bearbeiten
             </div>
-            <div className="flex items-center gap-4 pt-1 border-t border-slate-100">
-              <span className="flex items-center gap-1.5">
-                <svg width="20" height="6"><line x1="0" y1="3" x2="20" y2="3" stroke="#94a3b8" strokeWidth="2" /></svg>
-                Explizit
-              </span>
-              <span className="flex items-center gap-1.5">
-                <svg width="20" height="6"><line x1="0" y1="3" x2="20" y2="3" stroke="#dde3ea" strokeWidth="1.5" strokeDasharray="5 4" /></svg>
-                Automatisch
-              </span>
+            <div className="flex items-center gap-1.5 pt-1 border-t border-slate-100">
+              <svg width="16" height="6"><line x1="0" y1="3" x2="16" y2="3" stroke="#94a3b8" strokeWidth="2" /></svg>
+              Verbindung ziehen → Reihenfolge ändern
             </div>
-            <div className="pt-1 border-t border-slate-100 flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5">
               <X size={10} className="text-red-400" />
-              Verbindung anklicken → löschen
+              Angepasste Verbindung anklicken → löschen
             </div>
           </div>
         </Panel>

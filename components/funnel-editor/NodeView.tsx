@@ -18,8 +18,9 @@ import {
   Bold, Italic, Underline as UnderlineIcon,
   AlignLeft as AlignLeftIcon, AlignCenter, AlignRight,
 } from 'lucide-react';
-import { BlockNode, FunnelBlockType, LayoutNode, FunnelNode, BLOCK_LABELS, FunnelStyle } from '@/lib/funnel-types';
+import { BlockNode, FunnelBlockType, LayoutNode, FunnelNode, BLOCK_LABELS, FunnelStyle, LeadFieldDef } from '@/lib/funnel-types';
 import { useCi } from '@/lib/ci-context';
+import InlineLeadFields from './InlineLeadFields';
 
 // Custom extension: adds fontSize + fontWeight attributes to textStyle mark
 const FontSizeWeight = Extension.create({
@@ -268,6 +269,27 @@ function FieldRows({ fields, placeholderBg, textColor }: { fields: FieldDef[]; p
   );
 }
 
+// ─── Static field rows for preview mode (no onUpdate) ────────────────────────
+function StaticFieldRows({ fields, br }: { fields: LeadFieldDef[]; br: string }) {
+  return (
+    <>
+      {fields.map((f) => f.type === 'checkbox' ? (
+        <label key={f.id} className="flex items-start gap-3">
+          <input type="checkbox" disabled className="mt-0.5 flex-shrink-0 opacity-40" />
+          <span
+            className="text-xs text-slate-500 leading-relaxed [&_a]:underline [&_a]:text-violet-500"
+            dangerouslySetInnerHTML={{ __html: f.label + (f.required ? ' *' : '') }}
+          />
+        </label>
+      ) : (
+        <div key={f.id} className="w-full px-3 py-2.5 border-2 border-slate-200 text-sm text-slate-400 bg-white" style={{ borderRadius: br }}>
+          {f.placeholder || f.label}{f.required ? ' *' : ''}
+        </div>
+      ))}
+    </>
+  );
+}
+
 // ─── Block preview – matches FunnelPlayer visual output ───────────────────────
 function BlockPreview({ node, onUpdate }: {
   node: BlockNode;
@@ -503,17 +525,21 @@ function BlockPreview({ node, onUpdate }: {
     }
 
     case 'quest_lead': {
-      const fields = (p.fields as FieldDef[]) || [];
+      const fields = (p.fields as LeadFieldDef[]) || [];
       return (
-        <div className="px-5 py-5 text-white" style={{ background: primary }}>
-          <RichEd v={(p.headline as string) ?? ''} up={up?.('headline')} ph="Interessiert?" cl="font-bold text-base" />
-          <RichEd v={(p.subtext as string) ?? ''} up={up?.('subtext')} ph="Kontaktdaten hinterlassen" cl="text-sm text-white/70 mt-1 block" />
-          <div className="mt-4 space-y-2">
-            <FieldRows fields={fields} placeholderBg="bg-white/20" textColor="text-white/60" />
+        <div className="mx-4 my-3 bg-white shadow-sm p-6" style={{ borderRadius: br }}>
+          <RichEd v={(p.headline as string) ?? ''} up={up?.('headline')} ph="Interessiert?" cl="text-xl font-bold text-slate-900" />
+          <RichEd v={(p.subtext as string) ?? ''} up={up?.('subtext')} ph="Deine Kontaktdaten…" cl="text-slate-500 text-sm mt-1 block" />
+          <div className="space-y-3 mt-4">
+            {onUpdate ? (
+              <InlineLeadFields fields={fields} onChange={(f) => onUpdate({ fields: f })} />
+            ) : (
+              <StaticFieldRows fields={fields} br={br} />
+            )}
           </div>
-          <div className="mt-4 px-6 py-3 bg-white inline-block text-sm font-semibold" style={{ borderRadius: br, color: primary }}>
-            <Ed v={(p.buttonText as string) ?? ''} up={up?.('buttonText')} ph="Jetzt bewerben" cl="" />
-          </div>
+          <button disabled className="w-full mt-4 py-3.5 font-semibold text-sm text-white disabled:opacity-100 cursor-default" style={{ borderRadius: br, background: primary }}>
+            <Ed v={(p.buttonText as string) ?? ''} up={up?.('buttonText')} ph="Jetzt bewerben" cl="text-white" />
+          </button>
         </div>
       );
     }
@@ -676,17 +702,21 @@ function BlockPreview({ node, onUpdate }: {
     }
 
     case 'form_config': {
-      const fields = (p.fields as FieldDef[]) || [];
+      const fields = (p.fields as LeadFieldDef[]) || [];
       return (
-        <div className="px-5 py-5 text-white" style={{ background: primary }}>
-          <RichEd v={(p.headline as string) ?? ''} up={up?.('headline')} ph="Interessiert?" cl="font-bold text-base" />
-          <RichEd v={(p.subtext as string) ?? ''} up={up?.('subtext')} ph="Kontaktdaten hinterlassen" cl="text-sm text-white/70 mt-1 block" />
-          <div className="mt-4 space-y-2">
-            <FieldRows fields={fields} placeholderBg="bg-white/20" textColor="text-white/60" />
+        <div className="mx-4 my-3 bg-white shadow-sm p-6" style={{ borderRadius: br }}>
+          <RichEd v={(p.headline as string) ?? ''} up={up?.('headline')} ph="Interessiert?" cl="text-xl font-bold text-slate-900" />
+          <RichEd v={(p.subtext as string) ?? ''} up={up?.('subtext')} ph="Deine Kontaktdaten…" cl="text-slate-500 text-sm mt-1 block" />
+          <div className="space-y-3 mt-4">
+            {onUpdate ? (
+              <InlineLeadFields fields={fields} onChange={(f) => onUpdate({ fields: f })} />
+            ) : (
+              <StaticFieldRows fields={fields} br={br} />
+            )}
           </div>
-          <div className="mt-4 px-6 py-3 bg-white inline-block text-sm font-semibold" style={{ borderRadius: br, color: primary }}>
-            <Ed v={(p.buttonText as string) ?? ''} up={up?.('buttonText')} ph="Jetzt bewerben" cl="" />
-          </div>
+          <button disabled className="w-full mt-4 py-3.5 font-semibold text-sm text-white disabled:opacity-100 cursor-default" style={{ borderRadius: br, background: primary }}>
+            <Ed v={(p.buttonText as string) ?? ''} up={up?.('buttonText')} ph="Jetzt bewerben" cl="text-white" />
+          </button>
         </div>
       );
     }

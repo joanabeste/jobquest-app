@@ -24,6 +24,7 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
   const [firstName, setFirstName]   = useState('');
   const [leadForm, setLeadForm]     = useState<LeadForm>(emptyLead);
   const [leadSubmitted, setLeadSubmitted] = useState(false);
+  const [leadSaveError, setLeadSaveError] = useState(false);
   const [completed, setCompleted]   = useState(false);
   const [completionMsg, setCompletionMsg] = useState<{ headline: string; text: string } | null>(null);
   const [dialogVisible, setDialogVisible] = useState(0);
@@ -68,30 +69,36 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
   }
 
   // ── Lead saving (shared between quest_lead, check_lead, form_config) ─────────
-  function saveLead(form: LeadForm, customFields?: Record<string, string>) {
-    fetch('/api/public/submit-lead', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        lead: {
-          id: crypto.randomUUID(),
-          jobQuestId: contentDbId ?? doc.contentId,
-          companyId: company.id,
-          firstName: form.firstName || firstName,
-          lastName: form.lastName,
-          email: form.email,
-          phone: form.phone || undefined,
-          gdprConsent: true,
-          submittedAt: new Date().toISOString(),
-          ...(customFields ? { customFields } : {}),
-        },
-        contentId: contentDbId ?? doc.contentId,
-        companyName: company.name,
-      }),
-    }).catch((err) => console.error('[FunnelPlayer] submit-lead fehlgeschlagen:', err));
+  async function saveLead(form: LeadForm, customFields?: Record<string, string>) {
+    try {
+      const res = await fetch('/api/public/submit-lead', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          lead: {
+            id: crypto.randomUUID(),
+            jobQuestId: contentDbId ?? doc.contentId,
+            companyId: company.id,
+            firstName: form.firstName || firstName,
+            lastName: form.lastName,
+            email: form.email,
+            phone: form.phone || undefined,
+            gdprConsent: true,
+            submittedAt: new Date().toISOString(),
+            ...(customFields ? { customFields } : {}),
+          },
+          contentId: contentDbId ?? doc.contentId,
+          companyName: company.name,
+        }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    } catch (err) {
+      console.error('[FunnelPlayer] submit-lead fehlgeschlagen:', err);
+      setLeadSaveError(true);
+    }
   }
   function handleLeadSubmit(form: LeadForm, customFields?: Record<string, string>) {
-    saveLead(form, customFields);
+    saveLead(form, customFields);   // fire-and-forget — user navigates immediately
     setLeadSubmitted(true);
     goNext();
   }
@@ -172,6 +179,16 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
         }
       `}</style>
       <div ref={topRef} />
+
+      {/* ── Lead save error banner ─────────────────────────────────────────── */}
+      {leadSaveError && (
+        <div className="bg-red-50 border-b border-red-200 px-4 py-2.5 flex items-center gap-2 text-sm text-red-700">
+          <span className="flex-1">
+            Deine Daten konnten leider nicht gespeichert werden. Bitte kontaktiere uns direkt.
+          </span>
+          <button onClick={() => setLeadSaveError(false)} className="text-red-400 hover:text-red-600 flex-shrink-0 p-0.5">✕</button>
+        </div>
+      )}
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-10">

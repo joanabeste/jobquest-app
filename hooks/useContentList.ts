@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef } from 'react';
 import { generateSlug } from '@/lib/utils';
+import { useToast } from '@/components/ui/Toast';
 
 interface ContentListStorage<T> {
   getAll: () => Promise<T[]>;
@@ -31,6 +32,7 @@ export function useContentList<T extends { id: string; title: string }>(
   const [items, setItems] = useState<T[]>([]);
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const toast = useToast();
 
   // Keep opts stable across renders without forcing re-creates of reload
   const optsRef = useRef(opts);
@@ -50,19 +52,32 @@ export function useContentList<T extends { id: string; title: string }>(
       }
     } catch (err) {
       console.error('[useContentList] reload failed:', err);
+      toast.error('Inhalte konnten nicht geladen werden. Bitte Seite neu laden.');
     }
-  }, []); // reload identity is stable — opts accessed via ref
+  }, [toast]);
 
   const handleDuplicate = useCallback(async (item: T) => {
-    await optsRef.current.storage.duplicate(item.id, crypto.randomUUID(), generateSlug(item.title));
-    await reload();
-  }, [reload]);
+    try {
+      await optsRef.current.storage.duplicate(item.id, crypto.randomUUID(), generateSlug(item.title));
+      await reload();
+      toast.success('Erfolgreich dupliziert.');
+    } catch (err) {
+      console.error('[useContentList] duplicate failed:', err);
+      toast.error('Duplizieren fehlgeschlagen. Bitte erneut versuchen.');
+    }
+  }, [reload, toast]);
 
   const handleDelete = useCallback(async (id: string) => {
-    await optsRef.current.storage.delete(id);
-    setDeleteConfirm(null);
-    await reload();
-  }, [reload]);
+    try {
+      await optsRef.current.storage.delete(id);
+      setDeleteConfirm(null);
+      await reload();
+    } catch (err) {
+      console.error('[useContentList] delete failed:', err);
+      setDeleteConfirm(null);
+      toast.error('Löschen fehlgeschlagen. Bitte erneut versuchen.');
+    }
+  }, [reload, toast]);
 
   return { items, counts, deleteConfirm, setDeleteConfirm, reload, handleDuplicate, handleDelete };
 }

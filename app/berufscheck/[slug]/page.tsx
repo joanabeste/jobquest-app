@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
+import { useToast } from '@/components/ui/Toast';
 import { careerCheckStorage, companyStorage } from '@/lib/storage';
 import { funnelStorage } from '@/lib/funnel-storage';
 import { FunnelDoc } from '@/lib/funnel-types';
@@ -64,6 +65,8 @@ export default function BerufsCheckPlayer() {
   const [answers, setAnswers] = useState<Record<string, string | number>>({});
   const [leadData, setLeadData] = useState({ lastName: '', email: '', phone: '', gdpr: false });
   const [submitted, setSubmitted] = useState(false);
+  const [leadSaveError, setLeadSaveError] = useState(false);
+  const toast = useToast();
   const [scores, setScores] = useState<Record<string, number>>({});
 
   useEffect(() => {
@@ -130,7 +133,13 @@ export default function BerufsCheckPlayer() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ lead, contentId: check.id, companyName: company.name }),
-    }).catch((err) => console.error('[BerufsCheck] submit-career-check-lead fehlgeschlagen:', err));
+    }).then((res) => {
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    }).catch((err) => {
+      console.error('[BerufsCheck] submit-career-check-lead fehlgeschlagen:', err);
+      setLeadSaveError(true);
+      toast.error('Deine Daten konnten leider nicht gespeichert werden.');
+    });
     setSubmitted(true);
     nextStep();
   }
@@ -167,6 +176,14 @@ export default function BerufsCheckPlayer() {
   return (
     <div className="bc-player min-h-screen bg-slate-50 flex flex-col">
       <style>{css}</style>
+
+      {/* Lead save error banner */}
+      {leadSaveError && (
+        <div className="bg-red-50 border-b border-red-200 px-4 py-2.5 flex items-center gap-2 text-sm text-red-700">
+          <span className="flex-1">Deine Daten konnten leider nicht gespeichert werden. Bitte kontaktiere uns direkt.</span>
+          <button onClick={() => setLeadSaveError(false)} className="text-red-400 hover:text-red-600 flex-shrink-0">✕</button>
+        </div>
+      )}
 
       {/* Progress bar */}
       {questionBlocks.length > 0 && (

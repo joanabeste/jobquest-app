@@ -87,16 +87,6 @@ export default function Topbar() {
           <span className="hidden sm:block font-medium">
             {currentMember?.name || company?.contactName || 'Account'}
           </span>
-          {role && role !== 'platform_admin' && (
-            <span className={`hidden md:inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-semibold ${ROLE_COLORS[role]}`}>
-              {ROLE_LABELS[role]}
-            </span>
-          )}
-          {isPlatformAdmin && (
-            <span className="hidden md:inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-mono font-semibold bg-slate-900 text-slate-300">
-              DEV
-            </span>
-          )}
           <ChevronDown size={14} className={`transition-transform ${menuOpen ? 'rotate-180' : ''}`} />
         </button>
 
@@ -119,13 +109,6 @@ export default function Topbar() {
                   <p className="text-xs text-slate-400 truncate">
                     {currentMember?.email || company?.contactEmail}
                   </p>
-                  {role && (
-                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-semibold mt-1 ${
-                      isPlatformAdmin ? 'bg-slate-900 text-slate-300 font-mono' : ROLE_COLORS[role]
-                    }`}>
-                      {isPlatformAdmin ? 'Developer Mode' : ROLE_LABELS[role]}
-                    </span>
-                  )}
                 </div>
               </div>
             </div>

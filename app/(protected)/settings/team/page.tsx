@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/components/ui/Toast';
 import { WorkspaceMember, WorkspaceRole, ROLE_LABELS, ROLE_COLORS, VISIBLE_ROLES } from '@/lib/types';
 import {
   Users, UserPlus, Trash2, Shield, Eye, Edit3, Crown,
@@ -28,6 +29,7 @@ const ROLE_ICONS: Record<WorkspaceRole, React.ReactNode> = {
 
 export default function SettingsTeamPage() {
   const { company, currentMember, can } = useAuth();
+  const toast = useToast();
   const [members, setMembers] = useState<WorkspaceMember[]>([]);
   const [showInvite, setShowInvite] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -49,10 +51,11 @@ export default function SettingsTeamPage() {
   async function reload() {
     try {
       const res = await fetch('/api/members');
-      if (res.ok) setMembers(await res.json());
-      else console.error('[Team] reload failed:', res.status);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setMembers(await res.json());
     } catch (err) {
       console.error('[Team] reload failed:', err);
+      toast.error('Teammitglieder konnten nicht geladen werden.');
     }
   }
 
@@ -68,47 +71,62 @@ export default function SettingsTeamPage() {
       setInviteError('Diese E-Mail-Adresse ist bereits im Workspace vorhanden.');
       return;
     }
-    const res = await fetch('/api/members/invite', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: invite.name.trim(),
-        email: invite.email.trim().toLowerCase(),
-        role: invite.role,
-      }),
-    });
-    if (!res.ok) {
-      const err = await res.json();
-      setInviteError(err.error || 'Fehler beim Einladen.');
-      return;
-    }
-    const result = await res.json();
-    await reload();
-    setShowInvite(false);
-    setInvite({ name: '', email: '', role: 'editor' });
-    if (result.inviteLink) {
-      setInviteLink(result.inviteLink);
-    } else {
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
+    try {
+      const res = await fetch('/api/members/invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: invite.name.trim(),
+          email: invite.email.trim().toLowerCase(),
+          role: invite.role,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        setInviteError(err.error || 'Fehler beim Einladen.');
+        return;
+      }
+      const result = await res.json();
+      await reload();
+      setShowInvite(false);
+      setInvite({ name: '', email: '', role: 'editor' });
+      if (result.inviteLink) {
+        setInviteLink(result.inviteLink);
+      } else {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 3000);
+      }
+    } catch {
+      setInviteError('Einladung fehlgeschlagen. Bitte Internetverbindung prüfen und erneut versuchen.');
     }
   }
 
   async function handleRoleChange(member: WorkspaceMember, newRole: WorkspaceRole) {
     if (member.role === 'superadmin') return;
-    await fetch(`/api/members/${member.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ role: newRole }),
-    });
-    await reload();
+    try {
+      const res = await fetch(`/api/members/${member.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role: newRole }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      await reload();
+      toast.success('Rolle erfolgreich geändert.');
+    } catch {
+      toast.error('Rolle konnte nicht geändert werden. Bitte erneut versuchen.');
+    }
   }
 
   async function handleRemove(member: WorkspaceMember) {
     if (member.role === 'superadmin' || member.role === 'platform_admin') return;
     if (member.id === currentMember?.id) return;
-    await fetch(`/api/members/${member.id}`, { method: 'DELETE' });
-    await reload();
+    try {
+      const res = await fetch(`/api/members/${member.id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      await reload();
+    } catch {
+      toast.error('Mitglied konnte nicht entfernt werden. Bitte erneut versuchen.');
+    }
   }
 
   if (!company || !currentMember) return null;

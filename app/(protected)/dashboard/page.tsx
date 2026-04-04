@@ -8,6 +8,7 @@ import { questStorage, leadStorage, careerCheckStorage, careerCheckLeadStorage, 
 import { JobQuest, CareerCheck, FormPage, DEFAULT_FORM_CONFIG } from '@/lib/types';
 import { generateSlug, formatDateShort } from '@/lib/utils';
 import { useContentList } from '@/hooks/useContentList';
+import { useToast } from '@/components/ui/Toast';
 import {
   Plus,
   Edit2,
@@ -31,6 +32,7 @@ type ActiveTab = 'jobquests' | 'berufschecks' | 'formulare';
 export default function DashboardPage() {
   const { company, can } = useAuth();
   const router = useRouter();
+  const toast = useToast();
 
   const [activeTab, setActiveTab] = useState<ActiveTab>('jobquests');
   const [search, setSearch] = useState('');
@@ -61,56 +63,51 @@ export default function DashboardPage() {
 
   async function handleCreateQuest() {
     if (!company) return;
-    const id = crypto.randomUUID();
-    const newQuest: JobQuest = {
-      id,
-      companyId: company.id,
-      title: 'Neue JobQuest',
-      slug: generateSlug('neue-jobquest'),
-      status: 'draft',
-      modules: [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    await questStorage.save(newQuest);
-    router.push(`/editor/${id}`);
+    try {
+      const id = crypto.randomUUID();
+      const newQuest: JobQuest = {
+        id, companyId: company.id, title: 'Neue JobQuest',
+        slug: generateSlug('neue-jobquest'), status: 'draft', modules: [],
+        createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+      };
+      await questStorage.save(newQuest);
+      router.push(`/editor/${id}`);
+    } catch {
+      toast.error('JobQuest konnte nicht erstellt werden. Bitte erneut versuchen.');
+    }
   }
 
   async function handleCreateCheck() {
     if (!company) return;
-    const id = crypto.randomUUID();
-    const newCheck: CareerCheck = {
-      id,
-      companyId: company.id,
-      title: 'Neuer Berufscheck',
-      slug: generateSlug('neuer-berufscheck'),
-      status: 'draft',
-      blocks: [],
-      dimensions: [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    await careerCheckStorage.save(newCheck);
-    router.push(`/berufscheck-editor/${id}`);
+    try {
+      const id = crypto.randomUUID();
+      const newCheck: CareerCheck = {
+        id, companyId: company.id, title: 'Neuer Berufscheck',
+        slug: generateSlug('neuer-berufscheck'), status: 'draft', blocks: [], dimensions: [],
+        createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+      };
+      await careerCheckStorage.save(newCheck);
+      router.push(`/berufscheck-editor/${id}`);
+    } catch {
+      toast.error('Berufscheck konnte nicht erstellt werden. Bitte erneut versuchen.');
+    }
   }
 
   async function handleCreateForm() {
     if (!company) return;
-    const id = crypto.randomUUID();
-    const newForm: FormPage = {
-      id,
-      companyId: company.id,
-      title: 'Neues Formular',
-      slug: generateSlug('neues-formular'),
-      status: 'draft',
-      contentBlocks: [],
-      formSteps: [],
-      formConfig: DEFAULT_FORM_CONFIG,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    await formPageStorage.save(newForm);
-    router.push(`/formular-editor/${id}`);
+    try {
+      const id = crypto.randomUUID();
+      const newForm: FormPage = {
+        id, companyId: company.id, title: 'Neues Formular',
+        slug: generateSlug('neues-formular'), status: 'draft',
+        contentBlocks: [], formSteps: [], formConfig: DEFAULT_FORM_CONFIG,
+        createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+      };
+      await formPageStorage.save(newForm);
+      router.push(`/formular-editor/${id}`);
+    } catch {
+      toast.error('Formular konnte nicht erstellt werden. Bitte erneut versuchen.');
+    }
   }
 
   // ── Filtered lists ────────────────────────────────────────────────────────

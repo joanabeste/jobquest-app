@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/components/ui/Toast';
 import { questStorage, leadStorage, careerCheckStorage, careerCheckLeadStorage, formPageStorage, formSubmissionStorage } from '@/lib/storage';
 import { Dimension, FormField } from '@/lib/types';
 import { formatDateTime } from '@/lib/utils';
@@ -99,7 +100,9 @@ function exportCSV(leads: UnifiedLead[]) {
 
 export default function LeadsPage() {
   const { company } = useAuth();
+  const toast = useToast();
   const [allLeads, setAllLeads] = useState<UnifiedLead[]>([]);
+  const [loadError, setLoadError] = useState(false);
   const [search, setSearch] = useState('');
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all');
   const [selectedLead, setSelectedLead] = useState<UnifiedLead | null>(null);
@@ -176,10 +179,13 @@ export default function LeadsPage() {
 
       unified.sort((a, b) => b.submittedAt.localeCompare(a.submittedAt));
       setAllLeads(unified);
+      setLoadError(false);
     } catch (err) {
       console.error('[LeadsPage] load failed:', err);
+      setLoadError(true);
+      toast.error('Leads konnten nicht geladen werden. Bitte Seite neu laden.');
     }
-  }, [company]);
+  }, [company, toast]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -201,6 +207,13 @@ export default function LeadsPage() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 md:px-6 py-8">
+      {/* Load error banner */}
+      {loadError && (
+        <div className="mb-6 flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700">
+          <span className="flex-1">Kontakte konnten nicht geladen werden.</span>
+          <button onClick={load} className="font-medium underline hover:text-red-900">Erneut versuchen</button>
+        </div>
+      )}
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>

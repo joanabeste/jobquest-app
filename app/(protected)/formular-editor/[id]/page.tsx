@@ -7,11 +7,13 @@ import { FormPage } from '@/lib/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { slugify } from '@/lib/utils';
 import FunnelEditor from '@/components/funnel-editor/FunnelEditor';
+import { useToast } from '@/components/ui/Toast';
 
 export default function FormularEditorPage() {
   const { id } = useParams<{ id: string }>();
   const { company } = useAuth();
   const router = useRouter();
+  const toast = useToast();
   const [formPage, setFormPage] = useState<FormPage | null>(null);
   const [notFound, setNotFound] = useState(false);
 
@@ -45,8 +47,12 @@ export default function FormularEditorPage() {
   async function handleTitleChange(title: string) {
     if (!formPage) return;
     const updated = { ...formPage, title, slug: slugify(title), updatedAt: new Date().toISOString() };
-    await formPageStorage.save(updated);
-    setFormPage(updated);
+    try {
+      await formPageStorage.save(updated);
+      setFormPage(updated);
+    } catch {
+      toast.error('Titel konnte nicht gespeichert werden.');
+    }
   }
 
   async function handlePublish() {
@@ -57,8 +63,13 @@ export default function FormularEditorPage() {
       publishedAt: newStatus === 'published' ? new Date().toISOString() : formPage.publishedAt,
       updatedAt: new Date().toISOString(),
     };
-    await formPageStorage.save(updated);
-    setFormPage(updated);
+    try {
+      await formPageStorage.save(updated);
+      setFormPage(updated);
+      toast.success(newStatus === 'published' ? 'Formular veröffentlicht.' : 'Formular auf Entwurf gesetzt.');
+    } catch {
+      toast.error('Status konnte nicht geändert werden.');
+    }
   }
 
   return (

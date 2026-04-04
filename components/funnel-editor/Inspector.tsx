@@ -1,13 +1,15 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Trash2, Copy, MousePointer2, Lock } from 'lucide-react';
+import { Trash2, Copy, MousePointer2, Lock, ChevronLeft } from 'lucide-react';
 import RichTextEditor from './RichTextEditor';
-import { FunnelNode, FunnelStyle, FunnelPage, BLOCK_LABELS, LeadFieldDef } from '@/lib/funnel-types';
+import { FunnelNode, FunnelStyle, FunnelPage, BLOCK_LABELS, LeadFieldDef, LeadFieldType } from '@/lib/funnel-types';
 import { BLOCK_META } from './NodeView';
 import { VarInput, VarTextarea } from './VarInput';
 import { type VariableDef, CONTEXT_VARIABLES } from '@/lib/funnel-variables';
 import LeadFieldBuilder from './LeadFieldBuilder';
+import { useFunnelEditorCtx } from './FunnelEditorContext';
+import { LEAD_FIELD_META, LEAD_FIELD_TYPES } from './InlineLeadFields';
 import { Field, NumberInput, ImageUploadField, Section } from './inspectors/shared';
 import { DialogEditor } from './inspectors/DialogEditor';
 import { DecisionEditor } from './inspectors/DecisionEditor';
@@ -158,6 +160,19 @@ function TabBtn({ active, onClick, children }: { active: boolean; onClick: () =>
 // ─── Page settings editor ───────────────────────────────────────────────────
 function PageSettingsEditor({ currentPage, pages, onUpdate }: { currentPage?: FunnelPage | undefined; pages?: FunnelPage[]; onUpdate?: (p: Partial<FunnelPage>) => void }) {
   if (!currentPage) return <div className="p-4 text-sm text-slate-400">Keine Seiten-Einstellungen verfügbar.</div>;
+
+  const pageIdx = pages?.findIndex((p) => p.id === currentPage.id) ?? -1;
+  const sequentialNextId = pages?.[pageIdx + 1]?.id ?? '';
+  // Effective target: explicit override, or sequential default, or empty (last page)
+  const effectiveNextId = currentPage.nextPageId ?? sequentialNextId;
+  const isCustom = Boolean(currentPage.nextPageId) && currentPage.nextPageId !== sequentialNextId;
+
+  function handleNextChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    const selected = e.target.value;
+    // If user picks the sequential default, clear the override
+    onUpdate?.({ nextPageId: selected === sequentialNextId ? undefined : (selected || undefined) });
+  }
+
   return (
     <div className="p-4 space-y-3">
       <div>
@@ -166,10 +181,28 @@ function PageSettingsEditor({ currentPage, pages, onUpdate }: { currentPage?: Fu
       </div>
       <div>
         <label className="label">Nächste Seite</label>
-        <select className="input-field" value={currentPage.nextPageId ?? ''} onChange={(e) => onUpdate?.({ nextPageId: e.target.value || undefined })}>
-          <option value="">(nächste)</option>
-          {pages?.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+        <select className="input-field" value={effectiveNextId} onChange={handleNextChange}>
+          {pages?.filter((p) => p.id !== currentPage.id).map((p, _, arr) => {
+            const i = pages!.indexOf(p);
+            return (
+              <option key={p.id} value={p.id}>
+                {p.name || `Seite ${i + 1}`}{p.id === sequentialNextId ? ' (Standard)' : ''}
+              </option>
+            );
+          })}
+          {!sequentialNextId && <option value="">— Letzter Schritt —</option>}
         </select>
+        {isCustom && (
+          <p className="text-[10px] text-violet-600 mt-1.5 flex items-center gap-1">
+            Benutzerdefinierte Reihenfolge aktiv
+            <button
+              onClick={() => onUpdate?.({ nextPageId: undefined })}
+              className="underline hover:text-violet-800"
+            >
+              zurücksetzen
+            </button>
+          </p>
+        )}
       </div>
     </div>
   );
@@ -219,6 +252,140 @@ function StyleEditor({ style, onChange }: { style: FunnelStyle; onChange: (p: Pa
 }
 
 // ─── Block props editors ──────────────────────────────────────────────────────
+// Derive a variable name from a field label: "E-Mail-Adresse" → "email_adresse"
+function toVariable(label: string): string {
+  return label
+    .toLowerCase()
+    .replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss')
+    .replace(/[^a-z0-9 ]/g, '')
+    .trim()
+    .replace(/\s+/g, '_');
+}
+
+function LeadFieldEditor({ field, onChange, onBack }: {
+  field: LeadFieldDef;
+  onChange: (patch: Partial<LeadFieldDef>) => void;
+  onBack: () => void;
+}) {
+  const meta = LEAD_FIELD_META[field.type];
+  const Icon = meta.icon;
+  const varName = field.variable ?? toVariable(field.label);
+
+  return (
+    <div className="space-y-3">
+      {/* Back */}
+      <button
+        onClick={onBack}
+        className="flex items-center gap-1.5 text-[11px] text-slate-400 hover:text-slate-700 transition-colors"
+      >
+        <ChevronLeft size={12} /> Zurück zum Formular
+      </button>
+
+      {/* Field type badge */}
+      <div className={`flex items-center gap-2 px-2.5 py-2 rounded-xl bg-slate-50`}>
+        <Icon size={13} className={meta.color} />
+        <span className="text-xs font-semibold text-slate-700">{meta.label}</span>
+      </div>
+
+      {/* Type */}
+      <Field label="Feldtyp">
+        <select
+          value={field.type}
+          onChange={(e) => onChange({
+            type: e.target.value as LeadFieldType,
+            options: e.target.value === 'select' ? (field.options ?? ['Option 1', 'Option 2']) : field.options,
+          })}
+          className="input-field text-sm"
+        >
+          {LEAD_FIELD_TYPES.map((t) => (
+            <option key={t} value={t}>{LEAD_FIELD_META[t].label}</option>
+          ))}
+        </select>
+      </Field>
+
+      {/* Label — rich text for checkbox, plain input otherwise */}
+      {field.type === 'checkbox' ? (
+        <Field label="Beschriftung">
+          <RichTextEditor
+            value={field.label}
+            onChange={(html) => onChange({ label: html })}
+            variables={[
+              { key: 'companyName',    label: 'Firmenname'      },
+              { key: 'datenschutzUrl', label: 'Datenschutz-URL' },
+              { key: 'impressumUrl',   label: 'Impressum-URL'   },
+            ]}
+            minHeight={60}
+          />
+          <p className="text-[10px] text-slate-400 mt-1.5 leading-relaxed">
+            Verwende @datenschutzUrl und @impressumUrl für automatische Links aus dem Firmenprofil.
+          </p>
+        </Field>
+      ) : (
+        <Field label="Feldname">
+          <input
+            value={field.label}
+            onChange={(e) => onChange({ label: e.target.value })}
+            className="input-field text-sm"
+            placeholder="z.B. Vorname"
+          />
+        </Field>
+      )}
+
+      {/* Variable */}
+      <Field label="Variable">
+        <input
+          value={varName}
+          onChange={(e) => onChange({ variable: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '') })}
+          className="input-field text-sm font-mono"
+          placeholder={toVariable(field.label)}
+        />
+        <p className="text-[10px] text-slate-400 mt-1.5 leading-relaxed">
+          Verwende <code className="bg-slate-100 px-1 py-0.5 rounded text-slate-600">@{varName}</code> in E-Mail-Vorlagen
+        </p>
+      </Field>
+
+      {/* Required */}
+      <Field label="Verhalten">
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={field.required}
+            onChange={(e) => onChange({ required: e.target.checked })}
+            className="accent-violet-600"
+          />
+          <span className="text-xs text-slate-700">Pflichtfeld</span>
+        </label>
+      </Field>
+
+      {/* Placeholder (not for checkbox) */}
+      {field.type !== 'checkbox' && (
+        <Field label="Platzhalter">
+          <input
+            value={field.placeholder ?? ''}
+            onChange={(e) => onChange({ placeholder: e.target.value })}
+            className="input-field text-sm"
+            placeholder="optional"
+          />
+        </Field>
+      )}
+
+      {/* Options for select */}
+      {field.type === 'select' && (
+        <Field label="Optionen">
+          <textarea
+            value={(field.options ?? []).join('\n')}
+            onChange={(e) => onChange({ options: e.target.value.split('\n') })}
+            rows={4}
+            className="input-field text-sm resize-none"
+            placeholder={'Option 1\nOption 2\nOption 3'}
+          />
+          <p className="text-[10px] text-slate-400 mt-1">Eine Option pro Zeile</p>
+        </Field>
+      )}
+    </div>
+  );
+}
+
 function BlockPropsEditor({ node, props, onChange, pages, availableVars }: {
   node: import('@/lib/funnel-types').BlockNode;
   props: Record<string, unknown>;
@@ -226,6 +393,8 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars }: {
   pages?: FunnelPage[];
   availableVars: VariableDef[];
 }) {
+  const { selectedFieldId, setSelectedFieldId } = useFunnelEditorCtx();
+
   switch (node.type) {
 
     // ── Generic ──
@@ -449,13 +618,23 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars }: {
         </div>
       );
 
-    case 'quest_lead':
+    case 'quest_lead': {
+      const fields = (props.fields as LeadFieldDef[]) ?? [];
+      const selectedField = selectedFieldId ? fields.find((f) => f.id === selectedFieldId) : null;
+
+      if (selectedField) {
+        return (
+          <LeadFieldEditor
+            field={selectedField}
+            onChange={(patch) => onChange({ fields: fields.map((f) => f.id === selectedField.id ? { ...f, ...patch } : f) })}
+            onBack={() => setSelectedFieldId(null)}
+          />
+        );
+      }
+
       return (
         <div className="space-y-3">
-          <div className="flex items-center gap-1.5 px-2.5 py-2 bg-violet-50 rounded-xl">
-            <Lock size={11} className="text-violet-500 flex-shrink-0" />
-            <span className="text-[10px] font-medium text-violet-700">Fester Abschlussblock – nicht löschbar</span>
-          </div>
+
           <Field label="Überschrift">
             <input value={(props.headline as string) ?? ''} onChange={(e) => onChange({ headline: e.target.value })} className="input-field text-sm" />
           </Field>
@@ -467,17 +646,10 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars }: {
               <input value={(props.buttonText as string) ?? ''} onChange={(e) => onChange({ buttonText: e.target.value })} className="input-field text-sm" />
             </Field>
           </Section>
-          <Section label="Erweitert" collapsible defaultOpen={false}>
-            <Field label="Datenschutz-Text">
-              <VarTextarea value={(props.privacyText as string) ?? ''} onChange={(v) => onChange({ privacyText: v })} rows={3} variables={availableVars} />
-            </Field>
-          </Section>
-          <LeadFieldBuilder
-            fields={(props.fields as LeadFieldDef[]) ?? []}
-            onChange={(fields) => onChange({ fields })}
-          />
+          <LeadFieldBuilder fields={fields} onChange={(f) => onChange({ fields: f })} />
         </div>
       );
+    }
 
     // ── BerufsCheck ──
     case 'check_intro':
@@ -593,13 +765,23 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars }: {
     case 'form_step':
       return <FormStepEditor props={props} onChange={onChange} />;
 
-    case 'form_config':
+    case 'form_config': {
+      const fcFields = (props.fields as LeadFieldDef[]) ?? [];
+      const fcSelected = selectedFieldId ? fcFields.find((f) => f.id === selectedFieldId) : null;
+
+      if (fcSelected) {
+        return (
+          <LeadFieldEditor
+            field={fcSelected}
+            onChange={(patch) => onChange({ fields: fcFields.map((f) => f.id === fcSelected.id ? { ...f, ...patch } : f) })}
+            onBack={() => setSelectedFieldId(null)}
+          />
+        );
+      }
+
       return (
         <div className="space-y-3">
-          <div className="flex items-center gap-1.5 px-2.5 py-2 bg-violet-50 rounded-xl">
-            <Lock size={11} className="text-violet-500 flex-shrink-0" />
-            <span className="text-[10px] font-medium text-violet-700">Fester Abschlussblock – nicht löschbar</span>
-          </div>
+
           <Field label="Überschrift">
             <input value={(props.headline as string) ?? ''} onChange={(e) => onChange({ headline: e.target.value })} className="input-field text-sm" />
           </Field>
@@ -616,12 +798,10 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars }: {
               <VarTextarea value={(props.privacyText as string) ?? ''} onChange={(v) => onChange({ privacyText: v })} rows={3} variables={availableVars} />
             </Field>
           </Section>
-          <LeadFieldBuilder
-            fields={(props.fields as LeadFieldDef[]) ?? []}
-            onChange={(fields) => onChange({ fields })}
-          />
+          <LeadFieldBuilder fields={fcFields} onChange={(f) => onChange({ fields: f })} />
         </div>
       );
+    }
 
     default:
       return <p className="text-xs text-slate-400">Kein Editor für diesen Blocktyp.</p>;

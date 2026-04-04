@@ -138,7 +138,7 @@ export default function Canvas({
                     node={node}
                     isSelected={selectedNodeId === node.id}
                     isDragging={draggingId === node.id}
-                    isLocked={node.kind === 'block' && node.type === 'quest_lead'}
+                    isLocked={false}
                     onSelect={() => onSelectNode(node.id)}
                     onDelete={() => onDeleteNode(node.id)}
                     onDuplicate={() => onDuplicateNode(node.id)}

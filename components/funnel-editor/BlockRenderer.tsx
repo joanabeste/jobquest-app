@@ -390,7 +390,12 @@ export function BlockRenderer({
 }) {
   const p = node.props;
   // Interpolation helper: substitutes all template variables
-  const varsMap = { firstName: firstName || '', companyName: company.name };
+  const varsMap = {
+    firstName:      firstName || '',
+    companyName:    company.name,
+    datenschutzUrl: company.privacyUrl ?? '',
+    impressumUrl:   company.imprintUrl ?? '',
+  };
   const si = (v: unknown, fallback = '') => applyVars(s(v, fallback), varsMap);
 
   switch (node.type) {
@@ -967,12 +972,23 @@ function LeadFormBlock({ props: p, company, br, primary, leadForm, setLeadForm, 
   const fieldDefs = (p.fields as LeadFieldDef[]) ?? [];
   const useFields = fieldDefs.length > 0;
   const [vals, setVals] = useState<Record<string, string>>({});
+  const varsMap = {
+    companyName:    company.name,
+    datenschutzUrl: company.privacyUrl ?? '',
+    impressumUrl:   company.imprintUrl ?? '',
+    firstName:      '',
+    lastName:       '',
+    email:          '',
+    phone:          '',
+  };
   const setVal = (id: string, val: string) => setVals((prev) => ({ ...prev, [id]: val }));
 
   const emailField = fieldDefs.find((f) => f.type === 'email');
   const emailValue = useFields ? (emailField ? (vals[emailField.id] ?? '') : '') : leadForm.email;
-  const canSubmit = emailValue.includes('@') && leadForm.gdpr;
-  const privacyText = applyVars(s(p.privacyText, 'Ich stimme zu, dass @companyName meine Daten verarbeitet.'), { companyName: company.name });
+  const requiredCheckboxesMet = useFields
+    ? fieldDefs.filter((f) => f.type === 'checkbox' && f.required).every((f) => vals[f.id] === 'true')
+    : leadForm.gdpr;
+  const canSubmit = emailValue.includes('@') && requiredCheckboxesMet;
 
   const inputCls = 'w-full px-3 py-2.5 border-2 border-slate-200 text-sm focus:outline-none';
 
@@ -985,6 +1001,7 @@ function LeadFormBlock({ props: p, company, br, primary, leadForm, setLeadForm, 
       if (textFields[1]) finalForm.lastName = vals[textFields[1].id] ?? '';
       const telField = fieldDefs.find((f) => f.type === 'tel');
       if (telField) finalForm.phone = vals[telField.id] ?? '';
+      finalForm.gdpr = true; // required checkboxes already verified by canSubmit
       onSubmit(finalForm, vals);
     } else {
       onSubmit(leadForm);
@@ -1004,7 +1021,10 @@ function LeadFormBlock({ props: p, company, br, primary, leadForm, setLeadForm, 
                   <input type="checkbox" checked={!!(vals[f.id])}
                     onChange={(e) => setVal(f.id, e.target.checked ? 'true' : '')}
                     className="fp-check mt-0.5 flex-shrink-0" />
-                  <span className="text-xs text-slate-500">{f.label}{f.required ? ' *' : ''}</span>
+                  <span
+                    className="text-xs text-slate-500 leading-relaxed [&_a]:underline [&_a]:hover:text-slate-700"
+                    dangerouslySetInnerHTML={{ __html: applyVars(f.label, varsMap) + (f.required ? ' *' : '') }}
+                  />
                 </label>
               );
             }
@@ -1050,16 +1070,19 @@ function LeadFormBlock({ props: p, company, br, primary, leadForm, setLeadForm, 
             )}
           </>
         )}
-        <label className="flex items-start gap-3 cursor-pointer">
-          <input type="checkbox" checked={leadForm.gdpr} onChange={(e) => u({ gdpr: e.target.checked })} className="fp-check mt-0.5 flex-shrink-0" />
-          <span className="text-xs text-slate-500 leading-relaxed">
-            {privacyText}
-            {company.privacyUrl && (
-              <> <a href={company.privacyUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-slate-700">Datenschutzerklärung</a></>
-            )}
-            {' '}*
-          </span>
-        </label>
+        {/* Legacy: hardcoded GDPR checkbox for forms without a fields array */}
+        {!useFields && (
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input type="checkbox" checked={leadForm.gdpr} onChange={(e) => u({ gdpr: e.target.checked })} className="fp-check mt-0.5 flex-shrink-0" />
+            <span className="text-xs text-slate-500 leading-relaxed">
+              {applyVars(s(p.privacyText, 'Ich stimme zu, dass @companyName meine Daten verarbeitet.'), { companyName: company.name })}
+              {company.privacyUrl && (
+                <> <a href={company.privacyUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-slate-700">Datenschutzerklärung</a></>
+              )}
+              {' '}*
+            </span>
+          </label>
+        )}
       </div>
       <button onClick={handleSubmit} disabled={!canSubmit}
         className="fp-btn w-full mt-4 py-3.5 font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed"

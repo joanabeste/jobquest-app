@@ -98,6 +98,8 @@ export interface LeadFieldDef {
   id: string;
   type: LeadFieldType;
   label: string;
+  /** Variable name used in email templates, e.g. "vorname" → @vorname */
+  variable?: string;
   placeholder?: string;
   required: boolean;
   options?: string[];
@@ -130,12 +132,12 @@ function contactLeadDefault() {
     headline: 'Interessiert?',
     subtext: 'Hinterlasse deine Kontaktdaten – wir melden uns bei dir.',
     buttonText: 'Jetzt bewerben',
-    privacyText: 'Ich stimme zu, dass @companyName meine Daten speichert und mich kontaktiert.',
     fields: [
-      { id: uid(), type: 'text',  label: 'Vorname',   placeholder: 'Vorname',                  required: true  },
-      { id: uid(), type: 'text',  label: 'Nachname',  placeholder: 'Nachname',                 required: false },
-      { id: uid(), type: 'email', label: 'E-Mail',    placeholder: 'E-Mail-Adresse',           required: true  },
-      { id: uid(), type: 'tel',   label: 'Telefon',   placeholder: 'Telefonnummer (optional)', required: false },
+      { id: uid(), type: 'text',     label: 'Vorname',   placeholder: 'Vorname',                  required: true,  variable: 'vorname'     },
+      { id: uid(), type: 'text',     label: 'Nachname',  placeholder: 'Nachname',                 required: false, variable: 'nachname'    },
+      { id: uid(), type: 'email',    label: 'E-Mail',    placeholder: 'E-Mail-Adresse',           required: true,  variable: 'email'       },
+      { id: uid(), type: 'tel',      label: 'Telefon',   placeholder: 'Telefonnummer (optional)', required: false, variable: 'telefon'     },
+      { id: uid(), type: 'checkbox', label: 'Ich stimme zu, dass <a href="@datenschutzUrl" target="_blank" rel="noopener noreferrer">@companyName</a> meine Daten speichert und mich kontaktiert. <a href="@impressumUrl" target="_blank" rel="noopener noreferrer">Impressum</a>', required: true, variable: 'datenschutz' },
     ],
   };
 }

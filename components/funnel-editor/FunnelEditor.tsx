@@ -15,6 +15,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { useCorporateDesign } from '@/lib/use-corporate-design';
 import { CIContext } from '@/lib/ci-context';
+import { FunnelEditorContext } from './FunnelEditorContext';
 import PageSidebar from './PageSidebar';
 import Canvas from './Canvas';
 import Inspector from './Inspector';
@@ -112,6 +113,7 @@ function FunnelEditorInner({
 
   const [activePageId, setActivePageId] = useState(doc.pages[0]?.id ?? '');
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
   const [insertTarget, setInsertTarget] = useState<InsertTarget | null>(null);
   const [savedBriefly, setSavedBriefly] = useState(false);
   const [showGenerateModal, setShowGenerateModal] = useState(false);
@@ -127,6 +129,8 @@ function FunnelEditorInner({
       setActivePageId(doc.pages[0]?.id ?? '');
     }
   }, [doc.pages, activePageId]);
+
+  // reset field selection when the selected block changes
 
   // autosave debounce
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -170,17 +174,6 @@ function FunnelEditorInner({
   const activePage = doc.pages.find((p) => p.id === activePageId);
 
   function handleInsertBlock(type: import('@/lib/funnel-types').FunnelBlockType, props: Record<string, unknown>, target: InsertTarget) {
-    // quest_lead: only one per page, always insert at end
-    if (type === 'quest_lead') {
-      const alreadyExists = activePage?.nodes.some((n) => n.kind === 'block' && n.type === 'quest_lead');
-      if (alreadyExists) { setInsertTarget(null); return; }
-      const endTarget: InsertTarget = { location: 'root', afterId: activePage?.nodes.at(-1)?.id ?? null };
-      const node = createBlockNode(type, props);
-      push(insertNode(doc, activePageId, node, endTarget));
-      setSelectedNodeId(node.id);
-      setInsertTarget(null);
-      return;
-    }
     const node = createBlockNode(type, props);
     push(insertNode(doc, activePageId, node, target));
     setSelectedNodeId(node.id);
@@ -463,6 +456,7 @@ function FunnelEditorInner({
             />
 
             {/* Center – Canvas */}
+            <FunnelEditorContext.Provider value={{ selectedFieldId, setSelectedFieldId }}>
             <Canvas
               page={activePage ?? null}
               contentType={contentType}
@@ -493,6 +487,7 @@ function FunnelEditorInner({
               onUpdatePage={handleUpdatePage}
               availableVars={availableVars}
             />
+            </FunnelEditorContext.Provider>
           </>
         )}
       </div>

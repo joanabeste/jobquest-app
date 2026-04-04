@@ -1,17 +1,22 @@
 'use client';
 
-import { ChevronDown, ChevronUp, Plus, X } from 'lucide-react';
+import { useState } from 'react';
+import {
+  AlignLeft, CheckSquare, ChevronDown, ChevronUp,
+  List, Lock, LockOpen, Mail, Phone, Plus, Type, X,
+} from 'lucide-react';
 import { LeadFieldDef, LeadFieldType } from '@/lib/funnel-types';
 
-const LEAD_FIELD_TYPES: LeadFieldType[] = ['text', 'email', 'tel', 'textarea', 'checkbox', 'select'];
-const LEAD_FIELD_LABELS: Record<LeadFieldType, string> = {
-  text: 'Text',
-  email: 'E-Mail',
-  tel: 'Telefon',
-  textarea: 'Mehrzeilig',
-  checkbox: 'Checkbox',
-  select: 'Dropdown',
+const FIELD_META: Record<LeadFieldType, { label: string; icon: React.ElementType; bg: string; color: string }> = {
+  text:     { label: 'Text',       icon: Type,        bg: 'bg-blue-50',   color: 'text-blue-500'   },
+  email:    { label: 'E-Mail',     icon: Mail,        bg: 'bg-violet-50', color: 'text-violet-500' },
+  tel:      { label: 'Telefon',    icon: Phone,       bg: 'bg-green-50',  color: 'text-green-500'  },
+  textarea: { label: 'Mehrzeilig', icon: AlignLeft,   bg: 'bg-amber-50',  color: 'text-amber-500'  },
+  checkbox: { label: 'Checkbox',   icon: CheckSquare, bg: 'bg-rose-50',   color: 'text-rose-500'   },
+  select:   { label: 'Dropdown',   icon: List,        bg: 'bg-slate-100', color: 'text-slate-500'  },
 };
+
+const LEAD_FIELD_TYPES = Object.keys(FIELD_META) as LeadFieldType[];
 
 interface LeadFieldBuilderProps {
   fields: LeadFieldDef[];
@@ -19,8 +24,12 @@ interface LeadFieldBuilderProps {
 }
 
 export default function LeadFieldBuilder({ fields, onChange }: LeadFieldBuilderProps) {
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
   function addField() {
-    onChange([...fields, { id: crypto.randomUUID(), type: 'text', label: 'Neues Feld', required: false }]);
+    const newField: LeadFieldDef = { id: crypto.randomUUID(), type: 'text', label: 'Neues Feld', required: false };
+    onChange([...fields, newField]);
+    setExpandedId(newField.id);
   }
 
   function updateField(id: string, patch: Partial<LeadFieldDef>) {
@@ -29,6 +38,7 @@ export default function LeadFieldBuilder({ fields, onChange }: LeadFieldBuilderP
 
   function removeField(id: string) {
     onChange(fields.filter((f) => f.id !== id));
+    if (expandedId === id) setExpandedId(null);
   }
 
   function moveField(id: string, dir: -1 | 1) {
@@ -42,107 +52,145 @@ export default function LeadFieldBuilder({ fields, onChange }: LeadFieldBuilderP
 
   return (
     <div className="border-t border-slate-100 pt-3">
-      <div className="flex items-center justify-between mb-2">
-        <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Formularfelder</p>
-        <button
-          onClick={addField}
-          className="flex items-center gap-1 text-[10px] text-violet-600 font-medium hover:text-violet-800 transition-colors"
-        >
-          <Plus size={11} /> Feld hinzufügen
-        </button>
-      </div>
+      <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400 mb-2">Formularfelder</p>
 
       {fields.length === 0 ? (
-        <p className="text-[10px] text-slate-400 italic text-center py-3 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-          Noch keine Felder – klicke auf Feld hinzufügen
+        <p className="text-[10px] text-slate-400 italic text-center py-3 bg-slate-50 rounded-xl border border-dashed border-slate-200 mb-2">
+          Noch keine Felder
         </p>
       ) : (
-        <div className="space-y-2">
-          {fields.map((f, idx) => (
-            <div key={f.id} className="bg-slate-50 border border-slate-200 rounded-xl p-2 space-y-1.5">
-              {/* Row 1: type selector + pflicht + reorder + delete */}
-              <div className="flex gap-1 items-center">
-                <select
-                  value={f.type}
-                  onChange={(e) =>
-                    updateField(f.id, {
-                      type: e.target.value as LeadFieldType,
-                      options: e.target.value === 'select' ? (f.options ?? ['Option 1', 'Option 2']) : f.options,
-                    })
-                  }
-                  className="flex-1 px-2 py-1 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none"
+        <div className="space-y-1 mb-2">
+          {fields.map((f, idx) => {
+            const meta = FIELD_META[f.type];
+            const Icon = meta.icon;
+            const isExpanded = expandedId === f.id;
+
+            return (
+              <div key={f.id} className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+                {/* Collapsed row */}
+                <div
+                  className="flex items-center gap-1.5 px-2 py-1.5 cursor-pointer select-none"
+                  onClick={() => setExpandedId(isExpanded ? null : f.id)}
                 >
-                  {LEAD_FIELD_TYPES.map((t) => (
-                    <option key={t} value={t}>
-                      {LEAD_FIELD_LABELS[t]}
-                    </option>
-                  ))}
-                </select>
-                <label className="flex items-center gap-1 text-[10px] text-slate-500 flex-shrink-0">
-                  <input
-                    type="checkbox"
-                    checked={!!f.required}
-                    onChange={(e) => updateField(f.id, { required: e.target.checked })}
-                    className="accent-violet-600"
-                  />
-                  Pflicht
-                </label>
-                <div className="flex flex-col gap-0.5">
-                  <button
-                    onClick={() => moveField(f.id, -1)}
-                    disabled={idx === 0}
-                    className="p-0.5 rounded hover:bg-slate-200 text-slate-400 hover:text-slate-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                  {/* Up/down */}
+                  <div className="flex flex-col gap-0.5 flex-shrink-0">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); moveField(f.id, -1); }}
+                      disabled={idx === 0}
+                      className="p-0.5 rounded hover:bg-slate-100 text-slate-300 hover:text-slate-500 disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <ChevronUp size={9} />
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); moveField(f.id, 1); }}
+                      disabled={idx === fields.length - 1}
+                      className="p-0.5 rounded hover:bg-slate-100 text-slate-300 hover:text-slate-500 disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <ChevronDown size={9} />
+                    </button>
+                  </div>
+
+                  {/* Type icon */}
+                  <div className={`w-5 h-5 rounded flex items-center justify-center flex-shrink-0 ${meta.bg}`}>
+                    <Icon size={10} className={meta.color} />
+                  </div>
+
+                  {/* Type selector */}
+                  <select
+                    value={f.type}
+                    onClick={(e) => e.stopPropagation()}
+                    onChange={(e) => {
+                      const t = e.target.value as LeadFieldType;
+                      updateField(f.id, {
+                        type: t,
+                        options: t === 'select' ? (f.options ?? ['Option 1', 'Option 2']) : f.options,
+                      });
+                    }}
+                    className="text-[10px] font-medium text-slate-600 bg-transparent border-none outline-none cursor-pointer flex-shrink-0 pr-1"
                   >
-                    <ChevronUp size={10} />
+                    {LEAD_FIELD_TYPES.map((t) => (
+                      <option key={t} value={t}>{FIELD_META[t].label}</option>
+                    ))}
+                  </select>
+
+                  {/* Label — plain text for most types, HTML preview for checkbox */}
+                  {f.type === 'checkbox' ? (
+                    <span
+                      className="flex-1 min-w-0 text-xs text-slate-400 truncate italic"
+                      title="Beschriftung im Detailbereich bearbeiten"
+                      dangerouslySetInnerHTML={{ __html: f.label }}
+                    />
+                  ) : (
+                    <input
+                      value={f.label}
+                      onClick={(e) => e.stopPropagation()}
+                      onChange={(e) => updateField(f.id, { label: e.target.value })}
+                      className="flex-1 min-w-0 text-xs text-slate-700 bg-transparent outline-none placeholder:text-slate-300 truncate"
+                      placeholder="Beschriftung"
+                    />
+                  )}
+
+                  {/* Required toggle */}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); updateField(f.id, { required: !f.required }); }}
+                    title={f.required ? 'Pflichtfeld' : 'Optional'}
+                    className="flex-shrink-0 p-0.5 rounded hover:bg-slate-100 transition-colors"
+                  >
+                    {f.required
+                      ? <Lock size={11} className="text-violet-600" />
+                      : <LockOpen size={11} className="text-slate-300" />
+                    }
                   </button>
+
+                  {/* Delete */}
                   <button
-                    onClick={() => moveField(f.id, 1)}
-                    disabled={idx === fields.length - 1}
-                    className="p-0.5 rounded hover:bg-slate-200 text-slate-400 hover:text-slate-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                    onClick={(e) => { e.stopPropagation(); removeField(f.id); }}
+                    className="flex-shrink-0 p-0.5 rounded hover:bg-red-50 text-slate-300 hover:text-red-400 transition-colors"
                   >
-                    <ChevronDown size={10} />
+                    <X size={11} />
                   </button>
                 </div>
-                <button
-                  onClick={() => removeField(f.id)}
-                  className="p-0.5 rounded hover:bg-red-100 text-slate-400 hover:text-red-500 transition-colors"
-                >
-                  <X size={12} />
-                </button>
+
+                {/* Expanded section */}
+                {isExpanded && (
+                  <div className="px-2 pb-2 pt-1 border-t border-slate-100 space-y-1.5 bg-slate-50">
+                    {/* Placeholder */}
+                    {f.type !== 'checkbox' && f.type !== 'select' && (
+                      <input
+                        value={f.placeholder ?? ''}
+                        onChange={(e) => updateField(f.id, { placeholder: e.target.value })}
+                        className="w-full px-2 py-1 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:border-violet-300 placeholder:text-slate-300"
+                        placeholder="Platzhalter (optional)"
+                      />
+                    )}
+                    {/* Dropdown options */}
+                    {f.type === 'select' && (
+                      <div>
+                        <p className="text-[10px] text-slate-400 mb-1">Optionen (eine pro Zeile)</p>
+                        <textarea
+                          value={(f.options ?? []).join('\n')}
+                          onChange={(e) => updateField(f.id, { options: e.target.value.split('\n') })}
+                          rows={3}
+                          className="w-full px-2 py-1 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:border-violet-300 resize-none placeholder:text-slate-300"
+                          placeholder={'Option 1\nOption 2\nOption 3'}
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
-              {/* Row 2: label */}
-              <input
-                value={f.label}
-                onChange={(e) => updateField(f.id, { label: e.target.value })}
-                className="w-full px-2 py-1 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none"
-                placeholder="Beschriftung"
-              />
-              {/* Row 3: placeholder (not for checkbox/select) */}
-              {f.type !== 'checkbox' && f.type !== 'select' && (
-                <input
-                  value={f.placeholder ?? ''}
-                  onChange={(e) => updateField(f.id, { placeholder: e.target.value })}
-                  className="w-full px-2 py-1 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none"
-                  placeholder="Platzhalter (optional)"
-                />
-              )}
-              {/* Row 4: dropdown options (one per line) */}
-              {f.type === 'select' && (
-                <div>
-                  <p className="text-[10px] text-slate-400 mb-1">Optionen (eine pro Zeile)</p>
-                  <textarea
-                    value={(f.options ?? []).join('\n')}
-                    onChange={(e) => updateField(f.id, { options: e.target.value.split('\n') })}
-                    rows={3}
-                    className="w-full px-2 py-1 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none resize-none"
-                    placeholder={'Option 1\nOption 2\nOption 3'}
-                  />
-                </div>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
+
+      {/* Add field */}
+      <button
+        onClick={addField}
+        className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-xl border border-dashed border-slate-200 text-[11px] text-slate-400 font-medium hover:border-violet-300 hover:text-violet-600 hover:bg-violet-50 transition-colors"
+      >
+        <Plus size={11} /> Feld hinzufügen
+      </button>
     </div>
   );
 }
