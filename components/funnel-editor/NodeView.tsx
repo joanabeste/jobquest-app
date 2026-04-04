@@ -398,7 +398,7 @@ function BlockPreview({ node, onUpdate }: {
         : vimeoMatch ? `https://player.vimeo.com/video/${vimeoMatch[1]}` : vUrl;
       return vUrl ? (
         <div className="px-5 py-3 pointer-events-none">
-          <div className="aspect-video rounded-xl overflow-hidden bg-black shadow-md">
+          <div className="aspect-video overflow-hidden bg-black shadow-md" style={{ borderRadius: br }}>
             <iframe src={embedUrl} className="w-full h-full" title="Video" />
           </div>
         </div>

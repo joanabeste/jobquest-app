@@ -509,7 +509,7 @@ export function BlockRenderer({
         : vimeoMatch ? `https://player.vimeo.com/video/${vimeoMatch[1]}` : url;
       return url ? (
         <div className="px-5 py-3">
-          <div className="aspect-video rounded-xl overflow-hidden bg-black shadow-md">
+          <div className="aspect-video overflow-hidden bg-black shadow-md" style={{ borderRadius: br }}>
             <iframe src={embedUrl} className="w-full h-full" allowFullScreen title="Video" />
           </div>
           {b(p.caption) && <p className="text-xs text-slate-400 text-center mt-1">{s(p.caption)}</p>}
