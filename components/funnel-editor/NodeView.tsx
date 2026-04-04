@@ -538,8 +538,8 @@ function BlockPreview({ node, onUpdate }: {
               <StaticFieldRows fields={fields} br={br} />
             )}
           </div>
-          <button disabled className="w-full mt-4 py-3.5 font-semibold text-sm text-white disabled:opacity-100 cursor-default" style={{ borderRadius: br, background: primary }}>
-            <Ed v={(p.buttonText as string) ?? ''} up={up?.('buttonText')} ph="Jetzt bewerben" cl="text-white" />
+          <button disabled className="w-full mt-4 py-3.5 font-semibold text-sm text-white text-center disabled:opacity-100 cursor-default" style={{ borderRadius: br, background: primary }}>
+            {(p.buttonText as string) || <span style={{ opacity: 0.3 }}>Jetzt bewerben</span>}
           </button>
         </div>
       );
@@ -715,8 +715,8 @@ function BlockPreview({ node, onUpdate }: {
               <StaticFieldRows fields={fields} br={br} />
             )}
           </div>
-          <button disabled className="w-full mt-4 py-3.5 font-semibold text-sm text-white disabled:opacity-100 cursor-default" style={{ borderRadius: br, background: primary }}>
-            <Ed v={(p.buttonText as string) ?? ''} up={up?.('buttonText')} ph="Jetzt bewerben" cl="text-white" />
+          <button disabled className="w-full mt-4 py-3.5 font-semibold text-sm text-white text-center disabled:opacity-100 cursor-default" style={{ borderRadius: br, background: primary }}>
+            {(p.buttonText as string) || <span style={{ opacity: 0.3 }}>Jetzt bewerben</span>}
           </button>
         </div>
       );

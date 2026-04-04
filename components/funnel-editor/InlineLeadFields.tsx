@@ -144,52 +144,52 @@ export default function InlineLeadFields({ fields, onChange }: Props) {
         if (f.type === 'checkbox') {
           return (
             <div key={f.id} className="relative">
-              {/* Floating toolbar — same dark pill as text fields, but with B + link */}
+              {/* Floating toolbar */}
               {isActive && (
                 <div
-                  className="absolute -top-9 left-0 right-0 flex items-center gap-1 bg-slate-900 rounded-lg px-2 py-1.5 z-30 shadow-lg"
+                  className="absolute -top-9 left-0 right-0 flex items-center gap-1 bg-white border border-slate-200 rounded-lg px-2 py-1 z-30 shadow-md"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <Icon size={11} className={`flex-shrink-0 ${meta.color}`} />
                   <select
                     value={f.type}
                     onChange={(e) => update(f.id, { type: e.target.value as LeadFieldType })}
-                    className="text-[11px] font-medium text-white bg-transparent border-none outline-none cursor-pointer"
+                    className="text-[11px] font-medium text-slate-600 bg-transparent border-none outline-none cursor-pointer"
                   >
                     {LEAD_FIELD_TYPES.map((t) => (
-                      <option key={t} value={t} className="bg-slate-900 text-white">{LEAD_FIELD_META[t].label}</option>
+                      <option key={t} value={t}>{LEAD_FIELD_META[t].label}</option>
                     ))}
                   </select>
                   <div className="flex-1" />
                   {/* Formatting: Bold + Link */}
                   <button
                     onMouseDown={(e) => { e.preventDefault(); execBold(); }}
-                    className="p-1 rounded hover:bg-white/10 text-white/50 hover:text-white transition-colors"
+                    className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors"
                     title="Fett"
                   >
                     <Bold size={11} />
                   </button>
                   <button
                     onMouseDown={(e) => { e.preventDefault(); insertLink(f.id); }}
-                    className="p-1 rounded hover:bg-white/10 text-white/50 hover:text-white transition-colors"
+                    className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors"
                     title="Link einfügen"
                   >
                     <Link2 size={11} />
                   </button>
-                  <div className="w-px h-3 bg-white/20 mx-0.5" />
+                  <div className="w-px h-3 bg-slate-200 mx-0.5" />
                   <button
                     onClick={() => update(f.id, { required: !f.required })}
-                    className="flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-white/10 transition-colors"
+                    className="flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-slate-100 transition-colors"
                   >
                     {f.required
-                      ? <><Lock size={10} className="text-violet-400" /><span className="text-[10px] text-violet-400 font-medium">Pflicht</span></>
-                      : <><LockOpen size={10} className="text-white/40" /><span className="text-[10px] text-white/40">Optional</span></>
+                      ? <><Lock size={10} className="text-violet-500" /><span className="text-[10px] text-violet-500 font-medium">Pflicht</span></>
+                      : <><LockOpen size={10} className="text-slate-400" /><span className="text-[10px] text-slate-400">Optional</span></>
                     }
                   </button>
-                  <div className="w-px h-3 bg-white/20 mx-0.5" />
+                  <div className="w-px h-3 bg-slate-200 mx-0.5" />
                   <button
                     onClick={() => remove(f.id)}
-                    className="p-1 rounded hover:bg-red-500/30 text-white/40 hover:text-red-300 transition-colors"
+                    className="p-1 rounded hover:bg-red-50 text-slate-300 hover:text-red-400 transition-colors"
                   >
                     <X size={10} />
                   </button>
@@ -231,7 +231,7 @@ export default function InlineLeadFields({ fields, onChange }: Props) {
             {/* Floating toolbar */}
             {isActive && (
               <div
-                className="absolute -top-9 left-0 right-0 flex items-center gap-1.5 bg-slate-900 rounded-lg px-2.5 py-1.5 z-30 shadow-lg"
+                className="absolute -top-9 left-0 right-0 flex items-center gap-1.5 bg-white border border-slate-200 rounded-lg px-2.5 py-1 z-30 shadow-md"
                 onClick={(e) => e.stopPropagation()}
               >
                 <Icon size={11} className={`flex-shrink-0 ${meta.color}`} />
@@ -244,26 +244,26 @@ export default function InlineLeadFields({ fields, onChange }: Props) {
                       options: t === 'select' ? (f.options ?? ['Option 1', 'Option 2']) : f.options,
                     });
                   }}
-                  className="flex-1 text-[11px] font-medium text-white bg-transparent border-none outline-none cursor-pointer min-w-0"
+                  className="flex-1 text-[11px] font-medium text-slate-600 bg-transparent border-none outline-none cursor-pointer min-w-0"
                 >
                   {LEAD_FIELD_TYPES.map((t) => (
-                    <option key={t} value={t} className="bg-slate-900 text-white">{LEAD_FIELD_META[t].label}</option>
+                    <option key={t} value={t}>{LEAD_FIELD_META[t].label}</option>
                   ))}
                 </select>
-                <div className="w-px h-3 bg-white/20 flex-shrink-0" />
+                <div className="w-px h-3 bg-slate-200 flex-shrink-0" />
                 <button
                   onClick={() => update(f.id, { required: !f.required })}
-                  className="flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-white/10 transition-colors flex-shrink-0"
+                  className="flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-slate-100 transition-colors flex-shrink-0"
                 >
                   {f.required
-                    ? <><Lock size={10} className="text-violet-400" /><span className="text-[10px] text-violet-400 font-medium">Pflicht</span></>
-                    : <><LockOpen size={10} className="text-white/40" /><span className="text-[10px] text-white/40">Optional</span></>
+                    ? <><Lock size={10} className="text-violet-500" /><span className="text-[10px] text-violet-500 font-medium">Pflicht</span></>
+                    : <><LockOpen size={10} className="text-slate-400" /><span className="text-[10px] text-slate-400">Optional</span></>
                   }
                 </button>
-                <div className="w-px h-3 bg-white/20 flex-shrink-0" />
+                <div className="w-px h-3 bg-slate-200 flex-shrink-0" />
                 <button
                   onClick={() => remove(f.id)}
-                  className="p-1 rounded hover:bg-red-500/30 text-white/40 hover:text-red-300 transition-colors flex-shrink-0"
+                  className="p-1 rounded hover:bg-red-50 text-slate-300 hover:text-red-400 transition-colors flex-shrink-0"
                 >
                   <X size={10} />
                 </button>
