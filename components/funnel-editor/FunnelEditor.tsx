@@ -116,7 +116,7 @@ function FunnelEditorInner({
   useEffect(() => {
     if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
     autosaveTimer.current = setTimeout(async () => {
-      await funnelStorage.save(doc);
+      try { await funnelStorage.save(doc); } catch { /* silent – user can still save manually */ }
     }, 1000);
     return () => { if (autosaveTimer.current) clearTimeout(autosaveTimer.current); };
   }, [doc]);

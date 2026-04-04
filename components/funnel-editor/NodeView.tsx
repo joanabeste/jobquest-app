@@ -350,22 +350,35 @@ function BlockPreview({ node, onUpdate }: {
     }
 
     case 'image': {
-      const imgSize = (p.size as string) ?? 'full';
-      const fit = (p.objectFit as string) ?? 'cover';
+      const imgSize   = (p.size as string) ?? 'full';
+      const fit       = (p.objectFit as string) ?? 'cover';
       const imgHeight = p.height as number | undefined;
-      const cropX = (p.cropX as number) ?? 50;
-      const cropY = (p.cropY as number) ?? 50;
+      const cropBox   = p.cropBox as { left: number; top: number; right: number; bottom: number } | undefined;
       const sizeClass: Record<string, string> = { full: 'w-full', l: 'max-w-lg mx-auto', m: 'max-w-sm mx-auto', s: 'max-w-xs mx-auto', xs: 'max-w-[128px] mx-auto' };
       const wrapCls = sizeClass[imgSize] ?? 'w-full';
-      const imgCls = fit === 'none' ? '' : `w-full h-full ${fit === 'cover' ? 'object-cover' : 'object-contain'}`;
-      const imgStyle = fit === 'cover' ? { objectPosition: `${cropX}% ${cropY}%` } : {};
-      const containerStyle = imgHeight ? { height: imgHeight } : undefined;
+      const containerStyle: React.CSSProperties = { ...(imgHeight ? { height: imgHeight } : {}), overflow: 'hidden', position: 'relative' };
+      const hasCrop = cropBox && (cropBox.left !== 0 || cropBox.top !== 0 || cropBox.right !== 100 || cropBox.bottom !== 100);
       return (
         <div className="overflow-hidden">
-          {p.src
-            ? <div className={wrapCls} style={containerStyle}><img src={p.src as string} alt={(p.alt as string) || ''} className={imgCls} style={imgStyle} /></div>
-            : <div className="bg-slate-100 h-36 flex items-center justify-center"><ImageIcon size={32} className="text-slate-300" /></div>
-          }
+          {p.src ? (
+            <div className={wrapCls} style={containerStyle}>
+              {hasCrop ? (
+                <div style={{
+                  position: 'absolute',
+                  width: `${10000 / (cropBox!.right - cropBox!.left)}%`,
+                  height: `${10000 / (cropBox!.bottom - cropBox!.top)}%`,
+                  left: `${-100 * cropBox!.left / (cropBox!.right - cropBox!.left)}%`,
+                  top: `${-100 * cropBox!.top / (cropBox!.bottom - cropBox!.top)}%`,
+                }}>
+                  <img src={p.src as string} alt={(p.alt as string) || ''} style={{ width: '100%', height: '100%', display: 'block', objectFit: 'cover' }} draggable={false} />
+                </div>
+              ) : (
+                <img src={p.src as string} alt={(p.alt as string) || ''} className={fit === 'none' ? '' : `w-full h-full ${fit === 'cover' ? 'object-cover' : 'object-contain'}`} />
+              )}
+            </div>
+          ) : (
+            <div className="bg-slate-100 h-36 flex items-center justify-center"><ImageIcon size={32} className="text-slate-300" /></div>
+          )}
         </div>
       );
     }

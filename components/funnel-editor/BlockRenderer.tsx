@@ -471,17 +471,27 @@ export function BlockRenderer({
       const imgSize = s(p.size, 'full');
       const fit = s(p.objectFit, 'cover');
       const imgHeight = p.height as number | undefined;
-      const cropX = (p.cropX as number) ?? 50;
-      const cropY = (p.cropY as number) ?? 50;
+      const cropBox = p.cropBox as { left: number; top: number; right: number; bottom: number } | undefined;
       const sizeClass: Record<string, string> = { full: 'w-full', l: 'max-w-lg mx-auto', m: 'max-w-sm mx-auto', s: 'max-w-xs mx-auto', xs: 'max-w-[128px] mx-auto' };
       const wrapCls = sizeClass[imgSize] ?? 'w-full';
-      const imgCls = fit === 'none' ? '' : `w-full h-full ${fit === 'cover' ? 'object-cover' : 'object-contain'}`;
-      const imgStyle: React.CSSProperties = fit === 'cover' ? { objectPosition: `${cropX}% ${cropY}%` } : {};
-      const containerStyle: React.CSSProperties = imgHeight ? { height: imgHeight } : {};
+      const containerStyle: React.CSSProperties = { ...(imgHeight ? { height: imgHeight } : {}), overflow: 'hidden', position: 'relative' };
+      const hasCrop = cropBox && (cropBox.left !== 0 || cropBox.top !== 0 || cropBox.right !== 100 || cropBox.bottom !== 100);
       return (
         <div>
           <div className={wrapCls} style={containerStyle}>
-            <img src={src} alt={s(p.alt)} className={imgCls} style={imgStyle} />
+            {hasCrop ? (
+              <div style={{
+                position: 'absolute',
+                width: `${10000 / (cropBox!.right - cropBox!.left)}%`,
+                height: `${10000 / (cropBox!.bottom - cropBox!.top)}%`,
+                left: `${-100 * cropBox!.left / (cropBox!.right - cropBox!.left)}%`,
+                top: `${-100 * cropBox!.top / (cropBox!.bottom - cropBox!.top)}%`,
+              }}>
+                <img src={src} alt={s(p.alt)} style={{ width: '100%', height: '100%', display: 'block', objectFit: 'cover' }} />
+              </div>
+            ) : (
+              <img src={src} alt={s(p.alt)} className={fit === 'none' ? '' : `w-full h-full ${fit === 'cover' ? 'object-cover' : 'object-contain'}`} />
+            )}
           </div>
           {b(p.caption) && <p className="text-xs text-slate-400 text-center px-4 pt-1">{s(p.caption)}</p>}
         </div>

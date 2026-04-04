@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { Trash2, Copy, MousePointer2, Lock, ChevronLeft } from 'lucide-react';
+import { useEffect, useRef, useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
+import { Trash2, Copy, MousePointer2, Lock, ChevronLeft, Crop } from 'lucide-react';
 import RichTextEditor from './RichTextEditor';
 import { FunnelNode, FunnelStyle, FunnelPage, BLOCK_LABELS, LeadFieldDef, LeadFieldType } from '@/lib/funnel-types';
 import { BLOCK_META } from './NodeView';
@@ -17,56 +18,161 @@ import { QuizEditor } from './inspectors/QuizEditor';
 import { FrageEditor, ErgebnisfrageEditor } from './inspectors/FrageEditor';
 import { FormStepEditor } from './inspectors/FormStepEditor';
 
-// ─── Focal point picker ───────────────────────────────────────────────────────
-function FocalPointPicker({ src, cropX, cropY, onChange }: {
-  src: string;
-  cropX: number;
-  cropY: number;
-  onChange: (x: number, y: number) => void;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
+// ─── Crop modal ───────────────────────────────────────────────────────────────
+type CropBox = { left: number; top: number; right: number; bottom: number };
 
-  function pick(e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) {
-    const el = ref.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-    const x = Math.round(Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100)));
-    const y = Math.round(Math.max(0, Math.min(100, ((clientY - rect.top) / rect.height) * 100)));
-    onChange(x, y);
+const ASPECT_PRESETS = [
+  { label: 'S', ratio: 1 },
+  { label: 'M', ratio: 4 / 3 },
+  { label: 'L', ratio: 16 / 9 },
+  { label: 'XL', ratio: 21 / 9 },
+];
+
+function CropModal({ src, initial, onSave, onClose }: {
+  src: string;
+  initial: CropBox;
+  onSave: (crop: CropBox) => void;
+  onClose: () => void;
+}) {
+  const [crop, setCrop] = useState<CropBox>(initial);
+  const [activeAspect, setActiveAspect] = useState<string | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  type DragHandle = 'nw' | 'ne' | 'sw' | 'se' | 'move';
+  const drag = useRef<{ handle: DragHandle; startX: number; startY: number; startCrop: CropBox } | null>(null);
+
+  const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
+  const MIN = 5; // minimum crop dimension in %
+
+  const applyAspect = useCallback((box: CropBox, ratio: number | null): CropBox => {
+    if (!ratio) return box;
+    const w = box.right - box.left;
+    const cx = (box.left + box.right) / 2;
+    const cy = (box.top + box.bottom) / 2;
+    // We work in % of image dimensions; we don't know natural size so treat both axes equally
+    // The ratio applies to % widths directly (approximation, looks correct in common cases)
+    const newH = w / ratio;
+    return {
+      left: clamp(cx - w / 2, 0, 100 - w),
+      top: clamp(cy - newH / 2, 0, 100 - newH),
+      right: clamp(cx + w / 2, w, 100),
+      bottom: clamp(cy + newH / 2, newH, 100),
+    };
+  }, []);
+
+  function startDrag(handle: DragHandle, e: React.MouseEvent) {
+    e.preventDefault();
+    drag.current = { handle, startX: e.clientX, startY: e.clientY, startCrop: crop };
+
+    function onMove(me: MouseEvent) {
+      if (!drag.current || !containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const dx = ((me.clientX - drag.current.startX) / rect.width) * 100;
+      const dy = ((me.clientY - drag.current.startY) / rect.height) * 100;
+      const s = drag.current.startCrop;
+      let { left, top, right, bottom } = s;
+
+      if (drag.current.handle === 'move') {
+        const w = s.right - s.left, h = s.bottom - s.top;
+        left  = clamp(s.left  + dx, 0, 100 - w);
+        top   = clamp(s.top   + dy, 0, 100 - h);
+        right = left + w;
+        bottom = top + h;
+      } else {
+        if (drag.current.handle === 'nw' || drag.current.handle === 'sw') left   = clamp(s.left   + dx, 0, s.right  - MIN);
+        if (drag.current.handle === 'ne' || drag.current.handle === 'se') right  = clamp(s.right  + dx, s.left   + MIN, 100);
+        if (drag.current.handle === 'nw' || drag.current.handle === 'ne') top    = clamp(s.top    + dy, 0, s.bottom - MIN);
+        if (drag.current.handle === 'sw' || drag.current.handle === 'se') bottom = clamp(s.bottom + dy, s.top    + MIN, 100);
+      }
+
+      let next: CropBox = {
+        left:   Math.round(left),
+        top:    Math.round(top),
+        right:  Math.round(right),
+        bottom: Math.round(bottom),
+      };
+      const ratio = ASPECT_PRESETS.find((a) => a.label === activeAspect)?.ratio ?? null;
+      if (ratio && drag.current.handle !== 'move') next = applyAspect(next, ratio);
+      setCrop(next);
+    }
+    function onUp() {
+      drag.current = null;
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    }
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
   }
 
-  return (
-    <div className="space-y-1.5">
-      <p className="text-[10px] text-slate-400">Klicke auf das Bild um den sichtbaren Bereich zu setzen</p>
-      <div
-        ref={ref}
-        className="relative w-full rounded-lg overflow-hidden cursor-crosshair select-none border border-slate-200"
-        style={{ height: 140 }}
-        onClick={pick}
-        onTouchStart={(e) => { e.preventDefault(); pick(e); }}
-      >
-        <img
-          src={src}
-          alt=""
-          className="w-full h-full object-cover pointer-events-none"
-          style={{ objectPosition: `${cropX}% ${cropY}%` }}
-          draggable={false}
-        />
-        {/* Focal point dot */}
-        <div
-          className="absolute w-5 h-5 rounded-full border-2 border-white shadow-md -translate-x-1/2 -translate-y-1/2 pointer-events-none"
-          style={{ left: `${cropX}%`, top: `${cropY}%`, background: 'rgba(124,58,237,0.85)' }}
-        />
-        {/* Grid overlay */}
-        <div className="absolute inset-0 pointer-events-none" style={{
-          backgroundImage: 'linear-gradient(rgba(255,255,255,0.08) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.08) 1px,transparent 1px)',
-          backgroundSize: '33.33% 33.33%',
-        }} />
+  function selectAspect(label: string) {
+    const ratio = ASPECT_PRESETS.find((a) => a.label === label)!.ratio;
+    setActiveAspect(label);
+    setCrop((prev) => applyAspect(prev, ratio));
+  }
+
+  const hCls = 'absolute w-3 h-3 bg-white border-2 border-blue-600 rounded-sm z-20 -translate-x-1/2 -translate-y-1/2';
+
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4">
+          <h2 className="text-lg font-bold text-slate-900">Bild zuschneiden</h2>
+          <div className="flex gap-2">
+            <button onClick={onClose} className="px-4 py-2 text-sm font-medium rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors">Abbrechen</button>
+            <button onClick={() => onSave(crop)} className="px-5 py-2 text-sm font-semibold rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-colors">Speichern</button>
+          </div>
+        </div>
+
+        {/* Aspect ratio tabs */}
+        <div className="grid grid-cols-4 gap-2 px-6 pb-4">
+          {ASPECT_PRESETS.map((a) => (
+            <button key={a.label} onClick={() => selectAspect(a.label)}
+              className={`py-2 text-sm font-semibold rounded-xl border-2 transition-colors ${activeAspect === a.label ? 'border-blue-600 text-blue-600 bg-blue-50' : 'border-slate-200 text-slate-500 hover:border-slate-300'}`}>
+              {a.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Image + crop overlay */}
+        <div className="px-6 pb-6 overflow-auto">
+          <div ref={containerRef} className="relative select-none overflow-hidden rounded-xl bg-slate-100" style={{ touchAction: 'none' }}>
+            <img src={src} alt="" className="w-full block pointer-events-none" draggable={false} />
+
+            {/* Dark mask outside crop */}
+            <div className="absolute inset-0 pointer-events-none">
+              <div className="absolute inset-x-0 top-0 bg-black/45" style={{ height: `${crop.top}%` }} />
+              <div className="absolute inset-x-0 bottom-0 bg-black/45" style={{ height: `${100 - crop.bottom}%` }} />
+              <div className="absolute bg-black/45" style={{ top: `${crop.top}%`, bottom: `${100 - crop.bottom}%`, left: 0, width: `${crop.left}%` }} />
+              <div className="absolute bg-black/45" style={{ top: `${crop.top}%`, bottom: `${100 - crop.bottom}%`, right: 0, width: `${100 - crop.right}%` }} />
+            </div>
+
+            {/* Crop rectangle */}
+            <div
+              className="absolute border-2 border-white cursor-move"
+              style={{ left: `${crop.left}%`, top: `${crop.top}%`, right: `${100 - crop.right}%`, bottom: `${100 - crop.bottom}%` }}
+              onMouseDown={(e) => startDrag('move', e)}
+            >
+              {/* Rule-of-thirds lines */}
+              <div className="absolute inset-0 pointer-events-none" style={{
+                backgroundImage: 'linear-gradient(rgba(255,255,255,0.25) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.25) 1px,transparent 1px)',
+                backgroundSize: '33.33% 33.33%',
+              }} />
+              {/* Dashed border overlay */}
+              <div className="absolute inset-0 pointer-events-none" style={{ border: '1.5px dashed rgba(255,255,255,0.6)' }} />
+            </div>
+
+            {/* Corner handles */}
+            <div className={`${hCls} cursor-nwse-resize`} style={{ left: `${crop.left}%`, top: `${crop.top}%` }}       onMouseDown={(e) => startDrag('nw', e)} />
+            <div className={`${hCls} cursor-nesw-resize`} style={{ left: `${crop.right}%`, top: `${crop.top}%` }}      onMouseDown={(e) => startDrag('ne', e)} />
+            <div className={`${hCls} cursor-nesw-resize`} style={{ left: `${crop.left}%`, top: `${crop.bottom}%` }}    onMouseDown={(e) => startDrag('sw', e)} />
+            <div className={`${hCls} cursor-nwse-resize`} style={{ left: `${crop.right}%`, top: `${crop.bottom}%` }}   onMouseDown={(e) => startDrag('se', e)} />
+          </div>
+        </div>
       </div>
-      <p className="text-[10px] text-slate-300 text-right">{cropX}% / {cropY}%</p>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -433,6 +539,89 @@ function LeadFieldEditor({ field, allFields, onChange, onBack }: {
   );
 }
 
+// ─── Image block editor (extracted to own component to allow useState) ────────
+const IMAGE_SIZES  = [{ label: 'Voll', val: 'full' }, { label: 'L', val: 'l' }, { label: 'M', val: 'm' }, { label: 'S', val: 's' }, { label: 'XS', val: 'xs' }];
+const IMAGE_HEIGHTS = [{ label: 'Auto', val: undefined as number | undefined }, { label: '150', val: 150 }, { label: '250', val: 250 }, { label: '350', val: 350 }, { label: '500', val: 500 }];
+const IMAGE_FITS   = [{ label: 'Zuschneiden', val: 'cover' }, { label: 'Einpassen', val: 'contain' }, { label: 'Original', val: 'none' }];
+
+function ImageBlockEditor({ props, onChange }: { props: Record<string, unknown>; onChange: (patch: Record<string, unknown>) => void }) {
+  const [cropOpen, setCropOpen] = useState(false);
+  const imgSize   = (props.size as string) ?? 'full';
+  const imgFit    = (props.objectFit as string) ?? 'cover';
+  const imgHeight = props.height as number | undefined;
+  const cropBox   = props.cropBox as CropBox | undefined;
+  const hasCrop   = cropBox && (cropBox.left !== 0 || cropBox.top !== 0 || cropBox.right !== 100 || cropBox.bottom !== 100);
+
+  return (
+    <div className="space-y-3">
+      <ImageUploadField value={(props.src as string) ?? ''} onChange={(v) => onChange({ src: v })} label="Bild" />
+      <Field label="Größe">
+        <div className="flex gap-1.5 flex-wrap">
+          {IMAGE_SIZES.map((sz) => (
+            <button key={sz.val} type="button" onClick={() => onChange({ size: sz.val })}
+              className={`px-2.5 py-1 text-xs rounded-lg border transition-colors ${imgSize === sz.val ? 'bg-violet-600 text-white border-violet-600' : 'border-slate-200 text-slate-600 hover:border-slate-300'}`}>
+              {sz.label}
+            </button>
+          ))}
+        </div>
+      </Field>
+      <Field label="Höhe (px)">
+        <div className="flex gap-1.5 flex-wrap">
+          {IMAGE_HEIGHTS.map((h) => (
+            <button key={String(h.val)} type="button" onClick={() => onChange({ height: h.val })}
+              className={`px-2.5 py-1 text-xs rounded-lg border transition-colors ${imgHeight === h.val ? 'bg-violet-600 text-white border-violet-600' : 'border-slate-200 text-slate-600 hover:border-slate-300'}`}>
+              {h.label}
+            </button>
+          ))}
+        </div>
+      </Field>
+      <Field label="Darstellung">
+        <div className="flex gap-1.5 flex-wrap">
+          {IMAGE_FITS.map((f) => (
+            <button key={f.val} type="button" onClick={() => onChange({ objectFit: f.val })}
+              className={`px-2.5 py-1 text-xs rounded-lg border transition-colors ${imgFit === f.val ? 'bg-violet-600 text-white border-violet-600' : 'border-slate-200 text-slate-600 hover:border-slate-300'}`}>
+              {f.label}
+            </button>
+          ))}
+        </div>
+      </Field>
+      {(props.src as string) && (
+        <div className="flex items-center gap-2">
+          <button type="button" onClick={() => setCropOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-200 text-slate-600 hover:border-violet-400 hover:text-violet-600 transition-colors">
+            <Crop size={11} /> Bild zuschneiden
+          </button>
+          {hasCrop && (
+            <button type="button" onClick={() => onChange({ cropBox: undefined })}
+              className="text-[10px] text-slate-400 hover:text-red-500 transition-colors">
+              Zurücksetzen
+            </button>
+          )}
+        </div>
+      )}
+      {cropOpen && (props.src as string) && (
+        <CropModal
+          src={props.src as string}
+          initial={cropBox ?? { left: 0, top: 0, right: 100, bottom: 100 }}
+          onSave={(box) => { onChange({ cropBox: box }); setCropOpen(false); }}
+          onClose={() => setCropOpen(false)}
+        />
+      )}
+      <Section label="Erweitert" collapsible defaultOpen={false}>
+        <Field label="Alt-Text">
+          <input value={(props.alt as string) ?? ''} onChange={(e) => onChange({ alt: e.target.value })}
+            className="input-field text-sm" />
+        </Field>
+        <Field label="Bildunterschrift">
+          <input value={(props.caption as string) ?? ''} onChange={(e) => onChange({ caption: e.target.value })}
+            className="input-field text-sm" />
+        </Field>
+      </Section>
+    </div>
+  );
+}
+
+// ─── Block props editors ──────────────────────────────────────────────────────
 function BlockPropsEditor({ node, props, onChange, pages, availableVars }: {
   node: import('@/lib/funnel-types').BlockNode;
   props: Record<string, unknown>;
@@ -496,85 +685,8 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars }: {
         </div>
       );
 
-    case 'image': {
-      const imgSize  = (props.size as string) ?? 'full';
-      const imgFit   = (props.objectFit as string) ?? 'cover';
-      const imgHeight = (props.height as number | undefined);
-      const cropX    = (props.cropX as number) ?? 50;
-      const cropY    = (props.cropY as number) ?? 50;
-      const SIZES = [
-        { label: 'Voll', val: 'full' },
-        { label: 'L', val: 'l' },
-        { label: 'M', val: 'm' },
-        { label: 'S', val: 's' },
-        { label: 'XS', val: 'xs' },
-      ];
-      const FITS = [
-        { label: 'Zuschneiden', val: 'cover' },
-        { label: 'Einpassen', val: 'contain' },
-        { label: 'Original', val: 'none' },
-      ];
-      const HEIGHTS = [
-        { label: 'Auto', val: undefined },
-        { label: '150', val: 150 },
-        { label: '250', val: 250 },
-        { label: '350', val: 350 },
-        { label: '500', val: 500 },
-      ];
-      return (
-        <div className="space-y-3">
-          <ImageUploadField value={(props.src as string) ?? ''} onChange={(v) => onChange({ src: v })} label="Bild" />
-          <Field label="Größe">
-            <div className="flex gap-1.5 flex-wrap">
-              {SIZES.map((sz) => (
-                <button key={sz.val} type="button" onClick={() => onChange({ size: sz.val })}
-                  className={`px-2.5 py-1 text-xs rounded-lg border transition-colors ${imgSize === sz.val ? 'bg-violet-600 text-white border-violet-600' : 'border-slate-200 text-slate-600 hover:border-slate-300'}`}>
-                  {sz.label}
-                </button>
-              ))}
-            </div>
-          </Field>
-          <Field label="Höhe (px)">
-            <div className="flex gap-1.5 flex-wrap">
-              {HEIGHTS.map((h) => (
-                <button key={String(h.val)} type="button" onClick={() => onChange({ height: h.val })}
-                  className={`px-2.5 py-1 text-xs rounded-lg border transition-colors ${imgHeight === h.val ? 'bg-violet-600 text-white border-violet-600' : 'border-slate-200 text-slate-600 hover:border-slate-300'}`}>
-                  {h.label}
-                </button>
-              ))}
-            </div>
-          </Field>
-          <Field label="Darstellung">
-            <div className="flex gap-1.5 flex-wrap">
-              {FITS.map((f) => (
-                <button key={f.val} type="button" onClick={() => onChange({ objectFit: f.val })}
-                  className={`px-2.5 py-1 text-xs rounded-lg border transition-colors ${imgFit === f.val ? 'bg-violet-600 text-white border-violet-600' : 'border-slate-200 text-slate-600 hover:border-slate-300'}`}>
-                  {f.label}
-                </button>
-              ))}
-            </div>
-          </Field>
-          {imgFit === 'cover' && (props.src as string) && (
-            <FocalPointPicker
-              src={props.src as string}
-              cropX={cropX}
-              cropY={cropY}
-              onChange={(x, y) => onChange({ cropX: x, cropY: y })}
-            />
-          )}
-          <Section label="Erweitert" collapsible defaultOpen={false}>
-            <Field label="Alt-Text">
-              <input value={(props.alt as string) ?? ''} onChange={(e) => onChange({ alt: e.target.value })}
-                className="input-field text-sm" />
-            </Field>
-            <Field label="Bildunterschrift">
-              <input value={(props.caption as string) ?? ''} onChange={(e) => onChange({ caption: e.target.value })}
-                className="input-field text-sm" />
-            </Field>
-          </Section>
-        </div>
-      );
-    }
+    case 'image':
+      return <ImageBlockEditor props={props} onChange={onChange} />;
 
     case 'spacer':
       return (
