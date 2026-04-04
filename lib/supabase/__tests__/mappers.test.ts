@@ -25,7 +25,6 @@ describe('companyFromDb / companyToDb', () => {
     imprintUrl: 'https://example.com/imprint',
     contactName: 'Max Mustermann',
     contactEmail: 'max@acme.de',
-    password: 'hashed-pw',
     createdAt: '2025-01-01T00:00:00Z',
     corporateDesign: { primaryColor: '#7c3aed', accentColor: '#f59e0b', textColor: '#1e293b', headingColor: '#0f172a', borderRadius: 12, headingFontName: 'system', bodyFontName: 'system' },
   };
@@ -40,7 +39,6 @@ describe('companyFromDb / companyToDb', () => {
     imprint_url: 'https://example.com/imprint',
     contact_name: 'Max Mustermann',
     contact_email: 'max@acme.de',
-    password: 'hashed-pw',
     created_at: '2025-01-01T00:00:00Z',
     corporate_design: { primaryColor: '#7c3aed', accentColor: '#f59e0b', textColor: '#1e293b', headingColor: '#0f172a', borderRadius: 12, headingFontName: 'system', bodyFontName: 'system' },
   };
@@ -80,7 +78,6 @@ describe('memberFromDb / memberToDb', () => {
     companyId: 'c1',
     name: 'Anna',
     email: 'anna@acme.de',
-    password: 'hashed',
     role: 'admin' as const,
     invitedBy: 'm0',
     status: 'active' as const,
@@ -92,7 +89,6 @@ describe('memberFromDb / memberToDb', () => {
     company_id: 'c1',
     name: 'Anna',
     email: 'anna@acme.de',
-    password: 'hashed',
     role: 'admin',
     invited_by: 'm0',
     status: 'active',
