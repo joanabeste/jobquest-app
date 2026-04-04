@@ -470,15 +470,15 @@ export function BlockRenderer({
       if (!src) return null;
       const imgSize = s(p.size, 'full');
       const fit = s(p.objectFit, 'cover');
+      const imgHeight = p.height as number | undefined;
       const sizeClass: Record<string, string> = { full: 'w-full', l: 'max-w-lg mx-auto', m: 'max-w-sm mx-auto', s: 'max-w-xs mx-auto', xs: 'max-w-[128px] mx-auto' };
       const wrapCls = sizeClass[imgSize] ?? 'w-full';
-      const imgStyle: React.CSSProperties = fit !== 'cover' ? { objectFit: fit as 'contain' | 'none' } : {};
-      const imgCls = fit === 'cover' ? 'w-full object-cover' : 'w-full object-contain';
+      const imgCls = fit === 'none' ? '' : `w-full h-full ${fit === 'cover' ? 'object-cover' : 'object-contain'}`;
+      const containerStyle: React.CSSProperties = imgHeight ? { height: imgHeight } : {};
       return (
         <div>
-          <div className={wrapCls}>
-            { }
-            <img src={src} alt={s(p.alt)} className={imgCls} style={imgStyle} />
+          <div className={wrapCls} style={containerStyle}>
+            <img src={src} alt={s(p.alt)} className={imgCls} />
           </div>
           {b(p.caption) && <p className="text-xs text-slate-400 text-center px-4 pt-1">{s(p.caption)}</p>}
         </div>

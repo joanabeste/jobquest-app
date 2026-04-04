@@ -444,6 +444,7 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars }: {
     case 'image': {
       const imgSize = (props.size as string) ?? 'full';
       const imgFit  = (props.objectFit as string) ?? 'cover';
+      const imgHeight = (props.height as number | undefined);
       const SIZES = [
         { label: 'Voll', val: 'full' },
         { label: 'L', val: 'l' },
@@ -456,6 +457,13 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars }: {
         { label: 'Einpassen', val: 'contain' },
         { label: 'Original', val: 'none' },
       ];
+      const HEIGHTS = [
+        { label: 'Auto', val: undefined },
+        { label: '150', val: 150 },
+        { label: '250', val: 250 },
+        { label: '350', val: 350 },
+        { label: '500', val: 500 },
+      ];
       return (
         <div className="space-y-3">
           <ImageUploadField value={(props.src as string) ?? ''} onChange={(v) => onChange({ src: v })} label="Bild" />
@@ -465,6 +473,16 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars }: {
                 <button key={sz.val} type="button" onClick={() => onChange({ size: sz.val })}
                   className={`px-2.5 py-1 text-xs rounded-lg border transition-colors ${imgSize === sz.val ? 'bg-violet-600 text-white border-violet-600' : 'border-slate-200 text-slate-600 hover:border-slate-300'}`}>
                   {sz.label}
+                </button>
+              ))}
+            </div>
+          </Field>
+          <Field label="Höhe (px)">
+            <div className="flex gap-1.5 flex-wrap">
+              {HEIGHTS.map((h) => (
+                <button key={String(h.val)} type="button" onClick={() => onChange({ height: h.val })}
+                  className={`px-2.5 py-1 text-xs rounded-lg border transition-colors ${imgHeight === h.val ? 'bg-violet-600 text-white border-violet-600' : 'border-slate-200 text-slate-600 hover:border-slate-300'}`}>
+                  {h.label}
                 </button>
               ))}
             </div>
