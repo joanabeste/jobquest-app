@@ -78,8 +78,12 @@ describe('ALL_VAR_KEYS', () => {
 
 // ─── getAvailableVariables ────────────────────────────────────────────────────
 
-function block(id: string, type: string): BlockNode {
-  return { id, kind: 'block', type: type as BlockNode['type'], props: {} };
+function block(id: string, type: string, props: Record<string, unknown> = {}): BlockNode {
+  return { id, kind: 'block', type: type as BlockNode['type'], props };
+}
+
+function leadBlock(id: string, fields: Array<{ id: string; label: string; type: string }>) {
+  return block(id, 'quest_lead', { fields });
 }
 
 describe('getAvailableVariables', () => {
@@ -96,21 +100,27 @@ describe('getAvailableVariables', () => {
     expect(vars.map((v) => v.key)).toContain('firstName');
   });
 
-  test('adds lead fields when quest_lead block is present', () => {
-    const vars = getAvailableVariables([block('b1', 'quest_lead')]);
-    const keys = vars.map((v) => v.key);
-    expect(keys).toContain('firstName');
-    expect(keys).toContain('lastName');
-    expect(keys).toContain('email');
-    expect(keys).toContain('phone');
+  test('derives variables from quest_lead fields', () => {
+    const node = leadBlock('b1', [
+      { id: 'f1', label: 'Vorname', type: 'text' },
+      { id: 'f2', label: 'Nachname', type: 'text' },
+      { id: 'f3', label: 'E-Mail', type: 'email' },
+      { id: 'f4', label: 'Telefon', type: 'tel' },
+    ]);
+    const keys = getAvailableVariables([node]).map((v) => v.key);
+    expect(keys).toContain('vorname');
+    expect(keys).toContain('nachname');
+    expect(keys).toContain('e_mail');
+    expect(keys).toContain('telefon');
   });
 
-  test('deduplicates variables when multiple producers provide the same key', () => {
+  test('deduplicates variables when quest_vorname and quest_lead both produce firstName', () => {
     const nodes: FunnelNode[] = [
       block('b1', 'quest_vorname'),
-      block('b2', 'quest_lead'),
+      leadBlock('b2', [{ id: 'f1', label: 'Vorname', type: 'text' }]),
     ];
     const vars = getAvailableVariables(nodes);
+    // 'firstName' from quest_vorname + 'vorname' from field — distinct keys, no duplication
     const firstNameCount = vars.filter((v) => v.key === 'firstName').length;
     expect(firstNameCount).toBe(1);
   });
