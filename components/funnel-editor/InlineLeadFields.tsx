@@ -216,7 +216,7 @@ function FieldToolbar({
 
       {/* Required toggle */}
       <button
-        onClick={onToggleRequired}
+        onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); onToggleRequired(); }}
         className="flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-slate-100 transition-colors flex-shrink-0"
         title={required ? 'Pflichtfeld (klicken zum Deaktivieren)' : 'Optional (klicken zum Aktivieren)'}
       >
@@ -230,7 +230,7 @@ function FieldToolbar({
 
       {/* Delete */}
       <button
-        onClick={onRemove}
+        onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); onRemove(); }}
         className="p-1 rounded hover:bg-red-50 text-slate-300 hover:text-red-400 transition-colors flex-shrink-0"
         title="Feld entfernen"
       >
@@ -404,7 +404,7 @@ export default function InlineLeadFields({ fields, onChange }: Props) {
             )}
 
             <div
-              onClick={() => setSelectedFieldId(isActive ? null : f.id)}
+              onClick={() => !isActive && setSelectedFieldId(f.id)}
               className={`flex items-center gap-2 w-full px-3 border-2 text-sm transition-all cursor-pointer
                 ${f.type === 'textarea' ? 'py-2 min-h-[72px] items-start' : 'py-2.5'}
                 ${isActive
