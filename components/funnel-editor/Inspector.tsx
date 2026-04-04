@@ -560,17 +560,15 @@ function LeadFieldEditor({ field, allFields, onChange, onBack }: {
 }
 
 // ─── Image block editor (extracted to own component to allow useState) ────────
-const IMAGE_SIZES  = [{ label: 'Voll', val: 'full' }, { label: 'L', val: 'l' }, { label: 'M', val: 'm' }, { label: 'S', val: 's' }, { label: 'XS', val: 'xs' }];
-const IMAGE_HEIGHTS = [{ label: 'Auto', val: undefined as number | undefined }, { label: '150', val: 150 }, { label: '250', val: 250 }, { label: '350', val: 350 }, { label: '500', val: 500 }];
-const IMAGE_FITS   = [{ label: 'Zuschneiden', val: 'cover' }, { label: 'Einpassen', val: 'contain' }, { label: 'Original', val: 'none' }];
+const IMAGE_SIZES = [{ label: 'Voll', val: 'full' }, { label: 'L', val: 'l' }, { label: 'M', val: 'm' }, { label: 'S', val: 's' }, { label: 'XS', val: 'xs' }];
+const IMAGE_FITS  = [{ label: 'Füllen', val: 'cover' }, { label: 'Einpassen', val: 'contain' }];
 
 function ImageBlockEditor({ props, onChange }: { props: Record<string, unknown>; onChange: (patch: Record<string, unknown>) => void }) {
   const [cropOpen, setCropOpen] = useState(false);
-  const imgSize   = (props.size as string) ?? 'full';
-  const imgFit    = (props.objectFit as string) ?? 'cover';
-  const imgHeight = props.height as number | undefined;
-  const cropBox   = props.cropBox as CropBox | undefined;
-  const hasCrop   = cropBox && (cropBox.left !== 0 || cropBox.top !== 0 || cropBox.right !== 100 || cropBox.bottom !== 100);
+  const imgSize = (props.size as string) ?? 'full';
+  const imgFit  = (props.objectFit as string) ?? 'cover';
+  const cropBox = props.cropBox as CropBox | undefined;
+  const hasCrop = cropBox && (cropBox.left !== 0 || cropBox.top !== 0 || cropBox.right !== 100 || cropBox.bottom !== 100);
 
   return (
     <div className="space-y-3">
@@ -585,18 +583,8 @@ function ImageBlockEditor({ props, onChange }: { props: Record<string, unknown>;
           ))}
         </div>
       </Field>
-      <Field label="Höhe (px)">
-        <div className="flex gap-1.5 flex-wrap">
-          {IMAGE_HEIGHTS.map((h) => (
-            <button key={String(h.val)} type="button" onClick={() => onChange({ height: h.val })}
-              className={`px-2.5 py-1 text-xs rounded-lg border transition-colors ${imgHeight === h.val ? 'bg-violet-600 text-white border-violet-600' : 'border-slate-200 text-slate-600 hover:border-slate-300'}`}>
-              {h.label}
-            </button>
-          ))}
-        </div>
-      </Field>
       <Field label="Darstellung">
-        <div className="flex gap-1.5 flex-wrap">
+        <div className="flex gap-1.5">
           {IMAGE_FITS.map((f) => (
             <button key={f.val} type="button" onClick={() => onChange({ objectFit: f.val })}
               className={`px-2.5 py-1 text-xs rounded-lg border transition-colors ${imgFit === f.val ? 'bg-violet-600 text-white border-violet-600' : 'border-slate-200 text-slate-600 hover:border-slate-300'}`}>
