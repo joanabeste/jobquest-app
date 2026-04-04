@@ -172,7 +172,7 @@ export function getAvailableVariables(nodes: FunnelNode[]): VariableDef[] {
 export function applyVars(template: string, vars: Record<string, string>): string {
   return template
     .replace(/@(\w+)/g, (match, key) =>
-      (ALL_VAR_KEYS.has(key) || key in vars) ? (vars[key] ?? '') : match,
+      key in vars ? vars[key] : match,
     )
     .replace(/\{\{(\w+)\}\}/g, (_, key) => vars[key] ?? vars[legacyKeyMap[key] ?? ''] ?? '');
 }
