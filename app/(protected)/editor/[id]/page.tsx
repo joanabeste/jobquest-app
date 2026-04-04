@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { questStorage } from '@/lib/storage';
 import { JobQuest } from '@/lib/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { slugify } from '@/lib/utils';
-import FunnelEditor from '@/components/funnel-editor/FunnelEditor';
+
+const FunnelEditor = dynamic(() => import('@/components/funnel-editor/FunnelEditor'), { ssr: false });
 
 export default function EditorPage() {
   const { id } = useParams<{ id: string }>();

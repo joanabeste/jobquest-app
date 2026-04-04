@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { ArrowRight, Trophy, FileDown, Check, X, MapPin, ChevronRight, ChevronLeft } from 'lucide-react';
 import { BlockNode, LeadFieldDef } from '@/lib/funnel-types';
 import { applyVars } from '@/lib/funnel-variables';
+import { sanitizeHtml } from '@/lib/sanitize';
 import { Company, Dimension } from '@/lib/types';
 
 // ─── Safe prop helpers ────────────────────────────────────────────────────────
@@ -11,6 +12,8 @@ const s = (v: unknown, fallback = ''): string => (v != null ? String(v) : fallba
 const n = (v: unknown, fallback = 0): number => (typeof v === 'number' ? v : fallback);
 const b = (v: unknown): boolean => Boolean(v);
 const inlineHtml = (v: string): string => v.replace(/^<p>([\s\S]*?)<\/p>$/, '$1');
+// sh — sanitize before injecting as HTML
+const sh = (v: string): string => sanitizeHtml(v);
 
 export interface LeadForm { firstName: string; lastName: string; email: string; phone: string; gdpr: boolean; }
 export const emptyLead: LeadForm = { firstName: '', lastName: '', email: '', phone: '', gdpr: false };
@@ -406,9 +409,9 @@ export function BlockRenderer({
       const text = inlineHtml(si(p.text));
       return (
         <div className="px-5 py-4">
-          {lvl === 1 ? <h1 className="fp-heading text-3xl font-bold leading-tight" dangerouslySetInnerHTML={{ __html: text }} />
-            : lvl === 2 ? <h2 className="fp-heading text-2xl font-bold" dangerouslySetInnerHTML={{ __html: text }} />
-            : <h3 className="fp-heading text-xl font-semibold" dangerouslySetInnerHTML={{ __html: text }} />}
+          {lvl === 1 ? <h1 className="fp-heading text-3xl font-bold leading-tight" dangerouslySetInnerHTML={{ __html: sh(text) }} />
+            : lvl === 2 ? <h2 className="fp-heading text-2xl font-bold" dangerouslySetInnerHTML={{ __html: sh(text) }} />
+            : <h3 className="fp-heading text-xl font-semibold" dangerouslySetInnerHTML={{ __html: sh(text) }} />}
         </div>
       );
     }
@@ -417,7 +420,7 @@ export function BlockRenderer({
       return (
         <div
           className="px-5 py-3 text-slate-600 leading-relaxed rte"
-          dangerouslySetInnerHTML={{ __html: s(p.text) }}
+          dangerouslySetInnerHTML={{ __html: sh(s(p.text)) }}
         />
       );
 
@@ -502,13 +505,13 @@ export function BlockRenderer({
             <div className="h-3" style={{ background: primary }} />
           )}
           <div className="px-6 pt-8 pb-6 bg-white text-center">
-            <h1 className="fp-heading text-2xl font-bold uppercase leading-tight mb-4" dangerouslySetInnerHTML={{ __html: inlineHtml(si(p.title)) }} />
-            {!!subtext && <div className="text-sm text-slate-600 mb-3 leading-relaxed rte" dangerouslySetInnerHTML={{ __html: si(subtext) }} />}
+            <h1 className="fp-heading text-2xl font-bold uppercase leading-tight mb-4" dangerouslySetInnerHTML={{ __html: sh(inlineHtml(si(p.title))) }} />
+            {!!subtext && <div className="text-sm text-slate-600 mb-3 leading-relaxed rte" dangerouslySetInnerHTML={{ __html: sh(si(subtext)) }} />}
             {!!accentText && (
               <p className="text-sm font-bold uppercase tracking-wide mb-4" style={{ color: primary }}>{accentText}</p>
             )}
             {!!s(p.description) && (
-              <div className="text-sm text-slate-600 leading-relaxed mb-4 rte" dangerouslySetInnerHTML={{ __html: si(p.description) }} />
+              <div className="text-sm text-slate-600 leading-relaxed mb-4 rte" dangerouslySetInnerHTML={{ __html: sh(si(p.description)) }} />
             )}
             {bulletPoints.length > 0 && (
               <ul className="text-sm text-slate-600 text-left space-y-2 mb-6 mt-2">
@@ -558,7 +561,7 @@ export function BlockRenderer({
 
       return (
         <div className="mx-4 my-3">
-          <p className="fp-heading font-semibold text-base mb-4 px-1 text-center" dangerouslySetInnerHTML={{ __html: inlineHtml(si(p.question)) }} />
+          <p className="fp-heading font-semibold text-base mb-4 px-1 text-center" dangerouslySetInnerHTML={{ __html: sh(inlineHtml(si(p.question))) }} />
 
           {hasEmojis ? (
             /* ── Card grid layout with emojis ─────────────────────────────── */
@@ -623,7 +626,7 @@ export function BlockRenderer({
       const isCorrect   = selectedOpt?.correct ?? false;
       return (
         <div className="fp-card bg-white shadow-sm mx-4 my-3 p-5">
-          <p className="fp-heading font-semibold text-base mb-3" dangerouslySetInnerHTML={{ __html: inlineHtml(s(p.question)) }} />
+          <p className="fp-heading font-semibold text-base mb-3" dangerouslySetInnerHTML={{ __html: sh(inlineHtml(s(p.question))) }} />
           <div className="space-y-2">
             {opts.map((o) => {
               const isSelected = selectedId === o.id;
@@ -676,15 +679,15 @@ export function BlockRenderer({
     case 'quest_info':
       return (
         <div className="mx-4 my-3 bg-sky-50 border border-sky-200 rounded-xl px-5 py-4">
-          <h3 className="font-semibold text-sky-900 mb-1.5" dangerouslySetInnerHTML={{ __html: inlineHtml(s(p.title)) }} />
-          <div className="text-sm text-sky-700 leading-relaxed rte" dangerouslySetInnerHTML={{ __html: s(p.text) }} />
+          <h3 className="font-semibold text-sky-900 mb-1.5" dangerouslySetInnerHTML={{ __html: sh(inlineHtml(s(p.title))) }} />
+          <div className="text-sm text-sky-700 leading-relaxed rte" dangerouslySetInnerHTML={{ __html: sh(s(p.text)) }} />
         </div>
       );
 
     case 'quest_freetext':
       return (
         <div className="px-5 py-4">
-          <div className="text-slate-600 leading-relaxed rte" dangerouslySetInnerHTML={{ __html: s(p.text) }} />
+          <div className="text-slate-600 leading-relaxed rte" dangerouslySetInnerHTML={{ __html: sh(s(p.text)) }} />
         </div>
       );
 
@@ -713,7 +716,7 @@ export function BlockRenderer({
     case 'quest_vorname':
       return (
         <div className="fp-card bg-white shadow-sm mx-4 my-3 p-6">
-          <h2 className="fp-heading text-xl font-bold mb-4" dangerouslySetInnerHTML={{ __html: inlineHtml(si(p.question)) }} />
+          <h2 className="fp-heading text-xl font-bold mb-4" dangerouslySetInnerHTML={{ __html: sh(inlineHtml(si(p.question))) }} />
           <input type="text" value={firstName} onChange={(e) => onSetFirstName(e.target.value)}
             placeholder={s(p.placeholder, 'Dein Vorname…')}
             className="w-full px-4 py-3 border-2 border-slate-200 text-sm focus:outline-none"
@@ -752,8 +755,8 @@ export function BlockRenderer({
             // eslint-disable-next-line @next/next/no-img-element
             <img src={imageUrl} alt="" className="w-full max-h-48 object-cover rounded-xl mb-4 opacity-90" />
           )}
-          <h1 className="text-2xl font-bold mb-3 leading-tight" dangerouslySetInnerHTML={{ __html: inlineHtml(s(p.headline)) }} />
-          <div className="text-sm text-white/70 mb-8 leading-relaxed rte" dangerouslySetInnerHTML={{ __html: s(p.subtext) }} />
+          <h1 className="text-2xl font-bold mb-3 leading-tight" dangerouslySetInnerHTML={{ __html: sh(inlineHtml(s(p.headline))) }} />
+          <div className="text-sm text-white/70 mb-8 leading-relaxed rte" dangerouslySetInnerHTML={{ __html: sh(s(p.subtext)) }} />
           <div>
             <button onClick={() => onNext()} className="fp-btn px-10 py-3.5 font-semibold text-base" style={{ borderRadius: br, background: primary, color: '#fff' }}>
               {s(p.buttonText, 'Jetzt starten')}
@@ -766,7 +769,7 @@ export function BlockRenderer({
     case 'check_vorname':
       return (
         <div className="fp-card bg-white shadow-sm mx-4 my-3 p-6">
-          <h2 className="fp-heading text-xl font-bold mb-4" dangerouslySetInnerHTML={{ __html: inlineHtml(s(p.question)) }} />
+          <h2 className="fp-heading text-xl font-bold mb-4" dangerouslySetInnerHTML={{ __html: sh(inlineHtml(s(p.question))) }} />
           <input type="text" value={firstName} onChange={(e) => onSetFirstName(e.target.value)}
             placeholder={s(p.placeholder, 'Dein Vorname')}
             className="w-full px-4 py-3 border-2 border-slate-200 text-sm focus:outline-none"
@@ -783,7 +786,7 @@ export function BlockRenderer({
       if (isSlider) {
         return (
           <div className="fp-card bg-white shadow-sm mx-4 my-3 p-6">
-            <h2 className="fp-heading text-xl font-bold mb-6" dangerouslySetInnerHTML={{ __html: inlineHtml(s(p.question)) }} />
+            <h2 className="fp-heading text-xl font-bold mb-6" dangerouslySetInnerHTML={{ __html: sh(inlineHtml(s(p.question))) }} />
             <SliderBlock nodeId={node.id} p={p} answers={answers} onAnswer={onAnswer} primary={primary} />
           </div>
         );
@@ -791,7 +794,7 @@ export function BlockRenderer({
 
       return (
         <div className="fp-card bg-white shadow-sm mx-4 my-3 p-6">
-          <h2 className="fp-heading text-xl font-bold mb-4" dangerouslySetInnerHTML={{ __html: inlineHtml(s(p.question)) }} />
+          <h2 className="fp-heading text-xl font-bold mb-4" dangerouslySetInnerHTML={{ __html: sh(inlineHtml(s(p.question))) }} />
           <div className="space-y-2">
             {opts.map((o) => {
               const isSelected = selected === o.id;
@@ -813,7 +816,7 @@ export function BlockRenderer({
     case 'check_selbst':
       return (
         <div className="fp-card bg-white shadow-sm mx-4 my-3 p-6">
-          <h2 className="fp-heading text-xl font-bold mb-2" dangerouslySetInnerHTML={{ __html: inlineHtml(s(p.question)) }} />
+          <h2 className="fp-heading text-xl font-bold mb-2" dangerouslySetInnerHTML={{ __html: sh(inlineHtml(s(p.question))) }} />
           {b(p.description) && <p className="text-sm text-slate-500 mb-5">{s(p.description)}</p>}
           <SliderBlock nodeId={node.id} p={p} answers={answers} onAnswer={onAnswer} primary={primary} />
         </div>
@@ -833,8 +836,8 @@ export function BlockRenderer({
           <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: `${primary}20` }}>
             <Trophy size={28} style={{ color: primary }} />
           </div>
-          <h2 className="fp-heading text-2xl font-bold mb-2 text-center" dangerouslySetInnerHTML={{ __html: inlineHtml(headline) }} />
-          {b(p.subtext) && <div className="text-slate-500 text-sm mb-5 text-center rte" dangerouslySetInnerHTML={{ __html: s(p.subtext) }} />}
+          <h2 className="fp-heading text-2xl font-bold mb-2 text-center" dangerouslySetInnerHTML={{ __html: sh(inlineHtml(headline)) }} />
+          {b(p.subtext) && <div className="text-slate-500 text-sm mb-5 text-center rte" dangerouslySetInnerHTML={{ __html: sh(s(p.subtext)) }} />}
           {b(p.showDimensionBars) && dimensions.length > 0 && (
             <div className="space-y-4 mt-4">
               {dimensions.map((dim) => {
@@ -876,8 +879,8 @@ export function BlockRenderer({
             <img src={imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover opacity-30" />
           )}
           <div className="relative z-10 px-8 py-12">
-            <h1 className="text-3xl font-bold text-white mb-3 leading-tight" dangerouslySetInnerHTML={{ __html: inlineHtml(s(p.headline)) }} />
-            {b(p.subtext) && <div className="text-white/80 text-base mb-6 leading-relaxed rte" dangerouslySetInnerHTML={{ __html: s(p.subtext) }} />}
+            <h1 className="text-3xl font-bold text-white mb-3 leading-tight" dangerouslySetInnerHTML={{ __html: sh(inlineHtml(s(p.headline))) }} />
+            {b(p.subtext) && <div className="text-white/80 text-base mb-6 leading-relaxed rte" dangerouslySetInnerHTML={{ __html: sh(s(p.subtext)) }} />}
             {b(p.ctaText) && (
               <button onClick={() => onNext()}
                 className="inline-flex items-center gap-2 px-8 py-3 bg-white font-semibold text-sm shadow-lg"
@@ -893,8 +896,8 @@ export function BlockRenderer({
     case 'form_text':
       return (
         <div className="px-6 py-8">
-          {b(p.headline) && <h2 className="fp-heading text-2xl font-bold mb-4" dangerouslySetInnerHTML={{ __html: inlineHtml(s(p.headline)) }} />}
-          <div className="text-slate-600 leading-relaxed rte" dangerouslySetInnerHTML={{ __html: s(p.content) }} />
+          {b(p.headline) && <h2 className="fp-heading text-2xl font-bold mb-4" dangerouslySetInnerHTML={{ __html: sh(inlineHtml(s(p.headline))) }} />}
+          <div className="text-slate-600 leading-relaxed rte" dangerouslySetInnerHTML={{ __html: sh(s(p.content)) }} />
         </div>
       );
 
@@ -914,7 +917,7 @@ export function BlockRenderer({
       const stepData = (answers[node.id] as Record<string, string>) ?? {};
       return (
         <div className="fp-card bg-white shadow-sm mx-4 my-3 p-6">
-          {b(p.title) && <h3 className="fp-heading font-bold text-lg mb-1" dangerouslySetInnerHTML={{ __html: inlineHtml(s(p.title)) }} />}
+          {b(p.title) && <h3 className="fp-heading font-bold text-lg mb-1" dangerouslySetInnerHTML={{ __html: sh(inlineHtml(s(p.title))) }} />}
           {b(p.description) && <p className="text-sm text-slate-500 mb-4">{s(p.description)}</p>}
           <div className="space-y-3 mt-3">
             {fields.map((f) => (
@@ -1023,7 +1026,7 @@ function LeadFormBlock({ props: p, company, br, primary, leadForm, setLeadForm, 
                     className="fp-check mt-0.5 flex-shrink-0" />
                   <span
                     className="text-xs text-slate-500 leading-relaxed [&_a]:underline [&_a]:hover:text-slate-700"
-                    dangerouslySetInnerHTML={{ __html: applyVars(f.label, varsMap) + (f.required ? ' *' : '') }}
+                    dangerouslySetInnerHTML={{ __html: sh(applyVars(f.label, varsMap)) + (f.required ? ' *' : '') }}
                   />
                 </label>
               );

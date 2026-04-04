@@ -50,5 +50,6 @@ export async function PUT(req: NextRequest) {
     console.error('[PUT /api/funnel-docs]', error.message, error.details, error.hint);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-  return NextResponse.json(funnelDocFromDb(data!));
+  if (!data) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  return NextResponse.json(funnelDocFromDb(data));
 }

@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { formPageStorage } from '@/lib/storage';
 import { FormPage } from '@/lib/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { slugify } from '@/lib/utils';
-import FunnelEditor from '@/components/funnel-editor/FunnelEditor';
 import { useToast } from '@/components/ui/Toast';
+
+const FunnelEditor = dynamic(() => import('@/components/funnel-editor/FunnelEditor'), { ssr: false });
 
 export default function FormularEditorPage() {
   const { id } = useParams<{ id: string }>();

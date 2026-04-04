@@ -4,6 +4,7 @@ import { getSession, unauthorized } from '@/lib/api-auth';
 import { memberFromDb } from '@/lib/supabase/mappers';
 import { can } from '@/lib/types';
 import { sendInviteEmail } from '@/lib/mailer';
+import { parseBody } from '@/lib/api/helpers';
 
 export async function POST(req: NextRequest) {
   const session = await getSession();
@@ -13,7 +14,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  const { name, email, role } = await req.json();
+  const parsed = await parseBody<{ name: string; email: string; role: string }>(req);
+  if (!parsed.ok) return parsed.response;
+  const { name, email, role } = parsed.data;
   if (!name || !email || !role) {
     return NextResponse.json({ error: 'name, email and role are required' }, { status: 400 });
   }
@@ -75,7 +78,7 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({
-    member: memberFromDb(data!),
+    member: memberFromDb(data),
     // Return link when email couldn't be sent so the UI can show it
     inviteLink: emailSent ? undefined : inviteLink,
   });

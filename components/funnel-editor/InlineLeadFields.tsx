@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useEffect } from 'react';
+import { sanitizeHtml } from '@/lib/sanitize';
 import {
   AlignLeft, Bold, CheckSquare, ChevronDown, Link2,
   Lock, LockOpen, Mail, Phone, Plus, Type, X,
@@ -216,7 +217,7 @@ export default function InlineLeadFields({ fields, onChange }: Props) {
                 ) : (
                   <span
                     className="text-xs text-slate-400 leading-relaxed [&_a]:underline [&_a]:text-violet-400 [&_a]:pointer-events-none [&_strong]:font-semibold"
-                    dangerouslySetInnerHTML={{ __html: highlightVars(f.label) + (f.required ? ' *' : '') }}
+                    dangerouslySetInnerHTML={{ __html: highlightVars(sanitizeHtml(f.label)) + (f.required ? ' *' : '') }}
                   />
                 )}
               </div>

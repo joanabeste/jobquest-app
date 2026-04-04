@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
+import { sanitizeHtml } from '@/lib/sanitize';
 import { useEditor, EditorContent } from '@tiptap/react';
 import { BubbleMenu } from '@tiptap/react/menus';
 import StarterKit from '@tiptap/starter-kit';
@@ -147,7 +148,7 @@ function RichEd({ v, up, cl, ph }: {
   // Read-only render
   if (!up) {
     if (!v) return <span className={cl} style={{ opacity: 0.3 }}>{ph}</span>;
-    if (v.startsWith('<')) return <div className={`${cl ?? ''} rte`} dangerouslySetInnerHTML={{ __html: v }} />;
+    if (v.startsWith('<')) return <div className={`${cl ?? ''} rte`} dangerouslySetInnerHTML={{ __html: sanitizeHtml(v) }} />;
     return <span className={cl}>{v}</span>;
   }
 
@@ -278,7 +279,7 @@ function StaticFieldRows({ fields, br }: { fields: LeadFieldDef[]; br: string })
           <input type="checkbox" disabled className="mt-0.5 flex-shrink-0 opacity-40" />
           <span
             className="text-xs text-slate-500 leading-relaxed [&_a]:underline [&_a]:text-violet-500"
-            dangerouslySetInnerHTML={{ __html: f.label + (f.required ? ' *' : '') }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(f.label) + (f.required ? ' *' : '') }}
           />
         </label>
       ) : (

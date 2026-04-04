@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { careerCheckStorage } from '@/lib/storage';
 import { CareerCheck } from '@/lib/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { slugify } from '@/lib/utils';
-import FunnelEditor from '@/components/funnel-editor/FunnelEditor';
+
+const FunnelEditor = dynamic(() => import('@/components/funnel-editor/FunnelEditor'), { ssr: false });
 
 export default function BerufsCheckEditorPage() {
   const { id } = useParams<{ id: string }>();

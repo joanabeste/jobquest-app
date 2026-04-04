@@ -3,11 +3,11 @@ import { createClient } from './supabase/client';
 import { questFromDb, leadToDb, analyticsToDb, careerCheckFromDb, careerCheckLeadToDb, formPageFromDb, formSubmissionToDb, companyFromDb } from './supabase/mappers';
 import { apiFetch } from './api-fetch';
 
-// PUT an existing record; fall back to POST if it doesn't exist yet (404/500).
+// PUT an existing record; fall back to POST only on 404 (record not yet created).
 async function apiUpsert<T>(putUrl: string, postUrl: string, body: T): Promise<void> {
   const json = { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) };
   const res = await fetch(putUrl, json);
-  if (res.status === 404 || res.status === 500) {
+  if (res.status === 404) {
     await apiFetch(postUrl, { ...json, method: 'POST' });
     return;
   }

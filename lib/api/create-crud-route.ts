@@ -56,7 +56,8 @@ export function createCrudRoute<T extends { id: string; companyId: string }>(
       .single();
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json(opts.fromDb(data! as Record<string, unknown>));
+    if (!data) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    return NextResponse.json(opts.fromDb(data as Record<string, unknown>));
   }
 
   async function DELETE(_req: NextRequest, { params }: RouteContext) {

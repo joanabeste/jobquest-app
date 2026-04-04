@@ -54,15 +54,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setCurrentMember(data.member);
       setCompany(data.company);
       return true;
-    } catch {
+    } catch (err) {
+      console.error('[auth] login error', err);
       return false;
     }
   }, []);
 
   const logout = useCallback(async () => {
-    await fetch('/api/auth/logout', { method: 'POST' });
-    setCompany(null);
-    setCurrentMember(null);
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch (err) {
+      console.error('[auth] logout error', err);
+    } finally {
+      setCompany(null);
+      setCurrentMember(null);
+    }
   }, []);
 
   const updateCompany = useCallback(async (updated: Company) => {

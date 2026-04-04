@@ -16,7 +16,7 @@ export async function GET() {
     .order('updated_at', { ascending: false });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(data!.map(questFromDb));
+  return NextResponse.json((data ?? []).map(questFromDb));
 }
 
 export async function POST(req: NextRequest) {
@@ -32,5 +32,6 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(questFromDb(data!));
+  if (!data) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  return NextResponse.json(questFromDb(data));
 }

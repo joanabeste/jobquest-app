@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { getSession, unauthorized } from '@/lib/api-auth';
 import { memberFromDb } from '@/lib/supabase/mappers';
 import type { WorkspaceRole } from '@/lib/types';
+import { parseBody } from '@/lib/api/helpers';
 
 const PRIVILEGED_ROLES: WorkspaceRole[] = ['platform_admin', 'superadmin'];
 
@@ -32,7 +33,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   if (!session) return unauthorized();
 
   const { id } = await params;
-  const updates = await req.json();
+  const parsed = await parseBody<Record<string, unknown>>(req);
+  if (!parsed.ok) return parsed.response;
+  const updates = parsed.data;
   const isSelf = id === session.member.id;
   const requesterRole = session.member.role as WorkspaceRole;
 
@@ -55,7 +58,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
   // Password changes go through Supabase Auth, not the DB
   if (updates.password !== undefined) {
-    await supabase.auth.admin.updateUserById(id, { password: updates.password });
+    await supabase.auth.admin.updateUserById(id, { password: updates.password as string });
   }
 
   const updateData: Record<string, unknown> = {};
@@ -73,7 +76,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(memberFromDb(data!));
+  if (!data) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  return NextResponse.json(memberFromDb(data));
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

@@ -23,15 +23,23 @@ export const funnelStorage = {
   },
 
   save: async (doc: FunnelDoc): Promise<void> => {
-    await fetch('/api/funnel-docs', {
+    const res = await fetch('/api/funnel-docs', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(doc),
     });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: res.statusText }));
+      throw new Error(err.error || res.statusText);
+    }
   },
 
   delete: async (id: string): Promise<void> => {
-    await fetch(`/api/funnel-docs/${id}`, { method: 'DELETE' });
+    const res = await fetch(`/api/funnel-docs/${id}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: res.statusText }));
+      throw new Error(err.error || res.statusText);
+    }
   },
 
   deleteForContentIds: async (_contentIds: string[]): Promise<void> => {
