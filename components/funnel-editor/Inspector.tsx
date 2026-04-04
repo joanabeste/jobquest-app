@@ -38,7 +38,7 @@ function CropModal({ src, initial, onSave, onClose }: {
   const [activeAspect, setActiveAspect] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  type DragHandle = 'nw' | 'ne' | 'sw' | 'se' | 'move';
+  type DragHandle = 'nw' | 'ne' | 'sw' | 'se' | 'move' | 'draw';
   const drag = useRef<{ handle: DragHandle; startX: number; startY: number; startCrop: CropBox } | null>(null);
 
   const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
@@ -49,8 +49,6 @@ function CropModal({ src, initial, onSave, onClose }: {
     const w = box.right - box.left;
     const cx = (box.left + box.right) / 2;
     const cy = (box.top + box.bottom) / 2;
-    // We work in % of image dimensions; we don't know natural size so treat both axes equally
-    // The ratio applies to % widths directly (approximation, looks correct in common cases)
     const newH = w / ratio;
     return {
       left: clamp(cx - w / 2, 0, 100 - w),
@@ -60,9 +58,10 @@ function CropModal({ src, initial, onSave, onClose }: {
     };
   }, []);
 
-  function startDrag(handle: DragHandle, e: React.MouseEvent) {
+  function startDrag(handle: DragHandle, e: React.MouseEvent, customStartCrop?: CropBox) {
     e.preventDefault();
-    drag.current = { handle, startX: e.clientX, startY: e.clientY, startCrop: crop };
+    e.stopPropagation();
+    drag.current = { handle, startX: e.clientX, startY: e.clientY, startCrop: customStartCrop ?? crop };
 
     function onMove(me: MouseEvent) {
       if (!drag.current || !containerRef.current) return;
@@ -72,11 +71,20 @@ function CropModal({ src, initial, onSave, onClose }: {
       const s = drag.current.startCrop;
       let { left, top, right, bottom } = s;
 
-      if (drag.current.handle === 'move') {
+      if (drag.current.handle === 'draw') {
+        // s.left/top = click origin in %; expand to current pointer position
+        const ox = s.left, oy = s.top;
+        const cx = clamp(ox + dx, 0, 100);
+        const cy = clamp(oy + dy, 0, 100);
+        left   = Math.min(ox, cx);
+        top    = Math.min(oy, cy);
+        right  = Math.max(ox, cx);
+        bottom = Math.max(oy, cy);
+      } else if (drag.current.handle === 'move') {
         const w = s.right - s.left, h = s.bottom - s.top;
-        left  = clamp(s.left  + dx, 0, 100 - w);
-        top   = clamp(s.top   + dy, 0, 100 - h);
-        right = left + w;
+        left   = clamp(s.left  + dx, 0, 100 - w);
+        top    = clamp(s.top   + dy, 0, 100 - h);
+        right  = left + w;
         bottom = top + h;
       } else {
         if (drag.current.handle === 'nw' || drag.current.handle === 'sw') left   = clamp(s.left   + dx, 0, s.right  - MIN);
@@ -102,6 +110,15 @@ function CropModal({ src, initial, onSave, onClose }: {
     }
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
+  }
+
+  function startDrawFromContainer(e: React.MouseEvent) {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const ox = Math.round(((e.clientX - rect.left) / rect.width) * 100);
+    const oy = Math.round(((e.clientY - rect.top) / rect.height) * 100);
+    const origin: CropBox = { left: ox, top: oy, right: ox, bottom: oy };
+    startDrag('draw', e, origin);
   }
 
   function selectAspect(label: string) {
@@ -137,7 +154,10 @@ function CropModal({ src, initial, onSave, onClose }: {
 
         {/* Image + crop overlay */}
         <div className="px-6 pb-6 overflow-auto">
-          <div ref={containerRef} className="relative select-none overflow-hidden rounded-xl bg-slate-100" style={{ touchAction: 'none' }}>
+          <div ref={containerRef} className="relative select-none overflow-hidden rounded-xl bg-slate-100"
+            style={{ touchAction: 'none', cursor: 'crosshair' }}
+            onMouseDown={startDrawFromContainer}
+          >
             <img src={src} alt="" className="w-full block pointer-events-none" draggable={false} />
 
             {/* Dark mask outside crop */}
@@ -150,8 +170,8 @@ function CropModal({ src, initial, onSave, onClose }: {
 
             {/* Crop rectangle */}
             <div
-              className="absolute border-2 border-white cursor-move"
-              style={{ left: `${crop.left}%`, top: `${crop.top}%`, right: `${100 - crop.right}%`, bottom: `${100 - crop.bottom}%` }}
+              className="absolute border-2 border-white"
+              style={{ left: `${crop.left}%`, top: `${crop.top}%`, right: `${100 - crop.right}%`, bottom: `${100 - crop.bottom}%`, cursor: 'move' }}
               onMouseDown={(e) => startDrag('move', e)}
             >
               {/* Rule-of-thirds lines */}
