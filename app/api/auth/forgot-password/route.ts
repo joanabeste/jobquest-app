@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
       ? requestOrigin
       : (allowedOrigins[0] ?? 'http://localhost:3000');
 
-    const supabase = createServerSupabaseClient();
+    const supabase = await createServerSupabaseClient();
 
     await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${safeOrigin}/reset-password`,

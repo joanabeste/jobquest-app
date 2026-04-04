@@ -4,15 +4,16 @@ import { getSession, unauthorized } from '@/lib/api-auth';
 import { careerCheckFromDb, careerCheckToDb } from '@/lib/supabase/mappers';
 import type { CareerCheck } from '@/lib/types';
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
   if (!session) return unauthorized();
 
+  const { id } = await params;
   const supabase = createAdminClient();
   const { data } = await supabase
     .from('career_checks')
     .select('*')
-    .eq('id', params.id)
+    .eq('id', id)
     .eq('company_id', session.company.id)
     .single();
 
@@ -20,19 +21,20 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   return NextResponse.json(careerCheckFromDb(data));
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
   if (!session) return unauthorized();
 
+  const { id } = await params;
   const check: CareerCheck = await req.json();
   const supabase = createAdminClient();
-  const dbData = careerCheckToDb({ ...check, id: params.id, companyId: session.company.id });
+  const dbData = careerCheckToDb({ ...check, id, companyId: session.company.id });
   const { id: _id, created_at: _ca, ...updateData } = dbData; // eslint-disable-line @typescript-eslint/no-unused-vars
 
   const { data, error } = await supabase
     .from('career_checks')
     .update(updateData)
-    .eq('id', params.id)
+    .eq('id', id)
     .eq('company_id', session.company.id)
     .select()
     .single();
@@ -41,11 +43,12 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   return NextResponse.json(careerCheckFromDb(data!));
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
   if (!session) return unauthorized();
 
+  const { id } = await params;
   const supabase = createAdminClient();
-  await supabase.from('career_checks').delete().eq('id', params.id).eq('company_id', session.company.id);
+  await supabase.from('career_checks').delete().eq('id', id).eq('company_id', session.company.id);
   return NextResponse.json({ ok: true });
 }

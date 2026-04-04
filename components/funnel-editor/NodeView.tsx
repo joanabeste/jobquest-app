@@ -115,7 +115,7 @@ function RichEd({ v, up, cl, ph }: {
 
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({ heading: false, codeBlock: false, blockquote: false }),
+      StarterKit.configure({ heading: false, codeBlock: false, blockquote: false, underline: false }),
       TiptapUnderline,
       TiptapTextAlign.configure({ types: ['paragraph'] }),
       TextStyle,

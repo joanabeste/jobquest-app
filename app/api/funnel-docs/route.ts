@@ -56,12 +56,16 @@ export async function PUT(req: NextRequest) {
   }
 
   const admin = createAdminClient();
+  const dbRow = { ...funnelDocToDb(doc), updated_at: new Date().toISOString() };
   const { data, error } = await admin
     .from('funnel_docs')
-    .upsert(funnelDocToDb(doc))
+    .upsert(dbRow)
     .select()
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error('[PUT /api/funnel-docs]', error.message, error.details, error.hint);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
   return NextResponse.json(funnelDocFromDb(data!));
 }

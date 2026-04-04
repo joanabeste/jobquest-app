@@ -34,7 +34,7 @@ export async function POST() {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   // Sign out
-  const supabase = createServerSupabaseClient();
+  const supabase = await createServerSupabaseClient();
   await supabase.auth.signOut();
 
   return NextResponse.json({ ok: true });

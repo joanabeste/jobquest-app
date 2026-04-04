@@ -10,15 +10,16 @@ function isPrivileged(role: WorkspaceRole) {
   return PRIVILEGED_ROLES.includes(role);
 }
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
   if (!session) return unauthorized();
 
+  const { id } = await params;
   const supabase = createAdminClient();
   const { data } = await supabase
     .from('workspace_members')
     .select('*')
-    .eq('id', params.id)
+    .eq('id', id)
     .eq('company_id', session.company.id)
     .single();
 
@@ -26,12 +27,13 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   return NextResponse.json(memberFromDb(data));
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
   if (!session) return unauthorized();
 
+  const { id } = await params;
   const updates = await req.json();
-  const isSelf = params.id === session.member.id;
+  const isSelf = id === session.member.id;
   const requesterRole = session.member.role as WorkspaceRole;
 
   // Changing another member's password requires superadmin+
@@ -53,7 +55,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
   // Password changes go through Supabase Auth, not the DB
   if (updates.password !== undefined) {
-    await supabase.auth.admin.updateUserById(params.id, { password: updates.password });
+    await supabase.auth.admin.updateUserById(id, { password: updates.password });
   }
 
   const updateData: Record<string, unknown> = {};
@@ -65,7 +67,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   const { data, error } = await supabase
     .from('workspace_members')
     .update(updateData)
-    .eq('id', params.id)
+    .eq('id', id)
     .eq('company_id', session.company.id)
     .select()
     .single();
@@ -74,10 +76,11 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   return NextResponse.json(memberFromDb(data!));
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
   if (!session) return unauthorized();
 
+  const { id } = await params;
   const requesterRole = session.member.role as WorkspaceRole;
 
   // Only superadmin+ can delete members
@@ -86,11 +89,11 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   }
 
   // Nobody can delete themselves
-  if (params.id === session.member.id) {
+  if (id === session.member.id) {
     return NextResponse.json({ error: 'Cannot delete your own account' }, { status: 403 });
   }
 
   const supabase = createAdminClient();
-  await supabase.from('workspace_members').delete().eq('id', params.id).eq('company_id', session.company.id);
+  await supabase.from('workspace_members').delete().eq('id', id).eq('company_id', session.company.id);
   return NextResponse.json({ ok: true });
 }

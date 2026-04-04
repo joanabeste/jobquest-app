@@ -3,17 +3,18 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { getSession, unauthorized } from '@/lib/api-auth';
 import { formPageFromDb } from '@/lib/supabase/mappers';
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
   if (!session) return unauthorized();
 
+  const { id } = await params;
   const { newId, newSlug } = await req.json();
   const supabase = createAdminClient();
 
   const { data: original } = await supabase
     .from('form_pages')
     .select('*')
-    .eq('id', params.id)
+    .eq('id', id)
     .eq('company_id', session.company.id)
     .single();
 

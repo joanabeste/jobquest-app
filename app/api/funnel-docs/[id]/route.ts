@@ -2,14 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getSession, unauthorized } from '@/lib/api-auth';
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
   if (!session) return unauthorized();
 
+  const { id } = await params;
   const admin = createAdminClient();
 
   // Fetch doc and verify ownership via its linked content
-  const { data: doc } = await admin.from('funnel_docs').select('content_id, content_type').eq('id', params.id).single();
+  const { data: doc } = await admin.from('funnel_docs').select('content_id, content_type').eq('id', id).single();
   if (!doc) return NextResponse.json({ ok: true }); // already gone
 
   const tableMap: Record<string, string> = { quest: 'job_quests', check: 'career_checks', form: 'form_pages' };
@@ -19,6 +20,6 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     if (!content) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  await admin.from('funnel_docs').delete().eq('id', params.id);
+  await admin.from('funnel_docs').delete().eq('id', id);
   return NextResponse.json({ ok: true });
 }

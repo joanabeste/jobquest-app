@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Sign in to set session cookies
-  const supabase = createServerSupabaseClient();
+  const supabase = await createServerSupabaseClient();
   await supabase.auth.signInWithPassword({ email: devEmail, password: process.env.DEV_PASSWORD });
 
   return NextResponse.json({

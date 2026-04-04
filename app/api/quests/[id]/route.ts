@@ -4,15 +4,16 @@ import { getSession, unauthorized } from '@/lib/api-auth';
 import { questFromDb, questToDb } from '@/lib/supabase/mappers';
 import type { JobQuest } from '@/lib/types';
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
   if (!session) return unauthorized();
 
+  const { id } = await params;
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from('job_quests')
     .select('*')
-    .eq('id', params.id)
+    .eq('id', id)
     .eq('company_id', session.company.id)
     .single();
 
@@ -20,19 +21,20 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   return NextResponse.json(questFromDb(data));
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
   if (!session) return unauthorized();
 
+  const { id } = await params;
   const quest: JobQuest = await req.json();
   const supabase = createAdminClient();
-  const dbData = questToDb({ ...quest, id: params.id, companyId: session.company.id });
+  const dbData = questToDb({ ...quest, id, companyId: session.company.id });
   const { id: _id, created_at: _ca, ...updateData } = dbData;
 
   const { data, error } = await supabase
     .from('job_quests')
     .update(updateData)
-    .eq('id', params.id)
+    .eq('id', id)
     .eq('company_id', session.company.id)
     .select()
     .single();
@@ -41,11 +43,12 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   return NextResponse.json(questFromDb(data!));
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
   if (!session) return unauthorized();
 
+  const { id } = await params;
   const supabase = createAdminClient();
-  await supabase.from('job_quests').delete().eq('id', params.id).eq('company_id', session.company.id);
+  await supabase.from('job_quests').delete().eq('id', id).eq('company_id', session.company.id);
   return NextResponse.json({ ok: true });
 }

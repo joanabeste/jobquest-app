@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Sign in to set session cookies
-    const supabase = createServerSupabaseClient();
+    const supabase = await createServerSupabaseClient();
     await supabase.auth.signInWithPassword({ email: contactEmail, password });
 
     const member: WorkspaceMember = {
