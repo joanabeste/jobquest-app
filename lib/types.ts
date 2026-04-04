@@ -163,7 +163,7 @@ export interface LeadFormConfig {
   subtext: string;
   buttonText: string;
   showPhone: boolean;
-  privacyText: string;         // {{company}} wird durch Firmennamen ersetzt
+  privacyText: string;         // @companyName wird durch Firmennamen ersetzt
   thankYouHeadline: string;
   thankYouText: string;
 }
@@ -173,7 +173,7 @@ export const DEFAULT_LEAD_CONFIG: LeadFormConfig = {
   subtext: 'Hinterlasse deine Kontaktdaten – wir melden uns bei dir.',
   buttonText: 'Jetzt bewerben',
   showPhone: true,
-  privacyText: 'Ich stimme zu, dass {{company}} meine Kontaktdaten gemäß Datenschutzerklärung verarbeitet.',
+  privacyText: 'Ich stimme zu, dass @companyName meine Kontaktdaten gemäß Datenschutzerklärung verarbeitet.',
   thankYouHeadline: 'Vielen Dank!',
   thankYouText: 'Deine Bewerbung ist bei uns eingegangen.',
 };
@@ -332,7 +332,7 @@ export interface LeadBlock extends BaseBlock {
 
 export interface ErgebnisBlock extends BaseBlock {
   type: 'ergebnis';
-  headline: string;      // supports {{name}}
+  headline: string;      // supports @firstName
   subtext: string;
   showDimensionBars: boolean;
 }
@@ -467,7 +467,7 @@ export const DEFAULT_FORM_CONFIG: FormConfig = {
   submitButtonText: 'Jetzt bewerben',
   thankYouHeadline: 'Vielen Dank!',
   thankYouText: 'Wir werden uns in Kürze bei dir melden.',
-  privacyText: 'Ich stimme zu, dass {{company}} meine Daten gemäß Datenschutzerklärung verarbeitet.',
+  privacyText: 'Ich stimme zu, dass @companyName meine Daten gemäß Datenschutzerklärung verarbeitet.',
 };
 
 export interface FormPage {

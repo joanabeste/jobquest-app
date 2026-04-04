@@ -424,6 +424,7 @@ function FunnelEditorInner({
 
       {/* ── Body ───────────────────────────────────────────────────────────── */}
       <CIContext.Provider value={ci}>
+      <style dangerouslySetInnerHTML={{ __html: ci.css }} />
       <div className="flex flex-1 min-h-0">
         {view === 'flow' ? (
           <FlowView

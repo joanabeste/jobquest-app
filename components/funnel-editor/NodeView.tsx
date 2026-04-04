@@ -401,7 +401,7 @@ function BlockPreview({ node, onUpdate }: {
             : <div className="h-3" style={{ background: primary }} />
           }
           <div className="px-6 pt-6 pb-5 text-center bg-white">
-            <RichEd v={(p.title as string) ?? ''} up={up?.('title')} ph="Titel" cl="font-bold text-2xl leading-tight" />
+            <RichEd v={(p.title as string) ?? ''} up={up?.('title')} ph="Titel" cl="fp-heading leading-tight" />
             {!!(p.accentText as string) && (
               <p className="text-sm font-bold uppercase tracking-wide mt-1" style={{ color: primary }}>{p.accentText as string}</p>
             )}
@@ -443,7 +443,7 @@ function BlockPreview({ node, onUpdate }: {
       const opts = (p.options as { id: string; text: string }[]) || [];
       return (
         <div className="mx-4 my-3">
-          <RichEd v={(p.question as string) ?? ''} up={up?.('question')} ph="Was würdest du tun?" cl="text-base font-semibold text-slate-800 mb-4 block text-center" />
+          <RichEd v={(p.question as string) ?? ''} up={up?.('question')} ph="Was würdest du tun?" cl="fp-heading mb-4 block text-center" />
           <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-2 space-y-1.5">
             {opts.map((o) => (
               <div key={o.id} className="flex items-center gap-2 px-4 py-3 bg-slate-50 rounded-lg border border-slate-100">
@@ -460,7 +460,7 @@ function BlockPreview({ node, onUpdate }: {
       const opts = (p.options as { id: string; text: string; correct: boolean }[]) || [];
       return (
         <div className="mx-4 my-3 bg-white border border-slate-200 rounded-xl shadow-sm p-5">
-          <RichEd v={(p.question as string) ?? ''} up={up?.('question')} ph="Frage?" cl="text-base font-semibold text-slate-800 mb-3 block" />
+          <RichEd v={(p.question as string) ?? ''} up={up?.('question')} ph="Frage?" cl="fp-heading mb-3 block" />
           <div className="space-y-2">
             {opts.slice(0, 4).map((o) => (
               <div key={o.id} className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm border ${
@@ -509,7 +509,7 @@ function BlockPreview({ node, onUpdate }: {
     case 'quest_vorname':
       return (
         <div className="mx-4 my-3 bg-white border border-slate-200 rounded-xl shadow-sm p-6">
-          <RichEd v={(p.question as string) ?? ''} up={up?.('question')} ph="Wie heißt du?" cl="text-xl font-bold text-slate-800 mb-4 block" />
+          <RichEd v={(p.question as string) ?? ''} up={up?.('question')} ph="Wie heißt du?" cl="fp-heading mb-4 block" />
           <div className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl flex items-center">
             <span className="text-sm text-slate-400">{(p.placeholder as string) || 'Dein Vorname…'}</span>
           </div>
@@ -532,7 +532,7 @@ function BlockPreview({ node, onUpdate }: {
       const emoji = (p.emoji as string) || '⭐';
       return (
         <div className="mx-4 my-3 bg-white border border-slate-200 rounded-xl shadow-sm p-5 text-center">
-          <RichEd v={(p.question as string) ?? ''} up={up?.('question')} ph="Bewertung" cl="text-base font-semibold text-slate-700 mb-4 block" />
+          <RichEd v={(p.question as string) ?? ''} up={up?.('question')} ph="Bewertung" cl="fp-heading mb-4 block" />
           <div className="flex justify-center gap-1.5">
             {Array.from({ length: count }, (_, i) => (
               <span key={i} className="text-3xl leading-none" style={{ opacity: i < 3 ? 1 : 0.25 }}>{emoji}</span>
@@ -546,7 +546,7 @@ function BlockPreview({ node, onUpdate }: {
       const fields = (p.fields as LeadFieldDef[]) || [];
       return (
         <div className="mx-4 my-3 bg-white shadow-sm p-6" style={{ borderRadius: br }}>
-          <RichEd v={(p.headline as string) ?? ''} up={up?.('headline')} ph="Interessiert?" cl="text-xl font-bold text-slate-900" />
+          <RichEd v={(p.headline as string) ?? ''} up={up?.('headline')} ph="Interessiert?" cl="fp-heading" />
           <RichEd v={(p.subtext as string) ?? ''} up={up?.('subtext')} ph="Deine Kontaktdaten…" cl="text-slate-500 text-sm mt-1 block" />
           <div className="space-y-3 mt-4">
             {onUpdate ? (
@@ -580,7 +580,7 @@ function BlockPreview({ node, onUpdate }: {
     case 'check_vorname':
       return (
         <div className="mx-4 my-3 bg-white border border-slate-200 rounded-xl shadow-sm p-6">
-          <RichEd v={(p.question as string) ?? ''} up={up?.('question')} ph="Wie heißt du?" cl="text-xl font-bold text-slate-800 mb-4 block" />
+          <RichEd v={(p.question as string) ?? ''} up={up?.('question')} ph="Wie heißt du?" cl="fp-heading mb-4 block" />
           <div className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl flex items-center">
             <span className="text-sm text-slate-400">{(p.placeholder as string) || 'Vorname…'}</span>
           </div>
@@ -593,7 +593,7 @@ function BlockPreview({ node, onUpdate }: {
       const opts = (p.options as { id: string; text: string }[]) || [];
       return (
         <div className="mx-4 my-3 bg-white border border-slate-200 rounded-xl shadow-sm p-5">
-          <RichEd v={(p.question as string) ?? ''} up={up?.('question')} ph="Frage?" cl="text-base font-semibold text-slate-800 mb-4 block" />
+          <RichEd v={(p.question as string) ?? ''} up={up?.('question')} ph="Frage?" cl="fp-heading mb-4 block" />
           {isSlider ? (
             <div>
               <div className="h-3 bg-slate-100 rounded-full relative">
@@ -621,7 +621,7 @@ function BlockPreview({ node, onUpdate }: {
     case 'check_selbst':
       return (
         <div className="mx-4 my-3 bg-white border border-slate-200 rounded-xl shadow-sm p-5">
-          <RichEd v={(p.question as string) ?? ''} up={up?.('question')} ph="Wie schätzt du dich ein?" cl="text-base font-semibold text-slate-800 mb-4 block" />
+          <RichEd v={(p.question as string) ?? ''} up={up?.('question')} ph="Wie schätzt du dich ein?" cl="fp-heading mb-4 block" />
           <div className="flex items-center gap-3">
             <span className="text-xs text-slate-400 flex-shrink-0">{(p.sliderLabelMin as string) || '0'}</span>
             <div className="flex-1 h-3 bg-slate-200 rounded-full relative">
@@ -637,7 +637,7 @@ function BlockPreview({ node, onUpdate }: {
       const rows = fields.length > 0 ? fields : [{ id: 'fallback', label: 'E-Mail', placeholder: 'E-Mail-Adresse' }];
       return (
         <div className="px-5 py-5 bg-rose-50 border-t-2 border-rose-100">
-          <RichEd v={(p.headline as string) ?? ''} up={up?.('headline')} ph="Kontakt" cl="font-bold text-base text-rose-800 mb-3 block" />
+          <RichEd v={(p.headline as string) ?? ''} up={up?.('headline')} ph="Kontakt" cl="fp-heading mb-3 block" />
           <div className="space-y-2">
             {rows.map((f) => (
               <div key={f.id} className="h-10 bg-white border border-rose-200 rounded-lg flex items-center px-3">
@@ -653,7 +653,7 @@ function BlockPreview({ node, onUpdate }: {
       return (
         <div className="px-5 py-5 bg-amber-50">
           <Trophy size={24} className="text-amber-500 mb-2" />
-          <RichEd v={(p.headline as string) ?? ''} up={up?.('headline')} ph="Dein Ergebnis!" cl="text-xl font-bold text-amber-800 mb-3 block" />
+          <RichEd v={(p.headline as string) ?? ''} up={up?.('headline')} ph="Dein Ergebnis!" cl="fp-heading mb-3 block" />
           {!!p.showDimensionBars && (
             <div className="space-y-2.5">
               {['Dimension A', 'Dimension B'].map((d) => (
@@ -685,7 +685,7 @@ function BlockPreview({ node, onUpdate }: {
     case 'form_text':
       return (
         <div className="px-5 py-4">
-          <RichEd v={(p.headline as string) ?? ''} up={up?.('headline')} ph="Überschrift (optional)" cl="text-xl font-bold text-slate-900 mb-2 block" />
+          <RichEd v={(p.headline as string) ?? ''} up={up?.('headline')} ph="Überschrift (optional)" cl="fp-heading mb-2 block" />
           <RichEd v={(p.content as string) ?? ''} up={up?.('content')} ph="Text…" cl="text-sm text-slate-600 leading-relaxed" />
         </div>
       );
@@ -705,7 +705,7 @@ function BlockPreview({ node, onUpdate }: {
       const fields = (p.fields as { id: string; label: string }[]) || [];
       return (
         <div className="px-5 py-4">
-          <RichEd v={(p.title as string) ?? ''} up={up?.('title')} ph="Schritt" cl="text-base font-bold text-slate-800 mb-3 block" />
+          <RichEd v={(p.title as string) ?? ''} up={up?.('title')} ph="Schritt" cl="fp-heading mb-3 block" />
           <div className="space-y-2">
             {fields.slice(0, 3).map((f) => (
               <div key={f.id} className="h-10 bg-white rounded-xl border-2 border-slate-200 flex items-center px-3">
@@ -723,7 +723,7 @@ function BlockPreview({ node, onUpdate }: {
       const fields = (p.fields as LeadFieldDef[]) || [];
       return (
         <div className="mx-4 my-3 bg-white shadow-sm p-6" style={{ borderRadius: br }}>
-          <RichEd v={(p.headline as string) ?? ''} up={up?.('headline')} ph="Interessiert?" cl="text-xl font-bold text-slate-900" />
+          <RichEd v={(p.headline as string) ?? ''} up={up?.('headline')} ph="Interessiert?" cl="fp-heading" />
           <RichEd v={(p.subtext as string) ?? ''} up={up?.('subtext')} ph="Deine Kontaktdaten…" cl="text-slate-500 text-sm mt-1 block" />
           <div className="space-y-3 mt-4">
             {onUpdate ? (

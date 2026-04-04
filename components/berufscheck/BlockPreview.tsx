@@ -161,7 +161,7 @@ export function BlockPreview({ block, dimensions, company, focusField }: {
           {block.showPhone && <div className="h-10 bg-slate-50 rounded-xl border border-slate-200 flex items-center px-3"><span className="text-slate-300 text-sm">Telefonnummer</span></div>}
         </div>
         <p onClick={() => focusField('privacyText')} className={`text-xs text-slate-400 mb-4 leading-relaxed ${clickEl}`}>
-          {block.privacyText.replace('{{company}}', company || 'Unternehmen')}
+          {block.privacyText.replace('{{company}}', company || 'Unternehmen').replace('@companyName', company || 'Unternehmen')}
         </p>
         <span onClick={() => focusField('buttonText')}
           className={`block w-full py-2.5 bg-violet-600 rounded-xl text-white text-sm font-semibold text-center ${clickEl}`}>
