@@ -131,6 +131,10 @@ export const leadStorage = {
       .insert(leadToDb(lead));
     if (error) throw new Error(error.message);
   },
+
+  delete: async (id: string): Promise<void> => {
+    await apiFetch(`/api/leads/${id}`, { method: 'DELETE' });
+  },
 };
 
 // ─── Analytics Storage ──────────────────────────────────────────────────────
@@ -175,6 +179,10 @@ export const careerCheckLeadStorage = {
       .insert(careerCheckLeadToDb(lead));
     if (error) throw new Error(error.message);
   },
+
+  delete: async (id: string): Promise<void> => {
+    await apiFetch(`/api/career-check-leads/${id}`, { method: 'DELETE' });
+  },
 };
 
 // ─── Form Page Storage ──────────────────────────────────────────────────────
@@ -203,6 +211,10 @@ export const formSubmissionStorage = {
       .from('form_submissions')
       .insert(formSubmissionToDb(submission));
     if (error) throw new Error(error.message);
+  },
+
+  delete: async (id: string): Promise<void> => {
+    await apiFetch(`/api/form-submissions/${id}`, { method: 'DELETE' });
   },
 };
 

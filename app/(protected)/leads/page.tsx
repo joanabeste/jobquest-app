@@ -6,7 +6,7 @@ import { useToast } from '@/components/ui/Toast';
 import { questStorage, leadStorage, careerCheckStorage, careerCheckLeadStorage, formPageStorage, formSubmissionStorage } from '@/lib/storage';
 import { Dimension, FormField } from '@/lib/types';
 import { formatDateTime } from '@/lib/utils';
-import { Users, Download, Search, Mail, Phone, X, Filter, MailCheck, MailX } from 'lucide-react';
+import { Users, Download, Search, Mail, Phone, X, Filter, MailCheck, MailX, Trash2 } from 'lucide-react';
 
 type Source = 'jobquest' | 'berufscheck' | 'formular';
 type SourceFilter = 'all' | Source;
@@ -107,6 +107,7 @@ export default function LeadsPage() {
   const [search, setSearch] = useState('');
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all');
   const [selectedLead, setSelectedLead] = useState<UnifiedLead | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!company) return;
@@ -190,6 +191,22 @@ export default function LeadsPage() {
   }, [company, toast]);
 
   useEffect(() => { load(); }, [load]);
+
+  async function deleteLead(lead: UnifiedLead) {
+    setDeletingId(lead.id);
+    try {
+      if (lead.source === 'jobquest') await leadStorage.delete(lead.id);
+      else if (lead.source === 'berufscheck') await careerCheckLeadStorage.delete(lead.id);
+      else await formSubmissionStorage.delete(lead.id);
+      setAllLeads((prev) => prev.filter((l) => l.id !== lead.id));
+      setSelectedLead(null);
+      toast.success('Kontakt gelöscht');
+    } catch {
+      toast.error('Löschen fehlgeschlagen');
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   const filtered = allLeads.filter((l) => {
     if (sourceFilter !== 'all' && l.source !== sourceFilter) return false;
@@ -311,7 +328,6 @@ export default function LeadsPage() {
                     <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 hidden md:table-cell">Telefon</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500">Quelle</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 hidden sm:table-cell">Eingegangen</th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 hidden lg:table-cell">E-Mail</th>
                     <th className="px-4 py-3"></th>
                   </tr>
                 </thead>
@@ -342,16 +358,18 @@ export default function LeadsPage() {
                       <td className="px-4 py-3 text-slate-500 text-xs whitespace-nowrap hidden sm:table-cell">
                         {new Date(lead.submittedAt).toLocaleString('de-DE')}
                       </td>
-                      <td className="px-4 py-3 hidden lg:table-cell">
-                        {lead.emailSent === true
-                          ? <span title="E-Mail gesendet"><MailCheck size={15} className="text-emerald-500" /></span>
-                          : lead.emailSent === false
-                          ? <span title="E-Mail fehlgeschlagen"><MailX size={15} className="text-red-400" /></span>
-                          : <span className="text-slate-300 text-xs">—</span>
-                        }
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <span className="text-xs text-violet-600 font-medium">Details</span>
+                      <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-end gap-2">
+                          <span className="text-xs text-violet-600 font-medium cursor-pointer" onClick={() => setSelectedLead(lead)}>Details</span>
+                          <button
+                            onClick={() => deleteLead(lead)}
+                            disabled={deletingId === lead.id}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-40"
+                            title="Kontakt löschen"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -370,14 +388,24 @@ export default function LeadsPage() {
 
       {/* Detail Modal */}
       {selectedLead && (
-        <LeadDetailModal lead={selectedLead} onClose={() => setSelectedLead(null)} />
+        <LeadDetailModal
+          lead={selectedLead}
+          onClose={() => setSelectedLead(null)}
+          onDelete={() => deleteLead(selectedLead)}
+          deleting={deletingId === selectedLead.id}
+        />
       )}
     </div>
   );
 }
 
 // ── Detail Modal ──────────────────────────────────────────────────────────────
-function LeadDetailModal({ lead, onClose }: { lead: UnifiedLead; onClose: () => void }) {
+function LeadDetailModal({ lead, onClose, onDelete, deleting }: {
+  lead: UnifiedLead;
+  onClose: () => void;
+  onDelete: () => void;
+  deleting: boolean;
+}) {
   const dims = lead.dimensions ?? [];
   const maxScore = dims.length > 0 ? Math.max(...dims.map((d) => lead.scores?.[d.id] ?? 0), 1) : 1;
   const sortedDims = [...dims].sort((a, b) => (lead.scores?.[b.id] ?? 0) - (lead.scores?.[a.id] ?? 0));
@@ -411,6 +439,17 @@ function LeadDetailModal({ lead, onClose }: { lead: UnifiedLead; onClose: () => 
               <X size={16} />
             </button>
           </div>
+        </div>
+
+        <div className="px-6 py-3 border-b border-slate-100 flex justify-end">
+          <button
+            onClick={onDelete}
+            disabled={deleting}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-40"
+          >
+            <Trash2 size={12} />
+            {deleting ? 'Wird gelöscht…' : 'Kontakt löschen'}
+          </button>
         </div>
 
         <div className="p-6 space-y-5 max-h-[60vh] overflow-y-auto">
