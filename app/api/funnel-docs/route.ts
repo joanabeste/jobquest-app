@@ -3,22 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { getSession, unauthorized } from '@/lib/api-auth';
 import { funnelDocFromDb, funnelDocToDb } from '@/lib/supabase/mappers';
 import type { FunnelDoc } from '@/lib/funnel-types';
-
-type ContentType = 'quest' | 'check' | 'form';
-
-const CONTENT_TABLE: Record<ContentType, string> = {
-  quest: 'job_quests',
-  check: 'career_checks',
-  form: 'form_pages',
-};
-
-async function ownsContent(companyId: string, contentId: string, contentType: ContentType): Promise<boolean> {
-  const table = CONTENT_TABLE[contentType];
-  if (!table) return false;
-  const admin = createAdminClient();
-  const { data } = await admin.from(table).select('id').eq('id', contentId).eq('company_id', companyId).single();
-  return !!data;
-}
+import { ownsContent, type FunnelContentType } from './_shared';
 
 export async function GET(req: NextRequest) {
   const session = await getSession();
@@ -36,7 +21,6 @@ export async function GET(req: NextRequest) {
 
   if (!data) return NextResponse.json(null);
 
-  // Verify the referenced content belongs to this company
   if (!await ownsContent(session.company.id, data.content_id, data.content_type)) {
     return NextResponse.json(null);
   }
@@ -50,8 +34,7 @@ export async function PUT(req: NextRequest) {
 
   const doc: FunnelDoc = await req.json();
 
-  // Verify the content being linked belongs to this company
-  if (!await ownsContent(session.company.id, doc.contentId, doc.contentType as ContentType)) {
+  if (!await ownsContent(session.company.id, doc.contentId, doc.contentType as FunnelContentType)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
