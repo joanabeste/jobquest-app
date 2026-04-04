@@ -390,13 +390,25 @@ function BlockPreview({ node, onUpdate }: {
         </div>
       );
 
-    case 'video':
-      return (
+    case 'video': {
+      const vUrl       = (p.url as string) || '';
+      const ytMatch    = vUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/);
+      const vimeoMatch = vUrl.match(/vimeo\.com\/(\d+)/);
+      const embedUrl   = ytMatch    ? `https://www.youtube-nocookie.com/embed/${ytMatch[1]}`
+        : vimeoMatch ? `https://player.vimeo.com/video/${vimeoMatch[1]}` : vUrl;
+      return vUrl ? (
+        <div className="px-5 py-3 pointer-events-none">
+          <div className="aspect-video rounded-xl overflow-hidden bg-black shadow-md">
+            <iframe src={embedUrl} className="w-full h-full" title="Video" />
+          </div>
+        </div>
+      ) : (
         <div className="bg-slate-900 h-32 flex flex-col items-center justify-center gap-2">
           <Video size={24} className="text-slate-500" />
-          <p className="text-xs text-slate-500 truncate max-w-[240px]">{(p.url as string) || 'Video-URL'}</p>
+          <p className="text-xs text-slate-500">Video-URL eingeben</p>
         </div>
       );
+    }
 
     // ── Quest ─────────────────────────────────────────────────────────────────
 
