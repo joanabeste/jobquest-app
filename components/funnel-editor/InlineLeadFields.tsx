@@ -180,10 +180,10 @@ function CheckboxEditor({ value, onChange, editorRef }: CheckboxEditorProps) {
 
 // ─── Shared reorder + required + delete toolbar section ───────────────────────
 function FieldToolbar({
-  fieldId, idx, total,
+  _fieldId, idx, total,
   required, onMove, onToggleRequired, onRemove,
 }: {
-  fieldId: string; idx: number; total: number;
+  _fieldId: string; idx: number; total: number;
   required: boolean;
   onMove: (dir: -1 | 1) => void;
   onToggleRequired: () => void;
@@ -326,7 +326,7 @@ export default function InlineLeadFields({ fields, onChange }: Props) {
                   <div className="flex-1" />
 
                   <FieldToolbar
-                    fieldId={f.id} idx={idx} total={fields.length}
+                    _fieldId={f.id} idx={idx} total={fields.length}
                     required={f.required}
                     onMove={(dir) => move(f.id, dir)}
                     onToggleRequired={() => update(f.id, { required: !f.required })}
@@ -374,7 +374,7 @@ export default function InlineLeadFields({ fields, onChange }: Props) {
               >
                 {/* Reorder + required + delete */}
                 <FieldToolbar
-                  fieldId={f.id} idx={idx} total={fields.length}
+                  _fieldId={f.id} idx={idx} total={fields.length}
                   required={f.required}
                   onMove={(dir) => move(f.id, dir)}
                   onToggleRequired={() => update(f.id, { required: !f.required })}
