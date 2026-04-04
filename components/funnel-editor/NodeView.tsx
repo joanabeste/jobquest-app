@@ -537,13 +537,16 @@ function BlockPreview({ node, onUpdate }: {
         </div>
       );
 
-    case 'quest_spinner':
+    case 'quest_spinner': {
+      const dur = (p.duration as number) ?? 2400;
       return (
         <div className="py-14 flex flex-col items-center gap-5 text-center">
           <div className="w-14 h-14 rounded-full border-[5px] border-slate-200 border-t-violet-500 animate-spin" />
           <p className="text-base font-medium text-slate-700">{(p.text as string) || 'Einen Moment…'}</p>
+          <p className="text-xs text-slate-400">{(dur / 1000).toFixed(0)} s</p>
         </div>
       );
+    }
 
     case 'quest_rating': {
       const count = Math.min(8, Math.max(1, (p.count as number) || 5));

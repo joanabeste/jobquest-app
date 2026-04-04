@@ -270,14 +270,14 @@ function DialogBlock({ lines, primary, visibleCount, onAdvance, firstName, choic
   );
 }
 
-// ─── Spinner block (auto-advances after 2 s) ──────────────────────────────────
-function SpinnerBlock({ text, doneText, primary, onNext }: {
-  text: string; doneText: string; primary: string; onNext: () => void;
+// ─── Spinner block (auto-advances after configurable duration) ────────────────
+function SpinnerBlock({ text, doneText, primary, onNext, duration }: {
+  text: string; doneText: string; primary: string; onNext: () => void; duration: number;
 }) {
   const [done, setDone] = useState(false);
   useEffect(() => {
-    const t1 = setTimeout(() => setDone(true), 1800);
-    const t2 = setTimeout(() => onNext(), 2400);
+    const t1 = setTimeout(() => setDone(true), duration - 600);
+    const t2 = setTimeout(() => onNext(), duration);
     return () => { clearTimeout(t1); clearTimeout(t2); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -756,7 +756,7 @@ export function BlockRenderer({
     /* avatar block removed */
 
     case 'quest_spinner':
-      return <SpinnerBlock text={s(p.text)} doneText={s(p.doneText)} primary={primary} onNext={() => onNext()} />;
+      return <SpinnerBlock text={s(p.text)} doneText={s(p.doneText)} primary={primary} onNext={() => onNext()} duration={n(p.duration, 2400)} />;
 
     case 'quest_rating':
       return (

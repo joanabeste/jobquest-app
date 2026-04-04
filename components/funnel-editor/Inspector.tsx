@@ -779,16 +779,34 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars }: {
 
     /* avatar block removed */
 
-    case 'quest_spinner':
+    case 'quest_spinner': {
+      const dur = (props.duration as number) ?? 2400;
+      const DURATIONS = [
+        { label: '1 s', val: 1000 },
+        { label: '2 s', val: 2000 },
+        { label: '3 s', val: 3000 },
+        { label: '5 s', val: 5000 },
+        { label: '8 s', val: 8000 },
+      ];
       return (
         <div className="space-y-3">
           <Field label="Ladetext"><input value={(props.text as string) ?? ''} onChange={(e) => onChange({ text: e.target.value })} className="input-field text-sm" placeholder="Einen Moment…" /></Field>
-          <p className="text-[10px] text-slate-400">Geht automatisch nach 2 Sekunden weiter.</p>
+          <Field label="Dauer">
+            <div className="flex gap-1.5 flex-wrap">
+              {DURATIONS.map((d) => (
+                <button key={d.val} type="button" onClick={() => onChange({ duration: d.val })}
+                  className={`px-2.5 py-1 text-xs rounded-lg border transition-colors ${dur === d.val ? 'bg-violet-600 text-white border-violet-600' : 'border-slate-200 text-slate-600 hover:border-slate-300'}`}>
+                  {d.label}
+                </button>
+              ))}
+            </div>
+          </Field>
           <Section label="Erweitert" collapsible defaultOpen={false}>
             <Field label="Fertig-Text"><input value={(props.doneText as string) ?? ''} onChange={(e) => onChange({ doneText: e.target.value })} className="input-field text-sm" placeholder="Geschafft!" /></Field>
           </Section>
         </div>
       );
+    }
 
     case 'quest_rating':
       return (
