@@ -353,14 +353,17 @@ function BlockPreview({ node, onUpdate }: {
       const imgSize = (p.size as string) ?? 'full';
       const fit = (p.objectFit as string) ?? 'cover';
       const imgHeight = p.height as number | undefined;
+      const cropX = (p.cropX as number) ?? 50;
+      const cropY = (p.cropY as number) ?? 50;
       const sizeClass: Record<string, string> = { full: 'w-full', l: 'max-w-lg mx-auto', m: 'max-w-sm mx-auto', s: 'max-w-xs mx-auto', xs: 'max-w-[128px] mx-auto' };
       const wrapCls = sizeClass[imgSize] ?? 'w-full';
       const imgCls = fit === 'none' ? '' : `w-full h-full ${fit === 'cover' ? 'object-cover' : 'object-contain'}`;
+      const imgStyle = fit === 'cover' ? { objectPosition: `${cropX}% ${cropY}%` } : {};
       const containerStyle = imgHeight ? { height: imgHeight } : undefined;
       return (
         <div className="overflow-hidden">
           {p.src
-            ? <div className={wrapCls} style={containerStyle}><img src={p.src as string} alt={(p.alt as string) || ''} className={imgCls} /></div>
+            ? <div className={wrapCls} style={containerStyle}><img src={p.src as string} alt={(p.alt as string) || ''} className={imgCls} style={imgStyle} /></div>
             : <div className="bg-slate-100 h-36 flex items-center justify-center"><ImageIcon size={32} className="text-slate-300" /></div>
           }
         </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Trash2, Copy, MousePointer2, Lock, ChevronLeft } from 'lucide-react';
 import RichTextEditor from './RichTextEditor';
 import { FunnelNode, FunnelStyle, FunnelPage, BLOCK_LABELS, LeadFieldDef, LeadFieldType } from '@/lib/funnel-types';
@@ -16,6 +16,61 @@ import { DecisionEditor } from './inspectors/DecisionEditor';
 import { QuizEditor } from './inspectors/QuizEditor';
 import { FrageEditor, ErgebnisfrageEditor } from './inspectors/FrageEditor';
 import { FormStepEditor } from './inspectors/FormStepEditor';
+
+// ─── Focal point picker ───────────────────────────────────────────────────────
+function FocalPointPicker({ src, cropX, cropY, onChange }: {
+  src: string;
+  cropX: number;
+  cropY: number;
+  onChange: (x: number, y: number) => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  function pick(e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) {
+    const el = ref.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    const x = Math.round(Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100)));
+    const y = Math.round(Math.max(0, Math.min(100, ((clientY - rect.top) / rect.height) * 100)));
+    onChange(x, y);
+  }
+
+  return (
+    <div className="space-y-1.5">
+      <p className="text-[10px] text-slate-400">Klicke auf das Bild um den sichtbaren Bereich zu setzen</p>
+      <div
+        ref={ref}
+        className="relative w-full rounded-lg overflow-hidden cursor-crosshair select-none border border-slate-200"
+        style={{ height: 140 }}
+        onClick={pick}
+        onTouchStart={(e) => { e.preventDefault(); pick(e); }}
+      >
+        <img
+          src={src}
+          alt=""
+          className="w-full h-full object-cover pointer-events-none"
+          style={{ objectPosition: `${cropX}% ${cropY}%` }}
+          draggable={false}
+        />
+        {/* Focal point dot */}
+        <div
+          className="absolute w-5 h-5 rounded-full border-2 border-white shadow-md -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+          style={{ left: `${cropX}%`, top: `${cropY}%`, background: 'rgba(124,58,237,0.85)' }}
+        />
+        {/* Grid overlay */}
+        <div className="absolute inset-0 pointer-events-none" style={{
+          backgroundImage: 'linear-gradient(rgba(255,255,255,0.08) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.08) 1px,transparent 1px)',
+          backgroundSize: '33.33% 33.33%',
+        }} />
+      </div>
+      <p className="text-[10px] text-slate-300 text-right">{cropX}% / {cropY}%</p>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 interface InspectorProps {
   node: FunnelNode | null;
@@ -442,9 +497,11 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars }: {
       );
 
     case 'image': {
-      const imgSize = (props.size as string) ?? 'full';
-      const imgFit  = (props.objectFit as string) ?? 'cover';
+      const imgSize  = (props.size as string) ?? 'full';
+      const imgFit   = (props.objectFit as string) ?? 'cover';
       const imgHeight = (props.height as number | undefined);
+      const cropX    = (props.cropX as number) ?? 50;
+      const cropY    = (props.cropY as number) ?? 50;
       const SIZES = [
         { label: 'Voll', val: 'full' },
         { label: 'L', val: 'l' },
@@ -487,7 +544,7 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars }: {
               ))}
             </div>
           </Field>
-          <Field label="Bildzuschnitt">
+          <Field label="Darstellung">
             <div className="flex gap-1.5 flex-wrap">
               {FITS.map((f) => (
                 <button key={f.val} type="button" onClick={() => onChange({ objectFit: f.val })}
@@ -497,6 +554,14 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars }: {
               ))}
             </div>
           </Field>
+          {imgFit === 'cover' && (props.src as string) && (
+            <FocalPointPicker
+              src={props.src as string}
+              cropX={cropX}
+              cropY={cropY}
+              onChange={(x, y) => onChange({ cropX: x, cropY: y })}
+            />
+          )}
           <Section label="Erweitert" collapsible defaultOpen={false}>
             <Field label="Alt-Text">
               <input value={(props.alt as string) ?? ''} onChange={(e) => onChange({ alt: e.target.value })}
