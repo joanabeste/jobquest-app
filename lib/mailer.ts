@@ -5,16 +5,13 @@ import { applyVars } from './funnel-variables';
 function createTransporter() {
   const host = process.env.SMTP_HOST;
   const user = process.env.SMTP_USER;
-  const passRaw = process.env.SMTP_PASS_B64
-    ? Buffer.from(process.env.SMTP_PASS_B64, 'base64').toString('utf8')
-    : process.env.SMTP_PASS;
+  const pass = process.env.SMTP_PASS;
 
-  if (!host || !user || !passRaw) {
+  if (!host || !user || !pass) {
     throw new Error(
-      `SMTP nicht konfiguriert. Setze SMTP_HOST, SMTP_USER und SMTP_PASS_B64 in .env.local.`,
+      'SMTP nicht konfiguriert. Setze SMTP_HOST, SMTP_USER und SMTP_PASS in .env.local.',
     );
   }
-  const pass = passRaw;
 
   return nodemailer.createTransport({
     host,
