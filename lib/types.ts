@@ -151,6 +151,7 @@ export interface Company {
   logo?: string;
   privacyUrl?: string;
   imprintUrl?: string;
+  careerPageUrl?: string;
   contactName: string;
   contactEmail: string;
   createdAt: string;

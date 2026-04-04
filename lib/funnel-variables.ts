@@ -22,6 +22,7 @@ export const CONTEXT_VARIABLES: VariableDef[] = [
   { key: 'companyName',    label: 'Firmenname'       },
   { key: 'datenschutzUrl', label: 'Datenschutz-URL'  },
   { key: 'impressumUrl',   label: 'Impressum-URL'    },
+  { key: 'karriereseiteUrl', label: 'Karriereseite'  },
 ];
 
 // ─── Label → variable-key conversion ─────────────────────────────────────────

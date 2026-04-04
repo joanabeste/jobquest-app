@@ -477,6 +477,7 @@ export default function FormularPage() {
           },
           contentId: formPage.id,
           companyName: company.name,
+          karriereseiteUrl: company.careerPageUrl ?? '',
         }),
       });
     } catch {

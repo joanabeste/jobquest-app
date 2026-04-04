@@ -37,6 +37,7 @@ describe('companyFromDb / companyToDb', () => {
     logo: 'https://example.com/logo.png',
     privacy_url: 'https://example.com/privacy',
     imprint_url: 'https://example.com/imprint',
+    career_page_url: null,
     contact_name: 'Max Mustermann',
     contact_email: 'max@acme.de',
     created_at: '2025-01-01T00:00:00Z',

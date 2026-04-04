@@ -18,15 +18,15 @@ function toHtml(text: string): string {
 
 const EMPTY_CONFIG: EmailConfig = {
   confirmationEnabled: false,
-  confirmationSubject: 'Danke für deine Bewerbung, @firstName!',
+  confirmationSubject: 'Danke für deine Teilnahme, @firstName!',
   confirmationBodyMode: 'text',
-  confirmationBody: toHtml('Hallo @firstName,\n\nvielen Dank für deine Bewerbung bei @companyName. Wir haben deine Daten erhalten und melden uns in Kürze bei dir.\n\nViele Grüße\n@companyName'),
+  confirmationBody: toHtml('Hallo @firstName,\n\nvielen Dank, dass du dir die Zeit genommen hast und uns besser kennengelernt hast!\n\nDu interessierst dich für eine Ausbildung bei @companyName? Dann besuch gerne unsere Karriereseite und entdecke, was wir dir bieten können:\n@karriereseiteUrl\n\nWir freuen uns auf dich!\n\nHerzliche Grüße\n@companyName'),
   confirmationAttachment: undefined,
   notificationEnabled: false,
   notificationRecipient: '',
-  notificationSubject: 'Neue Bewerbung: @firstName @lastName',
+  notificationSubject: 'Neuer Kontakt: @firstName @lastName',
   notificationBodyMode: 'text',
-  notificationBody: toHtml('Neue Bewerbung eingegangen:\n\nName: @firstName @lastName\nE-Mail: @email\nTelefon: @phone'),
+  notificationBody: toHtml('Neuer Kontakt eingegangen:\n\nName: @firstName @lastName\nE-Mail: @email\nTelefon: @phone'),
 };
 
 interface Props {

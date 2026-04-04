@@ -42,6 +42,7 @@ export default function SettingsCompanyPage() {
     logo: company?.logo || '',
     privacyUrl: company?.privacyUrl || '',
     imprintUrl: company?.imprintUrl || '',
+    careerPageUrl: company?.careerPageUrl || '',
   });
 
   const [design, setDesign] = useState<CorporateDesign>({
@@ -92,7 +93,7 @@ export default function SettingsCompanyPage() {
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!company) return;
-    updateCompany({ ...company, name: form.name, industry: form.industry, location: form.location, logo: form.logo || undefined, privacyUrl: form.privacyUrl, imprintUrl: form.imprintUrl, corporateDesign: design });
+    updateCompany({ ...company, name: form.name, industry: form.industry, location: form.location, logo: form.logo || undefined, privacyUrl: form.privacyUrl, imprintUrl: form.imprintUrl, careerPageUrl: form.careerPageUrl || undefined, corporateDesign: design });
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
   }
@@ -182,9 +183,15 @@ export default function SettingsCompanyPage() {
             </div>
             <div className="pt-4 border-t border-slate-100">
               <h3 className="font-medium text-slate-900 flex items-center gap-2 mb-3 text-sm">
-                <Link2 size={14} className="text-slate-400" /> Rechtliche Links
+                <Link2 size={14} className="text-slate-400" /> Links
               </h3>
               <div className="space-y-3">
+                <div>
+                  <label className="label">Karriereseite-URL</label>
+                  <input type="url" className="input-field" placeholder="https://www.firma.de/karriere"
+                    value={form.careerPageUrl} onChange={(e) => handleChange('careerPageUrl', e.target.value)} />
+                  <p className="text-xs text-slate-400 mt-1">Als <code className="bg-slate-100 px-1 rounded text-[11px]">@karriereseiteUrl</code> in E-Mail-Vorlagen verfügbar.</p>
+                </div>
                 <div>
                   <label className="label">Datenschutz-URL</label>
                   <input type="url" className="input-field" placeholder="https://www.firma.de/datenschutz"

@@ -132,7 +132,7 @@ export default function BerufsCheckPlayer() {
     fetch('/api/public/submit-career-check-lead', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ lead, contentId: check.id, companyName: company.name }),
+      body: JSON.stringify({ lead, contentId: check.id, companyName: company.name, karriereseiteUrl: company.careerPageUrl ?? '' }),
     }).then((res) => {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
     }).catch((err) => {

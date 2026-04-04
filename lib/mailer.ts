@@ -62,7 +62,7 @@ export async function sendLeadEmails({
   const transporter = createTransporter();
   const from = process.env.SMTP_FROM ?? process.env.SMTP_USER ?? '';
 
-  // Bestätigungs-E-Mail → an Bewerber/in
+  // Bestätigungs-E-Mail → an die Person, die das Formular abgesendet hat
   if (emailConfig.confirmationEnabled && vars.email) {
     const attachments = emailConfig.confirmationAttachment?.url
       ? [{ filename: emailConfig.confirmationAttachment.filename || 'Anhang', path: emailConfig.confirmationAttachment.url }]

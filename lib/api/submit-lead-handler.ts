@@ -15,6 +15,7 @@ interface SubmitLeadBody<T> {
   lead: T;
   contentId: string;
   companyName: string;
+  karriereseiteUrl?: string;
 }
 
 /**
@@ -27,7 +28,7 @@ export function createSubmitLeadHandler<T extends LeadBase>(
   logPrefix: string,
 ) {
   return async function POST(req: NextRequest) {
-    const { lead, contentId, companyName }: SubmitLeadBody<T> = await req.json();
+    const { lead, contentId, companyName, karriereseiteUrl }: SubmitLeadBody<T> = await req.json();
 
     const admin = createAdminClient();
 
@@ -59,6 +60,7 @@ export function createSubmitLeadHandler<T extends LeadBase>(
               email: lead.email,
               phone: lead.phone ?? '',
               companyName,
+              karriereseiteUrl: karriereseiteUrl ?? '',
             },
           });
           console.log(`[${logPrefix}] E-Mail erfolgreich gesendet an ${lead.email}`);

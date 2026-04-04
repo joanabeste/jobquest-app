@@ -89,6 +89,7 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
           },
           contentId: contentDbId ?? doc.contentId,
           companyName: company.name,
+          karriereseiteUrl: company.careerPageUrl ?? '',
         }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
