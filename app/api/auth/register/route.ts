@@ -7,7 +7,8 @@ import type { Company, WorkspaceMember } from '@/lib/types';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, industry, location, logo, contactName, contactEmail, password, privacyUrl, imprintUrl, corporateDesign } = body;
+    const { name, industry, location, logo, contactName, password, privacyUrl, imprintUrl, corporateDesign } = body;
+    const contactEmail: string = (body.contactEmail as string)?.toLowerCase()?.trim();
 
     if (!name || !contactEmail || !password) {
       return NextResponse.json({ error: 'Required fields missing' }, { status: 400 });

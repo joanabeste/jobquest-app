@@ -94,6 +94,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   }
 
   const supabase = createAdminClient();
-  await supabase.from('workspace_members').delete().eq('id', id).eq('company_id', session.company.id);
+  const { error } = await supabase.from('workspace_members').delete().eq('id', id).eq('company_id', session.company.id);
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
 }

@@ -22,6 +22,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  await admin.from('funnel_docs').delete().eq('id', id);
+  const { error } = await admin.from('funnel_docs').delete().eq('id', id);
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
 }

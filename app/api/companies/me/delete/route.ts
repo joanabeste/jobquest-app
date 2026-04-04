@@ -26,7 +26,7 @@ export async function POST() {
     .select('id')
     .eq('company_id', companyId);
   if (members) {
-    await Promise.all(members.map((m) => admin.auth.admin.deleteUser(m.id)));
+    await Promise.allSettled(members.map((m) => admin.auth.admin.deleteUser(m.id)));
   }
 
   // Delete company (cascades to all other tables)
