@@ -778,7 +778,8 @@ export default function NodeView({
 
   return (
     <div
-      onClick={(e) => { e.stopPropagation(); onSelect(); }}
+      onMouseDown={(e) => { e.stopPropagation(); onSelect(); }}
+      onClick={(e) => e.stopPropagation()}
       className={`relative group transition-all duration-100 cursor-default
         ${isSelected
           ? 'ring-2 ring-violet-500 ring-offset-0 z-10'
