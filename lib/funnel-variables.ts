@@ -84,10 +84,10 @@ export function deriveFieldVarMap(
 // (e.g. quest_vorname / check_vorname which are plain name-input blocks).
 export const BLOCK_VARIABLE_PRODUCERS: Record<string, VariableDef[]> = {
   quest_vorname: [
-    { key: 'firstName', label: 'Vorname' },
+    { key: 'vorname', label: 'Vorname' },
   ],
   check_vorname: [
-    { key: 'firstName', label: 'Vorname' },
+    { key: 'vorname', label: 'Vorname' },
   ],
 };
 

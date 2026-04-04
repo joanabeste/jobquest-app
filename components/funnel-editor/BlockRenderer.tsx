@@ -408,6 +408,7 @@ export function BlockRenderer({
   // Interpolation helper: substitutes all template variables
   const varsMap = {
     firstName:      firstName || '',
+    vorname:        firstName || '',  // alias: @vorname = @firstName
     companyName:    company.name,
     datenschutzUrl: company.privacyUrl ?? '',
     impressumUrl:   company.imprintUrl ?? '',
@@ -1009,6 +1010,7 @@ function LeadFormBlock({ props: p, company, br, primary, leadForm, setLeadForm, 
     datenschutzUrl: company.privacyUrl ?? '',
     impressumUrl:   company.imprintUrl ?? '',
     firstName:      '',
+    vorname:        '',
     lastName:       '',
     email:          '',
     phone:          '',

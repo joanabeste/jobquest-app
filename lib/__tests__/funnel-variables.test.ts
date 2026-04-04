@@ -95,9 +95,9 @@ describe('getAvailableVariables', () => {
     expect(keys).toContain('impressumUrl');
   });
 
-  test('adds firstName when quest_vorname block is present', () => {
+  test('adds vorname when quest_vorname block is present', () => {
     const vars = getAvailableVariables([block('b1', 'quest_vorname')]);
-    expect(vars.map((v) => v.key)).toContain('firstName');
+    expect(vars.map((v) => v.key)).toContain('vorname');
   });
 
   test('derives variables from quest_lead fields', () => {
@@ -114,15 +114,15 @@ describe('getAvailableVariables', () => {
     expect(keys).toContain('telefon');
   });
 
-  test('deduplicates variables when quest_vorname and quest_lead both produce firstName', () => {
+  test('deduplicates variables when quest_vorname and quest_lead both produce vorname', () => {
     const nodes: FunnelNode[] = [
       block('b1', 'quest_vorname'),
       leadBlock('b2', [{ id: 'f1', label: 'Vorname', type: 'text' }]),
     ];
     const vars = getAvailableVariables(nodes);
-    // 'firstName' from quest_vorname + 'vorname' from field — distinct keys, no duplication
-    const firstNameCount = vars.filter((v) => v.key === 'firstName').length;
-    expect(firstNameCount).toBe(1);
+    // both produce 'vorname' — should appear only once
+    const vornameCount = vars.filter((v) => v.key === 'vorname').length;
+    expect(vornameCount).toBe(1);
   });
 
   test('returns only context variables for unknown block types', () => {
@@ -140,6 +140,6 @@ describe('getAvailableVariables', () => {
       ],
     }];
     const vars = getAvailableVariables(nodes);
-    expect(vars.map((v) => v.key)).toContain('firstName');
+    expect(vars.map((v) => v.key)).toContain('vorname');
   });
 });
