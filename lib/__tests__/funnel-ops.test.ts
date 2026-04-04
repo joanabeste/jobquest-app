@@ -1,7 +1,8 @@
 import {
   insertNode, deleteNode, updateNode, duplicateNode,
   findNodeLocation,
-  addPage, deletePage, renamePage,
+  reorderRootNodes, moveNodeBetweenContainers,
+  addPage, deletePage, renamePage, duplicatePage, reorderPages,
 } from '../funnel-ops';
 import type { FunnelDoc, BlockNode, FunnelPage } from '../funnel-types';
 
@@ -217,5 +218,112 @@ describe('renamePage', () => {
     const doc = makeDoc();
     renamePage(doc, 'p1', 'Changed');
     expect(doc.pages[0].name).toBe('Page 1');
+  });
+});
+
+// ─── reorderRootNodes ─────────────────────────────────────────────────────────
+
+describe('reorderRootNodes', () => {
+  test('moves a node from index 0 to index 2', () => {
+    const doc = makeDoc([makeBlock('a'), makeBlock('b'), makeBlock('c')]);
+    const result = reorderRootNodes(doc, 'p1', 0, 2);
+    expect(firstPage(result).nodes.map((n) => n.id)).toEqual(['b', 'c', 'a']);
+  });
+
+  test('moves a node from index 2 to index 0', () => {
+    const doc = makeDoc([makeBlock('a'), makeBlock('b'), makeBlock('c')]);
+    const result = reorderRootNodes(doc, 'p1', 2, 0);
+    expect(firstPage(result).nodes.map((n) => n.id)).toEqual(['c', 'a', 'b']);
+  });
+
+  test('does not mutate original', () => {
+    const doc = makeDoc([makeBlock('a'), makeBlock('b')]);
+    reorderRootNodes(doc, 'p1', 0, 1);
+    expect(firstPage(doc).nodes[0].id).toBe('a');
+  });
+});
+
+// ─── moveNodeBetweenContainers ────────────────────────────────────────────────
+
+describe('moveNodeBetweenContainers', () => {
+  test('moves a node from root into a column', () => {
+    const b1 = makeBlock('b1');
+    const layout: import('../funnel-types').LayoutNode = {
+      id: 'l1',
+      kind: 'layout',
+      columns: [
+        { id: 'col1', nodes: [] },
+      ],
+    };
+    const doc = makeDoc([b1, layout] as import('../funnel-types').BlockNode[]);
+    const result = moveNodeBetweenContainers(doc, 'p1', 'b1', 'col1', null);
+    // b1 should be inside col1, not at root
+    const rootIds = firstPage(result).nodes.map((n) => n.id);
+    expect(rootIds).not.toContain('b1');
+    const col1 = (firstPage(result).nodes.find((n) => n.id === 'l1') as import('../funnel-types').LayoutNode).columns[0];
+    expect(col1.nodes.map((n) => n.id)).toContain('b1');
+  });
+
+  test('returns doc unchanged for unknown nodeId', () => {
+    const doc = makeDoc([makeBlock('b1')]);
+    const result = moveNodeBetweenContainers(doc, 'p1', 'unknown', 'root', null);
+    expect(firstPage(result).nodes.map((n) => n.id)).toEqual(['b1']);
+  });
+});
+
+// ─── deletePage guard ─────────────────────────────────────────────────────────
+
+describe('deletePage (single page guard)', () => {
+  test('does not delete the last page', () => {
+    const doc = makeDoc();
+    const result = deletePage(doc, 'p1');
+    expect(result.pages).toHaveLength(1);
+  });
+});
+
+// ─── duplicatePage ────────────────────────────────────────────────────────────
+
+describe('duplicatePage', () => {
+  test('inserts a copy directly after the original', () => {
+    const doc = makeDoc([makeBlock('b1')]);
+    const { doc: withTwo } = addPage(doc, 'Page 2');
+    const { doc: result, newPageId } = duplicatePage(withTwo, 'p1');
+    expect(result.pages).toHaveLength(3);
+    expect(result.pages[0].id).toBe('p1');
+    expect(result.pages[1].id).toBe(newPageId);
+    expect(result.pages[2].id).toBe(withTwo.pages[1].id);
+  });
+
+  test('copy name has "(Kopie)" suffix', () => {
+    const doc = makeDoc();
+    const { doc: result } = duplicatePage(doc, 'p1');
+    expect(result.pages[1].name).toContain('Kopie');
+  });
+
+  test('copy nodes get new ids', () => {
+    const doc = makeDoc([makeBlock('b1')]);
+    const { doc: result } = duplicatePage(doc, 'p1');
+    const originalNodeId = firstPage(doc).nodes[0].id;
+    const copyNodeId = result.pages[1].nodes[0].id;
+    expect(copyNodeId).not.toBe(originalNodeId);
+  });
+
+  test('returns original doc for unknown pageId', () => {
+    const doc = makeDoc();
+    const { doc: result } = duplicatePage(doc, 'unknown');
+    expect(result.pages).toHaveLength(1);
+  });
+});
+
+// ─── reorderPages ─────────────────────────────────────────────────────────────
+
+describe('reorderPages', () => {
+  test('moves page from index 0 to index 1', () => {
+    const doc = makeDoc();
+    const { doc: withTwo } = addPage(doc, 'Page 2');
+    const p2id = withTwo.pages[1].id;
+    const result = reorderPages(withTwo, 0, 1);
+    expect(result.pages[0].id).toBe(p2id);
+    expect(result.pages[1].id).toBe('p1');
   });
 });
