@@ -25,6 +25,7 @@ import {
   ClipboardList,
   Link2,
   Check,
+  AlertTriangle,
 } from 'lucide-react';
 
 type ActiveTab = 'jobquests' | 'berufschecks' | 'formulare';
@@ -72,8 +73,9 @@ export default function DashboardPage() {
       };
       await questStorage.save(newQuest);
       router.push(`/editor/${id}`);
-    } catch {
-      toast.error('JobQuest konnte nicht erstellt werden. Bitte erneut versuchen.');
+    } catch (err) {
+      console.error('[createQuest]', err);
+      toast.error(`JobQuest konnte nicht erstellt werden: ${err instanceof Error ? err.message : String(err)}`);
     }
   }
 
@@ -290,10 +292,8 @@ export default function DashboardPage() {
           quests={filteredQuests}
           allQuests={questList.items}
           leadCounts={questList.counts}
-          deleteConfirm={questList.deleteConfirm}
           setDeleteConfirm={questList.setDeleteConfirm}
           onDuplicate={questList.handleDuplicate}
-          onDelete={questList.handleDelete}
           onCreate={handleCreateQuest}
           search={search}
           canCreate={can('create_content')}
@@ -304,10 +304,8 @@ export default function DashboardPage() {
           checks={filteredChecks}
           allChecks={checkList.items}
           leadCounts={checkList.counts}
-          deleteConfirm={checkList.deleteConfirm}
           setDeleteConfirm={checkList.setDeleteConfirm}
           onDuplicate={checkList.handleDuplicate}
-          onDelete={checkList.handleDelete}
           onCreate={handleCreateCheck}
           search={search}
           canCreate={can('create_content')}
@@ -318,16 +316,81 @@ export default function DashboardPage() {
           forms={filteredForms}
           allForms={formList.items}
           submissionCounts={formList.counts}
-          deleteConfirm={formList.deleteConfirm}
           setDeleteConfirm={formList.setDeleteConfirm}
           onDuplicate={formList.handleDuplicate}
-          onDelete={formList.handleDelete}
           onCreate={handleCreateForm}
           search={search}
           canCreate={can('create_content')}
           canDelete={can('delete_content')}
         />
       )}
+
+      {/* Delete confirmation modals */}
+      {questList.deleteConfirm && (
+        <DeleteConfirmModal
+          title={questList.deleteConfirm.title}
+          onConfirm={() => questList.handleDelete(questList.deleteConfirm!.id)}
+          onCancel={() => questList.setDeleteConfirm(null)}
+        />
+      )}
+      {checkList.deleteConfirm && (
+        <DeleteConfirmModal
+          title={checkList.deleteConfirm.title}
+          onConfirm={() => checkList.handleDelete(checkList.deleteConfirm!.id)}
+          onCancel={() => checkList.setDeleteConfirm(null)}
+        />
+      )}
+      {formList.deleteConfirm && (
+        <DeleteConfirmModal
+          title={formList.deleteConfirm.title}
+          onConfirm={() => formList.handleDelete(formList.deleteConfirm!.id)}
+          onCancel={() => formList.setDeleteConfirm(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+// ── Delete confirmation modal ─────────────────────────────────────────────────
+function DeleteConfirmModal({
+  title,
+  onConfirm,
+  onCancel,
+}: {
+  title: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+        <div className="flex items-start gap-4 mb-4">
+          <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+            <AlertTriangle size={20} className="text-red-600" />
+          </div>
+          <div>
+            <h2 className="text-base font-semibold text-slate-900 mb-1">Unwiderruflich löschen?</h2>
+            <p className="text-sm text-slate-600">
+              <span className="font-medium">&ldquo;{title}&rdquo;</span> wird permanent gelöscht.
+              Alle zugehörigen Kontakte werden ebenfalls unwiderruflich entfernt.
+            </p>
+          </div>
+        </div>
+        <div className="flex justify-end gap-2">
+          <button
+            onClick={onCancel}
+            className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+          >
+            Abbrechen
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-4 py-2 text-sm font-medium text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors"
+          >
+            Endgültig löschen
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -353,16 +416,14 @@ function CopyLinkButton({ path }: { path: string }) {
 
 // ── JobQuest list ─────────────────────────────────────────────────────────────
 function QuestList({
-  quests, allQuests, leadCounts, deleteConfirm, setDeleteConfirm,
-  onDuplicate, onDelete, onCreate, search, canCreate, canDelete,
+  quests, allQuests, leadCounts, setDeleteConfirm,
+  onDuplicate, onCreate, search, canCreate, canDelete,
 }: {
   quests: JobQuest[];
   allQuests: JobQuest[];
   leadCounts: Record<string, number>;
-  deleteConfirm: string | null;
-  setDeleteConfirm: (id: string | null) => void;
+  setDeleteConfirm: (value: { id: string; title: string } | null) => void;
   onDuplicate: (q: JobQuest) => void;
-  onDelete: (id: string) => void;
   onCreate: () => void;
   search: string;
   canCreate: boolean;
@@ -453,24 +514,11 @@ function QuestList({
                 </button>
               )}
               {canDelete && (
-                deleteConfirm === quest.id ? (
-                  <div className="flex items-center gap-1">
-                    <button onClick={() => onDelete(quest.id)}
-                      className="px-3 py-1.5 text-xs font-medium text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors">
-                      Löschen
-                    </button>
-                    <button onClick={() => setDeleteConfirm(null)}
-                      className="px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
-                      Abbrechen
-                    </button>
-                  </div>
-                ) : (
-                  <button onClick={() => setDeleteConfirm(quest.id)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                    title="Löschen">
-                    <Trash2 size={14} />
-                  </button>
-                )
+                <button onClick={() => setDeleteConfirm({ id: quest.id, title: quest.title })}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                  title="Löschen">
+                  <Trash2 size={14} />
+                </button>
               )}
             </div>
           </div>
@@ -482,16 +530,14 @@ function QuestList({
 
 // ── Formular list ─────────────────────────────────────────────────────────────
 function FormList({
-  forms, allForms, submissionCounts, deleteConfirm, setDeleteConfirm,
-  onDuplicate, onDelete, onCreate, search, canCreate, canDelete,
+  forms, allForms, submissionCounts, setDeleteConfirm,
+  onDuplicate, onCreate, search, canCreate, canDelete,
 }: {
   forms: FormPage[];
   allForms: FormPage[];
   submissionCounts: Record<string, number>;
-  deleteConfirm: string | null;
-  setDeleteConfirm: (id: string | null) => void;
+  setDeleteConfirm: (value: { id: string; title: string } | null) => void;
   onDuplicate: (f: FormPage) => void;
-  onDelete: (id: string) => void;
   onCreate: () => void;
   search: string;
   canCreate: boolean;
@@ -577,24 +623,11 @@ function FormList({
                 </button>
               )}
               {canDelete && (
-                deleteConfirm === form.id ? (
-                  <div className="flex items-center gap-1">
-                    <button onClick={() => onDelete(form.id)}
-                      className="px-3 py-1.5 text-xs font-medium text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors">
-                      Löschen
-                    </button>
-                    <button onClick={() => setDeleteConfirm(null)}
-                      className="px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
-                      Abbrechen
-                    </button>
-                  </div>
-                ) : (
-                  <button onClick={() => setDeleteConfirm(form.id)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                    title="Löschen">
-                    <Trash2 size={14} />
-                  </button>
-                )
+                <button onClick={() => setDeleteConfirm({ id: form.id, title: form.title })}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                  title="Löschen">
+                  <Trash2 size={14} />
+                </button>
               )}
             </div>
           </div>
@@ -606,16 +639,14 @@ function FormList({
 
 // ── Berufscheck list ──────────────────────────────────────────────────────────
 function CheckList({
-  checks, allChecks, leadCounts, deleteConfirm, setDeleteConfirm,
-  onDuplicate, onDelete, onCreate, search, canCreate, canDelete,
+  checks, allChecks, leadCounts, setDeleteConfirm,
+  onDuplicate, onCreate, search, canCreate, canDelete,
 }: {
   checks: CareerCheck[];
   allChecks: CareerCheck[];
   leadCounts: Record<string, number>;
-  deleteConfirm: string | null;
-  setDeleteConfirm: (id: string | null) => void;
+  setDeleteConfirm: (value: { id: string; title: string } | null) => void;
   onDuplicate: (c: CareerCheck) => void;
-  onDelete: (id: string) => void;
   onCreate: () => void;
   search: string;
   canCreate: boolean;
@@ -707,24 +738,11 @@ function CheckList({
                 </button>
               )}
               {canDelete && (
-                deleteConfirm === check.id ? (
-                  <div className="flex items-center gap-1">
-                    <button onClick={() => onDelete(check.id)}
-                      className="px-3 py-1.5 text-xs font-medium text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors">
-                      Löschen
-                    </button>
-                    <button onClick={() => setDeleteConfirm(null)}
-                      className="px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
-                      Abbrechen
-                    </button>
-                  </div>
-                ) : (
-                  <button onClick={() => setDeleteConfirm(check.id)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                    title="Löschen">
-                    <Trash2 size={14} />
-                  </button>
-                )
+                <button onClick={() => setDeleteConfirm({ id: check.id, title: check.title })}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                  title="Löschen">
+                  <Trash2 size={14} />
+                </button>
               )}
             </div>
           </div>

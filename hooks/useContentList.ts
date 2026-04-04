@@ -19,8 +19,8 @@ interface UseContentListOptions<T extends { id: string; title: string }> {
 interface UseContentListResult<T> {
   items: T[];
   counts: Record<string, number>;
-  deleteConfirm: string | null;
-  setDeleteConfirm: (id: string | null) => void;
+  deleteConfirm: { id: string; title: string } | null;
+  setDeleteConfirm: (value: { id: string; title: string } | null) => void;
   reload: () => Promise<void>;
   handleDuplicate: (item: T) => Promise<void>;
   handleDelete: (id: string) => Promise<void>;
@@ -31,7 +31,7 @@ export function useContentList<T extends { id: string; title: string }>(
 ): UseContentListResult<T> {
   const [items, setItems] = useState<T[]>([]);
   const [counts, setCounts] = useState<Record<string, number>>({});
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; title: string } | null>(null);
   const toast = useToast();
 
   // Keep opts stable across renders without forcing re-creates of reload

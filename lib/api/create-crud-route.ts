@@ -55,7 +55,13 @@ export function createCrudRoute<T extends { id: string; companyId: string }>(
       .select()
       .single();
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) {
+      // PGRST116 = "0 rows returned" by .single() — record doesn't exist yet, signal 404 so apiUpsert falls back to POST
+      if ((error as { code?: string }).code === 'PGRST116') {
+        return NextResponse.json({ error: 'Not found' }, { status: 404 });
+      }
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
     if (!data) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json(opts.fromDb(data as Record<string, unknown>));
   }

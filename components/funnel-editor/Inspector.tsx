@@ -6,7 +6,7 @@ import RichTextEditor from './RichTextEditor';
 import { FunnelNode, FunnelStyle, FunnelPage, BLOCK_LABELS, LeadFieldDef, LeadFieldType } from '@/lib/funnel-types';
 import { BLOCK_META } from './NodeView';
 import { VarInput, VarTextarea } from './VarInput';
-import { type VariableDef, CONTEXT_VARIABLES } from '@/lib/funnel-variables';
+import { type VariableDef, CONTEXT_VARIABLES, slugifyVar, deriveFieldVarMap } from '@/lib/funnel-variables';
 import LeadFieldBuilder from './LeadFieldBuilder';
 import { useFunnelEditorCtx } from './FunnelEditorContext';
 import { LEAD_FIELD_META, LEAD_FIELD_TYPES } from './InlineLeadFields';
@@ -252,24 +252,17 @@ function StyleEditor({ style, onChange }: { style: FunnelStyle; onChange: (p: Pa
 }
 
 // ─── Block props editors ──────────────────────────────────────────────────────
-// Derive a variable name from a field label: "E-Mail-Adresse" → "email_adresse"
-function toVariable(label: string): string {
-  return label
-    .toLowerCase()
-    .replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss')
-    .replace(/[^a-z0-9 ]/g, '')
-    .trim()
-    .replace(/\s+/g, '_');
-}
-
-function LeadFieldEditor({ field, onChange, onBack }: {
+function LeadFieldEditor({ field, allFields, onChange, onBack }: {
   field: LeadFieldDef;
+  allFields: LeadFieldDef[];
   onChange: (patch: Partial<LeadFieldDef>) => void;
   onBack: () => void;
 }) {
   const meta = LEAD_FIELD_META[field.type];
   const Icon = meta.icon;
-  const varName = field.variable ?? toVariable(field.label);
+  // Always compute variable key from labels — never user-editable
+  const varMap = deriveFieldVarMap(allFields);
+  const varName = varMap.get(field.id) ?? slugifyVar(field.label.replace(/<[^>]*>/g, ''));
 
   return (
     <div className="space-y-3">
@@ -331,18 +324,17 @@ function LeadFieldEditor({ field, onChange, onBack }: {
         </Field>
       )}
 
-      {/* Variable */}
-      <Field label="Variable">
-        <input
-          value={varName}
-          onChange={(e) => onChange({ variable: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '') })}
-          className="input-field text-sm font-mono"
-          placeholder={toVariable(field.label)}
-        />
-        <p className="text-[10px] text-slate-400 mt-1.5 leading-relaxed">
-          Verwende <code className="bg-slate-100 px-1 py-0.5 rounded text-slate-600">@{varName}</code> in E-Mail-Vorlagen
-        </p>
-      </Field>
+      {/* Variable — auto-derived, not editable */}
+      {field.type !== 'checkbox' && (
+        <Field label="Variable">
+          <div className="px-2.5 py-2 bg-slate-50 rounded-lg border border-slate-200 text-xs font-mono text-slate-700">
+            @{varName}
+          </div>
+          <p className="text-[10px] text-slate-400 mt-1.5 leading-relaxed">
+            In E-Mail-Vorlagen mit <code className="bg-slate-100 px-1 py-0.5 rounded text-slate-600 font-mono">@{varName}</code> verwenden.
+          </p>
+        </Field>
+      )}
 
       {/* Required */}
       <Field label="Verhalten">
@@ -626,6 +618,7 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars }: {
         return (
           <LeadFieldEditor
             field={selectedField}
+            allFields={fields}
             onChange={(patch) => onChange({ fields: fields.map((f) => f.id === selectedField.id ? { ...f, ...patch } : f) })}
             onBack={() => setSelectedFieldId(null)}
           />
@@ -773,6 +766,7 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars }: {
         return (
           <LeadFieldEditor
             field={fcSelected}
+            allFields={fcFields}
             onChange={(patch) => onChange({ fields: fcFields.map((f) => f.id === fcSelected.id ? { ...f, ...patch } : f) })}
             onBack={() => setSelectedFieldId(null)}
           />

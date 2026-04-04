@@ -1068,7 +1068,7 @@ function LeadFormBlock({ props: p, company, br, primary, leadForm, setLeadForm, 
             <input type="email" placeholder="E-Mail-Adresse *" value={leadForm.email} onChange={(e) => u({ email: e.target.value })}
               className={inputCls} style={{ borderRadius: br }} />
             {b(p.showPhone) && (
-              <input type="tel" placeholder="Telefonnummer (optional)" value={leadForm.phone} onChange={(e) => u({ phone: e.target.value })}
+              <input type="tel" placeholder="Telefonnummer" value={leadForm.phone} onChange={(e) => u({ phone: e.target.value })}
                 className={inputCls} style={{ borderRadius: br }} />
             )}
           </>

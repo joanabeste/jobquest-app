@@ -540,7 +540,7 @@ function LeadRenderer({ block, leadData, company, onLeadData, onSubmit, onPrev }
           onChange={(e) => u({ email: e.target.value })}
           className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl text-sm focus:outline-none focus:border-violet-400 transition-colors" />
         {block.showPhone && (
-          <input type="tel" placeholder="Telefonnummer (optional)" value={leadData.phone}
+          <input type="tel" placeholder="Telefonnummer" value={leadData.phone}
             onChange={(e) => u({ phone: e.target.value })}
             className="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl text-sm focus:outline-none focus:border-violet-400 transition-colors" />
         )}

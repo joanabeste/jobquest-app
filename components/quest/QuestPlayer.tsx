@@ -705,7 +705,7 @@ function LeadForm({ form, setForm, onSubmit, error, company, config }: {
 
           {config.showPhone && (
             <div>
-              <label className="label">Telefonnummer (optional)</label>
+              <label className="label">Telefonnummer</label>
               <input type="tel" className="input-field" value={form.phone} onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))} placeholder="+49 123 456789" />
             </div>
           )}

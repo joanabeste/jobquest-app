@@ -185,7 +185,7 @@ const DEFAULT_LEAD_FIELDS = [
   { type: 'text',  label: 'Vorname',  placeholder: 'Vorname',                 required: true  },
   { type: 'text',  label: 'Nachname', placeholder: 'Nachname',                required: false },
   { type: 'email', label: 'E-Mail',   placeholder: 'E-Mail-Adresse',          required: true  },
-  { type: 'tel',   label: 'Telefon',  placeholder: 'Telefonnummer (optional)', required: false },
+  { type: 'tel',   label: 'Telefon',  placeholder: 'Telefonnummer', required: false },
 ];
 
 export async function POST(req: NextRequest) {

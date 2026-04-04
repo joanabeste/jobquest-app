@@ -40,7 +40,8 @@ function useVarMention(
     if (match) {
       setFilter(match[1]);
       const rect = el.getBoundingClientRect();
-      setDropdownPos({ top: rect.bottom + 6, left: rect.left, width: rect.width });
+      const left = Math.max(4, Math.min(rect.left, window.innerWidth - rect.width - 4));
+      setDropdownPos({ top: rect.bottom + 6, left, width: rect.width });
       setShowPicker(true);
     } else {
       setShowPicker(false);

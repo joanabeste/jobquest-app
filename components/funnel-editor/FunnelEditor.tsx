@@ -90,6 +90,16 @@ function FunnelEditorInner({
   const [copiedLink, setCopiedLink] = useState(false);
   const [view, setView] = useState<'canvas' | 'flow'>('canvas');
 
+  // Local draft for the title input — only commits on blur or Enter
+  const [draftTitle, setDraftTitle] = useState(title);
+  const prevTitleRef = useRef(title);
+  useEffect(() => {
+    if (title !== prevTitleRef.current) {
+      setDraftTitle(title);
+      prevTitleRef.current = title;
+    }
+  }, [title]);
+
   const availableVars = getAvailableVariables(doc.pages.flatMap((p) => p.nodes));
 
   // keep activePageId valid when pages change
@@ -121,8 +131,9 @@ function FunnelEditorInner({
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       const meta = e.metaKey || e.ctrlKey;
-      const tag = (e.target as HTMLElement).tagName;
-      const isInput = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+      const target = e.target as HTMLElement;
+      const isInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA'
+        || target.tagName === 'SELECT' || target.isContentEditable;
 
       if (meta && e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); return; }
       if (meta && (e.key === 'Z' || (e.key === 'z' && e.shiftKey))) { e.preventDefault(); redo(); return; }
@@ -288,9 +299,21 @@ function FunnelEditorInner({
 
         {/* Title */}
         <input
-          type="text" value={title}
-          onChange={(e) => onTitleChange(e.target.value)}
-          className="w-44 text-[13px] font-semibold text-slate-800 bg-transparent border-none outline-none truncate hover:bg-slate-50 focus:bg-slate-100 rounded-lg px-2 py-1 transition-colors"
+          type="text"
+          value={draftTitle}
+          onChange={(e) => setDraftTitle(e.target.value)}
+          onFocus={(e) => e.target.select()}
+          onBlur={() => {
+            const trimmed = draftTitle.trim();
+            const next = trimmed || title;
+            setDraftTitle(next);
+            if (next !== title) onTitleChange(next);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') { e.currentTarget.blur(); }
+            if (e.key === 'Escape') { setDraftTitle(title); e.currentTarget.blur(); }
+          }}
+          className="w-44 text-[13px] font-semibold text-slate-800 bg-transparent border-none outline-none hover:bg-slate-50 focus:bg-slate-100 rounded-lg px-2 py-1 transition-colors"
         />
 
         <div className="w-px h-5 bg-slate-200 flex-shrink-0" />

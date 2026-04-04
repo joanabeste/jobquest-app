@@ -6,7 +6,7 @@ import { useToast } from '@/components/ui/Toast';
 import { questStorage, leadStorage, careerCheckStorage, careerCheckLeadStorage, formPageStorage, formSubmissionStorage } from '@/lib/storage';
 import { Dimension, FormField } from '@/lib/types';
 import { formatDateTime } from '@/lib/utils';
-import { Users, Download, Search, Mail, Phone, X, Filter, MailCheck, MailX, Trash2 } from 'lucide-react';
+import { Users, Download, Search, Mail, Phone, X, Filter, MailCheck, MailX, Trash2, AlertTriangle } from 'lucide-react';
 
 type Source = 'jobquest' | 'berufscheck' | 'formular';
 type SourceFilter = 'all' | Source;
@@ -108,6 +108,7 @@ export default function LeadsPage() {
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all');
   const [selectedLead, setSelectedLead] = useState<UnifiedLead | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteConfirmLead, setDeleteConfirmLead] = useState<UnifiedLead | null>(null);
 
   const load = useCallback(async () => {
     if (!company) return;
@@ -362,7 +363,7 @@ export default function LeadsPage() {
                         <div className="flex items-center justify-end gap-2">
                           <span className="text-xs text-violet-600 font-medium cursor-pointer" onClick={() => setSelectedLead(lead)}>Details</span>
                           <button
-                            onClick={() => deleteLead(lead)}
+                            onClick={() => setDeleteConfirmLead(lead)}
                             disabled={deletingId === lead.id}
                             className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-40"
                             title="Kontakt löschen"
@@ -391,9 +392,42 @@ export default function LeadsPage() {
         <LeadDetailModal
           lead={selectedLead}
           onClose={() => setSelectedLead(null)}
-          onDelete={() => deleteLead(selectedLead)}
+          onDelete={() => setDeleteConfirmLead(selectedLead)}
           deleting={deletingId === selectedLead.id}
         />
+      )}
+
+      {/* Delete confirmation */}
+      {deleteConfirmLead && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
+            <div className="flex items-start gap-4 mb-5">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                <AlertTriangle size={20} className="text-red-600" />
+              </div>
+              <div>
+                <h2 className="text-base font-semibold text-slate-900 mb-1">Kontakt löschen?</h2>
+                <p className="text-sm text-slate-600">
+                  <span className="font-medium">{deleteConfirmLead.firstName} {deleteConfirmLead.lastName}</span> wird unwiderruflich gelöscht und kann nicht wiederhergestellt werden.
+                </p>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setDeleteConfirmLead(null)}
+                className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                Abbrechen
+              </button>
+              <button
+                onClick={() => { deleteLead(deleteConfirmLead); setDeleteConfirmLead(null); }}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors"
+              >
+                Endgültig löschen
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
