@@ -31,7 +31,7 @@ function createBlock(type: BerufsCheckBlockType): BerufsCheckBlock {
     case 'ergebnisfrage':      return { id: uid(), type: 'ergebnisfrage', question: 'Welche Aussage trifft am ehesten auf dich zu?', options: [{ id: uid(), text: 'Option A', scores: {} }, { id: uid(), text: 'Option B', scores: {} }] };
     case 'text':               return { id: uid(), type: 'text', headline: '', content: 'Hier steht dein Text...', buttonText: 'Weiter' };
     case 'lead':               return { id: uid(), type: 'lead', ...getDefaultProps('check_lead') } as BerufsCheckBlock;
-    case 'ergebnis':           return { id: uid(), type: 'ergebnis', headline: 'Dein Ergebnis, {{name}}!', subtext: 'Hier siehst du, welche Berufsfelder am besten zu dir passen.', showDimensionBars: true };
+    case 'ergebnis':           return { id: uid(), type: 'ergebnis', headline: 'Dein Ergebnis, @firstName!', subtext: 'Hier siehst du, welche Berufsfelder am besten zu dir passen.', showDimensionBars: true };
     case 'button':             return { id: uid(), type: 'button', text: 'Mehr erfahren', url: '', style: 'primary' };
   }
 }

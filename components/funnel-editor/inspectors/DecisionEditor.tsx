@@ -3,11 +3,14 @@
 import { Plus, X } from 'lucide-react';
 import { FunnelPage } from '@/lib/funnel-types';
 import { Field } from './shared';
+import { VarInput } from '@/components/funnel-editor/VarInput';
+import type { VariableDef } from '@/lib/funnel-variables';
 
-export function DecisionEditor({ props, onChange, pages }: {
+export function DecisionEditor({ props, onChange, pages, variables = [] }: {
   props: Record<string, unknown>;
   onChange: (p: Record<string, unknown>) => void;
   pages?: FunnelPage[];
+  variables?: VariableDef[];
 }) {
   const options = (props.options as { id: string; text: string; reaction: string; targetPageId?: string }[]) ?? [];
 
@@ -17,7 +20,7 @@ export function DecisionEditor({ props, onChange, pages }: {
 
   return (
     <div className="space-y-3">
-      <Field label="Frage"><input value={(props.question as string) ?? ''} onChange={(e) => onChange({ question: e.target.value })} className="input-field text-sm" /></Field>
+      <Field label="Frage"><VarInput value={(props.question as string) ?? ''} onChange={(v) => onChange({ question: v })} variables={variables} /></Field>
       <div>
         <div className="flex items-center justify-between mb-2">
           <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Optionen</p>
@@ -33,8 +36,8 @@ export function DecisionEditor({ props, onChange, pages }: {
                 <button onClick={() => onChange({ options: options.filter((_, j) => j !== i) })} disabled={options.length <= 1}
                   className="p-0.5 rounded hover:bg-red-100 text-slate-400 hover:text-red-500 disabled:opacity-30"><X size={12} /></button>
               </div>
-              <input value={o.reaction} onChange={(e) => updateOpt(i, { reaction: e.target.value })}
-                className="w-full mini-input" placeholder="Reaktion nach Auswahl" />
+              <VarInput value={o.reaction} onChange={(v) => updateOpt(i, { reaction: v })}
+                className="w-full mini-input" placeholder="Reaktion nach Auswahl" variables={variables} />
               {pages && pages.length > 1 && (
                 <div className="flex items-center gap-1.5 pt-0.5">
                   <span className="text-[10px] text-slate-400 flex-shrink-0">→ Weiter zu</span>

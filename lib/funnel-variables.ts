@@ -131,7 +131,12 @@ export function getAvailableVariables(nodes: FunnelNode[]): VariableDef[] {
   ).filter((n): n is import('./funnel-types').BlockNode => n.kind === 'block');
 
   for (const node of blockNodes) {
-    if (FIELD_CARRIER_BLOCKS.has(node.type)) {
+    if (node.type === 'quest_dialog') {
+      const rawInput = (node.props?.input as { captures?: string } | undefined);
+      if (rawInput?.captures) {
+        add({ key: rawInput.captures, label: rawInput.captures });
+      }
+    } else if (FIELD_CARRIER_BLOCKS.has(node.type)) {
       // Derive variables dynamically from actual field labels with deduplication
       const rawFields = (node.props?.fields ?? []) as Array<{
         id: string;

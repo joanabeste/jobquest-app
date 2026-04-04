@@ -2,8 +2,10 @@
 
 import { Plus, X } from 'lucide-react';
 import { Field, NumberInput } from './shared';
+import { VarInput } from '@/components/funnel-editor/VarInput';
+import type { VariableDef } from '@/lib/funnel-variables';
 
-export function FrageEditor({ props, onChange }: { props: Record<string, unknown>; onChange: (p: Record<string, unknown>) => void }) {
+export function FrageEditor({ props, onChange, variables = [] }: { props: Record<string, unknown>; onChange: (p: Record<string, unknown>) => void; variables?: VariableDef[] }) {
   const frageType = (props.frageType as string) ?? 'single_choice';
   const options = (props.options as { id: string; text: string; scores: Record<string, number> }[]) ?? [];
   return (
@@ -14,7 +16,7 @@ export function FrageEditor({ props, onChange }: { props: Record<string, unknown
           <option value="slider">Slider</option>
         </select>
       </Field>
-      <Field label="Frage"><input value={(props.question as string) ?? ''} onChange={(e) => onChange({ question: e.target.value })} className="input-field text-sm" /></Field>
+      <Field label="Frage"><VarInput value={(props.question as string) ?? ''} onChange={(v) => onChange({ question: v })} variables={variables} /></Field>
       {frageType === 'single_choice' ? (
         <div>
           <div className="flex items-center justify-between mb-2">
@@ -43,11 +45,11 @@ export function FrageEditor({ props, onChange }: { props: Record<string, unknown
   );
 }
 
-export function ErgebnisfrageEditor({ props, onChange }: { props: Record<string, unknown>; onChange: (p: Record<string, unknown>) => void }) {
+export function ErgebnisfrageEditor({ props, onChange, variables = [] }: { props: Record<string, unknown>; onChange: (p: Record<string, unknown>) => void; variables?: VariableDef[] }) {
   const options = (props.options as { id: string; text: string; scores: Record<string, number> }[]) ?? [];
   return (
     <div className="space-y-3">
-      <Field label="Frage"><input value={(props.question as string) ?? ''} onChange={(e) => onChange({ question: e.target.value })} className="input-field text-sm" /></Field>
+      <Field label="Frage"><VarInput value={(props.question as string) ?? ''} onChange={(v) => onChange({ question: v })} variables={variables} /></Field>
       <div>
         <div className="flex items-center justify-between mb-2">
           <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Optionen</p>

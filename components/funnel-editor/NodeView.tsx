@@ -349,16 +349,21 @@ function BlockPreview({ node, onUpdate }: {
       );
     }
 
-    case 'image':
+    case 'image': {
+      const imgSize = (p.size as string) ?? 'full';
+      const fit = (p.objectFit as string) ?? 'cover';
+      const sizeClass: Record<string, string> = { full: 'w-full', l: 'max-w-lg mx-auto', m: 'max-w-sm mx-auto', s: 'max-w-xs mx-auto', xs: 'max-w-[128px] mx-auto' };
+      const wrapCls = sizeClass[imgSize] ?? 'w-full';
+      const imgCls = fit === 'cover' ? 'w-full object-cover' : 'w-full object-contain';
       return (
         <div className="overflow-hidden">
           {p.src
-             
-            ? <img src={p.src as string} alt={(p.alt as string) || ''} className="w-full object-cover" />
+            ? <div className={wrapCls}><img src={p.src as string} alt={(p.alt as string) || ''} className={imgCls} style={fit !== 'cover' ? { objectFit: fit as 'contain' | 'none' } : {}} /></div>
             : <div className="bg-slate-100 h-36 flex items-center justify-center"><ImageIcon size={32} className="text-slate-300" /></div>
           }
         </div>
       );
+    }
 
     case 'spacer':
       return (

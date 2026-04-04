@@ -2,10 +2,12 @@
 
 import { Plus, X } from 'lucide-react';
 import { Field, ImageUploadField } from './shared';
+import { VarInput, VarTextarea } from '@/components/funnel-editor/VarInput';
+import type { VariableDef } from '@/lib/funnel-variables';
 
 type DialogLineDef = { id: string; speaker: string; text: string; imageUrl?: string };
 
-export function DialogEditor({ props, onChange }: { props: Record<string, unknown>; onChange: (p: Record<string, unknown>) => void }) {
+export function DialogEditor({ props, onChange, variables = [] }: { props: Record<string, unknown>; onChange: (p: Record<string, unknown>) => void; variables?: VariableDef[] }) {
   const lines = (props.lines as DialogLineDef[]) ?? [];
   const choices = (props.choices as { id: string; text: string; reaction?: string }[]) ?? [];
   const input = (props.input as { placeholder?: string; captures?: string; followUpText?: string } | undefined) ?? null;
@@ -21,7 +23,7 @@ export function DialogEditor({ props, onChange }: { props: Record<string, unknow
 
   return (
     <div className="space-y-3">
-      <Field label="Titel (optional)"><input value={(props.title as string) ?? ''} onChange={(e) => onChange({ title: e.target.value })} className="input-field text-sm" /></Field>
+      <Field label="Titel (optional)"><VarInput value={(props.title as string) ?? ''} onChange={(v) => onChange({ title: v })} variables={variables} /></Field>
       <div>
         <div className="flex items-center justify-between mb-2">
           <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Zeilen</p>
@@ -41,8 +43,8 @@ export function DialogEditor({ props, onChange }: { props: Record<string, unknow
                   <X size={12} />
                 </button>
               </div>
-              <textarea value={l.text} onChange={(e) => updateLine(l.id, { text: e.target.value })}
-                rows={2} className="w-full mini-input resize-none" placeholder="Text…" />
+              <VarTextarea value={l.text} onChange={(v) => updateLine(l.id, { text: v })}
+                rows={2} className="w-full mini-input resize-none" placeholder="Text…" variables={variables} />
               <ImageUploadField label="Bild (optional)" value={l.imageUrl ?? ''} onChange={(v) => updateLine(l.id, { imageUrl: v })} />
             </div>
           ))}
@@ -68,8 +70,8 @@ export function DialogEditor({ props, onChange }: { props: Record<string, unknow
                     <button onClick={() => onChange({ choices: choices.filter((_, j) => j !== i) })}
                       className="p-0.5 rounded hover:bg-red-100 text-slate-400 hover:text-red-500"><X size={12} /></button>
                   </div>
-                  <input value={c.reaction ?? ''} onChange={(e) => updateChoice(i, { reaction: e.target.value })}
-                    className="w-full mini-input" placeholder="Reaktion des Sprechers (optional)" />
+                  <VarInput value={c.reaction ?? ''} onChange={(v) => updateChoice(i, { reaction: v })}
+                    className="w-full mini-input" placeholder="Reaktion des Sprechers (optional)" variables={variables} />
                 </div>
               ))}
             </div>
@@ -94,13 +96,19 @@ export function DialogEditor({ props, onChange }: { props: Record<string, unknow
             <div className="space-y-1.5">
               <input value={input?.placeholder ?? ''} onChange={(e) => onChange({ input: { ...input, placeholder: e.target.value } })}
                 className="w-full mini-input" placeholder="Platzhalter…" />
-              <select value={input?.captures ?? ''} onChange={(e) => onChange({ input: { ...input, captures: e.target.value || undefined } })}
-                className="w-full mini-input">
-                <option value="">Kein Capture</option>
-                <option value="firstName">Vorname speichern (als &#123;&#123;name&#125;&#125;)</option>
-              </select>
-              <textarea value={input?.followUpText ?? ''} onChange={(e) => onChange({ input: { ...input, followUpText: e.target.value } })}
-                rows={2} className="w-full mini-input resize-none" placeholder="Reaktion des Sprechers nach Eingabe (optional)…" />
+              <div className="space-y-0.5">
+                <input
+                  value={input?.captures ?? ''}
+                  onChange={(e) => onChange({ input: { ...input, captures: e.target.value.trim() || undefined } })}
+                  className="w-full mini-input"
+                  placeholder="Variable speichern, z.B. firstName, stadt…"
+                />
+                {input?.captures && (
+                  <p className="text-[10px] text-violet-500 pl-0.5">Antwort wird als @{input.captures} verfügbar</p>
+                )}
+              </div>
+              <VarTextarea value={input?.followUpText ?? ''} onChange={(v) => onChange({ input: { ...input, followUpText: v } })}
+                rows={2} className="w-full mini-input resize-none" placeholder="Reaktion des Sprechers nach Eingabe (optional)…" variables={variables} />
             </div>
           )}
         </div>

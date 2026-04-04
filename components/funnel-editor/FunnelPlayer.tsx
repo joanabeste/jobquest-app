@@ -22,6 +22,7 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
   const [pageIndex, setPageIndex]   = useState(0);
   const [answers, setAnswers]       = useState<Record<string, unknown>>({});
   const [firstName, setFirstName]   = useState('');
+  const [capturedVars, setCapturedVars] = useState<Record<string, string>>({});
   const [leadForm, setLeadForm]     = useState<LeadForm>(emptyLead);
   const [leadSubmitted, setLeadSubmitted] = useState(false);
   const [leadSaveError, setLeadSaveError] = useState(false);
@@ -66,6 +67,10 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
   }
   function setAnswer(nodeId: string, value: unknown) {
     setAnswers((prev) => ({ ...prev, [nodeId]: value }));
+  }
+  function handleCapture(varName: string, value: string) {
+    if (varName === 'firstName') setFirstName(value);
+    setCapturedVars((prev) => ({ ...prev, [varName]: value }));
   }
 
   // ── Lead saving (shared between quest_lead, check_lead, form_config) ─────────
@@ -161,6 +166,8 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
     onSetFirstName: setFirstName,
     onAnswer: setAnswer,
     onNext: goNext,
+    onCapture: handleCapture,
+    capturedVars,
     leadForm, setLeadForm, leadSubmitted,
     onLeadSubmit: handleLeadSubmit,
     onFormSubmit: handleFormSubmit,
@@ -168,7 +175,6 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
     dimensions,
     dialogVisible,
     onDialogAdvance: (count: number) => setDialogVisible(count),
-    // avatar removed
   };
 
   return (

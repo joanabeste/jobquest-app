@@ -2,6 +2,8 @@
 
 import { Plus, X } from 'lucide-react';
 import { Field } from './shared';
+import { VarInput, VarTextarea } from '@/components/funnel-editor/VarInput';
+import type { VariableDef } from '@/lib/funnel-variables';
 
 type FormFieldDef = { id: string; type: string; label: string; placeholder?: string; required: boolean; options?: string[] };
 
@@ -11,7 +13,7 @@ const FIELD_LABELS: Record<string, string> = {
   textarea: 'Mehrzeilig', select: 'Auswahl', radio: 'Einfachauswahl',
 };
 
-export function FormStepEditor({ props, onChange }: { props: Record<string, unknown>; onChange: (p: Record<string, unknown>) => void }) {
+export function FormStepEditor({ props, onChange, variables = [] }: { props: Record<string, unknown>; onChange: (p: Record<string, unknown>) => void; variables?: VariableDef[] }) {
   const fields = (props.fields as FormFieldDef[]) ?? [];
 
   function addField() {
@@ -26,8 +28,8 @@ export function FormStepEditor({ props, onChange }: { props: Record<string, unkn
 
   return (
     <div className="space-y-3">
-      <Field label="Schritt-Titel"><input value={(props.title as string) ?? ''} onChange={(e) => onChange({ title: e.target.value })} className="input-field text-sm" /></Field>
-      <Field label="Beschreibung"><textarea value={(props.description as string) ?? ''} onChange={(e) => onChange({ description: e.target.value })} rows={2} className="input-field text-sm resize-none" /></Field>
+      <Field label="Schritt-Titel"><VarInput value={(props.title as string) ?? ''} onChange={(v) => onChange({ title: v })} variables={variables} /></Field>
+      <Field label="Beschreibung"><VarTextarea value={(props.description as string) ?? ''} onChange={(v) => onChange({ description: v })} rows={2} className="input-field text-sm resize-none" variables={variables} /></Field>
       <div>
         <div className="flex items-center justify-between mb-2">
           <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Felder ({fields.length})</p>

@@ -2,12 +2,14 @@
 
 import { Plus, X } from 'lucide-react';
 import { Field } from './shared';
+import { VarInput } from '@/components/funnel-editor/VarInput';
+import type { VariableDef } from '@/lib/funnel-variables';
 
-export function QuizEditor({ props, onChange }: { props: Record<string, unknown>; onChange: (p: Record<string, unknown>) => void }) {
+export function QuizEditor({ props, onChange, variables = [] }: { props: Record<string, unknown>; onChange: (p: Record<string, unknown>) => void; variables?: VariableDef[] }) {
   const options = (props.options as { id: string; text: string; correct: boolean; feedback: string }[]) ?? [];
   return (
     <div className="space-y-3">
-      <Field label="Frage"><input value={(props.question as string) ?? ''} onChange={(e) => onChange({ question: e.target.value })} className="input-field text-sm" /></Field>
+      <Field label="Frage"><VarInput value={(props.question as string) ?? ''} onChange={(v) => onChange({ question: v })} variables={variables} /></Field>
       <div>
         <div className="flex items-center justify-between mb-2">
           <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Antworten</p>
@@ -26,8 +28,8 @@ export function QuizEditor({ props, onChange }: { props: Record<string, unknown>
                 <button onClick={() => onChange({ options: options.filter((_, j) => j !== i) })} disabled={options.length <= 1}
                   className="p-0.5 rounded hover:bg-red-100 text-slate-400 hover:text-red-500 disabled:opacity-30"><X size={12} /></button>
               </div>
-              <input value={o.feedback} onChange={(e) => onChange({ options: options.map((x, j) => j === i ? { ...x, feedback: e.target.value } : x) })}
-                className="w-full mini-input" placeholder="Feedback nach Auswahl" />
+              <VarInput value={o.feedback} onChange={(v) => onChange({ options: options.map((x, j) => j === i ? { ...x, feedback: v } : x) })}
+                className="w-full mini-input" placeholder="Feedback nach Auswahl" variables={variables} />
             </div>
           ))}
         </div>

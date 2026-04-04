@@ -174,7 +174,7 @@ export function BlockPreview({ block, dimensions, company, focusField }: {
     case 'ergebnis': return (
       <div className="bg-white rounded-2xl p-8">
         <h2 onClick={() => focusField('headline')} className={`text-xl font-bold text-slate-900 mb-2 min-h-[1em] ${clickEl}`}>
-          {block.headline.replace('{{name}}', 'Max') || <span className="text-slate-300 italic">Überschrift…</span>}
+          {block.headline.replace('{{name}}', 'Max').replace('@firstName', 'Max') || <span className="text-slate-300 italic">Überschrift…</span>}
         </h2>
         <p onClick={() => focusField('subtext')} className={`text-slate-500 text-sm mb-6 min-h-[1em] ${clickEl}`}>
           {block.subtext || <span className="text-slate-300 italic">Untertext…</span>}

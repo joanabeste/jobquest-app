@@ -23,7 +23,7 @@ export const emptyLead: LeadForm = { firstName: '', lastName: '', email: '', pho
 // ─── Dialog line type ─────────────────────────────────────────────────────────
 export interface DialogLine { id: string; speaker: string; text: string; imageUrl?: string; position?: 'left' | 'right'; }
 interface DialogChoice { id: string; text: string; reaction?: string; }
-interface DialogInput { placeholder?: string; captures?: 'firstName'; followUpText?: string; }
+interface DialogInput { placeholder?: string; captures?: string; followUpText?: string; }
 
 // ─── Typing indicator (three bouncing dots) ───────────────────────────────────
 function TypingIndicator({ primary }: { primary: string }) {
@@ -44,7 +44,7 @@ function TypingIndicator({ primary }: { primary: string }) {
 }
 
 // ─── Dialog block – reveals bubbles one by one with typing animation ──────────
-function DialogBlock({ lines, primary, visibleCount, onAdvance, firstName, choices, input, nodeId, onAnswer, onSetFirstName, answers, br }: {
+function DialogBlock({ lines, primary, visibleCount, onAdvance, firstName, choices, input, nodeId, onAnswer, onSetFirstName, onCapture, capturedVars, answers, br }: {
   lines: DialogLine[];
   primary: string;
   visibleCount: number;
@@ -55,6 +55,8 @@ function DialogBlock({ lines, primary, visibleCount, onAdvance, firstName, choic
   nodeId?: string;
   onAnswer?: (id: string, val: unknown) => void;
   onSetFirstName?: (v: string) => void;
+  onCapture?: (varName: string, value: string) => void;
+  capturedVars?: Record<string, string>;
   answers?: Record<string, unknown>;
   br?: string;
 }) {
@@ -76,7 +78,10 @@ function DialogBlock({ lines, primary, visibleCount, onAdvance, firstName, choic
   function handleInputSubmit() {
     const val = inputValue.trim();
     if (!val) return;
-    if (input?.captures === 'firstName' && onSetFirstName) onSetFirstName(val);
+    if (input?.captures) {
+      if (input.captures === 'firstName' && onSetFirstName) onSetFirstName(val);
+      if (onCapture) onCapture(input.captures, val);
+    }
     if (nodeId && onAnswer) onAnswer(nodeId, val);
     setInputSubmitted(true);
     if (input?.followUpText) {
@@ -111,6 +116,7 @@ function DialogBlock({ lines, primary, visibleCount, onAdvance, firstName, choic
   const allLinesShown = visibleCount >= lines.length;
   const showChoiceButtons = allLinesShown && hasChoices && !selectedChoiceId;
   const showChoiceTyping = !!selectedChoiceId && !!selectedChoice?.reaction && !choiceReactionVisible;
+  const followUpSpeaker = lines.filter(l => l.position !== 'right').at(-1) ?? lines[0];
 
   return (
     <div className="py-4 space-y-3">
@@ -246,12 +252,16 @@ function DialogBlock({ lines, primary, visibleCount, onAdvance, firstName, choic
         <div className="flex gap-3 px-5" style={{ animation: 'fadeSlideIn 0.3s ease-out' }}>
           <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 mt-auto text-white"
             style={{ background: primary }}>
-            {lines[0]?.speaker?.charAt(0) || '?'}
+            {followUpSpeaker?.speaker?.charAt(0) || '?'}
           </div>
           <div className="max-w-[78%] flex flex-col">
-            <p className="text-[11px] text-slate-400 mb-1">{lines[0]?.speaker || 'Sprecher'}</p>
+            <p className="text-[11px] text-slate-400 mb-1">{followUpSpeaker?.speaker || 'Sprecher'}</p>
             <div className="bg-slate-100 px-3 py-2.5 rounded-2xl text-sm leading-relaxed text-slate-700">
-              {input.followUpText}
+              {applyVars(input.followUpText, {
+                ...(capturedVars ?? {}),
+                firstName: firstName || '',
+                ...(input.captures && inputValue ? { [input.captures]: inputValue.trim() } : {}),
+              })}
             </div>
           </div>
         </div>
@@ -374,6 +384,7 @@ function SliderBlock({ nodeId, p, answers, onAnswer, primary }: {
 export function BlockRenderer({
   node, company, primary, br,
   answers, firstName, onSetFirstName, onAnswer, onNext,
+  onCapture, capturedVars,
   leadForm, setLeadForm, leadSubmitted, onLeadSubmit, onFormSubmit,
   scores, dimensions,
   dialogVisible, onDialogAdvance,
@@ -383,6 +394,8 @@ export function BlockRenderer({
   onSetFirstName: (v: string) => void;
   onAnswer: (id: string, val: unknown) => void;
   onNext: (targetPageId?: string) => void;
+  onCapture?: (varName: string, value: string) => void;
+  capturedVars?: Record<string, string>;
   leadForm: LeadForm; setLeadForm: (f: LeadForm) => void; leadSubmitted: boolean;
   onLeadSubmit: (f: LeadForm, customFields?: Record<string, string>) => void;
   onFormSubmit: (headline: string, text: string, form: LeadForm) => void;
@@ -398,6 +411,7 @@ export function BlockRenderer({
     companyName:    company.name,
     datenschutzUrl: company.privacyUrl ?? '',
     impressumUrl:   company.imprintUrl ?? '',
+    ...(capturedVars ?? {}),
   };
   const si = (v: unknown, fallback = '') => applyVars(s(v, fallback), varsMap);
 
@@ -534,7 +548,7 @@ export function BlockRenderer({
       const rawChoices = (p.choices as DialogChoice[]) || [];
       const choices = rawChoices.map((c) => ({ ...c, text: si(c.text), reaction: c.reaction ? si(c.reaction) : undefined }));
       const rawInput = p.input as DialogInput | undefined;
-      const inputDef = rawInput ? { ...rawInput, followUpText: rawInput.followUpText ? si(rawInput.followUpText) : undefined } : undefined;
+      // followUpText is passed raw so DialogBlock can substitute the just-entered value at submit time
       return (
         <DialogBlock
           lines={lines}
@@ -543,10 +557,12 @@ export function BlockRenderer({
           onAdvance={onDialogAdvance}
           firstName={firstName}
           choices={choices}
-          input={inputDef}
+          input={rawInput}
           nodeId={node.id}
           onAnswer={onAnswer}
           onSetFirstName={onSetFirstName}
+          onCapture={onCapture}
+          capturedVars={capturedVars}
           answers={answers}
           br={br}
         />

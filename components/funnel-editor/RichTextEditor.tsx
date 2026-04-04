@@ -14,7 +14,7 @@
 
 import { useRef, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Bold, Italic, Underline, List, Palette, Link2, X } from 'lucide-react';
+import { Bold, Italic, Underline, List, Palette, Link2, X, AlignLeft, AlignCenter, AlignRight } from 'lucide-react';
 import type { VariableDef } from '@/lib/funnel-variables';
 
 interface Props {
@@ -265,6 +265,11 @@ export default function RichTextEditor({ value, onChange, variables = [], minHei
               {sz.label}
             </button>
           ))}
+
+          <div className="w-px h-4 bg-slate-200 mx-0.5" />
+          <button type="button" onMouseDown={(e) => { e.preventDefault(); exec('justifyLeft'); }} className={btn} title="Links ausrichten"><AlignLeft size={12} /></button>
+          <button type="button" onMouseDown={(e) => { e.preventDefault(); exec('justifyCenter'); }} className={btn} title="Zentrieren"><AlignCenter size={12} /></button>
+          <button type="button" onMouseDown={(e) => { e.preventDefault(); exec('justifyRight'); }} className={btn} title="Rechts ausrichten"><AlignRight size={12} /></button>
 
           <div className="w-px h-4 bg-slate-200 mx-0.5" />
           <button type="button"

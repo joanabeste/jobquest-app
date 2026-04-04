@@ -531,13 +531,13 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars }: {
       );
 
     case 'quest_dialog':
-      return <DialogEditor props={props} onChange={onChange} />;
+      return <DialogEditor props={props} onChange={onChange} variables={availableVars} />;
 
     case 'quest_decision':
-      return <DecisionEditor props={props} onChange={onChange} pages={pages} />;
+      return <DecisionEditor props={props} onChange={onChange} pages={pages} variables={availableVars} />;
 
     case 'quest_quiz':
-      return <QuizEditor props={props} onChange={onChange} />;
+      return <QuizEditor props={props} onChange={onChange} variables={availableVars} />;
 
     case 'quest_info':
       return (
@@ -671,10 +671,10 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars }: {
       );
 
     case 'check_frage':
-      return <FrageEditor props={props} onChange={onChange} />;
+      return <FrageEditor props={props} onChange={onChange} variables={availableVars} />;
 
     case 'check_ergebnisfrage':
-      return <ErgebnisfrageEditor props={props} onChange={onChange} />;
+      return <ErgebnisfrageEditor props={props} onChange={onChange} variables={availableVars} />;
 
     case 'check_selbst':
       return (
@@ -756,7 +756,7 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars }: {
       );
 
     case 'form_step':
-      return <FormStepEditor props={props} onChange={onChange} />;
+      return <FormStepEditor props={props} onChange={onChange} variables={availableVars} />;
 
     case 'form_config': {
       const fcFields = (props.fields as LeadFieldDef[]) ?? [];

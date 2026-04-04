@@ -453,8 +453,8 @@ function InlineErgebnisEditor({ block, onChange, fieldRefs }: { block: ErgebnisB
         <InlineLabel>Überschrift</InlineLabel>
         <input ref={(el) => { fieldRefs.current['headline'] = el; }}
           value={block.headline} onChange={(e) => u({ headline: e.target.value })}
-          placeholder="Dein Ergebnis, {{name}}!" className={inlineMed} />
-        <p className="text-xs text-slate-400 mt-1">&#123;name&#125; wird durch den Vornamen ersetzt.</p>
+          placeholder="Dein Ergebnis, @firstName!" className={inlineMed} />
+        <p className="text-xs text-slate-400 mt-1">@firstName wird durch den Vornamen ersetzt.</p>
       </div>
       <div className="group">
         <InlineLabel>Untertext</InlineLabel>
