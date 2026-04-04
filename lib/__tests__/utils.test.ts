@@ -33,6 +33,31 @@ describe('slugify', () => {
   test('combined: umlauts + special chars + spaces', () => {
     expect(slugify('Bürokaufmann/-frau (m/w/d)')).toBe('buerokaufmann-frau-mwd');
   });
+
+  test('handles numeric-only input', () => {
+    expect(slugify('123')).toBe('123');
+  });
+
+  test('handles string with only special characters', () => {
+    expect(slugify('!@#$%')).toBe('');
+  });
+
+  test('handles ae/oe/ue umlauts', () => {
+    expect(slugify('Ärzte Öl Übung')).toBe('aerzte-oel-uebung');
+  });
+
+  test('handles mixed case', () => {
+    expect(slugify('FrontEnd Developer')).toBe('frontend-developer');
+  });
+
+  test('handles dots and commas', () => {
+    expect(slugify('z.B. Verkauf, Service')).toBe('zb-verkauf-service');
+  });
+
+  test('very long string stays intact', () => {
+    const long = 'wort '.repeat(20).trim();
+    expect(slugify(long).split('-')).toHaveLength(20);
+  });
 });
 
 describe('formatDateShort', () => {

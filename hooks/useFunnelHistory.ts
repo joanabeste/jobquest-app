@@ -18,7 +18,7 @@ export function useFunnelHistory(initial: FunnelDoc): FunnelHistory {
   const [future, setFuture] = useState<FunnelDoc[]>([]);
 
   const push = useCallback((next: FunnelDoc) => {
-    setPast((p) => [...p.slice(-50), present]);
+    setPast((p) => [...p, present].slice(-50));
     setPresent(next);
     setFuture([]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
