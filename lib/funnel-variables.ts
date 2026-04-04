@@ -102,9 +102,6 @@ const FIELD_CARRIER_BLOCKS = new Set([
 export const ALL_VAR_KEYS: ReadonlySet<string> = new Set([
   ...CONTEXT_VARIABLES.map((v) => v.key),
   ...Object.values(BLOCK_VARIABLE_PRODUCERS).flat().map((v) => v.key),
-  // Common field variable keys that appear in default lead forms
-  'vorname', 'nachname', 'email', 'telefon', 'datenschutz',
-  'firstName', 'lastName', 'phone',
 ]);
 
 // ─── Collect available variables from nodes + context ─────────────────────────

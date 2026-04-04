@@ -407,11 +407,10 @@ export function BlockRenderer({
   const p = node.props;
   // Interpolation helper: substitutes all template variables
   const varsMap = {
-    firstName:      firstName || '',
-    vorname:        firstName || '',  // alias: @vorname = @firstName
     companyName:    company.name,
     datenschutzUrl: company.privacyUrl ?? '',
     impressumUrl:   company.imprintUrl ?? '',
+    ...(firstName ? { firstName, vorname: firstName } : {}),
     ...(capturedVars ?? {}),
   };
   const si = (v: unknown, fallback = '') => applyVars(s(v, fallback), varsMap);
@@ -1009,11 +1008,6 @@ function LeadFormBlock({ props: p, company, br, primary, leadForm, setLeadForm, 
     companyName:    company.name,
     datenschutzUrl: company.privacyUrl ?? '',
     impressumUrl:   company.imprintUrl ?? '',
-    firstName:      '',
-    vorname:        '',
-    lastName:       '',
-    email:          '',
-    phone:          '',
   };
   const setVal = (id: string, val: string) => setVals((prev) => ({ ...prev, [id]: val }));
 

@@ -27,8 +27,12 @@ describe('applyVars', () => {
     expect(applyVars('hr@firma.de', vars)).toBe('hr@firma.de');
   });
 
-  test('replaces with empty string when variable has no value', () => {
-    expect(applyVars('Hallo @firstName!', {})).toBe('Hallo !');
+  test('replaces with empty string when variable is in vars but has no value', () => {
+    expect(applyVars('Hallo @firstName!', { firstName: '' })).toBe('Hallo !');
+  });
+
+  test('leaves @variable untouched when not in vars and not in static whitelist', () => {
+    expect(applyVars('Hallo @firstName!', {})).toBe('Hallo @firstName!');
   });
 
   test('handles legacy {{company}} syntax', () => {
@@ -64,10 +68,16 @@ describe('ALL_VAR_KEYS', () => {
     }
   });
 
-  test('contains firstName, lastName, email, phone (from block producers)', () => {
-    for (const key of ['firstName', 'lastName', 'email', 'phone']) {
-      expect(ALL_VAR_KEYS.has(key)).toBe(true);
-    }
+  test('contains vorname (from block producers)', () => {
+    expect(ALL_VAR_KEYS.has('vorname')).toBe(true);
+  });
+
+  test('does not contain field-derived keys (those are dynamic via vars arg)', () => {
+    expect(ALL_VAR_KEYS.has('firstName')).toBe(false);
+    expect(ALL_VAR_KEYS.has('lastName')).toBe(false);
+    expect(ALL_VAR_KEYS.has('email')).toBe(false);
+    expect(ALL_VAR_KEYS.has('telefon')).toBe(false);
+    expect(ALL_VAR_KEYS.has('nachname')).toBe(false);
   });
 
   test('does not contain arbitrary words', () => {
