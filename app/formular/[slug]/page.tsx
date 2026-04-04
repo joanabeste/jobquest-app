@@ -264,7 +264,7 @@ function MultiStepForm({
     }
   };
 
-  const privacyText = config.privacyText.replace('{{company}}', companyName);
+  const privacyText = config.privacyText.replace(/\{\{company\}\}|@companyName/g, companyName);
 
   return (
     <div id="formular-section" className="max-w-xl mx-auto px-6 py-12">

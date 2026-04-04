@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { careerCheckStorage, careerCheckLeadStorage, companyStorage } from '@/lib/storage';
+import { careerCheckStorage, companyStorage } from '@/lib/storage';
 import { funnelStorage } from '@/lib/funnel-storage';
 import { FunnelDoc } from '@/lib/funnel-types';
 import FunnelPlayer from '@/components/funnel-editor/FunnelPlayer';
@@ -126,7 +126,11 @@ export default function BerufsCheckPlayer() {
       scores: finalScores,
       submittedAt: new Date().toISOString(),
     };
-    careerCheckLeadStorage.save(lead);
+    fetch('/api/public/submit-career-check-lead', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lead, contentId: check.id, companyName: company.name }),
+    }).catch((err) => console.error('[BerufsCheck] submit-career-check-lead fehlgeschlagen:', err));
     setSubmitted(true);
     nextStep();
   }
@@ -497,7 +501,7 @@ function LeadRenderer({ block, leadData, company, onLeadData, onSubmit, onPrev }
   onSubmit: () => void;
   onPrev: () => void;
 }) {
-  const privacyText = block.privacyText.replace('{{company}}', company.name);
+  const privacyText = block.privacyText.replace(/\{\{company\}\}|@companyName/g, company.name);
   const u = (partial: Partial<typeof leadData>) => onLeadData({ ...leadData, ...partial });
 
   const canSubmit = leadData.email.includes('@') && leadData.gdpr;
@@ -552,7 +556,7 @@ function ErgebnisRenderer({ block, firstName, scores, dimensions, primaryColor }
   dimensions: Dimension[];
   primaryColor: string;
 }) {
-  const headline = block.headline.replace('{{name}}', firstName || 'du');
+  const headline = block.headline.replace(/\{\{name\}\}|@firstName/g, firstName || 'du');
 
   // Compute percentages
   const maxScore = Math.max(...Object.values(scores), 1);

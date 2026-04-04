@@ -57,11 +57,34 @@ export interface FunnelPage {
   nextPageId?: string;
 }
 
+// ─── Email Config ─────────────────────────────────────────────────────────────
+export interface EmailAttachment {
+  url: string;
+  filename: string;
+}
+
+export interface EmailConfig {
+  // Bestätigungs-E-Mail → an die Person die das Formular absendet
+  confirmationEnabled: boolean;
+  confirmationSubject: string;
+  confirmationBodyMode: 'html' | 'text';
+  confirmationBody: string;
+  confirmationAttachment?: EmailAttachment;
+
+  // Benachrichtigungs-E-Mail → an interne Empfänger (z.B. HR)
+  notificationEnabled: boolean;
+  notificationRecipient: string;
+  notificationSubject: string;
+  notificationBodyMode: 'html' | 'text';
+  notificationBody: string;
+}
+
 export interface FunnelDoc {
   id: string;
   contentId: string;
   contentType: FunnelContentType;
   pages: FunnelPage[];
+  emailConfig?: EmailConfig;
   createdAt: string;
   updatedAt: string;
 }
@@ -86,7 +109,7 @@ const CONTACT_LEAD_DEFAULT = {
   headline: 'Interessiert?',
   subtext: 'Hinterlasse deine Kontaktdaten – wir melden uns bei dir.',
   buttonText: 'Jetzt bewerben',
-  privacyText: 'Ich stimme zu, dass {{company}} meine Daten speichert und mich kontaktiert.',
+  privacyText: 'Ich stimme zu, dass @companyName meine Daten speichert und mich kontaktiert.',
   fields: [
     { id: crypto.randomUUID(), type: 'text', label: 'Vorname', placeholder: 'Vorname', required: true },
     { id: crypto.randomUUID(), type: 'text', label: 'Nachname', placeholder: 'Nachname', required: false },
@@ -119,7 +142,7 @@ export const DEFAULT_BLOCK_PROPS: Record<FunnelBlockType, Record<string, unknown
   check_ergebnisfrage: { question: 'Ergebnisfrage?', options: [{ id: crypto.randomUUID(), text: 'Option A', scores: {} }] },
   check_selbst:        { question: 'Wie schätzt du dich ein?', sliderMin: 0, sliderMax: 10, sliderStep: 1, sliderLabelMin: 'Gar nicht', sliderLabelMax: 'Sehr' },
   check_lead:          CONTACT_LEAD_DEFAULT,
-  check_ergebnis:      { headline: 'Dein Ergebnis, {{name}}!', subtext: 'Basierend auf deinen Antworten.', showDimensionBars: true },
+  check_ergebnis:      { headline: 'Dein Ergebnis, @firstName!', subtext: 'Basierend auf deinen Antworten.', showDimensionBars: true },
   form_hero:           { headline: 'Jetzt anfragen', subtext: 'Wir melden uns bei dir.', imageUrl: '', ctaText: 'Jetzt anfragen' },
   form_text:           { headline: '', content: 'Ihr Text hier…' },
   form_image:          { imageUrl: '', caption: '' },
@@ -148,7 +171,7 @@ export const BLOCK_CATALOG: Record<FunnelContentType, BlockTypeConfig[]> = {
     { type: 'quest_decision', label: 'Entscheidung',  description: 'Verzweigung mit Optionen',             category: 'Interaktion', defaultProps: DEFAULT_BLOCK_PROPS.quest_decision },
     { type: 'quest_quiz',     label: 'Quiz',          description: 'Multiple-Choice-Frage',                category: 'Interaktion', defaultProps: DEFAULT_BLOCK_PROPS.quest_quiz },
     { type: 'quest_rating',   label: 'Bewertung',     description: 'Sterne oder Emoji-Bewertung',          category: 'Interaktion', defaultProps: DEFAULT_BLOCK_PROPS.quest_rating },
-    { type: 'quest_vorname',  label: 'Vorname',       description: 'Namenseingabe – als {{name}} nutzbar', category: 'Eingabe',     defaultProps: DEFAULT_BLOCK_PROPS.quest_vorname },
+    { type: 'quest_vorname',  label: 'Vorname',       description: 'Namenseingabe – als @firstName nutzbar', category: 'Eingabe',     defaultProps: DEFAULT_BLOCK_PROPS.quest_vorname },
     { type: 'quest_file',     label: 'Datei',         description: 'Downloadbarer Anhang (PDF etc.)',      category: 'Medien',      defaultProps: DEFAULT_BLOCK_PROPS.quest_file },
     { type: 'quest_spinner',  label: 'Ladescreen',    description: 'Ladeanimation, geht automatisch weiter', category: 'Logik',    defaultProps: DEFAULT_BLOCK_PROPS.quest_spinner },
     { type: 'quest_lead',     label: 'Kontaktformular', description: 'Fester Abschluss – Lead-Erfassung', category: 'Abschluss',   defaultProps: DEFAULT_BLOCK_PROPS.quest_lead },

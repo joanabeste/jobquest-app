@@ -8,8 +8,9 @@
 
 import { useState, useRef, useMemo, useEffect } from 'react';
 import { FunnelDoc, BlockNode, FunnelNode, LayoutNode, FunnelPage } from '@/lib/funnel-types';
+import { applyVars } from '@/lib/funnel-variables';
 import { Company, Dimension } from '@/lib/types';
-import { leadStorage, careerCheckStorage } from '@/lib/storage';
+import { careerCheckStorage } from '@/lib/storage';
 import { useCorporateDesign } from '@/lib/use-corporate-design';
 import { ChevronLeft, ArrowRight, ChevronRight, Trophy, FileDown, Check, X, MapPin } from 'lucide-react';
 
@@ -119,18 +120,26 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
 
   // ── Lead saving (shared between quest_lead, check_lead, form_config) ─────────
   function saveLead(form: LeadForm, customFields?: Record<string, string>) {
-    leadStorage.save({
-      id: crypto.randomUUID(),
-      jobQuestId: contentDbId ?? doc.contentId,
-      companyId: company.id,
-      firstName: form.firstName || firstName,
-      lastName: form.lastName,
-      email: form.email,
-      phone: form.phone || undefined,
-      gdprConsent: true,
-      submittedAt: new Date().toISOString(),
-      ...(customFields ? { customFields } : {}),
-    });
+    fetch('/api/public/submit-lead', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        lead: {
+          id: crypto.randomUUID(),
+          jobQuestId: contentDbId ?? doc.contentId,
+          companyId: company.id,
+          firstName: form.firstName || firstName,
+          lastName: form.lastName,
+          email: form.email,
+          phone: form.phone || undefined,
+          gdprConsent: true,
+          submittedAt: new Date().toISOString(),
+          ...(customFields ? { customFields } : {}),
+        },
+        contentId: contentDbId ?? doc.contentId,
+        companyName: company.name,
+      }),
+    }).catch((err) => console.error('[FunnelPlayer] submit-lead fehlgeschlagen:', err));
   }
   function handleLeadSubmit(form: LeadForm, customFields?: Record<string, string>) {
     saveLead(form, customFields);
@@ -710,8 +719,9 @@ function BlockRenderer({
   onDialogAdvance: (count: number) => void;
 }) {
   const p = node.props;
-  // Interpolation helper: replaces {{name}} with the user's firstName
-  const si = (v: unknown, fallback = '') => s(v, fallback).replace(/\{\{name\}\}|\{name\}/gi, firstName || '');
+  // Interpolation helper: substitutes all template variables
+  const varsMap = { firstName: firstName || '', companyName: company.name };
+  const si = (v: unknown, fallback = '') => applyVars(s(v, fallback), varsMap);
 
   switch (node.type) {
 
@@ -1142,7 +1152,7 @@ function BlockRenderer({
     case 'check_ergebnis': {
       const scoreVals = Object.values(scores);
       const maxScore  = Math.max(...scoreVals, 1);
-      const headline  = s(p.headline, 'Dein Ergebnis!').replace('{{name}}', firstName || 'dir');
+      const headline  = applyVars(s(p.headline, 'Dein Ergebnis!'), { ...varsMap, firstName: firstName || 'dir' });
       return (
         <div className="fp-card bg-white shadow-sm mx-4 my-3 p-6">
           <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: `${primary}20` }}>
@@ -1292,7 +1302,7 @@ function LeadFormBlock({ props: p, company, br, primary, leadForm, setLeadForm, 
   const emailField = fieldDefs.find((f) => f.type === 'email');
   const emailValue = useFields ? (emailField ? (vals[emailField.id] ?? '') : '') : leadForm.email;
   const canSubmit = emailValue.includes('@') && leadForm.gdpr;
-  const privacyText = s(p.privacyText, 'Ich stimme zu, dass {{company}} meine Daten verarbeitet.').replace('{{company}}', company.name);
+  const privacyText = applyVars(s(p.privacyText, 'Ich stimme zu, dass @companyName meine Daten verarbeitet.'), { companyName: company.name });
 
   const inputCls = 'w-full px-3 py-2.5 border-2 border-slate-200 text-sm focus:outline-none';
 

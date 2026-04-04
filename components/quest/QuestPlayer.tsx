@@ -671,7 +671,7 @@ function LeadForm({ form, setForm, onSubmit, error, company, config }: {
   company: Company;
   config: LeadFormConfig;
 }) {
-  const privacyText = config.privacyText.replace('{{company}}', company.name);
+  const privacyText = config.privacyText.replace(/\{\{company\}\}|@companyName/g, company.name);
 
   return (
     <div className="space-y-4">

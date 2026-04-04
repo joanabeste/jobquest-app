@@ -183,6 +183,7 @@ create table public.funnel_docs (
   content_id    uuid not null,
   content_type  text not null check (content_type in ('quest', 'check', 'form')),
   pages         jsonb not null default '[]'::jsonb,
+  email_config  jsonb,
   created_at    timestamptz not null default now(),
   updated_at    timestamptz not null default now()
 );

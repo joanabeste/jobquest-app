@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Save, Globe, Eye, Undo2, Redo2, Check, Sparkles, Copy, GitBranch, LayoutTemplate } from 'lucide-react';
-import { FunnelDoc, FunnelContentType, FunnelPage, InsertTarget, FunnelNode, FunnelStyle, BlockNode } from '@/lib/funnel-types';
+import { ArrowLeft, Save, Globe, Eye, Undo2, Redo2, Check, Sparkles, Copy, GitBranch, LayoutTemplate, Mail } from 'lucide-react';
+import { FunnelDoc, FunnelContentType, FunnelPage, InsertTarget, FunnelNode, FunnelStyle, BlockNode, EmailConfig } from '@/lib/funnel-types';
+import { getAvailableVariables } from '@/lib/funnel-variables';
 import { funnelStorage } from '@/lib/funnel-storage';
 import {
   createFunnelDoc, insertNode, deleteNode, updateNode, duplicateNode,
@@ -19,6 +20,7 @@ import Canvas from './Canvas';
 import Inspector from './Inspector';
 import GenerateQuestModal from './GenerateQuestModal';
 import FlowView from './FlowView';
+import EmailConfigModal from './EmailConfigModal';
 
 // ─── History hook ─────────────────────────────────────────────────────────────
 function useHistory(initial: FunnelDoc) {
@@ -113,8 +115,11 @@ function FunnelEditorInner({
   const [insertTarget, setInsertTarget] = useState<InsertTarget | null>(null);
   const [savedBriefly, setSavedBriefly] = useState(false);
   const [showGenerateModal, setShowGenerateModal] = useState(false);
+  const [showEmailConfig, setShowEmailConfig] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [view, setView] = useState<'canvas' | 'flow'>('canvas');
+
+  const availableVars = getAvailableVariables(doc.pages.flatMap((p) => p.nodes));
 
   // keep activePageId valid when pages change
   useEffect(() => {
@@ -275,6 +280,13 @@ function FunnelEditorInner({
     push(updateNode(doc, pageId, nodeId, { props: { ...node.props, options } }));
   }
 
+  // ── email config ────────────────────────────────────────────────────────────
+  function handleSaveEmailConfig(emailConfig: EmailConfig) {
+    const next = { ...doc, emailConfig };
+    push(next);
+    funnelStorage.save(next);
+  }
+
   // ── AI generation ───────────────────────────────────────────────────────────
   function handleGenerateQuest(pages: FunnelPage[]) {
     const next = { ...doc, pages };
@@ -369,6 +381,13 @@ function FunnelEditorInner({
             </button>
           </>
         )}
+
+        {/* E-Mail config */}
+        <div className="w-px h-5 bg-slate-200 flex-shrink-0" />
+        <button onClick={() => setShowEmailConfig(true)}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-semibold text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors flex-shrink-0">
+          <Mail size={12} /> E-Mails
+        </button>
 
         {/* Spacer */}
         <div className="flex-1" />
@@ -472,6 +491,7 @@ function FunnelEditorInner({
               pages={doc.pages}
               currentPage={activePage}
               onUpdatePage={handleUpdatePage}
+              availableVars={availableVars}
             />
           </>
         )}
@@ -483,6 +503,14 @@ function FunnelEditorInner({
       <GenerateQuestModal
         onGenerate={handleGenerateQuest}
         onClose={() => setShowGenerateModal(false)}
+      />
+    )}
+    {showEmailConfig && (
+      <EmailConfigModal
+        initial={doc.emailConfig}
+        onSave={handleSaveEmailConfig}
+        onClose={() => setShowEmailConfig(false)}
+        availableVars={availableVars}
       />
     )}
     </>

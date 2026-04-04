@@ -1,9 +1,12 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { Trash2, Copy, MousePointer2, Plus, X, Lock, Bold, Italic, Underline, List, Palette, ChevronDown, ChevronUp } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Trash2, Copy, MousePointer2, Plus, X, Lock, ChevronDown, ChevronUp } from 'lucide-react';
+import RichTextEditor from './RichTextEditor';
 import { FunnelNode, FunnelStyle, FunnelPage, BLOCK_LABELS } from '@/lib/funnel-types';
 import { BLOCK_META } from './NodeView';
+import { VarInput, VarTextarea } from './VarInput';
+import { type VariableDef, CONTEXT_VARIABLES } from '@/lib/funnel-variables';
 
 interface InspectorProps {
   node: FunnelNode | null;
@@ -15,9 +18,11 @@ interface InspectorProps {
   pages?: FunnelPage[];
   currentPage?: FunnelPage;
   onUpdatePage?: (patch: Partial<FunnelPage>) => void;
+  /** All variables available in this funnel (from getAvailableVariables) */
+  availableVars?: VariableDef[];
 }
 
-export default function Inspector({ node, isLocked, onUpdate, onDelete, onDuplicate, extraPanel, pages, currentPage, onUpdatePage }: InspectorProps) {
+export default function Inspector({ node, isLocked, onUpdate, onDelete, onDuplicate, extraPanel, pages, currentPage, onUpdatePage, availableVars = CONTEXT_VARIABLES }: InspectorProps) {
   const [tab, setTab] = useState<'props' | 'style' | 'page'>('props');
 
   // When a block is selected switch to props tab; when deselected switch to page tab
@@ -101,7 +106,7 @@ export default function Inspector({ node, isLocked, onUpdate, onDelete, onDuplic
             </div>
           ) : (
             <div className="p-4">
-              <BlockPropsEditor node={node} props={props} onChange={updateProps} pages={pages} />
+              <BlockPropsEditor node={node} props={props} onChange={updateProps} pages={pages} availableVars={availableVars} />
             </div>
           )
         ) : tab === 'style' && node?.kind === 'block' ? (
@@ -163,99 +168,6 @@ function PageSettingsEditor({ currentPage, pages, onUpdate }: { currentPage?: Fu
   );
 }
 
-// ─── Rich text editor ─────────────────────────────────────────────────────────
-function RichTextEditor({ value, onChange }: { value: string; onChange: (html: string) => void }) {
-  const editorRef  = useRef<HTMLDivElement>(null);
-  const skipRef    = useRef(false);
-  const colorRef   = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (!editorRef.current || skipRef.current) return;
-    if (editorRef.current.innerHTML !== value) {
-      editorRef.current.innerHTML = value ?? '';
-    }
-  }, [value]);
-
-  function exec(cmd: string, arg?: string) {
-    editorRef.current?.focus();
-    document.execCommand(cmd, false, arg);
-    if (editorRef.current) {
-      skipRef.current = true;
-      onChange(editorRef.current.innerHTML);
-      requestAnimationFrame(() => { skipRef.current = false; });
-    }
-  }
-
-  function handleInput() {
-    if (!editorRef.current) return;
-    skipRef.current = true;
-    onChange(editorRef.current.innerHTML);
-    requestAnimationFrame(() => { skipRef.current = false; });
-  }
-
-  // Font-size mapping: XS=1, S=2, M=3(default), L=5
-  const SIZES = [
-    { label: 'XS', val: '1' },
-    { label: 'S',  val: '2' },
-    { label: 'M',  val: '3' },
-    { label: 'L',  val: '5' },
-  ];
-
-  const btnCls = 'p-1 rounded hover:bg-slate-200 text-slate-600 transition-colors';
-
-  return (
-    <div className="border border-slate-200 rounded-lg overflow-hidden text-sm">
-      {/* Toolbar */}
-      <div className="flex items-center gap-0.5 px-1.5 py-1 bg-slate-50 border-b border-slate-200 flex-wrap">
-        <button type="button" onMouseDown={(e) => { e.preventDefault(); exec('bold'); }} className={btnCls} title="Fett">
-          <Bold size={12} />
-        </button>
-        <button type="button" onMouseDown={(e) => { e.preventDefault(); exec('italic'); }} className={btnCls} title="Kursiv">
-          <Italic size={12} />
-        </button>
-        <button type="button" onMouseDown={(e) => { e.preventDefault(); exec('underline'); }} className={btnCls} title="Unterstrichen">
-          <Underline size={12} />
-        </button>
-        <div className="w-px h-4 bg-slate-200 mx-0.5" />
-        {/* Font size */}
-        {SIZES.map((sz) => (
-          <button key={sz.val} type="button"
-            onMouseDown={(e) => { e.preventDefault(); exec('fontSize', sz.val); }}
-            className={`${btnCls} text-[10px] font-semibold px-1.5`}
-            title={`Größe ${sz.label}`}>
-            {sz.label}
-          </button>
-        ))}
-        <div className="w-px h-4 bg-slate-200 mx-0.5" />
-        {/* Text color */}
-        <button type="button"
-          onMouseDown={(e) => { e.preventDefault(); colorRef.current?.click(); }}
-          className={btnCls} title="Textfarbe">
-          <Palette size={12} />
-        </button>
-        <input ref={colorRef} type="color" defaultValue="#000000"
-          onChange={(e) => exec('foreColor', e.target.value)}
-          className="w-0 h-0 opacity-0 absolute" tabIndex={-1} />
-        <div className="w-px h-4 bg-slate-200 mx-0.5" />
-        <button type="button" onMouseDown={(e) => { e.preventDefault(); exec('formatBlock', 'h2'); }} className={`${btnCls} text-[10px] font-bold px-1.5`} title="Überschrift 2">H2</button>
-        <button type="button" onMouseDown={(e) => { e.preventDefault(); exec('formatBlock', 'h3'); }} className={`${btnCls} text-[10px] font-bold px-1.5`} title="Überschrift 3">H3</button>
-        <button type="button" onMouseDown={(e) => { e.preventDefault(); exec('formatBlock', 'p'); }} className={`${btnCls} text-[10px] px-1.5`} title="Absatz">¶</button>
-        <div className="w-px h-4 bg-slate-200 mx-0.5" />
-        <button type="button" onMouseDown={(e) => { e.preventDefault(); exec('insertUnorderedList'); }} className={btnCls} title="Aufzählung">
-          <List size={12} />
-        </button>
-      </div>
-      {/* Editable area */}
-      <div
-        ref={editorRef}
-        contentEditable
-        suppressContentEditableWarning
-        onInput={handleInput}
-        className="min-h-[80px] p-2"
-      />
-    </div>
-  );
-}
 
 function StyleEditor({ style, onChange }: { style: FunnelStyle; onChange: (p: Partial<FunnelStyle>) => void }) {
   return (
@@ -300,11 +212,12 @@ function StyleEditor({ style, onChange }: { style: FunnelStyle; onChange: (p: Pa
 }
 
 // ─── Block props editors ──────────────────────────────────────────────────────
-function BlockPropsEditor({ node, props, onChange, pages }: {
+function BlockPropsEditor({ node, props, onChange, pages, availableVars }: {
   node: import('@/lib/funnel-types').BlockNode;
   props: Record<string, unknown>;
   onChange: (patch: Record<string, unknown>) => void;
   pages?: FunnelPage[];
+  availableVars: VariableDef[];
 }) {
   switch (node.type) {
 
@@ -563,8 +476,7 @@ function BlockPropsEditor({ node, props, onChange, pages }: {
           </Section>
           <Section label="Erweitert" collapsible defaultOpen={false}>
             <Field label="Datenschutz-Text">
-              <textarea value={(props.privacyText as string) ?? ''} onChange={(e) => onChange({ privacyText: e.target.value })} rows={3} className="input-field text-sm resize-none" />
-              <p className="text-[10px] text-slate-400 mt-1">&#123;company&#125; → Firmenname</p>
+              <VarTextarea value={(props.privacyText as string) ?? ''} onChange={(v) => onChange({ privacyText: v })} rows={3} variables={availableVars} />
             </Field>
           </Section>
           {/* Flexible fields builder */}
@@ -697,8 +609,7 @@ function BlockPropsEditor({ node, props, onChange, pages }: {
           </Section>
           <Section label="Erweitert" collapsible defaultOpen={false}>
             <Field label="Datenschutz-Text">
-              <textarea value={(props.privacyText as string) ?? ''} onChange={(e) => onChange({ privacyText: e.target.value })} rows={3} className="input-field text-sm resize-none" />
-              <p className="text-[10px] text-slate-400 mt-1">&#123;company&#125; → Firmenname</p>
+              <VarTextarea value={(props.privacyText as string) ?? ''} onChange={(v) => onChange({ privacyText: v })} rows={3} variables={availableVars} />
             </Field>
           </Section>
         </div>
@@ -707,7 +618,7 @@ function BlockPropsEditor({ node, props, onChange, pages }: {
     case 'check_ergebnis':
       return (
         <div className="space-y-3">
-          <Field label="Überschrift"><input value={(props.headline as string) ?? ''} onChange={(e) => onChange({ headline: e.target.value })} className="input-field text-sm" /><p className="text-[10px] text-slate-400 mt-1">&#123;name&#125; → Vorname</p></Field>
+          <Field label="Überschrift"><VarInput value={(props.headline as string) ?? ''} onChange={(v) => onChange({ headline: v })} variables={availableVars} /></Field>
           <Field label="Untertext"><textarea value={(props.subtext as string) ?? ''} onChange={(e) => onChange({ subtext: e.target.value })} rows={2} className="input-field text-sm resize-none" /></Field>
           <Section label="Erweitert" collapsible defaultOpen={false}>
             <label className="flex items-center gap-2 cursor-pointer">
@@ -787,8 +698,7 @@ function BlockPropsEditor({ node, props, onChange, pages }: {
           </Section>
           <Section label="Erweitert" collapsible defaultOpen={false}>
             <Field label="Datenschutz-Text">
-              <textarea value={(props.privacyText as string) ?? ''} onChange={(e) => onChange({ privacyText: e.target.value })} rows={3} className="input-field text-sm resize-none" />
-              <p className="text-[10px] text-slate-400 mt-1">&#123;company&#125; → Firmenname</p>
+              <VarTextarea value={(props.privacyText as string) ?? ''} onChange={(v) => onChange({ privacyText: v })} rows={3} variables={availableVars} />
             </Field>
           </Section>
           {/* Flexible fields builder */}

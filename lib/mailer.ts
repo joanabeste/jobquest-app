@@ -1,4 +1,6 @@
 import nodemailer from 'nodemailer';
+import type { EmailConfig } from './funnel-types';
+import { applyVars } from './funnel-variables';
 
 function createTransporter() {
   const host = process.env.SMTP_HOST;
@@ -49,4 +51,43 @@ export async function sendInviteEmail({
       <p style="color:#6b7280;font-size:13px">Dieser Link ist 24 Stunden gültig. Falls du ihn nicht angefordert hast, kannst du diese E-Mail ignorieren.</p>
     `,
   });
+}
+
+
+// ─── Lead-E-Mails senden (Bestätigung + Benachrichtigung) ────────────────────
+export async function sendLeadEmails({
+  emailConfig,
+  vars,
+}: {
+  emailConfig: EmailConfig;
+  vars: Record<string, string>; // firstName, lastName, email, phone, companyName
+}) {
+  const transporter = createTransporter();
+  const from = process.env.SMTP_FROM ?? process.env.SMTP_USER ?? '';
+
+  // Bestätigungs-E-Mail → an Bewerber/in
+  if (emailConfig.confirmationEnabled && vars.email) {
+    const attachments = emailConfig.confirmationAttachment?.url
+      ? [{ filename: emailConfig.confirmationAttachment.filename || 'Anhang', path: emailConfig.confirmationAttachment.url }]
+      : [];
+    const body = applyVars(emailConfig.confirmationBody, vars);
+    await transporter.sendMail({
+      from,
+      to: vars.email,
+      subject: applyVars(emailConfig.confirmationSubject, vars),
+      html: body, // visual mode produces HTML; raw HTML mode is also HTML
+      attachments,
+    });
+  }
+
+  // Benachrichtigungs-E-Mail → an interne Empfänger
+  if (emailConfig.notificationEnabled && emailConfig.notificationRecipient) {
+    const body = applyVars(emailConfig.notificationBody, vars);
+    await transporter.sendMail({
+      from,
+      to: emailConfig.notificationRecipient,
+      subject: applyVars(emailConfig.notificationSubject, vars),
+      html: body, // visual mode produces HTML; raw HTML mode is also HTML
+    });
+  }
 }

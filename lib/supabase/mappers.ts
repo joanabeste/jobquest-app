@@ -285,6 +285,7 @@ export function funnelDocFromDb(row: any): FunnelDoc {
     contentId: row.content_id,
     contentType: row.content_type,
     pages: row.pages ?? [],
+    emailConfig: row.email_config ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -296,6 +297,7 @@ export function funnelDocToDb(d: FunnelDoc): Record<string, unknown> {
     content_id: d.contentId,
     content_type: d.contentType,
     pages: d.pages,
+    email_config: d.emailConfig ?? null,
     created_at: d.createdAt,
     updated_at: d.updatedAt,
   };
