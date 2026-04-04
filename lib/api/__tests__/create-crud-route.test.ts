@@ -28,14 +28,13 @@ const mockCreateAdminClient = createAdminClient as jest.Mock;
 // ─── Supabase chain helper ────────────────────────────────────────────────────
 
 function makeChain(result: { data: unknown; error: unknown }) {
-  const chain: Record<string, unknown> = {};
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const chain: any = {};
   for (const m of ['from', 'select', 'eq', 'update', 'delete', 'single']) {
     chain[m] = () => chain;
   }
-  (chain as unknown as PromiseLike<unknown>).then = (
-    resolve: (v: unknown) => unknown,
-    reject?: (e: unknown) => unknown,
-  ) => Promise.resolve(result).then(resolve, reject);
+  chain.then = (resolve: (v: unknown) => unknown, reject?: (e: unknown) => unknown) =>
+    Promise.resolve(result).then(resolve, reject);
   return chain;
 }
 

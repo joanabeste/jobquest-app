@@ -4,7 +4,7 @@ import { parseBody } from '../api/helpers';
 function mockRequest(body: string) {
   return {
     json: async () => JSON.parse(body),
-  } as Parameters<typeof parseBody>[0];
+  } as unknown as Parameters<typeof parseBody>[0];
 }
 
 describe('parseBody', () => {
@@ -19,7 +19,7 @@ describe('parseBody', () => {
   });
 
   test('returns ok:false for invalid JSON', async () => {
-    const req = { json: async () => { throw new SyntaxError('bad json'); } } as Parameters<typeof parseBody>[0];
+    const req = { json: async () => { throw new SyntaxError('bad json'); } } as unknown as Parameters<typeof parseBody>[0];
     const result = await parseBody(req);
     expect(result.ok).toBe(false);
   });
