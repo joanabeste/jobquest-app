@@ -518,6 +518,7 @@ function LogoCropModal({ src, onConfirm, onCancel }: {
   const [natW, setNatW] = useState(0);
   const [natH, setNatH] = useState(0);
   const [zoom, setZoom] = useState(1);
+  const [minZoom, setMinZoom] = useState(1);
   const [ox, setOx] = useState(0.5);
   const [oy, setOy] = useState(0.5);
   const [dragging, setDragging] = useState(false);
@@ -530,7 +531,9 @@ function LogoCropModal({ src, onConfirm, onCancel }: {
     setNatW(nw);
     setNatH(nh);
     const aspect = nw / nh;
-    setZoom(Math.max(aspect >= 1 ? aspect : 1 / aspect, 1));
+    const min = Math.max(aspect >= 1 ? aspect : 1 / aspect, 1);
+    setMinZoom(min);
+    setZoom(min);
   }
 
   const aspect = natW && natH ? natW / natH : 1;
@@ -619,7 +622,7 @@ function LogoCropModal({ src, onConfirm, onCancel }: {
             <span className="text-xs text-slate-400">Zoom</span>
             <span className="text-xs text-slate-400 font-mono">{zoom.toFixed(1)}×</span>
           </div>
-          <input type="range" min={1} max={maxZoom} step={0.01} value={zoom}
+          <input type="range" min={minZoom} max={maxZoom} step={0.01} value={zoom}
             onChange={(e) => setZoom(Number(e.target.value))}
             className="w-full accent-violet-600" />
         </div>
