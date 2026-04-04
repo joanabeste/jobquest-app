@@ -436,7 +436,7 @@ export default function FormularPage() {
     formSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const handleSubmit = (answers: Record<string, string>, gdprConsent: boolean) => {
+  const handleSubmit = async (answers: Record<string, string>, gdprConsent: boolean) => {
     formSubmissionStorage.save({
       id: uuidv4(),
       formPageId: formPage.id,
@@ -445,6 +445,44 @@ export default function FormularPage() {
       gdprConsent,
       submittedAt: new Date().toISOString(),
     });
+
+    // Extract name/email from answers for email vars
+    const allFields = (formPage.formSteps ?? []).flatMap((s) => s.fields);
+    let firstName = '', lastName = '', email = '', phone = '';
+    allFields.forEach((f) => {
+      const v = answers[f.id] ?? '';
+      const lbl = f.label.toLowerCase();
+      if (!email && f.type === 'email' && v) email = v;
+      if (!phone && f.type === 'phone' && v) phone = v;
+      if (!firstName && (lbl.includes('vorname') || lbl === 'name') && v) firstName = v;
+      if (!lastName && lbl.includes('nachname') && v) lastName = v;
+    });
+
+    // Send emails via API (email config lives in FunnelDoc linked to this FormPage)
+    try {
+      await fetch('/api/public/submit-lead', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          lead: {
+            id: uuidv4(),
+            jobQuestId: formPage.id,
+            companyId: formPage.companyId,
+            firstName,
+            lastName,
+            email,
+            phone: phone || undefined,
+            gdprConsent,
+            submittedAt: new Date().toISOString(),
+          },
+          contentId: formPage.id,
+          companyName: company.name,
+        }),
+      });
+    } catch {
+      // Email failure is non-blocking — submission already saved locally
+    }
+
     setSubmitted(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };

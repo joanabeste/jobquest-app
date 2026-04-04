@@ -113,6 +113,7 @@ export function leadFromDb(row: any): Lead {
     gdprConsent: row.gdpr_consent,
     submittedAt: row.submitted_at,
     customFields: row.custom_fields ?? undefined,
+    emailSent: row.email_sent ?? undefined,
   };
 }
 

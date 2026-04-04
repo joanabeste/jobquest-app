@@ -201,6 +201,7 @@ export interface Lead {
   gdprConsent: boolean;
   submittedAt: string;
   customFields?: Record<string, string>;
+  emailSent?: boolean;
 }
 
 export interface AnalyticsEvent {

@@ -6,7 +6,7 @@ import { useToast } from '@/components/ui/Toast';
 import { questStorage, leadStorage, careerCheckStorage, careerCheckLeadStorage, formPageStorage, formSubmissionStorage } from '@/lib/storage';
 import { Dimension, FormField } from '@/lib/types';
 import { formatDateTime } from '@/lib/utils';
-import { Users, Download, Search, Mail, Phone, X, Filter } from 'lucide-react';
+import { Users, Download, Search, Mail, Phone, X, Filter, MailCheck, MailX } from 'lucide-react';
 
 type Source = 'jobquest' | 'berufscheck' | 'formular';
 type SourceFilter = 'all' | Source;
@@ -22,6 +22,7 @@ interface UnifiedLead {
   phone?: string;
   gdprConsent: boolean;
   submittedAt: string;
+  emailSent?: boolean;
   scores?: Record<string, number>;
   dimensions?: Dimension[];
   formAnswers?: Record<string, string>;
@@ -128,6 +129,7 @@ export default function LeadsPage() {
         phone: l.phone,
         gdprConsent: l.gdprConsent,
         submittedAt: l.submittedAt,
+        emailSent: l.emailSent,
       });
     });
 
@@ -309,6 +311,7 @@ export default function LeadsPage() {
                     <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 hidden md:table-cell">Telefon</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500">Quelle</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 hidden sm:table-cell">Eingegangen</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 hidden lg:table-cell">E-Mail</th>
                     <th className="px-4 py-3"></th>
                   </tr>
                 </thead>
@@ -338,6 +341,14 @@ export default function LeadsPage() {
                       </td>
                       <td className="px-4 py-3 text-slate-500 text-xs whitespace-nowrap hidden sm:table-cell">
                         {new Date(lead.submittedAt).toLocaleString('de-DE')}
+                      </td>
+                      <td className="px-4 py-3 hidden lg:table-cell">
+                        {lead.emailSent === true
+                          ? <span title="E-Mail gesendet"><MailCheck size={15} className="text-emerald-500" /></span>
+                          : lead.emailSent === false
+                          ? <span title="E-Mail fehlgeschlagen"><MailX size={15} className="text-red-400" /></span>
+                          : <span className="text-slate-300 text-xs">—</span>
+                        }
                       </td>
                       <td className="px-4 py-3 text-right">
                         <span className="text-xs text-violet-600 font-medium">Details</span>
@@ -412,6 +423,16 @@ function LeadDetailModal({ lead, onClose }: { lead: UnifiedLead; onClose: () => 
                 <a href={`mailto:${lead.email}`} className="text-sm text-violet-600 hover:underline truncate">
                   {lead.email}
                 </a>
+                {lead.emailSent === true && (
+                  <span className="flex items-center gap-1 text-[10px] font-medium text-emerald-600 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-full flex-shrink-0">
+                    <MailCheck size={10} /> gesendet
+                  </span>
+                )}
+                {lead.emailSent === false && (
+                  <span className="flex items-center gap-1 text-[10px] font-medium text-red-500 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded-full flex-shrink-0">
+                    <MailX size={10} /> fehlgeschlagen
+                  </span>
+                )}
               </div>
               {lead.phone && (
                 <div className="flex items-center gap-3">
