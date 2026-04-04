@@ -21,7 +21,7 @@ export function useFunnelHistory(initial: FunnelDoc): FunnelHistory {
     setPast((p) => [...p, present].slice(-50));
     setPresent(next);
     setFuture([]);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [present]);
 
   const undo = useCallback(() => {

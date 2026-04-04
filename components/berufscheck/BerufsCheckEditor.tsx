@@ -12,11 +12,11 @@ import {
 import { getDefaultProps } from '@/lib/funnel-types';
 import {
   ArrowLeft, Plus, Trash2, GripVertical, ChevronUp, ChevronDown,
-  Eye, Globe, Settings, List, Copy, Check, Sparkles, ArrowRight,
+  Eye, Globe, Settings, List, Copy, Sparkles, ArrowRight,
   CheckCircle, X, Link as LinkIcon, MousePointer2,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
-import { InlineBlockEditor, FieldRefs } from './editors/InlineEditors';
+import { InlineBlockEditor } from './editors/InlineEditors';
 import { BlockPreview } from './BlockPreview';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

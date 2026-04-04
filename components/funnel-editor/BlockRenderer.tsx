@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { ArrowRight, Trophy, FileDown, Check, X, MapPin, ChevronRight, ChevronLeft } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ArrowRight, Trophy, FileDown, Check, X, ChevronRight } from 'lucide-react';
 import { BlockNode, LeadFieldDef } from '@/lib/funnel-types';
 import { applyVars } from '@/lib/funnel-variables';
 import { sanitizeHtml } from '@/lib/sanitize';
@@ -129,7 +129,7 @@ function DialogBlock({ lines, primary, visibleCount, onAdvance, firstName, choic
             <div className={`max-w-[78%] ${isRight ? 'items-end' : ''} flex flex-col`}>
               <p className="text-[11px] text-slate-400 mb-1">{isRight && firstName ? firstName : line.speaker}</p>
               {!!line.imageUrl && (
-                // eslint-disable-next-line @next/next/no-img-element
+                 
                 <img src={line.imageUrl} alt="" className="w-full rounded-2xl mb-1.5 max-h-44 object-cover shadow-sm" />
               )}
               {!!line.text && (
@@ -463,7 +463,7 @@ export function BlockRenderer({
       return (
         <div>
           <div className={wrapCls}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
+            { }
             <img src={src} alt={s(p.alt)} className={imgCls} style={imgStyle} />
           </div>
           {b(p.caption) && <p className="text-xs text-slate-400 text-center px-4 pt-1">{s(p.caption)}</p>}
@@ -499,7 +499,7 @@ export function BlockRenderer({
       return (
         <div>
           {imageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
+             
             <img src={imageUrl} alt="" className="w-full max-h-72 object-cover" />
           ) : (
             <div className="h-3" style={{ background: primary }} />
@@ -752,7 +752,7 @@ export function BlockRenderer({
       return (
         <div className="px-6 py-10 text-white text-center min-h-[320px] flex flex-col justify-center" style={{ background: primary }}>
           {!!imageUrl && (
-            // eslint-disable-next-line @next/next/no-img-element
+             
             <img src={imageUrl} alt="" className="w-full max-h-48 object-cover rounded-xl mb-4 opacity-90" />
           )}
           <h1 className="text-2xl font-bold mb-3 leading-tight" dangerouslySetInnerHTML={{ __html: sh(inlineHtml(s(p.headline))) }} />
@@ -875,7 +875,7 @@ export function BlockRenderer({
       return (
         <div className="relative min-h-[320px] flex items-center justify-center text-center overflow-hidden" style={{ background: primary }}>
           {!!imageUrl && (
-            // eslint-disable-next-line @next/next/no-img-element
+             
             <img src={imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover opacity-30" />
           )}
           <div className="relative z-10 px-8 py-12">
@@ -905,7 +905,7 @@ export function BlockRenderer({
       const imageUrl = s(p.imageUrl);
       return imageUrl ? (
         <div>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
+          { }
           <img src={imageUrl} alt="" className="w-full" />
           {b(p.caption) && <p className="text-xs text-slate-400 text-center px-4 pt-1">{s(p.caption)}</p>}
         </div>
@@ -1109,7 +1109,7 @@ export function CompletionScreen({ company, headline, text, primary }: {
       {text && <p className="text-slate-500 text-base leading-relaxed max-w-xs">{text}</p>}
       <div className="mt-8 flex items-center gap-2 text-slate-400 text-xs">
         {company.logo
-          // eslint-disable-next-line @next/next/no-img-element
+           
           ? <img src={company.logo} alt="" className="h-5 w-5 rounded object-contain" />
           : <div className="w-5 h-5 rounded flex items-center justify-center text-white text-[10px] font-bold" style={{ background: primary }}>{company.name.charAt(0)}</div>}
         <span>{company.name}</span>

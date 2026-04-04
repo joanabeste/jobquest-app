@@ -277,7 +277,7 @@ function IntroRenderer({ block, onNext }: { block: IntroBlock; onNext: () => voi
   return (
     <div className="bc-card bg-white shadow-sm p-8 text-center space-y-5">
       {block.imageUrl && (
-        // eslint-disable-next-line @next/next/no-img-element
+         
         <img src={block.imageUrl} alt="" className="w-full max-h-48 object-cover rounded-xl mb-2" />
       )}
       <h1 className="bc-heading text-2xl font-bold">{block.headline}</h1>

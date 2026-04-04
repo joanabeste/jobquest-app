@@ -7,13 +7,13 @@
  */
 
 import { useState, useRef, useMemo, useEffect } from 'react';
-import { FunnelDoc, FunnelNode, LayoutNode, FunnelPage, BlockNode } from '@/lib/funnel-types';
+import { FunnelDoc, LayoutNode, BlockNode } from '@/lib/funnel-types';
 import { Company, Dimension } from '@/lib/types';
 import { flatBlocks, isSubmitPage, computeScores } from '@/lib/funnel-utils';
 import { careerCheckStorage } from '@/lib/storage';
 import { useCorporateDesign } from '@/lib/use-corporate-design';
 import { ChevronLeft, ChevronRight, MapPin } from 'lucide-react';
-import { BlockRenderer, CompletionScreen, StyledBlock, DialogLine, LeadForm, emptyLead } from './BlockRenderer';
+import { CompletionScreen, StyledBlock, DialogLine, LeadForm, emptyLead } from './BlockRenderer';
 
 interface Props { doc: FunnelDoc; company: Company; contentDbId?: string; }
 
@@ -200,7 +200,7 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
             </span>
             <div className="flex-1 flex items-center justify-center min-w-0 px-2">
               {company.logo ? (
-                // eslint-disable-next-line @next/next/no-img-element
+                 
                 <img src={company.logo} alt={company.name} className="h-8 max-w-[160px] object-contain flex-shrink-0" />
               ) : (
                 <p className="text-sm font-semibold text-slate-900 truncate">{company.name}</p>
@@ -214,7 +214,7 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
           /* Default header */
           <div className="px-4 pt-3 pb-2 flex items-center gap-3">
             {company.logo ? (
-              // eslint-disable-next-line @next/next/no-img-element
+               
               <img src={company.logo} alt={company.name} className="h-7 w-7 rounded-lg object-contain border border-slate-200 flex-shrink-0" />
             ) : (
               <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white font-bold text-sm fp-btn flex-shrink-0">

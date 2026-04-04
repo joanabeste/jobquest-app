@@ -18,7 +18,7 @@ async function apiUpsert<T>(putUrl: string, postUrl: string, body: T): Promise<v
 }
 
 /** Generic CRUD storage factory for content types (quest, career-check, form-page). */
-function createContentStorage<T extends { id: string; title?: string }, S extends { slug: string }>(
+function createContentStorage<T extends { id: string; title?: string }, _S extends { slug: string }>(
   endpoint: string,
   supabaseTable: string,
   fromDb: (row: Record<string, unknown>) => T,

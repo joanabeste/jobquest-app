@@ -182,7 +182,7 @@ function PageSettingsEditor({ currentPage, pages, onUpdate }: { currentPage?: Fu
       <div>
         <label className="label">Nächste Seite</label>
         <select className="input-field" value={effectiveNextId} onChange={handleNextChange}>
-          {pages?.filter((p) => p.id !== currentPage.id).map((p, _, arr) => {
+          {pages?.filter((p) => p.id !== currentPage.id).map((p, _) => {
             const i = pages!.indexOf(p);
             return (
               <option key={p.id} value={p.id}>

@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { ROLE_LABELS, ROLE_COLORS } from '@/lib/types';
 import {
   LayoutDashboard, Users, LogOut, ChevronDown,
   Building2, KeyRound, ChevronRight,

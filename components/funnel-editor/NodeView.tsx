@@ -257,7 +257,7 @@ function Ed({ v, up, cl, ph }: {
 
 // ─── Field row (shared by quest_lead, check_lead, form_config) ────────────────
 type FieldDef = { id: string; label: string; placeholder?: string };
-function FieldRows({ fields, placeholderBg, textColor }: { fields: FieldDef[]; placeholderBg: string; textColor: string }) {
+function _FieldRows({ fields, placeholderBg, textColor }: { fields: FieldDef[]; placeholderBg: string; textColor: string }) {
   const rows = fields.length > 0 ? fields : [{ id: 'fallback', label: 'E-Mail', placeholder: 'E-Mail-Adresse' }];
   return (
     <>
@@ -353,7 +353,7 @@ function BlockPreview({ node, onUpdate }: {
       return (
         <div className="overflow-hidden">
           {p.src
-            // eslint-disable-next-line @next/next/no-img-element
+             
             ? <img src={p.src as string} alt={(p.alt as string) || ''} className="w-full object-cover" />
             : <div className="bg-slate-100 h-36 flex items-center justify-center"><ImageIcon size={32} className="text-slate-300" /></div>
           }
@@ -382,7 +382,7 @@ function BlockPreview({ node, onUpdate }: {
       return (
         <div>
           {hasImg
-            // eslint-disable-next-line @next/next/no-img-element
+             
             ? <img src={p.imageUrl as string} alt="" className="w-full max-h-48 object-cover" />
             : <div className="h-3" style={{ background: primary }} />
           }
@@ -677,7 +677,7 @@ function BlockPreview({ node, onUpdate }: {
       return (
         <div className="overflow-hidden">
           {p.imageUrl
-            // eslint-disable-next-line @next/next/no-img-element
+             
             ? <img src={p.imageUrl as string} alt="" className="w-full object-cover" />
             : <div className="bg-slate-100 h-36 flex items-center justify-center"><ImageIcon size={32} className="text-slate-300" /></div>
           }

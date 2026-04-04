@@ -44,7 +44,7 @@ export function createCrudRoute<T extends { id: string; companyId: string }>(
     const dbData = opts.toDb({ ...body, id, companyId: session.company.id });
 
     // Strip immutable columns before update
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     const { id: _id, created_at: _ca, ...updateData } = dbData as Record<string, unknown>;
 
     const { data, error } = await supabase

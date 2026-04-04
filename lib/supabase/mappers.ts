@@ -3,7 +3,7 @@ import type { FunnelDoc } from '../funnel-types';
 
 // fromDb functions intentionally use `any` — the Supabase clients are untyped
 // to avoid RLS 'never' issues, so row shapes cannot be statically verified here.
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 
 // ─── Company ────────────────────────────────────────────────────────────────
 

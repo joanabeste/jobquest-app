@@ -23,7 +23,7 @@ export function BlockPreview({ block, dimensions, company, focusField }: {
     case 'intro': return (
       <div className="relative min-h-[240px] flex items-center justify-center text-center overflow-hidden rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600">
         {block.imageUrl && (
-          /* eslint-disable-next-line @next/next/no-img-element */
+           
           <img src={block.imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover opacity-20" />
         )}
         <div className="relative z-10 px-8 py-10 w-full">
