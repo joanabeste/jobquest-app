@@ -4,6 +4,7 @@ import { Plus, X } from 'lucide-react';
 import { Field, ImageUploadField } from './shared';
 import { VarInput, VarTextarea } from '@/components/funnel-editor/VarInput';
 import type { VariableDef } from '@/lib/funnel-variables';
+import { slugifyVar } from '@/lib/funnel-variables';
 
 type DialogLineDef = { id: string; speaker: string; text: string; imageUrl?: string };
 
@@ -86,7 +87,7 @@ export function DialogEditor({ props, onChange, variables = [] }: { props: Recor
             <button
               onClick={() => hasInput
                 ? onChange({ input: undefined })
-                : onChange({ input: { placeholder: 'Dein Vorname…', captures: 'firstName', followUpText: '' } })}
+                : onChange({ input: { placeholder: 'Vorname', captures: 'vorname', followUpText: '' } })}
               className={`text-[10px] font-medium px-2 py-0.5 rounded-full transition-colors ${hasInput ? 'bg-violet-100 text-violet-700 hover:bg-red-50 hover:text-red-600' : 'text-slate-400 hover:text-violet-600'}`}
             >
               {hasInput ? '× Entfernen' : '+ Hinzufügen'}
@@ -94,19 +95,19 @@ export function DialogEditor({ props, onChange, variables = [] }: { props: Recor
           </div>
           {hasInput && (
             <div className="space-y-1.5">
-              <input value={input?.placeholder ?? ''} onChange={(e) => onChange({ input: { ...input, placeholder: e.target.value } })}
-                className="w-full mini-input" placeholder="Platzhalter…" />
-              <div className="space-y-0.5">
-                <input
-                  value={input?.captures ?? ''}
-                  onChange={(e) => onChange({ input: { ...input, captures: e.target.value.trim() || undefined } })}
-                  className="w-full mini-input"
-                  placeholder="Variable speichern, z.B. firstName, stadt…"
-                />
-                {input?.captures && (
-                  <p className="text-[10px] text-violet-500 pl-0.5">Antwort wird als @{input.captures} verfügbar</p>
-                )}
-              </div>
+              <input
+                value={input?.placeholder ?? ''}
+                onChange={(e) => {
+                  const ph = e.target.value;
+                  const key = slugifyVar(ph) || undefined;
+                  onChange({ input: { ...input, placeholder: ph, captures: key } });
+                }}
+                className="w-full mini-input"
+                placeholder="Platzhalter…"
+              />
+              {input?.captures && (
+                <p className="text-[10px] text-violet-500 pl-0.5">Antwort wird als <span className="font-mono">@{input.captures}</span> verfügbar</p>
+              )}
               <VarTextarea value={input?.followUpText ?? ''} onChange={(v) => onChange({ input: { ...input, followUpText: v } })}
                 rows={2} className="w-full mini-input resize-none" placeholder="Reaktion des Sprechers nach Eingabe (optional)…" variables={variables} />
             </div>

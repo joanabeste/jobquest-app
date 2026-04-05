@@ -18,13 +18,28 @@ export interface VariableDef {
 }
 
 // ─── Always-available context variables ───────────────────────────────────────
-export const CONTEXT_VARIABLES: VariableDef[] = [
-  { key: 'vorname',        label: 'Vorname (aus Dialog)'  },
-  { key: 'companyName',    label: 'Firmenname'            },
-  { key: 'datenschutzUrl', label: 'Datenschutz-URL'       },
-  { key: 'impressumUrl',   label: 'Impressum-URL'         },
-  { key: 'karriereseiteUrl', label: 'Karriereseite'       },
+// Only non-empty values from the company profile are included.
+// vorname is NOT here — it's picked up dynamically from quest_dialog blocks.
+export const CONTEXT_VARIABLE_DEFS: { key: string; label: string }[] = [
+  { key: 'companyName',    label: 'Firmenname'      },
+  { key: 'datenschutzUrl', label: 'Datenschutz-URL' },
+  { key: 'impressumUrl',   label: 'Impressum-URL'   },
+  { key: 'karriereseiteUrl', label: 'Karriereseite' },
 ];
+
+/**
+ * Build the list of always-available context variables, filtered to only
+ * those that are actually set (non-empty) in the company profile.
+ * Pass an empty object to include none (e.g. when company data isn't available).
+ */
+export function getContextVariables(companyContext: Record<string, string> = {}): VariableDef[] {
+  return CONTEXT_VARIABLE_DEFS
+    .filter((def) => !!companyContext[def.key])
+    .map((def) => ({ key: def.key, label: def.label }));
+}
+
+// Legacy export for code that doesn't yet pass company context
+export const CONTEXT_VARIABLES: VariableDef[] = CONTEXT_VARIABLE_DEFS.map((d) => ({ key: d.key, label: d.label }));
 
 // ─── Label → variable-key conversion ─────────────────────────────────────────
 /**
@@ -104,10 +119,10 @@ export const ALL_VAR_KEYS: ReadonlySet<string> = new Set([
 // ─── Collect available variables from nodes + context ─────────────────────────
 /**
  * Returns the deduplicated list of variables available in a funnel,
- * derived from context variables + actual field definitions in lead blocks.
- * Non-checkbox fields with a `variable` key contribute their variable.
+ * derived from company context + actual field/dialog definitions in blocks.
+ * Only includes context variables whose values are non-empty in companyContext.
  */
-export function getAvailableVariables(nodes: FunnelNode[]): VariableDef[] {
+export function getAvailableVariables(nodes: FunnelNode[], companyContext: Record<string, string> = {}): VariableDef[] {
   const seen = new Set<string>();
   const vars: VariableDef[] = [];
 
@@ -115,7 +130,7 @@ export function getAvailableVariables(nodes: FunnelNode[]): VariableDef[] {
     if (!seen.has(v.key)) { seen.add(v.key); vars.push(v); }
   }
 
-  for (const v of CONTEXT_VARIABLES) add(v);
+  for (const v of getContextVariables(companyContext)) add(v);
 
   // Flatten layout columns → collect block nodes
   const blockNodes = nodes.flatMap((n) =>

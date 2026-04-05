@@ -80,7 +80,7 @@ function DialogBlock({ lines, primary, visibleCount, onAdvance, firstName, choic
     const val = inputValue.trim();
     if (!val) return;
     if (input?.captures) {
-      if (input.captures === 'firstName' && onSetFirstName) onSetFirstName(val);
+      if ((input.captures === 'firstName' || input.captures === 'vorname') && onSetFirstName) onSetFirstName(val);
       if (onCapture) onCapture(input.captures, val);
     }
     if (nodeId && onAnswer) onAnswer(nodeId, val);

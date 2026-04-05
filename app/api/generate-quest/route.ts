@@ -22,7 +22,7 @@ Seite 1: quest_spinner  → { "text": "Dein Arbeitstag beginnt…", "doneText": 
                           Automatischer Übergang nach ~2 Sekunden. KEINE anderen Props.
 Seite 2: quest_dialog   → PFLICHT: Namensabfrage über Gespräch.
                           Eine Kollegin stellt sich vor und fragt natürlich nach dem Namen.
-                          MUSS input enthalten: { "placeholder": "Dein Vorname…", "captures": "firstName", "followUpText": "Schön dich kennenzulernen, @vorname!" }
+                          MUSS input enthalten: { "placeholder": "Vorname", "captures": "vorname", "followUpText": "Schön dich kennenzulernen, @vorname!" }
                           4–6 Dialog-Zeilen bevor das input erscheint.
                           Beispiel: "Hallo! Ich bin Sarah. Ich zeige dir heute alles. Wie heißt du?"
                           KEIN quest_vorname Block – ausschließlich quest_dialog mit input verwenden!
@@ -47,7 +47,10 @@ Seite  8: quest_scene     → Pfad B, Teil 1 – unmittelbare Konsequenz der Wah
 Seite  9: quest_dialog    → Pfad B, Teil 2 – wie entwickelt sich Wahl B weiter?
 Seite 10: quest_scene     → ★ KONVERGENZ 1 – Story läuft zusammen. Neutral, passt zu beiden Pfaden.
 Seite 11: quest_quiz      → Quiz 1: Fachliches Wissen
-Seite 12: quest_info      → Spannender Fakt / Einblick in den Beruf
+Seite 12: quest_info / quest_hotspot / quest_sort  → Passenden Typ wählen (siehe Block-Typen unten)!
+                          quest_hotspot: wenn ein Ort, Raum oder Objekt in der Story vorkommt
+                          quest_sort: wenn ein Ablauf oder Prioritäten thematisiert werden
+                          quest_info: für Fakten/Einblicke ohne Interaktion
 Seite 13: quest_decision  → Situation 2 (BRANCHING 2: Option A → Seite 14, Option B → Seite 16)
 Seite 14: quest_scene     → Pfad A, Teil 1 – Konsequenz der Wahl A
 Seite 15: quest_dialog    → Pfad A, Teil 2 – Entwicklung Wahl A [nextPageIndex: 18]
@@ -94,7 +97,7 @@ quest_dialog
       Aufgaben annehmen, Meinungen äußern. Kein Branching – die Story geht danach linear weiter.
     → choices sind KEIN Ersatz für quest_decision (Branching). Sie simulieren Gesprächsrepliken.
   → input (optional): Texteingabe am Ende des Dialogs – für Fragen wie "Wie heißt du?" oder "Was denkst du?".
-    → captures: "firstName" → Antwort wird als @vorname im Rest der Quest verfügbar.
+    → captures: "vorname" → Antwort wird als @vorname im Rest der Quest verfügbar.
     → followUpText: Reaktion der Kollegin auf die Antwort (z.B. "Schön, dich kennenzulernen, @vorname!").
     → Nutze input bevorzugt auf Seite 2 statt quest_vorname (immersiver Einstieg).
 
@@ -131,6 +134,30 @@ quest_info
   Props: { title: string, text: string }
   → Interessanter Fakt, Einblick oder Tipp zum Beruf.
   → title: neugierig machend (z.B. "Wusstest du das?"). text: 2-4 Sätze, überraschend oder inspirierend.
+
+quest_hotspot
+  Props: { imageUrl: "", hotspots: [{ id: "UUID", x: number, y: number, label: string, description: string, icon?: string }], requireAll: boolean, doneText: string }
+  → Bild mit anklickbaren Pins – Nutzer klickt Punkte an um mehr zu erfahren.
+  → Ideal für: Arbeitsräume, Geräte, Werkzeuge, Orte entdecken.
+  → imageUrl: "" (Bild wird im Editor hochgeladen — leer lassen).
+  → hotspots: 3–5 Pins. Labels kurz (2-4 Wörter), descriptions 1-2 informative/spannende Sätze.
+    x, y: Position in Prozent (0–100). Verteile Pins auf verschiedene Bereiche (z.B. 20/30, 70/20, 50/70, 30/65).
+  → requireAll: true damit Nutzer alle Punkte sieht bevor er weitermacht.
+  → doneText: passend zur Situation, z.B. "Alles erkundet!" oder "Weiter erkunden".
+  → Beispiel: "Erkunde die Intensivstation" mit Pins für Monitor, Medikamentenschrank, Pflegebett, Notrufanlage.
+
+quest_sort
+  Props: { question: string, items: [{ id: "UUID", text: string, correctIndex?: number }], showFeedback: boolean, feedbackText: string, shuffleItems: boolean }
+  → Nutzer bringt eine Liste von Elementen per ↑↓-Buttons in die richtige Reihenfolge.
+  → Ideal für: Handlungsabläufe, Prioritäten setzen, Prozessschritte kennenlernen.
+  → question: direkte Aufgabenstellung (z.B. "Bring die Schritte in die richtige Reihenfolge!").
+  → items: 4–6 Elemente. correctIndex (0-basiert) setzen wenn es eine richtige Reihenfolge gibt
+    (0 = das Element das an erster Stelle stehen soll, 1 = zweite Stelle, usw.).
+  → showFeedback: true wenn correctIndex gesetzt ist — dann erscheint nach Bestätigen grünes/rotes Feedback.
+  → feedbackText: positiv und informativ (z.B. "Genau! So läuft es in der Praxis ab.").
+  → shuffleItems: true (Standard – Items werden beim Laden zufällig gemischt).
+  → Beispiel: "Bring die Schritte der Patientenaufnahme in die richtige Reihenfolge"
+    Items: Empfang, Versicherungsprüfung, Erstanamnese, Arzt informieren, Bett zuweisen
 
 quest_rating (⭐ – drittletzte Seite)
   Props: { question: "Wie war dein Arbeitstag?", emoji: "⭐", count: 5 }
@@ -173,6 +200,15 @@ BRANCHING:
 • Die letzte Seite von Pfad A muss nextPageIndex zur Konvergenzseite enthalten, damit Pfad B übersprungen wird.
 • Die Konvergenzseite fasst die Situation neutral zusammen und ergibt Sinn egal welchen Pfad man gewählt hat.
 • Die Story nach der Konvergenz muss unabhängig vom gewählten Pfad logisch und konsistent sein.
+
+INTERAKTIVITÄT & BLOCKVIELFALT:
+• Nutze die volle Bandbreite aller Block-Typen – nicht nur quest_scene und quest_dialog.
+• Vermeide mehrere gleichartige Blöcke direkt hintereinander (z.B. zwei quest_scene ohne Interaktion dazwischen).
+• Setze quest_hotspot ein wenn ein Ort, Raum oder Gerät in der Story auftaucht.
+• Setze quest_sort ein wenn Abläufe, Reihenfolgen oder Prioritäten thematisiert werden.
+• Die Quest soll sich wie ein interaktives Filmerlebnis anfühlen: Spannung, Wendungen, echte Charaktere.
+• Pflicht pro Quest: mindestens 3 × quest_decision, 2 × quest_quiz, 1 × quest_dialog mit choices,
+  und mindestens 1 × quest_sort ODER quest_hotspot (je nach Beruf und Storytelling).
 
 SPRACHE & STIL:
 • Keine Großschreibung für ganze Wörter oder Sätze (kein ALL CAPS).

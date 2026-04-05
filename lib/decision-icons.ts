@@ -6,7 +6,7 @@ import {
   Users, User, UserCheck, UserPlus, Heart, Handshake, Baby, HeartHandshake,
   // Actions & Navigation
   ArrowRight, ArrowLeft, ArrowUp, ArrowDown, ChevronRight, ChevronLeft,
-  ThumbsUp, ThumbsDown, Check, CheckCircle, XCircle, X,
+  ThumbsUp, ThumbsDown, Check, CheckCircle, XCircle,
   // Time & Planning
   Clock, Timer, Calendar, CalendarDays, AlarmClock,
   // Nature & Environment

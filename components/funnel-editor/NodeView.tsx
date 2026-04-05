@@ -343,6 +343,74 @@ function StaticFieldRows({ fields, br }: { fields: LeadFieldDef[]; br: string })
   );
 }
 
+// ─── quest_hotspot canvas preview (needs its own useRef) ─────────────────────
+function QuestHotspotPreview({ p, onUpdate }: {
+  p: Record<string, unknown>;
+  onUpdate?: (props: Record<string, unknown>) => void;
+}) {
+  const imageUrl = (p.imageUrl as string) || '';
+  const hotspots = (p.hotspots as { id: string; x: number; y: number; label: string }[]) || [];
+  const imgElRef = useRef<HTMLImageElement>(null);
+
+  function startDrag(e: React.MouseEvent, hotspotId: string) {
+    if (!onUpdate) return;
+    const update = onUpdate;
+    e.stopPropagation();
+    e.preventDefault();
+
+    function onMove(ev: MouseEvent) {
+      const img = imgElRef.current;
+      if (!img) return;
+      const rect = img.getBoundingClientRect();
+      const x = Math.min(100, Math.max(0, Math.round(((ev.clientX - rect.left) / rect.width) * 100)));
+      const y = Math.min(100, Math.max(0, Math.round(((ev.clientY - rect.top) / rect.height) * 100)));
+      update({ hotspots: hotspots.map((h) => h.id === hotspotId ? { ...h, x, y } : h) });
+    }
+    function onUp() {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    }
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  }
+
+  return (
+    <div className="mx-4 my-3">
+      {imageUrl ? (
+        <div className="relative overflow-hidden rounded-xl select-none">
+          <img
+            ref={imgElRef}
+            src={imageUrl}
+            alt=""
+            className="w-full object-cover"
+            style={{ maxHeight: 280, display: 'block' }}
+            draggable={false}
+          />
+          {hotspots.map((h, i) => (
+            <div
+              key={h.id}
+              title={onUpdate ? `${h.label} — ziehen zum Verschieben` : h.label}
+              onMouseDown={(e) => startDrag(e, h.id)}
+              className={`absolute flex items-center justify-center w-8 h-8 rounded-full bg-white shadow-md border-2 border-rose-400 text-rose-600 text-xs font-bold ${onUpdate ? 'cursor-grab active:cursor-grabbing' : 'pointer-events-none'}`}
+              style={{ left: `${h.x}%`, top: `${h.y}%`, transform: 'translate(-50%, -50%)', zIndex: 10 }}
+            >
+              {i + 1}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="w-full h-36 rounded-xl bg-slate-100 border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-2 text-slate-400">
+          <MapPin size={24} />
+          <span className="text-xs">Bild hochladen und Hotspots platzieren</span>
+        </div>
+      )}
+      {hotspots.length > 0 && (
+        <p className="text-[11px] text-slate-400 mt-2 text-center">{hotspots.length} Hotspot{hotspots.length !== 1 ? 's' : ''}</p>
+      )}
+    </div>
+  );
+}
+
 // ─── Block preview – matches FunnelPlayer visual output ───────────────────────
 function BlockPreview({ node, onUpdate }: {
   node: BlockNode;
@@ -607,69 +675,8 @@ function BlockPreview({ node, onUpdate }: {
         </div>
       );
 
-    case 'quest_hotspot': {
-      const imageUrl = (p.imageUrl as string) || '';
-      const hotspots = (p.hotspots as { id: string; x: number; y: number; label: string }[]) || [];
-      const imgElRef = React.useRef<HTMLImageElement>(null);
-
-      function startDrag(e: React.MouseEvent, hotspotId: string) {
-        if (!onUpdate) return;
-        const update = onUpdate;
-        e.stopPropagation();
-        e.preventDefault();
-
-        function onMove(ev: MouseEvent) {
-          const img = imgElRef.current;
-          if (!img) return;
-          const rect = img.getBoundingClientRect();
-          const x = Math.min(100, Math.max(0, Math.round(((ev.clientX - rect.left) / rect.width) * 100)));
-          const y = Math.min(100, Math.max(0, Math.round(((ev.clientY - rect.top) / rect.height) * 100)));
-          update({ hotspots: hotspots.map((h) => h.id === hotspotId ? { ...h, x, y } : h) });
-        }
-        function onUp() {
-          window.removeEventListener('mousemove', onMove);
-          window.removeEventListener('mouseup', onUp);
-        }
-        window.addEventListener('mousemove', onMove);
-        window.addEventListener('mouseup', onUp);
-      }
-
-      return (
-        <div className="mx-4 my-3">
-          {imageUrl ? (
-            <div className="relative overflow-hidden rounded-xl select-none">
-              <img
-                ref={imgElRef}
-                src={imageUrl}
-                alt=""
-                className="w-full object-cover"
-                style={{ maxHeight: 280, display: 'block' }}
-                draggable={false}
-              />
-              {hotspots.map((h, i) => (
-                <div
-                  key={h.id}
-                  title={up ? `${h.label} — ziehen zum Verschieben` : h.label}
-                  onMouseDown={(e) => startDrag(e, h.id)}
-                  className={`absolute flex items-center justify-center w-8 h-8 rounded-full bg-white shadow-md border-2 border-rose-400 text-rose-600 text-xs font-bold ${onUpdate ? 'cursor-grab active:cursor-grabbing' : 'pointer-events-none'}`}
-                  style={{ left: `${h.x}%`, top: `${h.y}%`, transform: 'translate(-50%, -50%)', zIndex: 10 }}
-                >
-                  {i + 1}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="w-full h-36 rounded-xl bg-slate-100 border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-2 text-slate-400">
-              <MapPin size={24} />
-              <span className="text-xs">Bild hochladen und Hotspots platzieren</span>
-            </div>
-          )}
-          {hotspots.length > 0 && (
-            <p className="text-[11px] text-slate-400 mt-2 text-center">{hotspots.length} Hotspot{hotspots.length !== 1 ? 's' : ''}</p>
-          )}
-        </div>
-      );
-    }
+    case 'quest_hotspot':
+      return <QuestHotspotPreview p={p} onUpdate={onUpdate} />;
 
     case 'quest_sort': {
       const items = (p.items as { id: string; text: string }[]) || [];

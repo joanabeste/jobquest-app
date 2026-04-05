@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useMemo } from 'react';
 import { X, Plus, MapPin, Smile } from 'lucide-react';
 import { Field } from './shared';
 import type { VariableDef } from '@/lib/funnel-variables';
@@ -16,13 +16,13 @@ interface HotspotDef {
   icon?: string;
 }
 
-export function HotspotEditor({ props, onChange, variables = [] }: {
+export function HotspotEditor({ props, onChange }: {
   props: Record<string, unknown>;
   onChange: (p: Record<string, unknown>) => void;
   variables?: VariableDef[];
 }) {
   const imageUrl = (props.imageUrl as string) ?? '';
-  const hotspots = (props.hotspots as HotspotDef[]) ?? [];
+  const hotspots = useMemo(() => (props.hotspots as HotspotDef[]) ?? [], [props.hotspots]);
   const requireAll = (props.requireAll as boolean) ?? true;
   const doneText = (props.doneText as string) ?? 'Weiter erkunden';
 

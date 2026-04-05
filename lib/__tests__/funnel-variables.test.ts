@@ -96,17 +96,38 @@ function leadBlock(id: string, fields: Array<{ id: string; label: string; type: 
   return block(id, 'quest_lead', { fields });
 }
 
+const fullCompanyContext = {
+  companyName: 'Acme GmbH',
+  datenschutzUrl: 'https://acme.de/privacy',
+  impressumUrl: 'https://acme.de/imprint',
+  karriereseiteUrl: 'https://acme.de/jobs',
+};
+
 describe('getAvailableVariables', () => {
-  test('always includes context variables', () => {
-    const vars = getAvailableVariables([]);
+  test('includes set company context variables', () => {
+    const vars = getAvailableVariables([], fullCompanyContext);
     const keys = vars.map((v) => v.key);
     expect(keys).toContain('companyName');
     expect(keys).toContain('datenschutzUrl');
     expect(keys).toContain('impressumUrl');
   });
 
-  test('adds vorname when quest_vorname block is present', () => {
-    const vars = getAvailableVariables([block('b1', 'quest_vorname')]);
+  test('omits company context variables that are not set', () => {
+    const vars = getAvailableVariables([], { companyName: 'Acme' });
+    const keys = vars.map((v) => v.key);
+    expect(keys).toContain('companyName');
+    expect(keys).not.toContain('datenschutzUrl');
+    expect(keys).not.toContain('impressumUrl');
+  });
+
+  test('returns empty list when no context and no blocks', () => {
+    const vars = getAvailableVariables([]);
+    expect(vars).toHaveLength(0);
+  });
+
+  test('adds vorname when quest_dialog has input with captures', () => {
+    const node = block('b1', 'quest_dialog', { input: { placeholder: 'Vorname', captures: 'vorname' } });
+    const vars = getAvailableVariables([node]);
     expect(vars.map((v) => v.key)).toContain('vorname');
   });
 
@@ -124,19 +145,18 @@ describe('getAvailableVariables', () => {
     expect(keys).toContain('telefon');
   });
 
-  test('deduplicates variables when quest_vorname and quest_lead both produce vorname', () => {
+  test('deduplicates variables when dialog and lead both produce vorname', () => {
     const nodes: FunnelNode[] = [
-      block('b1', 'quest_vorname'),
+      block('b1', 'quest_dialog', { input: { placeholder: 'Vorname', captures: 'vorname' } }),
       leadBlock('b2', [{ id: 'f1', label: 'Vorname', type: 'text' }]),
     ];
     const vars = getAvailableVariables(nodes);
-    // both produce 'vorname' — should appear only once
     const vornameCount = vars.filter((v) => v.key === 'vorname').length;
     expect(vornameCount).toBe(1);
   });
 
   test('returns only context variables for unknown block types', () => {
-    const vars = getAvailableVariables([block('b1', 'heading')]);
+    const vars = getAvailableVariables([block('b1', 'heading')], fullCompanyContext);
     expect(vars).toHaveLength(CONTEXT_VARIABLES.length);
   });
 
@@ -145,7 +165,7 @@ describe('getAvailableVariables', () => {
       id: 'layout1',
       kind: 'layout',
       columns: [
-        { id: 'col1', nodes: [block('b1', 'quest_vorname')] },
+        { id: 'col1', nodes: [block('b1', 'quest_dialog', { input: { placeholder: 'Vorname', captures: 'vorname' } })] },
         { id: 'col2', nodes: [] },
       ],
     }];

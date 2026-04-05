@@ -69,7 +69,7 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
     setAnswers((prev) => ({ ...prev, [nodeId]: value }));
   }
   function handleCapture(varName: string, value: string) {
-    if (varName === 'firstName') setFirstName(value);
+    if (varName === 'firstName' || varName === 'vorname') setFirstName(value);
     setCapturedVars((prev) => ({ ...prev, [varName]: value }));
   }
 

@@ -100,7 +100,13 @@ function FunnelEditorInner({
     }
   }, [title]);
 
-  const availableVars = getAvailableVariables(doc.pages.flatMap((p) => p.nodes));
+  const companyContext: Record<string, string> = {
+    companyName:      company?.name ?? '',
+    datenschutzUrl:   company?.privacyUrl ?? '',
+    impressumUrl:     company?.imprintUrl ?? '',
+    karriereseiteUrl: company?.careerPageUrl ?? '',
+  };
+  const availableVars = getAvailableVariables(doc.pages.flatMap((p) => p.nodes), companyContext);
 
   // keep activePageId valid when pages change
   useEffect(() => {
