@@ -16,7 +16,7 @@ import {
   Play, MessageSquare, GitBranch, HelpCircle, Info, FileText,
   User, Sliders, List, CheckSquare, Phone, Trophy,
   Layout, Zap, ArrowRight, Copy, Trash2,
-  FileDown, Send, Star, Timer, ChevronRight, MapPin,
+  FileDown, Send, Star, Timer, ChevronRight, MapPin, ArrowUpDown,
   Bold, Italic, Underline as UnderlineIcon,
   AlignLeft as AlignLeftIcon, AlignCenter, AlignRight,
 } from 'lucide-react';
@@ -68,6 +68,7 @@ const BLOCK_META: Record<FunnelBlockType, { icon: React.ElementType; color: stri
   quest_spinner:       { icon: Timer,         color: 'text-slate-600',   bg: 'bg-slate-100' },
   quest_rating:        { icon: Star,          color: 'text-amber-500',   bg: 'bg-amber-50' },
   quest_hotspot:       { icon: MapPin,        color: 'text-rose-500',    bg: 'bg-rose-50' },
+  quest_sort:          { icon: ArrowUpDown,   color: 'text-indigo-500',  bg: 'bg-indigo-50' },
   check_intro:         { icon: Zap,           color: 'text-violet-600',  bg: 'bg-violet-50' },
   check_vorname:       { icon: User,          color: 'text-blue-600',    bg: 'bg-blue-50' },
   check_frage:         { icon: HelpCircle,    color: 'text-amber-600',   bg: 'bg-amber-50' },
@@ -609,17 +610,49 @@ function BlockPreview({ node, onUpdate }: {
     case 'quest_hotspot': {
       const imageUrl = (p.imageUrl as string) || '';
       const hotspots = (p.hotspots as { id: string; x: number; y: number; label: string }[]) || [];
+      const imgElRef = React.useRef<HTMLImageElement>(null);
+
+      function startDrag(e: React.MouseEvent, hotspotId: string) {
+        if (!onUpdate) return;
+        const update = onUpdate;
+        e.stopPropagation();
+        e.preventDefault();
+
+        function onMove(ev: MouseEvent) {
+          const img = imgElRef.current;
+          if (!img) return;
+          const rect = img.getBoundingClientRect();
+          const x = Math.min(100, Math.max(0, Math.round(((ev.clientX - rect.left) / rect.width) * 100)));
+          const y = Math.min(100, Math.max(0, Math.round(((ev.clientY - rect.top) / rect.height) * 100)));
+          update({ hotspots: hotspots.map((h) => h.id === hotspotId ? { ...h, x, y } : h) });
+        }
+        function onUp() {
+          window.removeEventListener('mousemove', onMove);
+          window.removeEventListener('mouseup', onUp);
+        }
+        window.addEventListener('mousemove', onMove);
+        window.addEventListener('mouseup', onUp);
+      }
+
       return (
         <div className="mx-4 my-3">
           {imageUrl ? (
-            <div className="relative overflow-hidden rounded-xl">
-              <img src={imageUrl} alt="" className="w-full object-cover" style={{ maxHeight: 280 }} />
+            <div className="relative overflow-hidden rounded-xl select-none">
+              <img
+                ref={imgElRef}
+                src={imageUrl}
+                alt=""
+                className="w-full object-cover"
+                style={{ maxHeight: 280, display: 'block' }}
+                draggable={false}
+              />
               {hotspots.map((h, i) => (
                 <div
                   key={h.id}
-                  title={h.label}
-                  className="absolute flex items-center justify-center w-8 h-8 rounded-full bg-white shadow-md border-2 border-rose-400 text-rose-600 text-xs font-bold pointer-events-none"
-                  style={{ left: `${h.x}%`, top: `${h.y}%`, transform: 'translate(-50%, -50%)' }}
+                  title={up ? `${h.label} — ziehen zum Verschieben` : h.label}
+                  onMouseDown={(e) => startDrag(e, h.id)}
+                  className={`absolute flex items-center justify-center w-8 h-8 rounded-full bg-white shadow-md border-2 border-rose-400 text-rose-600 text-xs font-bold ${onUpdate ? 'cursor-grab active:cursor-grabbing' : 'pointer-events-none'}`}
+                  style={{ left: `${h.x}%`, top: `${h.y}%`, transform: 'translate(-50%, -50%)', zIndex: 10 }}
                 >
                   {i + 1}
                 </div>
@@ -634,6 +667,27 @@ function BlockPreview({ node, onUpdate }: {
           {hotspots.length > 0 && (
             <p className="text-[11px] text-slate-400 mt-2 text-center">{hotspots.length} Hotspot{hotspots.length !== 1 ? 's' : ''}</p>
           )}
+        </div>
+      );
+    }
+
+    case 'quest_sort': {
+      const items = (p.items as { id: string; text: string }[]) || [];
+      return (
+        <div className="mx-4 my-3">
+          <RichEd v={(p.question as string) ?? ''} up={up?.('question')} ph="Bringe die Elemente in die richtige Reihenfolge…" cl="fp-heading mb-3 block" />
+          <div className="bg-white border border-slate-200 rounded-xl shadow-sm divide-y divide-slate-100 overflow-hidden">
+            {items.map((item, i) => (
+              <div key={item.id} className="flex items-center gap-3 px-4 py-3">
+                <span className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-600 text-[10px] font-bold flex items-center justify-center flex-shrink-0">{i + 1}</span>
+                <span className="flex-1 text-sm text-slate-700">{item.text || `Element ${i + 1}`}</span>
+                <div className="flex flex-col gap-0.5 text-slate-300">
+                  <ChevronRight size={12} className="rotate-[-90deg]" />
+                  <ChevronRight size={12} className="rotate-90" />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       );
     }

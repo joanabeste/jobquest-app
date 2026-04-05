@@ -131,6 +131,7 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
   const decisionBlock = blocks.find((bl) => bl.type === 'quest_decision');
   const quizBlock     = blocks.find((bl) => bl.type === 'quest_quiz');
   const ratingBlock   = blocks.find((bl) => bl.type === 'quest_rating');
+  const sortBlock     = blocks.find((bl) => bl.type === 'quest_sort');
   const dialogBlock   = blocks.find((bl) => bl.type === 'quest_dialog');
   const dialogLines   = dialogBlock ? ((dialogBlock.props.lines as DialogLine[]) || []) : [];
   const dialogComplete = !dialogBlock || dialogVisible >= dialogLines.length;
@@ -155,6 +156,7 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
   const weiterEnabled = (!decisionBlock || decisionSelected !== undefined)
                      && (!quizBlock     || answers[quizBlock.id] !== undefined)
                      && (!ratingBlock   || answers[ratingBlock.id] !== undefined)
+                     && (!sortBlock     || answers[`${sortBlock.id}_confirmed`] === true)
                      && dialogComplete
                      && dialogInteractionAnswered;
 

@@ -4,7 +4,8 @@ import { useState, useRef, useCallback } from 'react';
 import { X, Plus, MapPin, Smile } from 'lucide-react';
 import { Field } from './shared';
 import type { VariableDef } from '@/lib/funnel-variables';
-import { DECISION_ICONS, isIconName } from '@/lib/decision-icons';
+import { DECISION_ICONS, isIconName, isEmoji } from '@/lib/decision-icons';
+import { IconEmojiPicker } from './IconEmojiPicker';
 
 interface HotspotDef {
   id: string;
@@ -211,8 +212,8 @@ export function HotspotEditor({ props, onChange, variables = [] }: {
             />
           </Field>
 
-          {/* Icon picker */}
-          <Field label="Icon (optional)">
+          {/* Icon/emoji picker */}
+          <Field label="Icon oder Emoji (optional)">
             <div className="flex items-center gap-2">
               <button
                 type="button"
@@ -221,35 +222,25 @@ export function HotspotEditor({ props, onChange, variables = [] }: {
               >
                 {isIconName(selected.icon)
                   ? (() => { const Ic = DECISION_ICONS[selected.icon!]; return <Ic size={13} className="text-violet-500" />; })()
-                  : <Smile size={13} className="text-slate-400" />
+                  : isEmoji(selected.icon)
+                    ? <span className="text-base leading-none">{selected.icon}</span>
+                    : <Smile size={13} className="text-slate-400" />
                 }
-                {selected.icon && isIconName(selected.icon) ? selected.icon : 'Icon wählen'}
+                <span>{selected.icon && (isIconName(selected.icon) || isEmoji(selected.icon)) ? selected.icon : 'Wählen…'}</span>
               </button>
               {selected.icon && (
-                <button
-                  type="button"
-                  onClick={() => updateHotspot(selected.id, { icon: '' })}
-                  className="text-[10px] text-slate-400 hover:text-red-500"
-                >
+                <button type="button" onClick={() => updateHotspot(selected.id, { icon: '' })} className="text-[10px] text-slate-400 hover:text-red-500">
                   <X size={10} />
                 </button>
               )}
             </div>
             {iconPickerOpen && (
-              <div className="mt-1.5 bg-white border border-slate-200 rounded-xl p-2 shadow-md">
-                <div className="grid grid-cols-8 gap-1">
-                  {Object.entries(DECISION_ICONS).map(([name, Icon]) => (
-                    <button
-                      key={name}
-                      type="button"
-                      onClick={() => { updateHotspot(selected.id, { icon: name }); setIconPickerOpen(false); }}
-                      className={`w-7 h-7 rounded-lg flex items-center justify-center hover:bg-violet-50 transition-colors ${selected.icon === name ? 'bg-violet-100 text-violet-600' : 'text-slate-500'}`}
-                      title={name}
-                    >
-                      <Icon size={14} />
-                    </button>
-                  ))}
-                </div>
+              <div className="mt-1.5">
+                <IconEmojiPicker
+                  value={selected.icon}
+                  onChange={(v) => updateHotspot(selected.id, { icon: v })}
+                  onClose={() => setIconPickerOpen(false)}
+                />
               </div>
             )}
           </Field>

@@ -6,7 +6,7 @@ export type FunnelBlockType =
   | 'heading' | 'paragraph' | 'button' | 'image' | 'spacer' | 'video'
   // JobQuest
   | 'quest_scene' | 'quest_dialog' | 'quest_decision' | 'quest_quiz' | 'quest_info' | 'quest_freetext'
-  | 'quest_file' | 'quest_lead' | 'quest_spinner' | 'quest_rating' | 'quest_hotspot'
+  | 'quest_file' | 'quest_lead' | 'quest_spinner' | 'quest_rating' | 'quest_hotspot' | 'quest_sort'
   // BerufsCheck
   | 'check_intro' | 'check_vorname' | 'check_frage' | 'check_ergebnisfrage' | 'check_selbst' | 'check_lead' | 'check_ergebnis'
   // Formular
@@ -153,6 +153,7 @@ export function getDefaultProps(type: FunnelBlockType): Record<string, unknown> 
     case 'quest_quiz':          return { question: 'Frage?', options: [{ id: uid(), text: 'Antwort A', correct: true, feedback: 'Richtig!' }] };
     case 'quest_lead':          return contactLeadDefault();
     case 'quest_hotspot':       return { imageUrl: '', hotspots: [{ id: uid(), x: 50, y: 50, label: 'Entdecke mich', description: '', icon: '' }], requireAll: true, doneText: 'Weiter erkunden' };
+    case 'quest_sort':          return { question: 'Bringe die Schritte in die richtige Reihenfolge:', items: [{ id: uid(), text: 'Schritt 1' }, { id: uid(), text: 'Schritt 2' }, { id: uid(), text: 'Schritt 3' }], showFeedback: false, feedbackText: 'Gut sortiert!', shuffleItems: true };
     case 'check_frage':         return { frageType: 'single_choice', question: 'Frage?', options: [{ id: uid(), text: 'Option A', scores: {} }] };
     case 'check_ergebnisfrage': return { question: 'Ergebnisfrage?', options: [{ id: uid(), text: 'Option A', scores: {} }] };
     case 'check_lead':          return contactLeadDefault();
@@ -181,6 +182,7 @@ export const DEFAULT_BLOCK_PROPS: Record<FunnelBlockType, Record<string, unknown
   quest_spinner:       { text: 'Einen Moment…', doneText: 'Geschafft!' },
   quest_rating:        { question: 'Wie war dein Erlebnis?', emoji: '⭐', count: 5 },
   quest_hotspot:       { imageUrl: '', hotspots: [], requireAll: true, doneText: 'Weiter erkunden' },
+  quest_sort:          { question: 'Bringe die Schritte in die richtige Reihenfolge:', items: [], showFeedback: false, feedbackText: 'Gut sortiert!', shuffleItems: true },
   quest_lead:          { headline: 'Interessiert?', subtext: 'Hinterlasse deine Kontaktdaten – wir melden uns bei dir.', buttonText: 'Jetzt bewerben', privacyText: 'Ich stimme zu, dass @companyName meine Daten speichert und mich kontaktiert.', fields: [] },
   check_intro:         { headline: 'Bist du geeignet?', subtext: 'Mache jetzt den Check.', imageUrl: '', buttonText: 'Jetzt starten' },
   check_vorname:       { question: 'Wie heißt du?', placeholder: 'Dein Vorname', buttonText: 'Weiter' },
@@ -219,6 +221,7 @@ export const BLOCK_CATALOG: Record<FunnelContentType, BlockTypeConfig[]> = {
     { type: 'quest_rating',   label: 'Bewertung',     description: 'Sterne oder Emoji-Bewertung',          category: 'Interaktion', defaultProps: DEFAULT_BLOCK_PROPS.quest_rating },
     { type: 'quest_file',     label: 'Datei',         description: 'Downloadbarer Anhang (PDF etc.)',      category: 'Medien',      defaultProps: DEFAULT_BLOCK_PROPS.quest_file },
     { type: 'quest_hotspot',  label: 'Hotspot',       description: 'Klickbare Punkte auf einem Bild',      category: 'Interaktion', defaultProps: DEFAULT_BLOCK_PROPS.quest_hotspot },
+    { type: 'quest_sort',     label: 'Sortierung',    description: 'Elemente in die richtige Reihenfolge', category: 'Interaktion', defaultProps: DEFAULT_BLOCK_PROPS.quest_sort },
     { type: 'quest_spinner',  label: 'Ladescreen',    description: 'Ladeanimation, geht automatisch weiter', category: 'Logik',    defaultProps: DEFAULT_BLOCK_PROPS.quest_spinner },
     { type: 'quest_lead',     label: 'Kontaktformular', description: 'Fester Abschluss – Lead-Erfassung', category: 'Abschluss',   defaultProps: DEFAULT_BLOCK_PROPS.quest_lead },
     ...BASIC_CONTENT,
@@ -246,7 +249,7 @@ export const BLOCK_CATALOG: Record<FunnelContentType, BlockTypeConfig[]> = {
 export const BLOCK_LABELS: Record<FunnelBlockType, string> = {
   heading: 'Überschrift', paragraph: 'Text', button: 'Button', image: 'Bild', spacer: 'Abstand', video: 'Video',
   quest_scene: 'Szene', quest_dialog: 'Dialog', quest_decision: 'Entscheidung', quest_quiz: 'Quiz', quest_info: 'Info', quest_freetext: 'Freitext',
-  quest_file: 'Datei', quest_lead: 'Kontaktformular', quest_spinner: 'Ladescreen', quest_rating: 'Bewertung', quest_hotspot: 'Hotspot',
+  quest_file: 'Datei', quest_lead: 'Kontaktformular', quest_spinner: 'Ladescreen', quest_rating: 'Bewertung', quest_hotspot: 'Hotspot', quest_sort: 'Sortierung',
   check_intro: 'Intro', check_vorname: 'Name', check_frage: 'Frage', check_ergebnisfrage: 'Ergebnisfrage', check_selbst: 'Selbsteinschätzung', check_lead: 'Kontaktformular', check_ergebnis: 'Ergebnis',
   form_hero: 'Hero', form_text: 'Textabschnitt', form_image: 'Bild', form_step: 'Formular-Schritt', form_config: 'Einstellungen',
 };
