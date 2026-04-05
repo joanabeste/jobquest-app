@@ -17,6 +17,7 @@ import { DecisionEditor } from './inspectors/DecisionEditor';
 import { QuizEditor } from './inspectors/QuizEditor';
 import { FrageEditor, ErgebnisfrageEditor } from './inspectors/FrageEditor';
 import { FormStepEditor } from './inspectors/FormStepEditor';
+import { HotspotEditor } from './inspectors/HotspotEditor';
 
 // ─── Crop modal ───────────────────────────────────────────────────────────────
 type CropBox = { left: number; top: number; right: number; bottom: number };
@@ -730,6 +731,9 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars }: {
 
     case 'quest_quiz':
       return <QuizEditor props={props} onChange={onChange} variables={availableVars} />;
+
+    case 'quest_hotspot':
+      return <HotspotEditor props={props} onChange={onChange} variables={availableVars} />;
 
     case 'quest_info':
       return (

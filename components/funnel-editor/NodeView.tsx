@@ -16,7 +16,7 @@ import {
   Play, MessageSquare, GitBranch, HelpCircle, Info, FileText,
   User, Sliders, List, CheckSquare, Phone, Trophy,
   Layout, Zap, ArrowRight, Copy, Trash2,
-  FileDown, Send, Star, Timer, ChevronRight,
+  FileDown, Send, Star, Timer, ChevronRight, MapPin,
   Bold, Italic, Underline as UnderlineIcon,
   AlignLeft as AlignLeftIcon, AlignCenter, AlignRight,
 } from 'lucide-react';
@@ -68,6 +68,7 @@ const BLOCK_META: Record<FunnelBlockType, { icon: React.ElementType; color: stri
   quest_spinner:       { icon: Timer,         color: 'text-slate-600',   bg: 'bg-slate-100' },
   quest_rating:        { icon: Star,          color: 'text-amber-500',   bg: 'bg-amber-50' },
   quest_vorname:       { icon: User,          color: 'text-blue-600',    bg: 'bg-blue-50' },
+  quest_hotspot:       { icon: MapPin,        color: 'text-rose-500',    bg: 'bg-rose-50' },
   check_intro:         { icon: Zap,           color: 'text-violet-600',  bg: 'bg-violet-50' },
   check_vorname:       { icon: User,          color: 'text-blue-600',    bg: 'bg-blue-50' },
   check_frage:         { icon: HelpCircle,    color: 'text-amber-600',   bg: 'bg-amber-50' },
@@ -614,6 +615,38 @@ function BlockPreview({ node, onUpdate }: {
           <p className="text-base font-medium text-slate-700">{(p.text as string) || 'Einen Moment…'}</p>
         </div>
       );
+
+    case 'quest_hotspot': {
+      const imageUrl = (p.imageUrl as string) || '';
+      const hotspots = (p.hotspots as { id: string; x: number; y: number; label: string }[]) || [];
+      return (
+        <div className="mx-4 my-3">
+          {imageUrl ? (
+            <div className="relative overflow-hidden rounded-xl">
+              <img src={imageUrl} alt="" className="w-full object-cover" style={{ maxHeight: 280 }} />
+              {hotspots.map((h, i) => (
+                <div
+                  key={h.id}
+                  title={h.label}
+                  className="absolute flex items-center justify-center w-8 h-8 rounded-full bg-white shadow-md border-2 border-rose-400 text-rose-600 text-xs font-bold pointer-events-none"
+                  style={{ left: `${h.x}%`, top: `${h.y}%`, transform: 'translate(-50%, -50%)' }}
+                >
+                  {i + 1}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="w-full h-36 rounded-xl bg-slate-100 border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-2 text-slate-400">
+              <MapPin size={24} />
+              <span className="text-xs">Bild hochladen und Hotspots platzieren</span>
+            </div>
+          )}
+          {hotspots.length > 0 && (
+            <p className="text-[11px] text-slate-400 mt-2 text-center">{hotspots.length} Hotspot{hotspots.length !== 1 ? 's' : ''}</p>
+          )}
+        </div>
+      );
+    }
 
     case 'quest_rating': {
       const count = Math.min(8, Math.max(1, (p.count as number) || 5));

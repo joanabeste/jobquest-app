@@ -1,0 +1,252 @@
+'use client';
+
+import { useState, useRef } from 'react';
+import { X, Plus, MapPin, Smile } from 'lucide-react';
+import { Field } from './shared';
+import type { VariableDef } from '@/lib/funnel-variables';
+import { DECISION_ICONS, isIconName } from '@/lib/decision-icons';
+
+interface HotspotDef {
+  id: string;
+  x: number;
+  y: number;
+  label: string;
+  description: string;
+  icon?: string;
+}
+
+export function HotspotEditor({ props, onChange, variables = [] }: {
+  props: Record<string, unknown>;
+  onChange: (p: Record<string, unknown>) => void;
+  variables?: VariableDef[];
+}) {
+  const imageUrl = (props.imageUrl as string) ?? '';
+  const hotspots = (props.hotspots as HotspotDef[]) ?? [];
+  const requireAll = (props.requireAll as boolean) ?? true;
+  const doneText = (props.doneText as string) ?? 'Weiter erkunden';
+
+  const [selectedId, setSelectedId] = useState<string | null>(hotspots[0]?.id ?? null);
+  const [iconPickerOpen, setIconPickerOpen] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
+
+  const selected = hotspots.find((h) => h.id === selectedId) ?? null;
+
+  function updateHotspot(id: string, patch: Partial<HotspotDef>) {
+    onChange({ hotspots: hotspots.map((h) => h.id === id ? { ...h, ...patch } : h) });
+  }
+
+  function removeHotspot(id: string) {
+    const next = hotspots.filter((h) => h.id !== id);
+    onChange({ hotspots: next });
+    setSelectedId(next[0]?.id ?? null);
+  }
+
+  function handleImageClick(e: React.MouseEvent<HTMLImageElement>) {
+    const img = imgRef.current;
+    if (!img) return;
+    const rect = img.getBoundingClientRect();
+    const x = Math.round(((e.clientX - rect.left) / rect.width) * 100);
+    const y = Math.round(((e.clientY - rect.top) / rect.height) * 100);
+    const newSpot: HotspotDef = { id: crypto.randomUUID(), x, y, label: 'Neuer Punkt', description: '', icon: '' };
+    onChange({ hotspots: [...hotspots, newSpot] });
+    setSelectedId(newSpot.id);
+  }
+
+  function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => onChange({ imageUrl: reader.result as string });
+    reader.readAsDataURL(file);
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Image upload */}
+      <Field label="Bild">
+        <input
+          type="file"
+          accept="image/*"
+          onChange={handleUpload}
+          className="block text-[10px] text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[10px] file:font-medium file:bg-slate-100 file:text-slate-600 hover:file:bg-slate-200 cursor-pointer"
+        />
+      </Field>
+
+      {/* Image with hotspot placement */}
+      {imageUrl ? (
+        <div>
+          <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Hotspots platzieren</p>
+          <p className="text-[10px] text-slate-400 mb-2">Klick auf das Bild → neuer Hotspot. Klick auf Nummer → bearbeiten.</p>
+          <div className="relative rounded-xl overflow-hidden border border-slate-200">
+            <img
+              ref={imgRef}
+              src={imageUrl}
+              alt=""
+              className="w-full object-cover cursor-crosshair"
+              style={{ maxHeight: 220 }}
+              onClick={handleImageClick}
+              draggable={false}
+            />
+            {hotspots.map((h, i) => {
+              const isActive = selectedId === h.id;
+              return (
+                <button
+                  key={h.id}
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setSelectedId(h.id); }}
+                  className={`absolute flex items-center justify-center w-7 h-7 rounded-full text-[11px] font-bold shadow-md border-2 transition-all ${
+                    isActive
+                      ? 'bg-rose-500 border-rose-600 text-white scale-110'
+                      : 'bg-white border-rose-400 text-rose-600 hover:scale-105'
+                  }`}
+                  style={{ left: `${h.x}%`, top: `${h.y}%`, transform: 'translate(-50%, -50%)' }}
+                  title={h.label}
+                >
+                  {i + 1}
+                </button>
+              );
+            })}
+          </div>
+          {imageUrl && (
+            <button
+              type="button"
+              onClick={() => onChange({ imageUrl: '' })}
+              className="mt-1.5 text-[10px] text-slate-400 hover:text-red-500 flex items-center gap-1"
+            >
+              <X size={10} /> Bild entfernen
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="w-full h-28 rounded-xl bg-slate-50 border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-1.5 text-slate-400">
+          <MapPin size={20} />
+          <span className="text-[11px]">Erst Bild hochladen</span>
+        </div>
+      )}
+
+      {/* Selected hotspot editor */}
+      {selected && (
+        <div className="bg-slate-50 rounded-xl p-3 space-y-2.5 border border-slate-200">
+          <div className="flex items-center justify-between">
+            <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
+              Hotspot {hotspots.findIndex((h) => h.id === selected.id) + 1} bearbeiten
+            </p>
+            <button
+              type="button"
+              onClick={() => removeHotspot(selected.id)}
+              className="p-1 rounded hover:bg-red-100 text-slate-400 hover:text-red-500 transition-colors"
+            >
+              <X size={12} />
+            </button>
+          </div>
+
+          <Field label="Label (kurz)">
+            <input
+              value={selected.label}
+              onChange={(e) => updateHotspot(selected.id, { label: e.target.value })}
+              className="input-field text-sm w-full"
+              placeholder="z.B. Pausenraum"
+            />
+          </Field>
+
+          <Field label="Beschreibung">
+            <textarea
+              value={selected.description}
+              onChange={(e) => updateHotspot(selected.id, { description: e.target.value })}
+              className="input-field text-sm w-full resize-none"
+              rows={3}
+              placeholder="Was gibt es hier zu entdecken?"
+            />
+          </Field>
+
+          {/* Icon picker */}
+          <Field label="Icon (optional)">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIconPickerOpen((o) => !o)}
+                className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg border border-slate-200 bg-white text-[11px] text-slate-600 hover:border-violet-300 transition-colors"
+              >
+                {isIconName(selected.icon)
+                  ? (() => { const Ic = DECISION_ICONS[selected.icon!]; return <Ic size={13} className="text-violet-500" />; })()
+                  : <Smile size={13} className="text-slate-400" />
+                }
+                {selected.icon && isIconName(selected.icon) ? selected.icon : 'Icon wählen'}
+              </button>
+              {selected.icon && (
+                <button
+                  type="button"
+                  onClick={() => updateHotspot(selected.id, { icon: '' })}
+                  className="text-[10px] text-slate-400 hover:text-red-500"
+                >
+                  <X size={10} />
+                </button>
+              )}
+            </div>
+            {iconPickerOpen && (
+              <div className="mt-1.5 bg-white border border-slate-200 rounded-xl p-2 shadow-md">
+                <div className="grid grid-cols-8 gap-1">
+                  {Object.entries(DECISION_ICONS).map(([name, Icon]) => (
+                    <button
+                      key={name}
+                      type="button"
+                      onClick={() => { updateHotspot(selected.id, { icon: name }); setIconPickerOpen(false); }}
+                      className={`w-7 h-7 rounded-lg flex items-center justify-center hover:bg-violet-50 transition-colors ${selected.icon === name ? 'bg-violet-100 text-violet-600' : 'text-slate-500'}`}
+                      title={name}
+                    >
+                      <Icon size={14} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </Field>
+        </div>
+      )}
+
+      {!selected && imageUrl && (
+        <p className="text-[11px] text-slate-400 text-center">Klicke auf das Bild um den ersten Hotspot zu platzieren</p>
+      )}
+
+      {/* Add hotspot button (when image exists) */}
+      {imageUrl && (
+        <button
+          type="button"
+          onClick={() => {
+            const newSpot: HotspotDef = { id: crypto.randomUUID(), x: 50, y: 50, label: 'Neuer Punkt', description: '', icon: '' };
+            onChange({ hotspots: [...hotspots, newSpot] });
+            setSelectedId(newSpot.id);
+          }}
+          className="w-full flex items-center justify-center gap-1.5 py-2 border-2 border-dashed border-slate-200 text-xs text-slate-400 font-medium hover:border-rose-300 hover:text-rose-500 hover:bg-rose-50/40 transition-all rounded-xl"
+        >
+          <Plus size={11} /> Hotspot hinzufügen
+        </button>
+      )}
+
+      <div className="h-px bg-slate-100" />
+
+      {/* Require all + done text */}
+      <div className="flex items-center gap-2">
+        <input
+          type="checkbox"
+          id="requireAll"
+          checked={requireAll}
+          onChange={(e) => onChange({ requireAll: e.target.checked })}
+          className="rounded"
+        />
+        <label htmlFor="requireAll" className="text-[11px] text-slate-600 cursor-pointer">
+          Alle Hotspots müssen entdeckt werden
+        </label>
+      </div>
+
+      <Field label="Button-Text">
+        <input
+          value={doneText}
+          onChange={(e) => onChange({ doneText: e.target.value })}
+          className="input-field text-sm w-full"
+          placeholder="Weiter erkunden"
+        />
+      </Field>
+    </div>
+  );
+}
