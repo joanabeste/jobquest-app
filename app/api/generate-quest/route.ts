@@ -20,11 +20,12 @@ Seite 0: quest_scene    → Beruf vorstellen: Was macht diesen Job aus? Was erwa
                           description = 2-3 Sätze, die den Job lebendig und einladend beschreiben.
 Seite 1: quest_spinner  → { "text": "Dein Arbeitstag beginnt…", "doneText": "Los geht's!" }
                           Automatischer Übergang nach ~2 Sekunden. KEINE anderen Props.
-Seite 2: WAHL – Nameseingabe (eine der beiden Optionen):
-  Option A (einfach): quest_vorname → { "question": "Wie heißt du?", "placeholder": "Dein Vorname…" }
-  Option B (immersiver): quest_dialog mit input → Eine Kollegin stellt sich vor und fragt nach dem Namen.
-    Verwende input: { "placeholder": "Dein Vorname…", "captures": "firstName", "followUpText": "Schön dich kennenzulernen, @vorname!" }
-    Nutze Option B bevorzugt – es fühlt sich natürlicher an und baut sofort eine Verbindung zur Hauptfigur auf.
+Seite 2: quest_dialog   → PFLICHT: Namensabfrage über Gespräch.
+                          Eine Kollegin stellt sich vor und fragt natürlich nach dem Namen.
+                          MUSS input enthalten: { "placeholder": "Dein Vorname…", "captures": "firstName", "followUpText": "Schön dich kennenzulernen, @vorname!" }
+                          4–6 Dialog-Zeilen bevor das input erscheint.
+                          Beispiel: "Hallo! Ich bin Sarah. Ich zeige dir heute alles. Wie heißt du?"
+                          KEIN quest_vorname Block – ausschließlich quest_dialog mit input verwenden!
 Seite 3: quest_scene    → Ort und heutige Aufgaben: Wo bin ich? Was steht heute an?
                           MUSS bulletPoints haben (4–6 Aufgaben des Tages).
                           description soll den Nutzer direkt mit @vorname ansprechen.
@@ -77,10 +78,6 @@ quest_scene
 quest_spinner
   Props: { text: "Dein Arbeitstag beginnt…", doneText: "Los geht's!" }
   → Automatischer Ladescreen, springt nach ~2 Sekunden selbst weiter. Genau diese Props, kein Abweichen.
-
-quest_vorname
-  Props: { question: "Wie heißt du?", placeholder: "Dein Vorname…" }
-  → Namenseingabe. Der eingegebene Name wird danach als @vorname in Dialogen verfügbar.
 
 quest_dialog
   Props: { lines: [{ id: "UUID", speaker: string, text: string, position: "left"|"right" }], choices?: [{ id: "UUID", text: string, reaction?: string }], input?: { placeholder: string, captures?: string, followUpText?: string } }

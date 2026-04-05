@@ -67,7 +67,6 @@ const BLOCK_META: Record<FunnelBlockType, { icon: React.ElementType; color: stri
   quest_lead:          { icon: Send,          color: 'text-violet-700',  bg: 'bg-violet-100' },
   quest_spinner:       { icon: Timer,         color: 'text-slate-600',   bg: 'bg-slate-100' },
   quest_rating:        { icon: Star,          color: 'text-amber-500',   bg: 'bg-amber-50' },
-  quest_vorname:       { icon: User,          color: 'text-blue-600',    bg: 'bg-blue-50' },
   quest_hotspot:       { icon: MapPin,        color: 'text-rose-500',    bg: 'bg-rose-50' },
   check_intro:         { icon: Zap,           color: 'text-violet-600',  bg: 'bg-violet-50' },
   check_vorname:       { icon: User,          color: 'text-blue-600',    bg: 'bg-blue-50' },
@@ -598,15 +597,6 @@ function BlockPreview({ node, onUpdate }: {
         </div>
       );
 
-    case 'quest_vorname':
-      return (
-        <div className="mx-4 my-3 bg-white border border-slate-200 rounded-xl shadow-sm p-6">
-          <RichEd v={(p.question as string) ?? ''} up={up?.('question')} ph="Wie heißt du?" cl="fp-heading mb-4 block" />
-          <div className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl flex items-center">
-            <span className="text-sm text-slate-400">{(p.placeholder as string) || 'Dein Vorname…'}</span>
-          </div>
-        </div>
-      );
 
     case 'quest_spinner':
       return (

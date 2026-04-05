@@ -6,7 +6,7 @@ export type FunnelBlockType =
   | 'heading' | 'paragraph' | 'button' | 'image' | 'spacer' | 'video'
   // JobQuest
   | 'quest_scene' | 'quest_dialog' | 'quest_decision' | 'quest_quiz' | 'quest_info' | 'quest_freetext'
-  | 'quest_file' | 'quest_lead' | 'quest_spinner' | 'quest_rating' | 'quest_vorname' | 'quest_hotspot'
+  | 'quest_file' | 'quest_lead' | 'quest_spinner' | 'quest_rating' | 'quest_hotspot'
   // BerufsCheck
   | 'check_intro' | 'check_vorname' | 'check_frage' | 'check_ergebnisfrage' | 'check_selbst' | 'check_lead' | 'check_ergebnis'
   // Formular
@@ -180,7 +180,6 @@ export const DEFAULT_BLOCK_PROPS: Record<FunnelBlockType, Record<string, unknown
   quest_file:          { title: 'Datei', fileUrl: '', fileName: 'dokument.pdf', buttonText: 'Herunterladen' },
   quest_spinner:       { text: 'Einen Moment…', doneText: 'Geschafft!' },
   quest_rating:        { question: 'Wie war dein Erlebnis?', emoji: '⭐', count: 5 },
-  quest_vorname:       { question: 'Wie heißt du?', placeholder: 'Dein Vorname…' },
   quest_hotspot:       { imageUrl: '', hotspots: [], requireAll: true, doneText: 'Weiter erkunden' },
   quest_lead:          { headline: 'Interessiert?', subtext: 'Hinterlasse deine Kontaktdaten – wir melden uns bei dir.', buttonText: 'Jetzt bewerben', privacyText: 'Ich stimme zu, dass @companyName meine Daten speichert und mich kontaktiert.', fields: [] },
   check_intro:         { headline: 'Bist du geeignet?', subtext: 'Mache jetzt den Check.', imageUrl: '', buttonText: 'Jetzt starten' },
@@ -218,7 +217,6 @@ export const BLOCK_CATALOG: Record<FunnelContentType, BlockTypeConfig[]> = {
     { type: 'quest_decision', label: 'Entscheidung',  description: 'Verzweigung mit Optionen',             category: 'Interaktion', defaultProps: DEFAULT_BLOCK_PROPS.quest_decision },
     { type: 'quest_quiz',     label: 'Quiz',          description: 'Multiple-Choice-Frage',                category: 'Interaktion', defaultProps: DEFAULT_BLOCK_PROPS.quest_quiz },
     { type: 'quest_rating',   label: 'Bewertung',     description: 'Sterne oder Emoji-Bewertung',          category: 'Interaktion', defaultProps: DEFAULT_BLOCK_PROPS.quest_rating },
-    { type: 'quest_vorname',  label: 'Vorname',       description: 'Namenseingabe – als @firstName nutzbar', category: 'Eingabe',     defaultProps: DEFAULT_BLOCK_PROPS.quest_vorname },
     { type: 'quest_file',     label: 'Datei',         description: 'Downloadbarer Anhang (PDF etc.)',      category: 'Medien',      defaultProps: DEFAULT_BLOCK_PROPS.quest_file },
     { type: 'quest_hotspot',  label: 'Hotspot',       description: 'Klickbare Punkte auf einem Bild',      category: 'Interaktion', defaultProps: DEFAULT_BLOCK_PROPS.quest_hotspot },
     { type: 'quest_spinner',  label: 'Ladescreen',    description: 'Ladeanimation, geht automatisch weiter', category: 'Logik',    defaultProps: DEFAULT_BLOCK_PROPS.quest_spinner },
@@ -248,7 +246,7 @@ export const BLOCK_CATALOG: Record<FunnelContentType, BlockTypeConfig[]> = {
 export const BLOCK_LABELS: Record<FunnelBlockType, string> = {
   heading: 'Überschrift', paragraph: 'Text', button: 'Button', image: 'Bild', spacer: 'Abstand', video: 'Video',
   quest_scene: 'Szene', quest_dialog: 'Dialog', quest_decision: 'Entscheidung', quest_quiz: 'Quiz', quest_info: 'Info', quest_freetext: 'Freitext',
-  quest_file: 'Datei', quest_lead: 'Kontaktformular', quest_spinner: 'Ladescreen', quest_rating: 'Bewertung', quest_vorname: 'Vorname', quest_hotspot: 'Hotspot',
+  quest_file: 'Datei', quest_lead: 'Kontaktformular', quest_spinner: 'Ladescreen', quest_rating: 'Bewertung', quest_hotspot: 'Hotspot',
   check_intro: 'Intro', check_vorname: 'Name', check_frage: 'Frage', check_ergebnisfrage: 'Ergebnisfrage', check_selbst: 'Selbsteinschätzung', check_lead: 'Kontaktformular', check_ergebnis: 'Ergebnis',
   form_hero: 'Hero', form_text: 'Textabschnitt', form_image: 'Bild', form_step: 'Formular-Schritt', form_config: 'Einstellungen',
 };

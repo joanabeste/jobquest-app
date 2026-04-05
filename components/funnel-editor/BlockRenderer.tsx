@@ -881,19 +881,6 @@ export function BlockRenderer({
       );
     }
 
-    case 'quest_vorname':
-      return (
-        <div className="fp-card bg-white shadow-sm mx-4 my-3 p-6">
-          <h2 className="fp-heading text-xl font-bold mb-4" dangerouslySetInnerHTML={{ __html: sh(inlineHtml(si(p.question))) }} />
-          <input type="text" value={firstName} onChange={(e) => onSetFirstName(e.target.value)}
-            placeholder={s(p.placeholder, 'Dein Vorname…')}
-            className="w-full px-4 py-3 border-2 border-slate-200 text-sm focus:outline-none"
-            style={{ borderRadius: br }} />
-        </div>
-      );
-
-    /* avatar block removed */
-
     case 'quest_spinner':
       return <SpinnerBlock text={s(p.text)} doneText={s(p.doneText)} primary={primary} onNext={() => onNext()} duration={n(p.duration, 2400)} />;
 

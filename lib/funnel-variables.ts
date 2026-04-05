@@ -19,10 +19,11 @@ export interface VariableDef {
 
 // ─── Always-available context variables ───────────────────────────────────────
 export const CONTEXT_VARIABLES: VariableDef[] = [
-  { key: 'companyName',    label: 'Firmenname'       },
-  { key: 'datenschutzUrl', label: 'Datenschutz-URL'  },
-  { key: 'impressumUrl',   label: 'Impressum-URL'    },
-  { key: 'karriereseiteUrl', label: 'Karriereseite'  },
+  { key: 'vorname',        label: 'Vorname (aus Dialog)'  },
+  { key: 'companyName',    label: 'Firmenname'            },
+  { key: 'datenschutzUrl', label: 'Datenschutz-URL'       },
+  { key: 'impressumUrl',   label: 'Impressum-URL'         },
+  { key: 'karriereseiteUrl', label: 'Karriereseite'       },
 ];
 
 // ─── Label → variable-key conversion ─────────────────────────────────────────
@@ -80,12 +81,8 @@ export function deriveFieldVarMap(
 }
 
 // ─── Variables produced by simple block types (no fields array) ───────────────
-// Only used for blocks that produce a variable without an editable fields list
-// (e.g. quest_vorname / check_vorname which are plain name-input blocks).
+// check_vorname still uses a dedicated input block (BerufsCheck flow).
 export const BLOCK_VARIABLE_PRODUCERS: Record<string, VariableDef[]> = {
-  quest_vorname: [
-    { key: 'vorname', label: 'Vorname' },
-  ],
   check_vorname: [
     { key: 'vorname', label: 'Vorname' },
   ],
@@ -154,7 +151,7 @@ export function getAvailableVariables(nodes: FunnelNode[]): VariableDef[] {
         add({ key, label: plainLabel });
       }
     } else {
-      // Simple blocks (quest_vorname, check_vorname …)
+      // Simple blocks that produce variables (e.g. check_vorname)
       for (const v of BLOCK_VARIABLE_PRODUCERS[node.type] ?? []) add(v);
     }
   }

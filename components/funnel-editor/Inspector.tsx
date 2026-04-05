@@ -772,18 +772,6 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars }: {
         </div>
       );
 
-    case 'quest_vorname':
-      return (
-        <div className="space-y-3">
-          <Field label="Frage"><VarInput value={(props.question as string) ?? ''} onChange={(v) => onChange({ question: v })} className="input-field text-sm" variables={availableVars} /></Field>
-          <Section label="Erweitert" collapsible defaultOpen={false}>
-            <Field label="Platzhalter"><input value={(props.placeholder as string) ?? ''} onChange={(e) => onChange({ placeholder: e.target.value })} className="input-field text-sm" /></Field>
-          </Section>
-        </div>
-      );
-
-    /* avatar block removed */
-
     case 'quest_spinner': {
       const dur = (props.duration as number) ?? 2400;
       const DURATIONS = [
