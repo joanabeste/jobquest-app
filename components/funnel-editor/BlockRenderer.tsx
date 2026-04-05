@@ -6,6 +6,7 @@ import { BlockNode, LeadFieldDef } from '@/lib/funnel-types';
 import { applyVars } from '@/lib/funnel-variables';
 import { sanitizeHtml } from '@/lib/sanitize';
 import { Company, Dimension } from '@/lib/types';
+import { DECISION_ICONS, isIconName } from '@/lib/decision-icons';
 
 // ─── Safe prop helpers ────────────────────────────────────────────────────────
 const s = (v: unknown, fallback = ''): string => (v != null ? String(v) : fallback);
@@ -598,6 +599,7 @@ export function BlockRenderer({
             <div className={`grid gap-3 ${opts.length === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
               {opts.map((o) => {
                 const isSelected = selected === o.id;
+                const IconComp = isIconName(o.emoji) ? DECISION_ICONS[o.emoji] : null;
                 return (
                   <button
                     key={o.id}
@@ -605,7 +607,10 @@ export function BlockRenderer({
                     disabled={!!selected}
                     className="fp-card bg-white shadow-sm p-4 flex flex-col items-center gap-2.5 text-center transition-all duration-200 hover:shadow-md active:scale-95"
                     style={isSelected ? { borderColor: primary, background: `${primary}10`, transform: 'scale(0.97)' } : {}}>
-                    <span className="text-4xl leading-none">{o.emoji}</span>
+                    {IconComp
+                      ? <IconComp size={32} style={{ color: primary }} />
+                      : <span className="text-4xl leading-none">{o.emoji}</span>
+                    }
                     <span className="text-xs font-medium text-slate-700 leading-tight">{o.text}</span>
                     {isSelected && (
                       <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: primary }}>

@@ -13,49 +13,56 @@ WICHTIG – STORY-KOHÄRENZ:
   STRUKTUR (FESTER EINSTIEG + PFLICHTINHALT + FESTER ABSCHLUSS)
 ═══════════════════════════════════════════════════════
 
-── FESTER EINSTIEG (immer genau diese 4 Seiten in dieser Reihenfolge) ──────────
+── FESTER EINSTIEG (immer genau diese Seiten in dieser Reihenfolge) ──────────
 Seite 0: quest_scene    → Beruf vorstellen: Was macht diesen Job aus? Was erwartet mich? Mach neugierig!
                           Kein Erzähl-Einstieg, sondern eine Einladung.
                           title = IMMER die genaue Berufsbezeichnung mit "(m/w/d)", z.B. "Pflegefachkraft (m/w/d)".
                           description = 2-3 Sätze, die den Job lebendig und einladend beschreiben.
 Seite 1: quest_spinner  → { "text": "Dein Arbeitstag beginnt…", "doneText": "Los geht's!" }
                           Automatischer Übergang nach ~2 Sekunden. KEINE anderen Props.
-Seite 2: quest_vorname  → { "question": "Wie heißt du?", "placeholder": "Dein Vorname…" }
-                          Nutzer gibt seinen Namen ein – danach mit @vorname ansprechbar.
+Seite 2: WAHL – Nameseingabe (eine der beiden Optionen):
+  Option A (einfach): quest_vorname → { "question": "Wie heißt du?", "placeholder": "Dein Vorname…" }
+  Option B (immersiver): quest_dialog mit input → Eine Kollegin stellt sich vor und fragt nach dem Namen.
+    Verwende input: { "placeholder": "Dein Vorname…", "captures": "firstName", "followUpText": "Schön dich kennenzulernen, @vorname!" }
+    Nutze Option B bevorzugt – es fühlt sich natürlicher an und baut sofort eine Verbindung zur Hauptfigur auf.
 Seite 3: quest_scene    → Ort und heutige Aufgaben: Wo bin ich? Was steht heute an?
                           MUSS bulletPoints haben (4–6 Aufgaben des Tages).
                           description soll den Nutzer direkt mit @vorname ansprechen.
 
 ── PFLICHTINHALT (zwischen Seite 3 und dem Abschluss) ──────────────────────────
 • Mindestens 3 × quest_decision (Situationen)
-  → Genau eine davon mit BRANCHING (zwei verschiedene Pfade, die sich danach wieder zusammenführen)
-  → Jeder Pfad muss MINDESTENS 2 Seiten lang sein, bevor die Story wieder zusammenläuft
-  → Die anderen zwei ohne Branching (lineare Fortsetzung)
+  → MINDESTENS 2 davon mit BRANCHING (zwei verschiedene Pfade, die sich danach wieder zusammenführen)
+  → Jeder Pfad muss MINDESTENS 2 Seiten lang sein (z.B. quest_scene + quest_dialog), bevor die Story wieder zusammenläuft
+  → Die verbleibenden Entscheidungen: ohne Branching (lineare Fortsetzung)
 • Mindestens 2 × quest_quiz
 • Dialoge, Infos und Szenen dazwischen für eine fließende Story
 
 ── EMPFOHLENER AUFBAU des Pflichtinhalts (Seiten 4–N-3): ──────────────────────
-Seite  4: quest_dialog    → Erstes Kollegen-Gespräch – mit choices (z.B. Aufgabe annehmen oder Fragen)
-Seite  5: quest_decision  → Situation 1 (erste Aufgabe – kein Branching, linear)
-Seite  6: quest_dialog    → Reaktion des Teams – mit choices (z.B. Meinung äußern)
-Seite  7: quest_quiz      → Quiz 1: Fachliches Wissen
-Seite  8: quest_info      → Spannender Fakt / Einblick in den Beruf
-Seite  9: quest_decision  → Situation 2 (BRANCHING: Option A → Seite 10, Option B → Seite 12)
-Seite 10: quest_scene     → Pfad A, Teil 1 – unmittelbare Konsequenz der Wahl A
-Seite 11: quest_dialog    → Pfad A, Teil 2 – wie entwickelt sich Wahl A weiter? [nextPageIndex: 14]
-Seite 12: quest_scene     → Pfad B, Teil 1 – unmittelbare Konsequenz der Wahl B
-Seite 13: quest_dialog    → Pfad B, Teil 2 – wie entwickelt sich Wahl B weiter?
-Seite 14: quest_scene     → ★ KONVERGENZ – Story läuft zusammen. Neutral, passt zu beiden Pfaden.
-Seite 15: quest_quiz      → Quiz 2: Zweites Fachwissen-Thema
-Seite 16: quest_decision  → Situation 3 (kein Branching – Tagesabschluss-Situation)
-Seite 17: quest_dialog    → Abschluss-Gespräch / Lob vom Team – mit choices
+Seite  4: quest_dialog    → Erstes Kollegen-Gespräch – 5–7 Zeilen, mit choices (Aufgabe annehmen oder Fragen)
+Seite  5: quest_decision  → Situation 1 (BRANCHING 1: Option A → Seite 6, Option B → Seite 8)
+Seite  6: quest_scene     → Pfad A, Teil 1 – unmittelbare Konsequenz der Wahl A
+Seite  7: quest_dialog    → Pfad A, Teil 2 – wie entwickelt sich Wahl A weiter? [nextPageIndex: 10]
+Seite  8: quest_scene     → Pfad B, Teil 1 – unmittelbare Konsequenz der Wahl B
+Seite  9: quest_dialog    → Pfad B, Teil 2 – wie entwickelt sich Wahl B weiter?
+Seite 10: quest_scene     → ★ KONVERGENZ 1 – Story läuft zusammen. Neutral, passt zu beiden Pfaden.
+Seite 11: quest_quiz      → Quiz 1: Fachliches Wissen
+Seite 12: quest_info      → Spannender Fakt / Einblick in den Beruf
+Seite 13: quest_decision  → Situation 2 (BRANCHING 2: Option A → Seite 14, Option B → Seite 16)
+Seite 14: quest_scene     → Pfad A, Teil 1 – Konsequenz der Wahl A
+Seite 15: quest_dialog    → Pfad A, Teil 2 – Entwicklung Wahl A [nextPageIndex: 18]
+Seite 16: quest_scene     → Pfad B, Teil 1 – Konsequenz der Wahl B
+Seite 17: quest_dialog    → Pfad B, Teil 2 – Entwicklung Wahl B
+Seite 18: quest_scene     → ★ KONVERGENZ 2 – Story läuft zusammen.
+Seite 19: quest_quiz      → Quiz 2: Zweites Fachwissen-Thema
+Seite 20: quest_decision  → Situation 3 (kein Branching – Tagesabschluss-Situation)
+Seite 21: quest_dialog    → Abschluss-Gespräch / Lob vom Team – 6–8 Zeilen, mit choices
 
 ── FESTER ABSCHLUSS (immer genau diese 3 Seiten am Ende) ───────────────────────
 Vorletzte - 1: quest_rating  → { "question": "Wie war dein Arbeitstag?", "emoji": "⭐", "count": 5 }
 Vorletzte:     quest_rating  → { "question": "Wie gut kannst du dir vorstellen, als [Berufsbezeichnung] zu arbeiten?", "emoji": "👍", "count": 5 }
 Letzte:        quest_lead    → Kontaktformular (fields: [])
 
-GESAMT: ca. 21–24 Seiten – du kannst weitere Seiten hinzufügen wenn die Story es braucht.
+GESAMT: ca. 25–28 Seiten – du kannst weitere Seiten hinzufügen wenn die Story es braucht.
 
 ═══════════════════════════════════════════════════════
   BLOCK-TYPEN (exakte Props-Struktur beachten!)
@@ -76,8 +83,8 @@ quest_vorname
   → Namenseingabe. Der eingegebene Name wird danach als @vorname in Dialogen verfügbar.
 
 quest_dialog
-  Props: { lines: [{ id: "UUID", speaker: string, text: string, position: "left"|"right" }], choices?: [{ id: "UUID", text: string, reaction?: string }] }
-  → 3–6 Dialog-Zeilen zwischen 2-3 Personen.
+  Props: { lines: [{ id: "UUID", speaker: string, text: string, position: "left"|"right" }], choices?: [{ id: "UUID", text: string, reaction?: string }], input?: { placeholder: string, captures?: string, followUpText?: string } }
+  → 4–8 Dialog-Zeilen zwischen 2-3 Personen. Mindestens ein Dialog im Pflichtinhalt soll 6+ Zeilen haben.
   → position: "left" für andere Personen, "right" für den Nutzer ("Du" bzw. "@vorname").
   → Nutze realistische deutsche Vornamen + Rolle (z.B. "Sarah (Teamleiterin)").
   → Dialoge sollen natürlich klingen, Persönlichkeit zeigen und die Story vorantreiben.
@@ -89,19 +96,28 @@ quest_dialog
     → Nutze choices wenn der Dialog eine direkte Interaktion fordert – z.B. Fragen beantworten,
       Aufgaben annehmen, Meinungen äußern. Kein Branching – die Story geht danach linear weiter.
     → choices sind KEIN Ersatz für quest_decision (Branching). Sie simulieren Gesprächsrepliken.
+  → input (optional): Texteingabe am Ende des Dialogs – für Fragen wie "Wie heißt du?" oder "Was denkst du?".
+    → captures: "firstName" → Antwort wird als @vorname im Rest der Quest verfügbar.
+    → followUpText: Reaktion der Kollegin auf die Antwort (z.B. "Schön, dich kennenzulernen, @vorname!").
+    → Nutze input bevorzugt auf Seite 2 statt quest_vorname (immersiver Einstieg).
 
 quest_decision
   Props: { question: string, options: [{ id: "UUID", text: string, emoji: string, reaction: string, nextPageIndex?: number }] }
   → 2 Optionen (bei Branching), sonst 2–3 Optionen.
   → reaction = empathisches, nicht wertendes Feedback (1-2 Sätze) über die unmittelbare Konsequenz.
-  → IMMER ein passendes Emoji für jede Option.
+  → IMMER ein passendes Icon (emoji-Feld) für jede Option. Verwende AUSSCHLIESSLICH Icon-Namen aus dieser Liste:
+    Briefcase, Star, Heart, Zap, Target, Users, Clock, Globe, Shield, Lightbulb,
+    Rocket, TrendingUp, Award, CheckCircle, XCircle, ThumbsUp, ThumbsDown,
+    Coffee, Smile, AlertTriangle, HelpCircle, MessageCircle, Phone, Mail,
+    Clipboard, Search, Settings, Flag, Bookmark
+    → Kein Emoji-Zeichen (🚨, 🔍 etc.) – nur die englischen Namen aus der Liste oben.
   → nextPageIndex (optional): 0-basierter Index der Zielseite für diese Option.
     Ohne nextPageIndex → lineare Fortsetzung zur nächsten Seite.
-  → BRANCHING-Beispiel (Seite 9, Pfad A→10+11, Pfad B→12+13, Konvergenz→14):
+  → BRANCHING-Beispiel (Seite 5, Pfad A→6+7, Pfad B→8+9, Konvergenz→10):
     { "question": "Ein Notfall kündigt sich an – was tust du?",
       "options": [
-        { "id": "UUID", "text": "Sofort das Team alarmieren", "emoji": "🚨", "reaction": "Du rufst Verstärkung – gemeinsam reagiert ihr blitzschnell.", "nextPageIndex": 10 },
-        { "id": "UUID", "text": "Erst selbst einschätzen", "emoji": "🔍", "reaction": "Du behältst einen kühlen Kopf und analysierst die Lage.", "nextPageIndex": 12 }
+        { "id": "UUID", "text": "Sofort das Team alarmieren", "emoji": "Users", "reaction": "Du rufst Verstärkung – gemeinsam reagiert ihr blitzschnell.", "nextPageIndex": 6 },
+        { "id": "UUID", "text": "Erst selbst einschätzen", "emoji": "Search", "reaction": "Du behältst einen kühlen Kopf und analysierst die Lage.", "nextPageIndex": 8 }
       ]
     }
   → Pfad A (Seiten 10–11) → nextPageIndex: 14 auf der letzten Pfad-A-Seite (Seite 11), damit Seite 12–13 übersprungen werden
@@ -154,6 +170,7 @@ DIALOGE & CHOICES:
 • Choices sind nicht für Branching gedacht, sondern für Gesprächsfluss und Immersion.
 
 BRANCHING:
+• MINDESTENS 2 quest_decision mit Branching – mehr machen die Story spannender.
 • Jeder Pfad (A und B) umfasst MINDESTENS 2 Seiten – eine quest_scene und ein quest_dialog, oder zwei Seiten die inhaltlich zusammenhängen.
 • Die Pfad-Seiten sollen inhaltlich verschiedene Konsequenzen zeigen – kein "besser/schlechter", beide Wege sind valide.
 • Die letzte Seite von Pfad A muss nextPageIndex zur Konvergenzseite enthalten, damit Pfad B übersprungen wird.

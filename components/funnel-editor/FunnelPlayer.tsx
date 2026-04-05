@@ -97,7 +97,10 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
           karriereseiteUrl: company.careerPageUrl ?? '',
         }),
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(`HTTP ${res.status}: ${(body as { error?: string }).error ?? 'unknown'}`);
+      }
     } catch (err) {
       console.error('[FunnelPlayer] submit-lead fehlgeschlagen:', err);
       setLeadSaveError(true);

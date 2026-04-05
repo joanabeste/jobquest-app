@@ -24,6 +24,7 @@ import { BlockNode, FunnelBlockType, LayoutNode, FunnelNode, BLOCK_LABELS, Funne
 import { useCi } from '@/lib/ci-context';
 import { useFunnelEditorCtx } from './FunnelEditorContext';
 import InlineLeadFields from './InlineLeadFields';
+import { DECISION_ICONS, isIconName } from '@/lib/decision-icons';
 
 // Custom extension: adds fontSize + fontWeight attributes to textStyle mark
 const FontSizeWeight = Extension.create({
@@ -512,18 +513,36 @@ function BlockPreview({ node, onUpdate }: {
     }
 
     case 'quest_decision': {
-      const opts = (p.options as { id: string; text: string }[]) || [];
+      const opts = (p.options as { id: string; text: string; emoji?: string }[]) || [];
+      const hasIcons = opts.some((o) => isIconName(o.emoji) || o.emoji);
       return (
         <div className="mx-4 my-3">
           <RichEd v={(p.question as string) ?? ''} up={up?.('question')} ph="Was würdest du tun?" cl="fp-heading mb-4 block text-center" />
-          <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-2 space-y-1.5">
-            {opts.map((o) => (
-              <div key={o.id} className="flex items-center gap-2 px-4 py-3 bg-slate-50 rounded-lg border border-slate-100">
-                <ChevronRight size={13} className="text-slate-400 flex-shrink-0" />
-                <span className="text-sm text-slate-700">{o.text || `Option`}</span>
-              </div>
-            ))}
-          </div>
+          {hasIcons ? (
+            <div className={`grid gap-3 ${opts.length === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
+              {opts.map((o) => {
+                const IconComp = isIconName(o.emoji) ? DECISION_ICONS[o.emoji] : null;
+                return (
+                  <div key={o.id} className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col items-center gap-2.5 text-center shadow-sm">
+                    {IconComp
+                      ? <IconComp size={28} className="text-violet-500" />
+                      : <span className="text-3xl leading-none">{o.emoji}</span>
+                    }
+                    <span className="text-xs font-medium text-slate-700 leading-tight">{o.text || 'Option'}</span>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-2 space-y-1.5">
+              {opts.map((o) => (
+                <div key={o.id} className="flex items-center gap-2 px-4 py-3 bg-slate-50 rounded-lg border border-slate-100">
+                  <ChevronRight size={13} className="text-slate-400 flex-shrink-0" />
+                  <span className="text-sm text-slate-700">{o.text || 'Option'}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       );
     }

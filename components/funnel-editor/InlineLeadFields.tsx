@@ -300,30 +300,22 @@ export default function InlineLeadFields({ fields, onChange }: Props) {
             <div key={f.id} className="relative">
               {isActive && (
                 <div
-                  className="absolute -top-9 left-0 right-0 flex items-center gap-1 bg-white border border-slate-200 rounded-lg px-2 py-1 z-30 shadow-md"
+                  className="absolute -top-9 left-0 right-0 flex items-center gap-1.5 bg-white border border-slate-200 rounded-lg px-2 py-1 z-30 shadow-md"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  {/* Type indicator (non-interactive for checkbox) */}
-                  <div className="flex items-center gap-1 flex-shrink-0">
-                    <Icon size={11} className={meta.color} />
-                    <span className="text-[11px] font-medium text-slate-500">{meta.label}</span>
-                  </div>
-
-                  <div className="w-px h-3 bg-slate-200 mx-1 flex-shrink-0" />
-
-                  {/* Switch type */}
+                  {/* Type selector */}
+                  <Icon size={11} className={`flex-shrink-0 ${meta.color}`} />
                   <select
                     value={f.type}
                     onChange={(e) => update(f.id, { type: e.target.value as LeadFieldType })}
-                    className="text-[11px] text-slate-400 bg-transparent border-none outline-none cursor-pointer flex-shrink-0"
-                    title="Typ ändern"
+                    className="flex-1 text-[11px] font-medium text-slate-600 bg-transparent border-none outline-none cursor-pointer min-w-0"
                   >
                     {LEAD_FIELD_TYPES.map((t) => (
                       <option key={t} value={t}>{LEAD_FIELD_META[t].label}</option>
                     ))}
                   </select>
 
-                  <div className="flex-1" />
+                  <div className="w-px h-3 bg-slate-200 flex-shrink-0" />
 
                   <FieldToolbar
                     _fieldId={f.id} idx={idx} total={fields.length}
@@ -372,17 +364,6 @@ export default function InlineLeadFields({ fields, onChange }: Props) {
                 className="absolute -top-9 left-0 right-0 flex items-center gap-1.5 bg-white border border-slate-200 rounded-lg px-2 py-1 z-30 shadow-md"
                 onClick={(e) => e.stopPropagation()}
               >
-                {/* Reorder + required + delete */}
-                <FieldToolbar
-                  _fieldId={f.id} idx={idx} total={fields.length}
-                  required={f.required}
-                  onMove={(dir) => move(f.id, dir)}
-                  onToggleRequired={() => update(f.id, { required: !f.required })}
-                  onRemove={() => remove(f.id)}
-                />
-
-                <div className="w-px h-3 bg-slate-200 flex-shrink-0" />
-
                 {/* Type selector */}
                 <Icon size={11} className={`flex-shrink-0 ${meta.color}`} />
                 <select
@@ -400,6 +381,17 @@ export default function InlineLeadFields({ fields, onChange }: Props) {
                     <option key={t} value={t}>{LEAD_FIELD_META[t].label}</option>
                   ))}
                 </select>
+
+                <div className="w-px h-3 bg-slate-200 flex-shrink-0" />
+
+                {/* Reorder + required + delete */}
+                <FieldToolbar
+                  _fieldId={f.id} idx={idx} total={fields.length}
+                  required={f.required}
+                  onMove={(dir) => move(f.id, dir)}
+                  onToggleRequired={() => update(f.id, { required: !f.required })}
+                  onRemove={() => remove(f.id)}
+                />
               </div>
             )}
 
