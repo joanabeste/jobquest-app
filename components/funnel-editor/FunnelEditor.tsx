@@ -84,7 +84,7 @@ function FunnelEditorInner({
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
   const [insertTarget, setInsertTarget] = useState<InsertTarget | null>(null);
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saved'>('idle');
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [showEmailConfig, setShowEmailConfig] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -120,6 +120,7 @@ function FunnelEditorInner({
   const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   async function save() {
+    setSaveStatus('saving');
     await funnelStorage.save(doc);
     setSaveStatus('saved');
     if (savedTimer.current) clearTimeout(savedTimer.current);
@@ -401,14 +402,18 @@ function FunnelEditorInner({
         )}
 
         {/* Save */}
-        <button onClick={save}
+        <button onClick={save} disabled={saveStatus === 'saving'}
           className={`flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-semibold rounded-lg transition-all flex-shrink-0 ${
             saveStatus === 'saved'
               ? 'text-emerald-700 bg-emerald-50'
+              : saveStatus === 'saving'
+              ? 'bg-violet-400 text-white cursor-wait'
               : 'bg-violet-600 text-white hover:bg-violet-700 shadow-sm shadow-violet-200'
           }`}>
           {saveStatus === 'saved'
             ? <><Check size={13} /> Gespeichert</>
+            : saveStatus === 'saving'
+            ? <><div className="w-3 h-3 rounded-full border-2 border-white/40 border-t-white animate-spin" /> Speichern…</>
             : <><Save size={13} /> Speichern</>}
         </button>
 
