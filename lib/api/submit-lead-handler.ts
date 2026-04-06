@@ -51,29 +51,30 @@ export function createSubmitLeadHandler<T extends LeadBase>(
       const emailConfig = docRow.email_config as EmailConfig;
       const emailWillSend = emailConfig.confirmationEnabled || emailConfig.notificationEnabled;
       if (emailWillSend) {
-        // Fire email with a hard 8-second timeout — never block the success response
+        // Await with a hard timeout — must be awaited on serverless (Vercel kills unawaited promises after response)
         const EMAIL_TIMEOUT_MS = 8_000;
         const timeoutPromise = new Promise<never>((_, reject) =>
           setTimeout(() => reject(new Error('E-Mail-Timeout nach 8s')), EMAIL_TIMEOUT_MS),
         );
-        Promise.race([
-          sendLeadEmails({
-            emailConfig,
-            vars: {
-              firstName: lead.firstName,
-              lastName: lead.lastName,
-              email: lead.email,
-              phone: lead.phone ?? '',
-              companyName,
-              karriereseiteUrl: karriereseiteUrl ?? '',
-            },
-          }),
-          timeoutPromise,
-        ])
-          .then(() => admin.from(table).update({ email_sent: true }).eq('id', lead.id))
-          .catch((err: unknown) => {
-            console.error(`[${logPrefix}] E-Mail-Versand fehlgeschlagen:`, err);
-          });
+        try {
+          await Promise.race([
+            sendLeadEmails({
+              emailConfig,
+              vars: {
+                firstName: lead.firstName,
+                lastName: lead.lastName,
+                email: lead.email,
+                phone: lead.phone ?? '',
+                companyName,
+                karriereseiteUrl: karriereseiteUrl ?? '',
+              },
+            }),
+            timeoutPromise,
+          ]);
+          await admin.from(table).update({ email_sent: true }).eq('id', lead.id);
+        } catch (err: unknown) {
+          console.error(`[${logPrefix}] E-Mail-Versand fehlgeschlagen:`, err);
+        }
       }
     }
 
