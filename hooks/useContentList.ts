@@ -46,17 +46,18 @@ export function useContentList<T extends { id: string; title: string }>(
       const { storage, getCount } = optsRef.current;
       const all = await storage.getAll();
       setItems(all);
+      setLoading(false); // Show items immediately, load counts in background
+
       if (getCount) {
-        const c: Record<string, number> = {};
-        for (const item of all) {
-          c[item.id] = await getCount(item.id);
-        }
-        setCounts(c);
+        // Load all counts in parallel instead of sequentially
+        const entries = await Promise.all(
+          all.map(async (item) => [item.id, await getCount(item.id)] as const),
+        );
+        setCounts(Object.fromEntries(entries));
       }
     } catch (err) {
       console.error('[useContentList] reload failed:', err);
       toast.error('Inhalte konnten nicht geladen werden. Bitte Seite neu laden.');
-    } finally {
       setLoading(false);
     }
   }, [toast]);
