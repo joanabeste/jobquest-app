@@ -12,7 +12,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<string | null>;
   logout: () => Promise<void>;
   updateCompany: (company: Company) => Promise<void>;
-  register: (data: Omit<Company, 'id' | 'createdAt'> & { password: string }) => Promise<Company>;
+  register: (data: Omit<Company, 'id' | 'createdAt'> & { password: string }) => Promise<{ pending: boolean }>;
   deleteAccount: () => Promise<void>;
   can: (permission: Permission) => boolean;
   startImpersonation: (companyId: string) => Promise<void>;
@@ -88,15 +88,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setCompany(data);
   }, []);
 
-  const register = useCallback(async (data: Omit<Company, 'id' | 'createdAt'> & { password: string }): Promise<Company> => {
-    const result = await apiFetch<{ company: Company; member: WorkspaceMember }>('/api/auth/register', {
+  const register = useCallback(async (data: Omit<Company, 'id' | 'createdAt'> & { password: string }): Promise<{ pending: boolean }> => {
+    const result = await apiFetch<{ pending: boolean }>('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
-    setCompany(result.company);
-    setCurrentMember(result.member);
-    return result.company;
+    return result;
   }, []);
 
   const deleteAccount = useCallback(async () => {

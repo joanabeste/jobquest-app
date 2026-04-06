@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
         name: contactName || name,
         email: contactEmail,
         role: 'admin',
-        status: 'active',
+        status: 'pending',
         created_at: now,
       });
     if (memberError) {
@@ -92,21 +92,27 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `member_insert: ${memberError.message}` }, { status: 500 });
     }
 
-    // Sign in to set session cookies
-    const supabase = await createServerSupabaseClient();
-    await supabase.auth.signInWithPassword({ email: contactEmail, password });
+    // Save quota request if any wishes specified
+    const wunschJobQuests = Number(body.wunschJobQuests) || 0;
+    const wunschBerufschecks = Number(body.wunschBerufschecks) || 0;
+    const wunschFormulare = Number(body.wunschFormulare) || 0;
+    if (wunschJobQuests || wunschBerufschecks || wunschFormulare) {
+      await admin.from('quota_requests').insert({
+        id: crypto.randomUUID(),
+        company_id: companyId,
+        company_name: name,
+        contact_name: contactName || name,
+        contact_email: contactEmail,
+        requested_job_quests: wunschJobQuests,
+        requested_berufschecks: wunschBerufschecks,
+        requested_formulare: wunschFormulare,
+        notes: body.wunschNotes || null,
+        status: 'pending',
+      });
+    }
 
-    const member: WorkspaceMember = {
-      id: userId,
-      companyId,
-      name: contactName || name,
-      email: contactEmail,
-      role: 'admin',
-      status: 'active',
-      createdAt: now,
-    };
-
-    return NextResponse.json({ member, company });
+    // Don't sign in — account must be approved in Hub first
+    return NextResponse.json({ pending: true });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error('[register] unhandled exception:', msg);

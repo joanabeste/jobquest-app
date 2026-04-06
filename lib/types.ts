@@ -180,6 +180,21 @@ export const DEFAULT_SUCCESS_PAGE: SuccessPageConfig = {
   links: [],
 };
 
+// ─── Plan / Kontingent ────────────────────────────────────────────────────────
+export type ContentType = 'jobquests' | 'berufschecks' | 'formulare';
+
+export interface CompanyPlan {
+  maxJobQuests: number;      // 0 = Feature deaktiviert
+  maxBerufschecks: number;
+  maxFormulare: number;
+}
+
+export const DEFAULT_PLAN: CompanyPlan = {
+  maxJobQuests: 1,
+  maxBerufschecks: 0,
+  maxFormulare: 0,
+};
+
 export interface Company {
   id: string;
   name: string;
@@ -194,6 +209,7 @@ export interface Company {
   createdAt: string;
   corporateDesign?: CorporateDesign;
   successPage?: SuccessPageConfig;
+  plan?: CompanyPlan;
 }
 
 export interface LeadFormConfig {

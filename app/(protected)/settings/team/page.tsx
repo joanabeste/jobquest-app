@@ -31,7 +31,7 @@ export default function SettingsTeamPage() {
   const [members, setMembers] = useState<WorkspaceMember[]>([]);
   const [showInvite, setShowInvite] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [lastAdminConfirm, setLastAdminConfirm] = useState<WorkspaceMember | null>(null);
+  const [lastAdminConfirm, setLastAdminConfirm] = useState<{ member: WorkspaceMember; hasOtherMembers: boolean } | null>(null);
   const [deletingCompany, setDeletingCompany] = useState(false);
 
   const [invite, setInvite] = useState({
@@ -124,7 +124,7 @@ export default function SettingsTeamPage() {
       if (res.status === 409) {
         const body = await res.json();
         if (body.error === 'last_admin') {
-          setLastAdminConfirm(member);
+          setLastAdminConfirm({ member, hasOtherMembers: body.hasOtherMembers ?? false });
           return;
         }
       }
@@ -274,21 +274,27 @@ export default function SettingsTeamPage() {
               </div>
               <div>
                 <label className="label">Rolle *</label>
-                <div className="grid grid-cols-3 gap-2 mt-1">
+                <div className="space-y-2 mt-1">
                   {VISIBLE_ROLES.map((role) => (
                     <button key={role} type="button" onClick={() => setInvite((p) => ({ ...p, role }))}
-                      className={`flex flex-col items-start gap-1.5 p-3 rounded-xl border-2 text-left transition-all ${
+                      className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all ${
                         invite.role === role ? 'border-violet-400 bg-violet-50' : 'border-slate-200 hover:border-slate-300 bg-white'
                       }`}>
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold ${ROLE_COLORS[role]}`}>
+                      <span className={`inline-flex items-center justify-center w-8 h-8 rounded-lg flex-shrink-0 ${ROLE_COLORS[role]}`}>
                         {ROLE_ICONS[role]}
-                        {ROLE_LABELS[role]}
                       </span>
-                      {invite.role === role && <Check size={14} className="text-violet-600 ml-auto" />}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-slate-900">{ROLE_LABELS[role]}</p>
+                        <p className="text-xs text-slate-500 leading-snug">{ROLE_DESCRIPTIONS[role]}</p>
+                      </div>
+                      {invite.role === role && (
+                        <div className="w-5 h-5 rounded-full bg-violet-600 flex items-center justify-center flex-shrink-0">
+                          <Check size={12} className="text-white" />
+                        </div>
+                      )}
                     </button>
                   ))}
                 </div>
-                <p className="text-xs text-slate-400 mt-2">{ROLE_DESCRIPTIONS[invite.role]}</p>
               </div>
               {inviteError && (
                 <div className="flex items-center gap-2 text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
@@ -311,33 +317,53 @@ export default function SettingsTeamPage() {
         </div>
       )}
 
-      {/* Last admin deletion warning */}
+      {/* Last admin warning */}
       {lastAdminConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
-                <AlertTriangle size={20} className="text-red-600" />
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${lastAdminConfirm.hasOtherMembers ? 'bg-amber-100' : 'bg-red-100'}`}>
+                <AlertTriangle size={20} className={lastAdminConfirm.hasOtherMembers ? 'text-amber-600' : 'text-red-600'} />
               </div>
-              <h2 className="text-lg font-semibold text-slate-900">Unternehmen löschen?</h2>
+              <h2 className="text-lg font-semibold text-slate-900">
+                {lastAdminConfirm.hasOtherMembers ? 'Letzter Admin' : 'Unternehmen löschen?'}
+              </h2>
             </div>
             <p className="text-sm text-slate-600 mb-2">
-              <strong>{lastAdminConfirm.name}</strong> ist der letzte Administrator dieses Unternehmens.
+              <strong>{lastAdminConfirm.member.name}</strong> ist der letzte Administrator dieses Unternehmens.
             </p>
-            <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-5">
-              Das Entfernen löscht das gesamte Unternehmen <strong>{company?.name}</strong> und alle zugehörigen Daten
-              (JobQuests, Leads, Berufschecks, Formulare, Teammitglieder) unwiderruflich.
-            </p>
-            <div className="flex gap-2">
-              <button onClick={() => setLastAdminConfirm(null)} disabled={deletingCompany}
-                className="flex-1 px-4 py-2 rounded-xl border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 transition-colors">
-                Abbrechen
-              </button>
-              <button onClick={handleDeleteCompanyWithLastAdmin} disabled={deletingCompany}
-                className="flex-1 px-4 py-2 rounded-xl bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-60">
-                {deletingCompany ? 'Wird gelöscht…' : 'Endgültig löschen'}
-              </button>
-            </div>
+
+            {lastAdminConfirm.hasOtherMembers ? (
+              <>
+                <div className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-5">
+                  <p className="font-medium mb-1">Admin-Rolle zuerst übertragen</p>
+                  <p className="text-amber-700">
+                    Ändere die Rolle eines anderen Teammitglieds auf &quot;Administrator&quot;, bevor du diesen Admin entfernst.
+                  </p>
+                </div>
+                <button onClick={() => setLastAdminConfirm(null)}
+                  className="w-full px-4 py-2 rounded-xl border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 transition-colors">
+                  Verstanden
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-5">
+                  Es gibt keine weiteren Teammitglieder. Das Entfernen löscht das gesamte Unternehmen <strong>{company?.name}</strong> und
+                  alle zugehörigen Daten (JobQuests, Leads, Berufschecks, Formulare) unwiderruflich.
+                </p>
+                <div className="flex gap-2">
+                  <button onClick={() => setLastAdminConfirm(null)} disabled={deletingCompany}
+                    className="flex-1 px-4 py-2 rounded-xl border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 transition-colors">
+                    Abbrechen
+                  </button>
+                  <button onClick={handleDeleteCompanyWithLastAdmin} disabled={deletingCompany}
+                    className="flex-1 px-4 py-2 rounded-xl bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-60">
+                    {deletingCompany ? 'Wird gelöscht…' : 'Endgültig löschen'}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

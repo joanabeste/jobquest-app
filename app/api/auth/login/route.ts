@@ -61,9 +61,18 @@ export async function POST(req: NextRequest) {
 
     if (!memberRow) {
       console.error('[login] Member not found in DB', { userId: data.user.id, email, memberError: memberError?.message });
+      await supabase.auth.signOut();
       return NextResponse.json(
         { error: 'Kein Workspace-Account gefunden. Bitte wende dich an deinen Administrator.', code: 'member_not_found' },
         { status: 404 },
+      );
+    }
+
+    if (memberRow.status === 'pending') {
+      await supabase.auth.signOut();
+      return NextResponse.json(
+        { error: 'Dein Konto wird noch geprüft. Du erhältst eine Benachrichtigung, sobald es freigeschaltet ist.', code: 'account_pending' },
+        { status: 403 },
       );
     }
 

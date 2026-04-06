@@ -18,21 +18,67 @@ export async function POST(req: NextRequest) {
   if (!parsed.ok) return parsed.response;
   const { name, email, role } = parsed.data;
   if (!name || !email || !role) {
-    return NextResponse.json({ error: 'name, email and role are required' }, { status: 400 });
+    return NextResponse.json({ error: 'Name, E-Mail und Rolle sind Pflichtfelder.' }, { status: 400 });
   }
 
   const admin = createAdminClient();
+
+  // Check if email already exists as a member in this company
+  const { data: existingMember } = await admin
+    .from('workspace_members')
+    .select('id, status')
+    .eq('email', email.toLowerCase())
+    .eq('company_id', session.company.id)
+    .single();
+
+  if (existingMember) {
+    const msg = existingMember.status === 'pending'
+      ? 'Diese Person hat bereits eine ausstehende Einladung.'
+      : 'Diese Person ist bereits Mitglied im Team.';
+    return NextResponse.json({ error: msg }, { status: 409 });
+  }
+
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
 
   // Generate invite link without Supabase sending the email
-  const { data: linkData, error: linkError } = await admin.auth.admin.generateLink({
+  type LinkResult = { user: { id: string }; properties: { action_link: string } };
+  let linkData: LinkResult | null = null;
+
+  const { data: genData, error: linkError } = await admin.auth.admin.generateLink({
     type: 'invite',
     email,
     options: { redirectTo: `${siteUrl}/accept-invite` },
   });
-  if (linkError || !linkData.user) {
-    console.error('[invite] generateLink', linkError);
-    return NextResponse.json({ error: 'Invite failed' }, { status: 500 });
+
+  if (genData?.user) {
+    linkData = genData as unknown as LinkResult;
+  } else if (linkError) {
+    const msg = linkError.message ?? '';
+    // User exists in auth but not in workspace_members (e.g. previously deleted member)
+    // → Try to reuse the existing auth user with a magic link instead
+    if (msg.includes('already') || msg.includes('exist')) {
+      const { data: existingUsers } = await admin.auth.admin.listUsers();
+      const existingUser = existingUsers?.users?.find((u) => u.email === email.toLowerCase());
+      if (existingUser) {
+        const { data: magicData } = await admin.auth.admin.generateLink({
+          type: 'magiclink',
+          email,
+          options: { redirectTo: `${siteUrl}/accept-invite` },
+        });
+        if (magicData?.user) {
+          linkData = magicData as unknown as LinkResult;
+        }
+      }
+    }
+
+    if (!linkData) {
+      console.error('[invite] generateLink', linkError);
+      return NextResponse.json({ error: `Einladung fehlgeschlagen: ${msg || 'Unbekannter Fehler'}` }, { status: 500 });
+    }
+  }
+
+  if (!linkData) {
+    return NextResponse.json({ error: 'Einladung fehlgeschlagen.' }, { status: 500 });
   }
 
   const { data, error } = await admin
@@ -56,7 +102,7 @@ export async function POST(req: NextRequest) {
   if (error) {
     await admin.auth.admin.deleteUser(linkData.user.id);
     console.error('[invite] member upsert', error);
-    return NextResponse.json({ error: 'Invite failed' }, { status: 500 });
+    return NextResponse.json({ error: `Einladung fehlgeschlagen: ${error.message}` }, { status: 500 });
   }
 
   // Send invite email via our own SMTP
@@ -77,7 +123,6 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({
     member: memberFromDb(data),
-    // Return link when email couldn't be sent so the UI can show it
     inviteLink: emailSent ? undefined : inviteLink,
   });
 }

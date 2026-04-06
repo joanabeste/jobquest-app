@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getSession, unauthorized } from '@/lib/api-auth';
 import { formPageFromDb, formPageToDb } from '@/lib/supabase/mappers';
+import { checkQuota } from '@/lib/quota';
+import { DEFAULT_PLAN } from '@/lib/types';
 import type { FormPage } from '@/lib/types';
 
 export async function GET() {
@@ -22,6 +24,11 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const session = await getSession();
   if (!session) return unauthorized();
+
+  const quota = await checkQuota(session.company.id, 'formulare', session.company.plan ?? DEFAULT_PLAN);
+  if (!quota.allowed) {
+    return NextResponse.json({ error: `Kontingent erreicht: ${quota.current} von ${quota.max} Formulare verwendet.` }, { status: 403 });
+  }
 
   let form: FormPage;
   try {

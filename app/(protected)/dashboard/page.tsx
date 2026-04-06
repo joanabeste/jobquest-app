@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { questStorage, leadStorage, careerCheckStorage, careerCheckLeadStorage, formPageStorage, formSubmissionStorage } from '@/lib/storage';
-import { JobQuest, CareerCheck, FormPage, DEFAULT_FORM_CONFIG } from '@/lib/types';
+import { JobQuest, CareerCheck, FormPage, DEFAULT_FORM_CONFIG, DEFAULT_PLAN } from '@/lib/types';
 import { generateSlug, formatDateShort } from '@/lib/utils';
 import { useContentList } from '@/hooks/useContentList';
 import { useToast } from '@/components/ui/Toast';
@@ -36,7 +36,9 @@ export default function DashboardPage() {
   const router = useRouter();
   const toast = useToast();
 
-  const [activeTab, setActiveTab] = useState<ActiveTab>('jobquests');
+  const defaultTab: ActiveTab = (company?.plan?.maxJobQuests ?? 1) > 0 ? 'jobquests'
+    : (company?.plan?.maxBerufschecks ?? 0) > 0 ? 'berufschecks' : 'formulare';
+  const [activeTab, setActiveTab] = useState<ActiveTab>(defaultTab);
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<'updated' | 'created' | 'title'>('updated');
 
@@ -125,6 +127,17 @@ export default function DashboardPage() {
   }
 
   const isLoading = questList.loading || checkList.loading || formList.loading;
+  const plan = company?.plan ?? DEFAULT_PLAN;
+
+  // Visible tabs based on quota (0 = feature disabled)
+  const showQuests = plan.maxJobQuests > 0;
+  const showChecks = plan.maxBerufschecks > 0;
+  const showForms = plan.maxFormulare > 0;
+
+  // Quota reached?
+  const questQuotaReached = questList.items.length >= plan.maxJobQuests;
+  const checkQuotaReached = checkList.items.length >= plan.maxBerufschecks;
+  const formQuotaReached = formList.items.length >= plan.maxFormulare;
 
   const filteredQuests = sortItems(questList.items);
   const filteredChecks = sortItems(checkList.items);
@@ -148,17 +161,20 @@ export default function DashboardPage() {
         {can('create_content') && (
           <div className="flex items-center gap-2">
             {activeTab === 'jobquests' ? (
-              <button onClick={handleCreateQuest} className="btn-primary">
+              <button onClick={handleCreateQuest} disabled={questQuotaReached} className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                title={questQuotaReached ? `Kontingent erreicht (${plan.maxJobQuests}/${plan.maxJobQuests})` : undefined}>
                 <Plus size={16} />
                 Neue JobQuest
               </button>
             ) : activeTab === 'berufschecks' ? (
-              <button onClick={handleCreateCheck} className="btn-primary">
+              <button onClick={handleCreateCheck} disabled={checkQuotaReached} className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                title={checkQuotaReached ? `Kontingent erreicht (${plan.maxBerufschecks}/${plan.maxBerufschecks})` : undefined}>
                 <Plus size={16} />
                 Neuer Berufscheck
               </button>
             ) : (
-              <button onClick={handleCreateForm} className="btn-primary">
+              <button onClick={handleCreateForm} disabled={formQuotaReached} className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                title={formQuotaReached ? `Kontingent erreicht (${plan.maxFormulare}/${plan.maxFormulare})` : undefined}>
                 <Plus size={16} />
                 Neues Formular
               </button>
@@ -174,11 +190,11 @@ export default function DashboardPage() {
             {Array.from({ length: 4 }).map((_, i) => <StatCardSkeleton key={i} />)}
           </>
         ) : [
-          { label: 'JobQuests', value: questList.items.length, icon: FileText, color: 'violet', tab: 'jobquests' as ActiveTab },
-          { label: 'Berufschecks', value: checkList.items.length, icon: CheckSquare, color: 'indigo', tab: 'berufschecks' as ActiveTab },
-          { label: 'Formulare', value: formList.items.length, icon: ClipboardList, color: 'emerald', tab: 'formulare' as ActiveTab },
-          { label: 'Kontakte gesamt', value: totalLeads, icon: Users, color: 'blue', tab: null },
-        ].map(({ label, value, icon: Icon, color, tab }) => {
+          showQuests && { label: 'JobQuests', value: `${questList.items.length} / ${plan.maxJobQuests}`, icon: FileText, color: 'violet', tab: 'jobquests' as ActiveTab },
+          showChecks && { label: 'Berufschecks', value: `${checkList.items.length} / ${plan.maxBerufschecks}`, icon: CheckSquare, color: 'indigo', tab: 'berufschecks' as ActiveTab },
+          showForms && { label: 'Formulare', value: `${formList.items.length} / ${plan.maxFormulare}`, icon: ClipboardList, color: 'emerald', tab: 'formulare' as ActiveTab },
+          { label: 'Kontakte gesamt', value: String(totalLeads), icon: Users, color: 'blue', tab: null },
+        ].filter((x): x is Exclude<typeof x, false> => !!x).map(({ label, value, icon: Icon, color, tab }) => {
           const inner = (
             <>
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
@@ -216,6 +232,7 @@ export default function DashboardPage() {
 
       {/* Tabs */}
       <div className="flex items-center gap-1 border-b border-slate-200 mb-6 overflow-x-auto">
+        {showQuests && (
         <button
           onClick={() => setActiveTab('jobquests')}
           className={`px-3 sm:px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
@@ -231,6 +248,8 @@ export default function DashboardPage() {
             </span>
           )}
         </button>
+        )}
+        {showChecks && (
         <button
           onClick={() => setActiveTab('berufschecks')}
           className={`px-3 sm:px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
@@ -239,13 +258,15 @@ export default function DashboardPage() {
               : 'border-transparent text-slate-500 hover:text-slate-700'
           }`}
         >
-          Checks
+          Berufschecks
           {publishedCheckCount > 0 && (
             <span className="ml-1.5 text-xs bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded-full">
               {publishedCheckCount}
             </span>
           )}
         </button>
+        )}
+        {showForms && (
         <button
           onClick={() => setActiveTab('formulare')}
           className={`px-3 sm:px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
@@ -261,6 +282,7 @@ export default function DashboardPage() {
             </span>
           )}
         </button>
+        )}
       </div>
 
       {/* Toolbar */}

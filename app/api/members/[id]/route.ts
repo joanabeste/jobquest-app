@@ -109,12 +109,24 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
       .from('workspace_members')
       .select('id', { count: 'exact', head: true })
       .eq('company_id', session.company.id)
-      .eq('role', 'admin')
-      .eq('status', 'active');
+      .eq('role', 'admin');
 
     if ((count ?? 0) <= 1) {
+      // Check if there are other team members who could become admin
+      const { count: totalMembers } = await supabase
+        .from('workspace_members')
+        .select('id', { count: 'exact', head: true })
+        .eq('company_id', session.company.id)
+        .neq('id', id);
+
       return NextResponse.json(
-        { error: 'last_admin', message: 'Dies ist der letzte Admin. Das Entfernen löscht das gesamte Unternehmen.' },
+        {
+          error: 'last_admin',
+          hasOtherMembers: (totalMembers ?? 0) > 0,
+          message: (totalMembers ?? 0) > 0
+            ? 'Dies ist der letzte Admin. Übertrage zuerst die Admin-Rolle an ein anderes Teammitglied.'
+            : 'Dies ist der letzte Admin. Das Entfernen löscht das gesamte Unternehmen und alle Daten.',
+        },
         { status: 409 },
       );
     }

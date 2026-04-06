@@ -32,7 +32,7 @@ export function useContentList<T extends { id: string; title: string }>(
 ): UseContentListResult<T> {
   const [items, setItems] = useState<T[]>([]);
   const [counts, setCounts] = useState<Record<string, number>>({});
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; title: string } | null>(null);
   const toast = useToast();
 

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { Building2, Users, KeyRound, Settings } from 'lucide-react';
+import { Building2, Users, KeyRound, Settings, BarChart2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 const NAV_ITEMS = [
@@ -20,6 +20,13 @@ const NAV_ITEMS = [
     desc: 'Mitglieder & Rollen',
     icon: Users,
     permission: 'view_team' as const,
+  },
+  {
+    href: '/settings/plan',
+    label: 'Kontingent',
+    desc: 'Plan & Nutzung',
+    icon: BarChart2,
+    permission: null,
   },
   {
     href: '/settings/account',

@@ -22,6 +22,11 @@ export function companyFromDb(row: any): Company {
     createdAt: row.created_at,
     corporateDesign: row.corporate_design ?? undefined,
     successPage: row.success_page ?? undefined,
+    plan: {
+      maxJobQuests: row.max_job_quests ?? 1,
+      maxBerufschecks: row.max_berufschecks ?? 0,
+      maxFormulare: row.max_formulare ?? 0,
+    },
   };
 }
 
@@ -40,6 +45,12 @@ export function companyToDb(c: Company): Record<string, unknown> {
     corporate_design: c.corporateDesign ?? {},
     success_page: c.successPage ?? null,
     created_at: c.createdAt,
+    // Plan columns — only include if plan is explicitly set (avoids errors if DB migration hasn't run yet)
+    ...(c.plan ? {
+      max_job_quests: c.plan.maxJobQuests,
+      max_berufschecks: c.plan.maxBerufschecks,
+      max_formulare: c.plan.maxFormulare,
+    } : {}),
   };
 }
 

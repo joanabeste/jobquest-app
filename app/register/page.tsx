@@ -13,6 +13,7 @@ export default function RegisterPage() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [registered, setRegistered] = useState(false);
 
   const [form, setForm] = useState({
     name: '',
@@ -20,6 +21,10 @@ export default function RegisterPage() {
     contactEmail: '',
     password: '',
     confirmPassword: '',
+    wunschJobQuests: 5,
+    wunschBerufschecks: 0,
+    wunschFormulare: 0,
+    wunschNotes: '',
   });
 
   useEffect(() => {
@@ -52,8 +57,12 @@ export default function RegisterPage() {
         contactName: form.contactName,
         contactEmail: form.contactEmail,
         password: form.password,
-      });
-      router.push('/dashboard');
+        wunschJobQuests: form.wunschJobQuests,
+        wunschBerufschecks: form.wunschBerufschecks,
+        wunschFormulare: form.wunschFormulare,
+        wunschNotes: form.wunschNotes,
+      } as any);
+      setRegistered(true);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Unbekannter Fehler';
       if (msg === 'Email already registered') {
@@ -67,6 +76,36 @@ export default function RegisterPage() {
       }
       setSubmitting(false);
     }
+  }
+
+  if (registered) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-slate-50 flex items-center justify-center p-4 py-12">
+        <div className="w-full max-w-md text-center">
+          <div className="inline-flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-xl bg-violet-600 flex items-center justify-center shadow-lg shadow-violet-200">
+              <span className="text-white font-bold text-lg">J</span>
+            </div>
+            <span className="text-2xl font-bold text-slate-900">JobQuest</span>
+          </div>
+          <div className="card p-8">
+            <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-5">
+              <svg className="w-8 h-8 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h1 className="text-xl font-bold text-slate-900 mb-2">Registrierung eingegangen!</h1>
+            <p className="text-slate-500 text-sm leading-relaxed mb-6">
+              Vielen Dank für deine Registrierung. Dein Konto wird von unserem Team geprüft und freigeschaltet.
+              Du erhältst eine Benachrichtigung per E-Mail, sobald dein Zugang aktiv ist.
+            </p>
+            <Link href="/login" className="btn-primary w-full justify-center py-2.5">
+              Zur Anmeldung
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -135,6 +174,40 @@ export default function RegisterPage() {
                     required
                   />
                 </div>
+              </div>
+            </div>
+
+            {/* Wunschkontingent */}
+            <div className="pt-2 border-t border-slate-100">
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Wunschkontingent</p>
+              <p className="text-xs text-slate-400 mb-3">Wie viele Inhalte möchten Sie nutzen? Ihr Team prüft die Anfrage.</p>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="label">JobQuests</label>
+                  <input type="number" min={0} max={999} className="input-field"
+                    value={form.wunschJobQuests}
+                    onChange={(e) => handleChange('wunschJobQuests', e.target.value)} />
+                </div>
+                <div>
+                  <label className="label">Berufschecks</label>
+                  <input type="number" min={0} max={999} className="input-field"
+                    value={form.wunschBerufschecks}
+                    onChange={(e) => handleChange('wunschBerufschecks', e.target.value)} />
+                </div>
+                <div>
+                  <label className="label">Formulare</label>
+                  <input type="number" min={0} max={999} className="input-field"
+                    value={form.wunschFormulare}
+                    onChange={(e) => handleChange('wunschFormulare', e.target.value)} />
+                </div>
+              </div>
+
+              <div className="mt-3">
+                <label className="label">Anmerkungen (optional)</label>
+                <textarea className="input-field resize-none" rows={2} placeholder="z.B. gewünschter Starttermin, besondere Anforderungen…"
+                  value={form.wunschNotes}
+                  onChange={(e) => handleChange('wunschNotes', e.target.value)} />
               </div>
             </div>
 
