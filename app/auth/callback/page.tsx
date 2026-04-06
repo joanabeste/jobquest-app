@@ -2,55 +2,90 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { createBrowserClient } from '@supabase/ssr';
+
+function getSupabase() {
+  return createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    // Disable auto-detection so we process the URL exactly once, manually.
+    { auth: { detectSessionInUrl: false } },
+  );
+}
 
 /**
- * Supabase auth callback — handles both PKCE (?code=) and implicit (#access_token=) flows.
- * The Supabase browser client auto-processes the URL when detectSessionInUrl is true (default).
- * We listen to onAuthStateChange instead of manually calling exchangeCodeForSession to avoid
- * double-exchange race conditions.
+ * Handles two Supabase auth redirect formats:
+ *   PKCE   → /auth/callback?code=XXXX&next=/reset-password
+ *   Implicit → /auth/callback?next=/reset-password#access_token=...&refresh_token=...
+ *
+ * We parse explicitly and call the matching Supabase method so there is no
+ * race condition with the client's own URL-detection logic.
  */
 export default function AuthCallbackPage() {
   const router = useRouter();
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const next = params.get('next') ?? '/';
-    const hasCode = !!params.get('code');
-    const hasHashToken = window.location.hash.includes('access_token');
+    const searchParams = new URLSearchParams(window.location.search);
+    const next = searchParams.get('next') ?? '/';
+    const code = searchParams.get('code');
 
-    if (!hasCode && !hasHashToken) {
-      router.replace('/login?error=link_expired');
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    const accessToken = hashParams.get('access_token');
+    const refreshToken = hashParams.get('refresh_token');
+
+    const supabase = getSupabase();
+
+    if (code) {
+      // PKCE flow: exchange authorization code for session
+      supabase.auth.exchangeCodeForSession(code).then(({ error: err }) => {
+        if (err) {
+          console.error('[auth/callback] PKCE exchange failed:', err.message);
+          setError('Der Link ist abgelaufen oder ungültig. Bitte fordere einen neuen an.');
+        } else {
+          router.replace(next);
+        }
+      });
       return;
     }
 
-    const supabase = createClient();
+    if (accessToken && refreshToken) {
+      // Implicit flow: set session directly from hash tokens
+      supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken }).then(({ error: err }) => {
+        if (err) {
+          console.error('[auth/callback] setSession failed:', err.message);
+          setError('Der Link ist abgelaufen oder ungültig. Bitte fordere einen neuen an.');
+        } else {
+          router.replace(next);
+        }
+      });
+      return;
+    }
 
-    // The Supabase client automatically exchanges ?code= (PKCE) or processes
-    // #access_token= (implicit) from the URL. Listen for the resulting event.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
-        subscription.unsubscribe();
-        router.replace(next);
-      } else if (event === 'SIGNED_OUT') {
-        subscription.unsubscribe();
-        router.replace('/login?error=link_expired');
-      }
-    });
-
-    // Also check immediately in case the client already processed the URL
-    // synchronously before our listener was registered.
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        subscription.unsubscribe();
-        router.replace(next);
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    // Neither code nor hash token present
+    setError('Der Link ist abgelaufen oder ungültig. Bitte fordere einen neuen an.');
   }, [router]);
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+        <div className="w-full max-w-md text-center">
+          <div className="card p-8 space-y-4">
+            <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mx-auto">
+              <span className="text-red-600 text-xl">✕</span>
+            </div>
+            <h1 className="text-lg font-semibold text-slate-900">Link ungültig</h1>
+            <p className="text-slate-500 text-sm">{error}</p>
+            <a href="/forgot-password" className="btn-primary inline-flex justify-center w-full py-2.5">
+              Neuen Link anfordern
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50">

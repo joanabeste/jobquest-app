@@ -14,10 +14,18 @@ export default function LoginPage() {
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [notice, setNotice] = useState('');
 
   useEffect(() => {
     if (!isLoading && company) router.replace('/dashboard');
   }, [company, isLoading, router]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('error') === 'link_expired') {
+      setNotice('Der Link ist abgelaufen oder ungültig. Bitte fordere einen neuen an.');
+    }
+  }, []);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -49,6 +57,13 @@ export default function LoginPage() {
 
         <div className="card p-8">
           <h1 className="text-xl font-semibold text-slate-900 mb-6">Anmelden</h1>
+
+          {notice && (
+            <div className="bg-amber-50 border border-amber-200 text-amber-800 text-sm rounded-lg px-4 py-3 mb-4">
+              {notice}{' '}
+              <a href="/forgot-password" className="underline font-medium">Neuen Link anfordern</a>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
