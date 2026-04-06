@@ -36,7 +36,7 @@ interface InspectorProps {
 }
 
 export default function Inspector({ node, isLocked, onUpdate, onDelete, onDuplicate, extraPanel, pages, currentPage, onUpdatePage, availableVars = CONTEXT_VARIABLES }: InspectorProps) {
-  const [tab, setTab] = useState<'props' | 'style' | 'page'>('props');
+  const [tab, setTab] = useState<'props' | 'page'>('props');
 
   useEffect(() => {
     if (node) {
@@ -49,10 +49,7 @@ export default function Inspector({ node, isLocked, onUpdate, onDelete, onDuplic
   const label     = node ? (node.kind === 'block' ? BLOCK_LABELS[node.type] : 'Layout') : null;
   const blockMeta = node?.kind === 'block' ? BLOCK_META[node.type] : null;
   const props     = node?.kind === 'block' ? node.props : {};
-  const style     = node?.style ?? {};
-
   function updateProps(patch: Record<string, unknown>) { onUpdate({ props: patch }); }
-  function updateStyle(patch: Partial<FunnelStyle>) { onUpdate({ style: patch }); }
 
   return (
     <aside className="w-72 flex-shrink-0 border-l border-slate-200 bg-white flex flex-col overflow-hidden">
@@ -88,7 +85,6 @@ export default function Inspector({ node, isLocked, onUpdate, onDelete, onDuplic
 
       <div className="flex border-b border-slate-100 flex-shrink-0">
         {node && <TabBtn active={tab === 'props'} onClick={() => setTab('props')}>Inhalt</TabBtn>}
-        {node?.kind === 'block' && <TabBtn active={tab === 'style'} onClick={() => setTab('style')}>Darstellung</TabBtn>}
         <TabBtn active={tab === 'page'} onClick={() => setTab('page')}>Seite</TabBtn>
       </div>
 
@@ -98,26 +94,19 @@ export default function Inspector({ node, isLocked, onUpdate, onDelete, onDuplic
         ) : tab === 'props' && node ? (
           node.kind === 'layout' ? (
             <div className="p-4">
-              <StyleEditor style={style} onChange={updateStyle} />
-              <div className="mt-4 pt-4 border-t border-slate-100">
-                <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400 mb-2">Spalten</p>
-                {node.columns.map((col, i) => (
-                  <div key={col.id} className="flex items-center justify-between py-1.5 text-xs text-slate-600">
-                    <span>Spalte {i + 1}</span>
-                    <span className="text-slate-400">{col.nodes.length} Blöcke</span>
-                  </div>
-                ))}
-              </div>
+              <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400 mb-2">Spalten</p>
+              {node.columns.map((col, i) => (
+                <div key={col.id} className="flex items-center justify-between py-1.5 text-xs text-slate-600">
+                  <span>Spalte {i + 1}</span>
+                  <span className="text-slate-400">{col.nodes.length} Blöcke</span>
+                </div>
+              ))}
             </div>
           ) : (
             <div className="p-4">
               <BlockPropsEditor node={node} props={props} onChange={updateProps} pages={pages} availableVars={availableVars} />
             </div>
           )
-        ) : tab === 'style' && node?.kind === 'block' ? (
-          <div className="p-4">
-            <StyleEditor style={style} onChange={updateStyle} />
-          </div>
         ) : !node ? (
           <div className="flex flex-col items-center justify-center text-center px-5 py-10 gap-3">
             <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center">
@@ -195,49 +184,6 @@ function PageSettingsEditor({ currentPage, pages, onUpdate }: { currentPage?: Fu
           </p>
         )}
       </div>
-    </div>
-  );
-}
-
-// ─── Style editor ─────────────────────────────────────────────────────────────
-function StyleEditor({ style, onChange }: { style: FunnelStyle; onChange: (p: Partial<FunnelStyle>) => void }) {
-  return (
-    <div className="space-y-4">
-      <Section label="Abstände (px)">
-        <div className="grid grid-cols-2 gap-2">
-          {(['paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft'] as const).map((k) => (
-            <NumberInput key={k} label={k.replace('padding', '')}
-              value={(style[k] as number) ?? 0}
-              onChange={(v) => onChange({ [k]: v })} />
-          ))}
-        </div>
-      </Section>
-
-      <Section label="Aussehen">
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <label className="text-xs text-slate-600">Hintergrund</label>
-            <input type="color" value={style.backgroundColor || '#ffffff'}
-              onChange={(e) => onChange({ backgroundColor: e.target.value })}
-              className="w-8 h-7 rounded cursor-pointer border border-slate-200" />
-          </div>
-          <NumberInput label="Eckenrundung (px)" value={style.borderRadius ?? 0}
-            onChange={(v) => onChange({ borderRadius: v })} />
-          <div className="flex items-center justify-between">
-            <label className="text-xs text-slate-600">Textausrichtung</label>
-            <div className="flex gap-1">
-              {(['left', 'center', 'right'] as const).map((a) => (
-                <button key={a} onClick={() => onChange({ textAlign: a })}
-                  className={`px-2 py-1 rounded text-[10px] font-medium transition-colors ${
-                    style.textAlign === a ? 'bg-violet-100 text-violet-700' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                  }`}>
-                  {a === 'left' ? '←' : a === 'center' ? '↔' : '→'}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </Section>
     </div>
   );
 }
