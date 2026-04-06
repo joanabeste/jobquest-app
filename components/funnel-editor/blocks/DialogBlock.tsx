@@ -194,7 +194,7 @@ export default function DialogBlock({ lines, primary, visibleCount, onAdvance, f
               onKeyDown={(e) => e.key === 'Enter' && handleInputSubmit()}
               placeholder={input?.placeholder ?? 'Deine Antwort…'}
               className="flex-1 px-4 py-2.5 text-sm rounded-2xl border-2 bg-white outline-none transition-colors focus:border-violet-400"
-              style={{ borderColor: `${primary}40` }}
+              style={{ borderColor: `${primary}40`, fontSize: '16px' }}
               autoFocus
             />
             <button

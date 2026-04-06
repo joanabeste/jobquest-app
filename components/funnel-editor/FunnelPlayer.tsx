@@ -29,7 +29,7 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
   const [leadSubmitted, setLeadSubmitted] = useState(false);
   const [leadSaveError, setLeadSaveError] = useState(false);
   const [completed, setCompleted]   = useState(false);
-  const [completionMsg, setCompletionMsg] = useState<{ headline: string; text: string } | null>(null);
+  const [_completionMsg, setCompletionMsg] = useState<{ headline: string; text: string } | null>(null);
   const [dialogVisible, setDialogVisible] = useState(0);
   const topRef = useRef<HTMLDivElement>(null);
 

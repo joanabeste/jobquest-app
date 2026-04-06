@@ -86,11 +86,10 @@ function RatingBlock({ question, emoji, count, nodeId, answers, onAnswer }: {
         {Array.from({ length: count }, (_, i) => i + 1).map((val) => (
           <button
             key={val}
-            onClick={() => !selected && onAnswer(nodeId, val)}
-            onMouseEnter={() => !selected && setHovered(val)}
+            onClick={() => onAnswer(nodeId, val)}
+            onMouseEnter={() => setHovered(val)}
             onMouseLeave={() => setHovered(null)}
-            disabled={!!selected}
-            className="text-3xl transition-transform hover:scale-125 disabled:cursor-default"
+            className="text-3xl transition-transform hover:scale-125"
             style={{ opacity: val <= highlight ? 1 : 0.25 }}
           >
             {emoji}
@@ -592,7 +591,7 @@ export function BlockRenderer({
           <input type="text" value={firstName} onChange={(e) => onSetFirstName(e.target.value)}
             placeholder={s(p.placeholder, 'Dein Vorname')}
             className="w-full px-4 py-3 border-2 border-slate-200 text-sm focus:outline-none"
-            style={{ borderRadius: br }} />
+            style={{ borderRadius: br, fontSize: '16px' }} />
         </div>
       );
 
@@ -752,7 +751,7 @@ export function BlockRenderer({
                     } else if (f.type === 'tel') setLeadForm({ ...leadForm, phone: e.target.value });
                   }}
                   className="w-full px-3 py-2.5 border border-slate-200 text-sm focus:outline-none"
-                  style={{ borderRadius: br }}
+                  style={{ borderRadius: br, fontSize: '16px' }}
                   placeholder={f.label}
                 />
               </div>

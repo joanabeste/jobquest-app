@@ -5,7 +5,7 @@ import { useFunnelHistory } from '@/hooks/useFunnelHistory';
 import Link from 'next/link';
 import { ArrowLeft, Save, Globe, Eye, Undo2, Redo2, Check, Sparkles, Copy, GitBranch, LayoutTemplate, Mail } from 'lucide-react';
 import { FunnelDoc, FunnelContentType, FunnelPage, InsertTarget, FunnelNode, FunnelStyle, BlockNode, EmailConfig } from '@/lib/funnel-types';
-import { getAvailableVariables } from '@/lib/funnel-variables';
+import { getAvailableVariables, EMAIL_VARIABLES } from '@/lib/funnel-variables';
 import { funnelStorage } from '@/lib/funnel-storage';
 import {
   createFunnelDoc, insertNode, deleteNode, updateNode, duplicateNode,
@@ -511,7 +511,7 @@ function FunnelEditorInner({
         initial={doc.emailConfig}
         onSave={handleSaveEmailConfig}
         onClose={() => setShowEmailConfig(false)}
-        availableVars={availableVars}
+        availableVars={EMAIL_VARIABLES}
       />
     )}
     </>

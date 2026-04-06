@@ -11,7 +11,7 @@ export const emptyLead: LeadForm = { firstName: '', lastName: '', email: '', pho
 
 export default function LeadFormBlock({ props: p, company, br, primary, leadForm, setLeadForm, onSubmit }: {
   props: Record<string, unknown>; company: Company; br: string; primary: string;
-  leadForm: LeadForm; setLeadForm: (f: LeadForm) => void;
+  leadForm: LeadForm; setLeadForm?: (f: LeadForm) => void;
   onSubmit: (form: LeadForm, customFields?: Record<string, string>) => void;
 }) {
   const rawFields = (p.fields as LeadFieldDef[]) ?? [];

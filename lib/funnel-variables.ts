@@ -17,6 +17,18 @@ export interface VariableDef {
   label: string; // e.g. 'Vorname'  — shown in the picker dropdown
 }
 
+// ─── Variables available in E-Mail templates ─────────────────────────────────
+// Must exactly match the `vars` object built in lib/api/submit-lead-handler.ts.
+// These are the ONLY keys that are substituted at email send time.
+export const EMAIL_VARIABLES: VariableDef[] = [
+  { key: 'firstName',        label: 'Vorname'       },
+  { key: 'lastName',         label: 'Nachname'      },
+  { key: 'email',            label: 'E-Mail'        },
+  { key: 'phone',            label: 'Telefon'       },
+  { key: 'companyName',      label: 'Firmenname'    },
+  { key: 'karriereseiteUrl', label: 'Karriereseite' },
+];
+
 // ─── Always-available context variables ───────────────────────────────────────
 // Only non-empty values from the company profile are included.
 // vorname is NOT here — it's picked up dynamically from quest_dialog blocks.

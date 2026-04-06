@@ -5,7 +5,7 @@ import { X, Mail, Bell, Paperclip, ChevronDown, ChevronUp, Upload, FileText } fr
 import type { EmailConfig, EmailAttachment } from '@/lib/funnel-types';
 import { VarInput } from './VarInput';
 import RichTextEditor from './RichTextEditor';
-import { type VariableDef, CONTEXT_VARIABLES } from '@/lib/funnel-variables';
+import { type VariableDef, EMAIL_VARIABLES } from '@/lib/funnel-variables';
 
 // Convert plain text defaults to basic HTML for the visual editor
 function toHtml(text: string): string {
@@ -36,7 +36,7 @@ interface Props {
   availableVars?: VariableDef[];
 }
 
-export default function EmailConfigModal({ initial, onSave, onClose, availableVars = CONTEXT_VARIABLES }: Props) {
+export default function EmailConfigModal({ initial, onSave, onClose, availableVars = EMAIL_VARIABLES }: Props) {
   const [cfg, setCfg] = useState<EmailConfig>(() => {
     if (!initial) return EMPTY_CONFIG;
     // Migrate legacy plain-text bodies to HTML for the visual editor
