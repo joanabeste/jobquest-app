@@ -8,12 +8,15 @@ interface AuthContextType {
   company: Company | null;
   currentMember: WorkspaceMember | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<string | null>; // null = success, string = error message
+  isImpersonating: boolean;
+  login: (email: string, password: string) => Promise<string | null>;
   logout: () => Promise<void>;
   updateCompany: (company: Company) => Promise<void>;
   register: (data: Omit<Company, 'id' | 'createdAt'> & { password: string }) => Promise<Company>;
   deleteAccount: () => Promise<void>;
   can: (permission: Permission) => boolean;
+  startImpersonation: (companyId: string) => Promise<void>;
+  stopImpersonation: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -22,25 +25,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [company, setCompany] = useState<Company | null>(null);
   const [currentMember, setCurrentMember] = useState<WorkspaceMember | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isImpersonating, setIsImpersonating] = useState(false);
+
+  const refreshSession = useCallback(async () => {
+    try {
+      const res = await fetch('/api/auth/me');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.member && data.company) {
+          setCurrentMember(data.member);
+          setCompany(data.company);
+          setIsImpersonating(data.isImpersonating ?? false);
+          return;
+        }
+      }
+    } catch { /* no session */ }
+    setCompany(null);
+    setCurrentMember(null);
+    setIsImpersonating(false);
+  }, []);
 
   useEffect(() => {
-    async function restoreSession() {
-      try {
-        const res = await fetch('/api/auth/me');
-        if (res.ok) {
-          const data = await res.json();
-          if (data.member && data.company) {
-            setCurrentMember(data.member);
-            setCompany(data.company);
-          }
-        }
-      } catch {
-        // No session
-      }
-      setIsLoading(false);
-    }
-    restoreSession();
-  }, []);
+    refreshSession().finally(() => setIsLoading(false));
+  }, [refreshSession]);
 
   const login = useCallback(async (email: string, password: string): Promise<string | null> => {
     try {
@@ -68,6 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setCompany(null);
       setCurrentMember(null);
+      setIsImpersonating(false);
     }
   }, []);
 
@@ -101,17 +109,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const checkCan = useCallback((permission: Permission): boolean =>
     canRole(currentMember?.role as WorkspaceRole | undefined, permission), [currentMember]);
 
+  const startImpersonation = useCallback(async (companyId: string) => {
+    await apiFetch('/api/admin/impersonate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ companyId }),
+    });
+    await refreshSession();
+  }, [refreshSession]);
+
+  const stopImpersonation = useCallback(async () => {
+    await apiFetch('/api/admin/impersonate', { method: 'DELETE' });
+    await refreshSession();
+  }, [refreshSession]);
+
   return (
     <AuthContext.Provider value={{
       company,
       currentMember,
       isLoading,
+      isImpersonating,
       login,
       logout,
       updateCompany,
       register,
       deleteAccount,
       can: checkCan,
+      startImpersonation,
+      stopImpersonation,
     }}>
       {children}
     </AuthContext.Provider>

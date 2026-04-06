@@ -9,5 +9,6 @@ export async function GET() {
   return NextResponse.json({
     member: session.member,
     company: session.company,
+    isImpersonating: session.isImpersonating,
   });
 }

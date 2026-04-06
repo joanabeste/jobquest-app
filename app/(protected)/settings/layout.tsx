@@ -32,7 +32,7 @@ const NAV_ITEMS = [
 
 export default function SettingsLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const { can, currentMember } = useAuth();
+  const { can, currentMember, isImpersonating } = useAuth();
   const isPlatformAdmin = currentMember?.role === 'platform_admin';
 
   return (
@@ -48,7 +48,7 @@ export default function SettingsLayout({ children }: { children: ReactNode }) {
 
         <nav className="flex md:flex-col overflow-x-auto md:overflow-visible p-2 md:p-3 gap-1 md:gap-0.5">
           {NAV_ITEMS.map(({ href, label, icon: Icon, permission }) => {
-            if (isPlatformAdmin) return null;
+            if (isPlatformAdmin && !isImpersonating) return null;
             if (permission && !can(permission)) return null;
             const active = pathname === href || pathname.startsWith(href + '/');
             return (

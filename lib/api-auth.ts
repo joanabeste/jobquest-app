@@ -2,11 +2,13 @@ import { NextResponse } from 'next/server';
 import { createServerSupabaseClient } from './supabase/server';
 import { createAdminClient } from './supabase/admin';
 import { memberFromDb, companyFromDb } from './supabase/mappers';
+import { getImpersonation } from './impersonation';
 import type { Company, WorkspaceMember } from './types';
 
 export interface SessionData {
   member: WorkspaceMember;
   company: Company;
+  isImpersonating: boolean;
 }
 
 export async function getSession(): Promise<SessionData | null> {
@@ -23,16 +25,31 @@ export async function getSession(): Promise<SessionData | null> {
     .single();
   if (!memberRow) return null;
 
+  const member = memberFromDb(memberRow);
+
+  // Impersonation: platform_admin can switch company context
+  let companyId = memberRow.company_id;
+  let isImpersonating = false;
+
+  if (member.role === 'platform_admin') {
+    const impersonation = await getImpersonation();
+    if (impersonation) {
+      companyId = impersonation.companyId;
+      isImpersonating = true;
+    }
+  }
+
   const { data: companyRow } = await admin
     .from('companies')
     .select('*')
-    .eq('id', memberRow.company_id)
+    .eq('id', companyId)
     .single();
   if (!companyRow) return null;
 
   return {
-    member: memberFromDb(memberRow),
+    member,
     company: companyFromDb(companyRow),
+    isImpersonating,
   };
 }
 

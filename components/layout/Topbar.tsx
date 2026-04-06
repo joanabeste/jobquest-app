@@ -10,7 +10,7 @@ import {
 import { useState, useRef, useEffect } from 'react';
 
 export default function Topbar() {
-  const { company, currentMember, logout, can } = useAuth();
+  const { company, currentMember, logout, can, isImpersonating, stopImpersonation } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -41,7 +41,17 @@ export default function Topbar() {
   const isPlatformAdmin = role === 'platform_admin';
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 h-14 bg-white border-b border-slate-200 grid grid-cols-3 items-center px-4 md:px-6">
+    <>
+    {isImpersonating && (
+      <div className="fixed top-0 left-0 right-0 z-[60] h-9 bg-amber-500 text-white flex items-center justify-center gap-3 text-xs font-medium">
+        <span>Support-Modus: Du siehst <strong>{company?.name}</strong></span>
+        <button onClick={() => stopImpersonation()}
+          className="px-2 py-0.5 bg-white/20 hover:bg-white/30 rounded text-xs font-semibold transition-colors">
+          Beenden
+        </button>
+      </div>
+    )}
+    <header className={`fixed left-0 right-0 z-50 h-14 bg-white border-b border-slate-200 grid grid-cols-3 items-center px-4 md:px-6 ${isImpersonating ? 'top-9' : 'top-0'}`}>
       {/* Logo – left */}
       <Link href="/dashboard" className="flex items-center gap-2.5 min-w-0">
         {company?.logo ? (
@@ -113,7 +123,7 @@ export default function Topbar() {
             </div>
 
             {/* Settings section */}
-            {!isPlatformAdmin && (
+            {(!isPlatformAdmin || isImpersonating) && (
               <div className="py-1">
                 <div className="flex items-center justify-between px-4 pt-2 pb-1">
                   <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Einstellungen</p>
@@ -168,5 +178,6 @@ export default function Topbar() {
       </div>
       </div>
     </header>
+    </>
   );
 }
