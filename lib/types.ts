@@ -115,6 +115,7 @@ export interface CorporateDesign {
   textColor: string;              // Schriftfarbe (Fließtext)
   headingColor: string;           // Farbe für Überschriften
   borderRadius: number;           // Eckenrundung in px
+  faviconUrl?: string;            // Favicon als Base64-DataURL oder externe URL
   headingFontName: string;        // Schriftart für Überschriften (Google Font oder "system")
   headingFontCustomName?: string; // Anzeigename der hochgeladenen Überschriften-Schrift
   headingFontData?: string;       // Base64-DataURL der hochgeladenen Überschriften-Schrift

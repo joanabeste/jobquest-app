@@ -63,6 +63,7 @@ export default function SettingsCompanyPage() {
     bodyFontSize: cd.bodyFontSize ?? DEFAULT_CORPORATE_DESIGN.bodyFontSize,
     bodyFontWeight: cd.bodyFontWeight ?? DEFAULT_CORPORATE_DESIGN.bodyFontWeight,
     bodyTextTransform: cd.bodyTextTransform ?? 'none',
+    faviconUrl: cd.faviconUrl,
   });
 
   useEffect(() => {
@@ -322,6 +323,45 @@ export default function SettingsCompanyPage() {
                 <ColorPicker label="Akzentfarbe" desc="Sekundäre Akzente" value={design.accentColor} onChange={(v) => setDesign((d) => ({ ...d, accentColor: v }))} />
                 <ColorPicker label="Überschriften-Farbe" desc="Titel und Zwischenüberschriften" value={design.headingColor} onChange={(v) => setDesign((d) => ({ ...d, headingColor: v }))} />
                 <ColorPicker label="Textfarbe" desc="Fließtext und Beschriftungen" value={design.textColor} onChange={(v) => setDesign((d) => ({ ...d, textColor: v }))} />
+              </div>
+            </div>
+
+            <div className="card p-6">
+              <h2 className="font-semibold text-slate-900 flex items-center gap-2 mb-4">
+                <Globe size={17} className="text-slate-400" /> Favicon (Browser-Tab-Icon)
+              </h2>
+              <div className="flex items-center gap-4">
+                {design.faviconUrl ? (
+                  <img src={design.faviconUrl} alt="Favicon" className="w-10 h-10 rounded object-contain border border-slate-200 bg-white p-1 flex-shrink-0" />
+                ) : (
+                  <div className="w-10 h-10 rounded border border-dashed border-slate-300 bg-slate-50 flex items-center justify-center text-slate-300 text-lg flex-shrink-0">?</div>
+                )}
+                <div className="flex flex-col gap-2">
+                  <label className="btn-secondary cursor-pointer text-sm flex items-center gap-2 w-fit">
+                    <Upload size={14} />
+                    {design.faviconUrl ? 'Anderes Bild wählen' : 'Favicon hochladen'}
+                    <input
+                      type="file"
+                      accept="image/png,image/x-icon,image/svg+xml,image/jpeg,image/webp"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = () => setDesign((d) => ({ ...d, faviconUrl: reader.result as string }));
+                        reader.readAsDataURL(file);
+                        e.target.value = '';
+                      }}
+                    />
+                  </label>
+                  {design.faviconUrl && (
+                    <button type="button" onClick={() => setDesign((d) => ({ ...d, faviconUrl: undefined }))}
+                      className="text-xs text-red-500 hover:text-red-700 text-left">
+                      Entfernen
+                    </button>
+                  )}
+                </div>
+                <p className="text-xs text-slate-400 ml-auto max-w-[200px]">Empfohlen: PNG oder ICO, 32×32 oder 64×64 px</p>
               </div>
             </div>
 

@@ -12,6 +12,7 @@ import { Company, Dimension } from '@/lib/types';
 import { flatBlocks, isSubmitPage, computeScores } from '@/lib/funnel-utils';
 import { careerCheckStorage } from '@/lib/storage';
 import { useCorporateDesign } from '@/lib/use-corporate-design';
+import { useFavicon } from '@/lib/use-favicon';
 import { ChevronLeft, ChevronRight, MapPin } from 'lucide-react';
 import { CompletionScreen, StyledBlock, DialogLine, LeadForm, emptyLead } from './BlockRenderer';
 
@@ -43,6 +44,7 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
   const dimensions: Dimension[] = careerCheck?.dimensions ?? [];
 
   const { primary, br, css } = useCorporateDesign(company);
+  useFavicon(company.corporateDesign?.faviconUrl);
 
   // ── Scores (memoized – only recompute when answers or pages change) ─────────
   const scores = useMemo(
