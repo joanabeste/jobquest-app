@@ -14,6 +14,13 @@ export async function POST(req: NextRequest) {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error || !data.user) {
+      console.error('[login] signInWithPassword failed:', {
+        errorMessage: error?.message,
+        errorCode: error?.code,
+        errorStatus: error?.status,
+        hasUser: !!data?.user,
+        email,
+      });
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 
