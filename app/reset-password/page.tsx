@@ -1,13 +1,12 @@
 'use client';
 
 import { useState, useEffect, FormEvent } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Eye, EyeOff } from 'lucide-react';
 
 export default function ResetPasswordPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [showPw, setShowPw] = useState(false);
@@ -15,23 +14,39 @@ export default function ResetPasswordPage() {
   const [error, setError] = useState('');
   const [ready, setReady] = useState(false);
 
-  // Exchange the one-time code in the URL for a live session.
-  // Supabase PKCE flow sends ?code=... in the reset link.
   useEffect(() => {
-    const code = searchParams.get('code');
-    if (!code) {
-      setError('Ungültiger oder abgelaufener Link. Bitte fordere einen neuen an.');
-      return;
-    }
     const supabase = createClient();
-    supabase.auth.exchangeCodeForSession(code).then(({ error: exchErr }) => {
-      if (exchErr) {
-        setError('Link abgelaufen oder ungültig. Bitte fordere einen neuen an.');
-      } else {
+
+    // Works for both flows:
+    // – Implicit flow: Supabase parses #access_token automatically and fires PASSWORD_RECOVERY
+    // – PKCE flow: we exchange ?code= and the resulting SIGNED_IN event fires below
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
         setReady(true);
       }
     });
-  }, [searchParams]);
+
+    // PKCE flow: exchange ?code= query parameter for a session
+    const code = new URLSearchParams(window.location.search).get('code');
+    if (code) {
+      supabase.auth.exchangeCodeForSession(code).catch(() => {
+        setError('Link abgelaufen oder ungültig. Bitte fordere einen neuen an.');
+      });
+    }
+
+    // Fallback: if no session event fires within 8 seconds, the link is invalid
+    const timeout = setTimeout(() => {
+      setReady((r) => {
+        if (!r) setError('Link abgelaufen oder ungültig. Bitte fordere einen neuen an.');
+        return r;
+      });
+    }, 8_000);
+
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timeout);
+    };
+  }, []);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -56,7 +71,9 @@ export default function ResetPasswordPage() {
       return;
     }
 
-    router.replace('/dashboard');
+    // Sign out so the user logs in fresh with their new password
+    await supabase.auth.signOut();
+    router.replace('/login');
   }
 
   return (
@@ -76,7 +93,10 @@ export default function ResetPasswordPage() {
           <p className="text-slate-500 text-sm mb-6">Gib dein neues Passwort ein.</p>
 
           {!ready && !error && (
-            <div className="text-sm text-slate-500 text-center py-4">Link wird überprüft…</div>
+            <div className="flex items-center justify-center gap-2 py-6 text-sm text-slate-400">
+              <div className="w-4 h-4 rounded-full border-2 border-slate-200 border-t-violet-500 animate-spin" />
+              Link wird überprüft…
+            </div>
           )}
 
           {error && (
@@ -85,50 +105,53 @@ export default function ResetPasswordPage() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className={`space-y-4 ${!ready ? 'hidden' : ''}`}>
-            <div>
-              <label className="label">Neues Passwort</label>
-              <div className="relative">
+          {ready && (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="label">Neues Passwort</label>
+                <div className="relative">
+                  <input
+                    type={showPw ? 'text' : 'password'}
+                    className="input-field pr-10"
+                    placeholder="Mindestens 6 Zeichen"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    autoFocus
+                    autoComplete="new-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPw(!showPw)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  >
+                    {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="label">Passwort bestätigen</label>
                 <input
                   type={showPw ? 'text' : 'password'}
-                  className="input-field pr-10"
-                  placeholder="Mindestens 6 Zeichen"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  className="input-field"
+                  placeholder="Passwort wiederholen"
+                  value={confirm}
+                  onChange={(e) => setConfirm(e.target.value)}
                   required
                   autoComplete="new-password"
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPw(!showPw)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                >
-                  {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
               </div>
-            </div>
 
-            <div>
-              <label className="label">Passwort bestätigen</label>
-              <input
-                type={showPw ? 'text' : 'password'}
-                className="input-field"
-                placeholder="Passwort wiederholen"
-                value={confirm}
-                onChange={(e) => setConfirm(e.target.value)}
-                required
-                autoComplete="new-password"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={submitting}
-              className="btn-primary w-full justify-center py-2.5 text-base"
-            >
-              {submitting ? 'Speichern…' : 'Passwort speichern'}
-            </button>
-          </form>
+              <button
+                type="submit"
+                disabled={submitting}
+                className="btn-primary w-full justify-center py-2.5 text-base"
+              >
+                {submitting ? 'Speichern…' : 'Passwort speichern'}
+              </button>
+            </form>
+          )}
         </div>
       </div>
     </div>
