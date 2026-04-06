@@ -17,37 +17,22 @@ export default function ResetPasswordPage() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    // The /auth/callback route has already exchanged the code and set cookies.
+    // We just need to confirm there's an active recovery session.
     const supabase = createClient();
 
-    // Works for both flows:
-    // – Implicit flow: Supabase parses #access_token automatically and fires PASSWORD_RECOVERY
-    // – PKCE flow: we exchange ?code= and the resulting SIGNED_IN event fires below
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
+      if (event === 'PASSWORD_RECOVERY') {
         setReady(true);
       }
     });
 
-    // PKCE flow: exchange ?code= query parameter for a session
-    const code = new URLSearchParams(window.location.search).get('code');
-    if (code) {
-      supabase.auth.exchangeCodeForSession(code).catch(() => {
-        setError('Link abgelaufen oder ungültig. Bitte fordere einen neuen an.');
-      });
-    }
+    // Also check if session already exists (cookies were set before this render)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) setReady(true);
+    });
 
-    // Fallback: if no session event fires within 8 seconds, the link is invalid
-    const timeout = setTimeout(() => {
-      setReady((r) => {
-        if (!r) setError('Link abgelaufen oder ungültig. Bitte fordere einen neuen an.');
-        return r;
-      });
-    }, 8_000);
-
-    return () => {
-      subscription.unsubscribe();
-      clearTimeout(timeout);
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
   async function handleSubmit(e: FormEvent) {
@@ -73,7 +58,6 @@ export default function ResetPasswordPage() {
       return;
     }
 
-    // Sign out so the user logs in fresh with their new password
     await supabase.auth.signOut();
     router.replace('/login');
   }
@@ -97,7 +81,7 @@ export default function ResetPasswordPage() {
           {!ready && !error && (
             <div className="flex items-center justify-center gap-2 py-6 text-sm text-slate-400">
               <div className="w-4 h-4 rounded-full border-2 border-slate-200 border-t-violet-500 animate-spin" />
-              Link wird überprüft…
+              Wird geladen…
             </div>
           )}
 

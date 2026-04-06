@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
     const supabase = await createServerSupabaseClient();
 
     await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${origin}/reset-password`,
+      redirectTo: `${origin}/auth/callback?next=/reset-password`,
     });
 
     // Always return ok to avoid email enumeration
