@@ -16,11 +16,22 @@ export default function AcceptInvitePage() {
   useEffect(() => {
     const supabase = createClient();
 
-    // The invite link contains tokens in the URL hash (#access_token=...).
-    // @supabase/ssr exchanges them automatically — we just wait for the event.
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) setSessionReady(true);
-    });
+    async function checkSession() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        // Check if member is already active — if so, skip password form
+        const res = await fetch('/api/auth/me');
+        const me = await res.json();
+        if (me.member) {
+          // Already active — go straight to dashboard
+          window.location.href = '/dashboard';
+          return;
+        }
+        setSessionReady(true);
+      }
+    }
+
+    checkSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) setSessionReady(true);

@@ -32,18 +32,14 @@ export default function Home() {
         supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken })
           .then(({ data }) => {
             if (data.session) {
+              // Hard navigation — forces full page reload so AuthContext picks up new session cookies
               if (type === 'recovery') {
-                router.replace('/reset-password');
+                window.location.href = '/reset-password';
+              } else if (type === 'invite' || type === 'magiclink') {
+                // Could be an invite — check if member needs activation
+                window.location.href = '/accept-invite';
               } else {
-                // Check if member is pending (invite flow) or active
-                fetch('/api/auth/me').then(r => r.json()).then(me => {
-                  if (me.member) {
-                    router.replace('/dashboard');
-                  } else {
-                    // Member is pending or not found — go to accept-invite
-                    router.replace('/accept-invite');
-                  }
-                });
+                window.location.href = '/dashboard';
               }
             } else {
               setProcessingTokens(false);
@@ -57,7 +53,7 @@ export default function Home() {
     if (hasCode) {
       supabase.auth.exchangeCodeForSession(params.get('code')!).then(({ data }) => {
         if (data.session) {
-          router.replace('/dashboard');
+          window.location.href = '/dashboard';
         } else {
           setProcessingTokens(false);
         }
