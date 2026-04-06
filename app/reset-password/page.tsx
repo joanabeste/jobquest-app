@@ -1,17 +1,37 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, FormEvent } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Eye, EyeOff } from 'lucide-react';
 
 export default function ResetPasswordPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [showPw, setShowPw] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [ready, setReady] = useState(false);
+
+  // Exchange the one-time code in the URL for a live session.
+  // Supabase PKCE flow sends ?code=... in the reset link.
+  useEffect(() => {
+    const code = searchParams.get('code');
+    if (!code) {
+      setError('Ungültiger oder abgelaufener Link. Bitte fordere einen neuen an.');
+      return;
+    }
+    const supabase = createClient();
+    supabase.auth.exchangeCodeForSession(code).then(({ error: exchErr }) => {
+      if (exchErr) {
+        setError('Link abgelaufen oder ungültig. Bitte fordere einen neuen an.');
+      } else {
+        setReady(true);
+      }
+    });
+  }, [searchParams]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -55,7 +75,17 @@ export default function ResetPasswordPage() {
           <h1 className="text-xl font-semibold text-slate-900 mb-2">Neues Passwort</h1>
           <p className="text-slate-500 text-sm mb-6">Gib dein neues Passwort ein.</p>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          {!ready && !error && (
+            <div className="text-sm text-slate-500 text-center py-4">Link wird überprüft…</div>
+          )}
+
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 mb-4">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className={`space-y-4 ${!ready ? 'hidden' : ''}`}>
             <div>
               <label className="label">Neues Passwort</label>
               <div className="relative">
@@ -90,12 +120,6 @@ export default function ResetPasswordPage() {
                 autoComplete="new-password"
               />
             </div>
-
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">
-                {error}
-              </div>
-            )}
 
             <button
               type="submit"
