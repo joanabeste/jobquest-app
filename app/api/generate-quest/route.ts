@@ -39,26 +39,29 @@ Seite 3: quest_scene    → Ort und heutige Aufgaben: Wo bin ich? Was steht heut
 • Dialoge, Infos und Szenen dazwischen für eine fließende Story
 
 ── EMPFOHLENER AUFBAU des Pflichtinhalts (Seiten 4–N-3): ──────────────────────
+Hinweis: [PAGE nextPageIndex: X] bedeutet, dass die Seite selbst nextPageIndex:X bekommt
+         (damit der "Weiter"-Button Pfad B überspringt). Sieh auch BRANCHING-MECHANISMUS.
+
 Seite  4: quest_dialog    → Erstes Kollegen-Gespräch – 5–7 Zeilen, mit choices (Aufgabe annehmen oder Fragen)
-Seite  5: quest_decision  → Situation 1 (BRANCHING 1: Option A → Seite 6, Option B → Seite 8)
+Seite  5: quest_decision  → BRANCHING 1 (Option A → nextPageIndex:6, Option B → nextPageIndex:8)
 Seite  6: quest_scene     → Pfad A, Teil 1 – unmittelbare Konsequenz der Wahl A
-Seite  7: quest_dialog    → Pfad A, Teil 2 – wie entwickelt sich Wahl A weiter? [nextPageIndex: 10]
+Seite  7: quest_dialog    → Pfad A, Teil 2 – Entwicklung Wahl A  [PAGE nextPageIndex:10]
 Seite  8: quest_scene     → Pfad B, Teil 1 – unmittelbare Konsequenz der Wahl B
-Seite  9: quest_dialog    → Pfad B, Teil 2 – wie entwickelt sich Wahl B weiter?
-Seite 10: quest_scene     → ★ KONVERGENZ 1 – Story läuft zusammen. Neutral, passt zu beiden Pfaden.
-Seite 11: quest_quiz      → Quiz 1: Fachliches Wissen
-Seite 12: quest_info / quest_hotspot / quest_sort  → Passenden Typ wählen (siehe Block-Typen unten)!
-                          quest_hotspot: wenn ein Ort, Raum oder Objekt in der Story vorkommt
-                          quest_sort: wenn ein Ablauf oder Prioritäten thematisiert werden
-                          quest_info: für Fakten/Einblicke ohne Interaktion
-Seite 13: quest_decision  → Situation 2 (BRANCHING 2: Option A → Seite 14, Option B → Seite 16)
+Seite  9: quest_dialog    → Pfad B, Teil 2 – Entwicklung Wahl B  (kein nextPageIndex)
+Seite 10: quest_scene     → ★ KONVERGENZ 1 – neutral, passt zu beiden Pfaden
+Seite 11: quest_quiz      → Quiz 1: Fachliches Wissen aus dem bisher Erlebten
+Seite 12: quest_info / quest_hotspot / quest_sort  → Typ je nach Story wählen:
+                          quest_hotspot: Ort, Raum oder Gerät in der Story → Nutzer erkundet ihn
+                          quest_sort: Ablauf oder Prozessschritte → Nutzer bringt sie in Reihenfolge
+                          quest_info: Überraschender Berufsfakt ohne Interaktion
+Seite 13: quest_decision  → BRANCHING 2 (Option A → nextPageIndex:14, Option B → nextPageIndex:16)
 Seite 14: quest_scene     → Pfad A, Teil 1 – Konsequenz der Wahl A
-Seite 15: quest_dialog    → Pfad A, Teil 2 – Entwicklung Wahl A [nextPageIndex: 18]
+Seite 15: quest_dialog    → Pfad A, Teil 2 – Entwicklung Wahl A  [PAGE nextPageIndex:18]
 Seite 16: quest_scene     → Pfad B, Teil 1 – Konsequenz der Wahl B
-Seite 17: quest_dialog    → Pfad B, Teil 2 – Entwicklung Wahl B
-Seite 18: quest_scene     → ★ KONVERGENZ 2 – Story läuft zusammen.
+Seite 17: quest_dialog    → Pfad B, Teil 2 – Entwicklung Wahl B  (kein nextPageIndex)
+Seite 18: quest_scene     → ★ KONVERGENZ 2 – neutral, passt zu beiden Pfaden
 Seite 19: quest_quiz      → Quiz 2: Zweites Fachwissen-Thema
-Seite 20: quest_decision  → Situation 3 (kein Branching – Tagesabschluss-Situation)
+Seite 20: quest_decision  → Situation 3 – lineares Tagesabschluss-Dilemma (kein Branching)
 Seite 21: quest_dialog    → Abschluss-Gespräch / Lob vom Team – 6–8 Zeilen, mit choices
 
 ── FESTER ABSCHLUSS (immer genau diese 3 Seiten am Ende) ───────────────────────
@@ -85,44 +88,64 @@ quest_spinner
 quest_dialog
   Props: { lines: [{ id: "UUID", speaker: string, text: string, position: "left"|"right" }], choices?: [{ id: "UUID", text: string, reaction?: string }], input?: { placeholder: string, captures?: string, followUpText?: string } }
   → 4–8 Dialog-Zeilen zwischen 2-3 Personen. Mindestens ein Dialog im Pflichtinhalt soll 6+ Zeilen haben.
-  → position: "left" für andere Personen, "right" für den Nutzer ("Du" bzw. "@vorname").
-  → Nutze realistische deutsche Vornamen + Rolle (z.B. "Sarah (Teamleiterin)").
-  → Dialoge sollen natürlich klingen, Persönlichkeit zeigen und die Story vorantreiben.
-  → @vorname einsetzen, um den Nutzer persönlich anzusprechen.
-  → choices (optional): 2–3 kurze Antwortoptionen für @vorname, die als Chat-Buttons erscheinen.
-    → Erscheinen nachdem alle Dialog-Zeilen sichtbar sind.
-    → text: natürliche Antwort in erster Person (z.B. "Klar, ich kümmere mich darum!").
-    → reaction: Reaktion des Gesprächspartners darauf (1-2 Sätze, erscheint als neue Sprechblase).
-    → Nutze choices wenn der Dialog eine direkte Interaktion fordert – z.B. Fragen beantworten,
-      Aufgaben annehmen, Meinungen äußern. Kein Branching – die Story geht danach linear weiter.
-    → choices sind KEIN Ersatz für quest_decision (Branching). Sie simulieren Gesprächsrepliken.
-  → input (optional): Texteingabe am Ende des Dialogs – für Fragen wie "Wie heißt du?" oder "Was denkst du?".
+  → position: "left" = Kolleg:in oder andere Person spricht | "right" = der Nutzer (@vorname) spricht.
+    Zeilen des Nutzers sind kurze Reaktionen ("Verstanden!" / "Mach ich sofort.") — kein Monolog.
+  → speaker: Realistische deutsche Vornamen + Rolle (z.B. "Sarah (Teamleiterin)", "Dr. Meier", "Du").
+    Bei position "right" immer speaker "@vorname" oder "Du" verwenden.
+  → @vorname in Zeilen anderer Personen einsetzen, um den Nutzer direkt anzusprechen.
+  → choices (optional): 2–3 kurze Antwortoptionen als Chat-Buttons — erscheinen nach allen Dialog-Zeilen.
+    → text: Erste-Person-Antwort (z.B. "Klar, ich übernehme das!").
+    → reaction: Kurze Reaktion des Gesprächspartners (1-2 Sätze, erscheint als neue Sprechblase).
+    → Nutze choices bei direkten Fragen, Aufgaben-Übergaben, Meinungsabfragen.
+    → choices sind KEIN Branching — die Story läuft danach immer linear weiter.
+  → input (optional): Texteingabe am Ende — nur für direkte Fragen wie "Wie heißt du?".
     → captures: "vorname" → Antwort wird als @vorname im Rest der Quest verfügbar.
-    → followUpText: Reaktion der Kollegin auf die Antwort (z.B. "Schön, dich kennenzulernen, @vorname!").
-    → Nutze input bevorzugt auf Seite 2 statt quest_vorname (immersiver Einstieg).
+    → followUpText: Reaktion der Kollegin darauf (z.B. "Schön dich kennenzulernen, @vorname!").
 
 quest_decision
   Props: { question: string, options: [{ id: "UUID", text: string, emoji: string, reaction: string, nextPageIndex?: number }] }
-  → 2 Optionen (bei Branching), sonst 2–3 Optionen.
-  → reaction = empathisches, nicht wertendes Feedback (1-2 Sätze) über die unmittelbare Konsequenz.
-  → IMMER ein passendes Icon (emoji-Feld) für jede Option. Verwende AUSSCHLIESSLICH Icon-Namen aus dieser Liste:
+  → question: Konkrete Situation mit Handlungsdruck — kein abstraktes "Was würdest du tun?", sondern
+    eine lebendige Beschreibung: "Ein Alarm piept. Du siehst, dass Patient 4 unruhig wird. Was tust du?"
+  → 2 Optionen bei Branching, sonst 2–3. Keine "richtige" Option — beide Wege sind valide.
+  → reaction: Kurze, empathische Konsequenz (1-2 Sätze) — zeigt unmittelbare Folge, nicht Bewertung.
+  → emoji: NUR Icon-Namen aus dieser Liste (kein Emoji-Zeichen wie 🚨 oder 👍):
     Briefcase, Star, Heart, Zap, Target, Users, Clock, Globe, Shield, Lightbulb,
     Rocket, TrendingUp, Award, CheckCircle, XCircle, ThumbsUp, ThumbsDown,
     Coffee, Smile, AlertTriangle, HelpCircle, MessageCircle, Phone, Mail,
     Clipboard, Search, Settings, Flag, Bookmark
-    → Kein Emoji-Zeichen (🚨, 🔍 etc.) – nur die englischen Namen aus der Liste oben.
-  → nextPageIndex (optional): 0-basierter Index der Zielseite für diese Option.
-    Ohne nextPageIndex → lineare Fortsetzung zur nächsten Seite.
-  → BRANCHING-Beispiel (Seite 5, Pfad A→6+7, Pfad B→8+9, Konvergenz→10):
+
+BRANCHING-MECHANISMUS — ZWEI Arten von nextPageIndex, beide nötig:
+
+  (A) OPTION-LEVEL nextPageIndex: Wohin führt eine bestimmte Wahl?
+      Setze nextPageIndex in der Option selbst → bestimmt die erste Seite des jeweiligen Pfades.
+
+  (B) PAGE-LEVEL nextPageIndex: Wohin geht der "Weiter"-Button am Ende einer Pfad-Seite?
+      Setze nextPageIndex auf der PAGE (nicht im Block) → lässt den anderen Pfad überspringen.
+
+  VOLLSTÄNDIGES BEISPIEL (Branching 1, entspricht empfohlenem Aufbau):
+
+  Seite 5 — quest_decision (OPTION-LEVEL nextPageIndex in den Optionen):
     { "question": "Ein Notfall kündigt sich an – was tust du?",
       "options": [
-        { "id": "UUID", "text": "Sofort das Team alarmieren", "emoji": "Users", "reaction": "Du rufst Verstärkung – gemeinsam reagiert ihr blitzschnell.", "nextPageIndex": 6 },
-        { "id": "UUID", "text": "Erst selbst einschätzen", "emoji": "Search", "reaction": "Du behältst einen kühlen Kopf und analysierst die Lage.", "nextPageIndex": 8 }
-      ]
-    }
-  → Pfad A (Seiten 10–11) → nextPageIndex: 14 auf der letzten Pfad-A-Seite (Seite 11), damit Seite 12–13 übersprungen werden
-  → Pfad B (Seiten 12–13) → läuft automatisch zu Seite 14 weiter (kein nextPageIndex nötig)
-  → Seite 14: Konvergenz – passt zu BEIDEN Pfaden, kein inhaltlicher Widerspruch
+        { "id": "UUID", "text": "Sofort das Team alarmieren", "emoji": "Users",
+          "reaction": "Ihr reagiert blitzschnell als Team.", "nextPageIndex": 6 },
+        { "id": "UUID", "text": "Erst selbst die Lage einschätzen", "emoji": "Search",
+          "reaction": "Du behältst Ruhe und analysierst.", "nextPageIndex": 8 }
+      ] }
+
+  Seite 7 — letzte Seite von Pfad A — PAGE-LEVEL nextPageIndex:
+    { "name": "Pfad A: Fazit", "nextPageIndex": 10, "blocks": [...] }
+    → "Weiter" springt zu Seite 10 (Konvergenz), überspringt Seite 8 und 9 (Pfad B)
+
+  Seite 9 — letzte Seite von Pfad B — KEIN nextPageIndex:
+    → läuft automatisch zu Seite 10 weiter
+
+  Seite 10 — Konvergenz: kein nextPageIndex, passt inhaltlich zu BEIDEN Pfaden
+
+  Analog für Branching 2 (Seite 13, Pfad A→14+15, Pfad B→16+17, Konvergenz→18):
+    Seite 13: Option A → nextPageIndex:14, Option B → nextPageIndex:16
+    Seite 15: PAGE nextPageIndex:18
+    Seite 17: kein nextPageIndex
 
 quest_quiz
   Props: { question: string, options: [{ id: "UUID", text: string, correct: boolean, feedback: string }] }
@@ -176,12 +199,15 @@ quest_lead (IMMER letzte Seite)
 ═══════════════════════════════════════════════════════
 
 STORY & ATMOSPHÄRE:
-• Die Quest soll sich wie ein interaktives Mini-Film-Erlebnis anfühlen – mit Spannung, Wendungen und Emotionen.
-• Seite 0 (Beruf vorstellen) soll Lust machen – kein trockenes Stellenprofil, sondern eine persönliche Einladung.
-• Zeige den Beruf in seiner ganzen Bandbreite: schöne Momente UND echte Herausforderungen.
-• Vermeide Klischees. Zeige reale, komplexe Situationen aus dem Berufsalltag.
-• Zwischenseiten (quest_dialog, quest_info) sollen die Atmosphäre aufbauen und Charaktere lebendig machen.
-• Die Story soll sich von Seite zu Seite organisch weiterentwickeln – jeder Dialog bereitet die nächste Situation vor.
+• Die Quest ist kein Stellenprofil — sie ist eine interaktive Erfahrung. Bewerber sollen vergessen, dass sie eine Bewerbung machen.
+• Seite 0: Beginne mit einem starken Hook — ein Versprechen, ein Widerspruch, eine überraschende Aussage über den Beruf.
+  Beispiel: "Du rettest nicht nur Leben — manchmal rettest du auch den Tag von jemandem mit einem Lächeln."
+  Kein Aufzählen von Anforderungen. Kein "Wir suchen…". Nur: Was macht diesen Job einzigartig?
+• Die Story braucht einen Spannungsbogen: Am Anfang ruhig ankommen → Mitte eskaliert (Entscheidungen, Konflikte) → Ende befriedigend auflösen.
+• Charaktere, die früh eingeführt werden, tauchen später wieder auf. Kolleg:innen sind echte Persönlichkeiten mit Eigenheiten.
+• Zeige den Beruf ehrlich: schöne Momente UND echte Herausforderungen. Keine Hochglanz-Werbung.
+• Vermeide Klischees: kein "harmonisches Team", keine "spannenden Herausforderungen" ohne Kontext.
+• Jede Seite hat eine Funktion — kein Füller. Jeder Dialog treibt die Story voran oder baut Beziehung auf.
 
 DIALOGE & CHOICES:
 • Jede Figur hat eine eigene Stimme und Persönlichkeit – gib Kolleg:innen Namen und Rollen.
