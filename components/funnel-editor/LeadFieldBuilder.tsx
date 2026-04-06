@@ -1,22 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import {
-  AlignLeft, CheckSquare, ChevronDown, ChevronUp,
-  List, Lock, LockOpen, Mail, Phone, Plus, Type, X,
-} from 'lucide-react';
+import { ChevronDown, ChevronUp, Lock, LockOpen, Plus, X } from 'lucide-react';
 import { LeadFieldDef, LeadFieldType } from '@/lib/funnel-types';
-
-const FIELD_META: Record<LeadFieldType, { label: string; icon: React.ElementType; bg: string; color: string }> = {
-  text:     { label: 'Text',       icon: Type,        bg: 'bg-blue-50',   color: 'text-blue-500'   },
-  email:    { label: 'E-Mail',     icon: Mail,        bg: 'bg-violet-50', color: 'text-violet-500' },
-  tel:      { label: 'Telefon',    icon: Phone,       bg: 'bg-green-50',  color: 'text-green-500'  },
-  textarea: { label: 'Mehrzeilig', icon: AlignLeft,   bg: 'bg-amber-50',  color: 'text-amber-500'  },
-  checkbox: { label: 'Checkbox',   icon: CheckSquare, bg: 'bg-rose-50',   color: 'text-rose-500'   },
-  select:   { label: 'Dropdown',   icon: List,        bg: 'bg-slate-100', color: 'text-slate-500'  },
-};
-
-const LEAD_FIELD_TYPES = Object.keys(FIELD_META) as LeadFieldType[];
+import { LEAD_FIELD_META, LEAD_FIELD_TYPES } from '@/lib/lead-field-meta';
 
 interface LeadFieldBuilderProps {
   fields: LeadFieldDef[];
@@ -61,7 +48,7 @@ export default function LeadFieldBuilder({ fields, onChange }: LeadFieldBuilderP
       ) : (
         <div className="space-y-1 mb-2">
           {fields.map((f, idx) => {
-            const meta = FIELD_META[f.type];
+            const meta = LEAD_FIELD_META[f.type];
             const Icon = meta.icon;
             const isExpanded = expandedId === f.id;
 
@@ -109,7 +96,7 @@ export default function LeadFieldBuilder({ fields, onChange }: LeadFieldBuilderP
                     className="text-[10px] font-medium text-slate-600 bg-transparent border-none outline-none cursor-pointer flex-shrink-0 pr-1"
                   >
                     {LEAD_FIELD_TYPES.map((t) => (
-                      <option key={t} value={t}>{FIELD_META[t].label}</option>
+                      <option key={t} value={t}>{LEAD_FIELD_META[t].label}</option>
                     ))}
                   </select>
 

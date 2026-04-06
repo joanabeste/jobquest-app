@@ -14,7 +14,12 @@ export async function PUT(req: NextRequest) {
   const session = await getSession();
   if (!session) return unauthorized();
 
-  const company: Company = await req.json();
+  let company: Company;
+  try {
+    company = await req.json();
+  } catch {
+    return NextResponse.json({ error: 'Ungültige Anfrage' }, { status: 400 });
+  }
   const supabase = createAdminClient();
   const dbData = companyToDb({ ...company, id: session.company.id });
   const { id: _id, ...updateData } = dbData;

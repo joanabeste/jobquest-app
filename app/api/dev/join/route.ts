@@ -8,7 +8,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
-  const { companyId, devPassword } = await req.json();
+  let companyId: string, devPassword: string;
+  try {
+    ({ companyId, devPassword } = await req.json());
+  } catch {
+    return NextResponse.json({ error: 'Ungültige Anfrage' }, { status: 400 });
+  }
   if (!process.env.DEV_PASSWORD || devPassword !== process.env.DEV_PASSWORD) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

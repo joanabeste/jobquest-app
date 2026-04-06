@@ -283,7 +283,12 @@ export async function POST(req: NextRequest) {
   const session = await getSession();
   if (!session) return unauthorized();
 
-  const { beruf, notes } = await req.json() as { beruf?: string; notes?: string };
+  let beruf: string | undefined, notes: string | undefined;
+  try {
+    ({ beruf, notes } = await req.json() as { beruf?: string; notes?: string });
+  } catch {
+    return NextResponse.json({ error: 'Ungültige Anfrage' }, { status: 400 });
+  }
 
   if (!beruf?.trim()) {
     return NextResponse.json({ error: 'Beruf ist erforderlich' }, { status: 400 });

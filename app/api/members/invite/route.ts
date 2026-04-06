@@ -61,7 +61,6 @@ export async function POST(req: NextRequest) {
 
   // Send invite email via our own SMTP
   const inviteLink = linkData.properties.action_link;
-  console.log('\n[invite] Invite-Link generiert:', inviteLink, '\n');
 
   let emailSent = false;
   try {
@@ -72,7 +71,6 @@ export async function POST(req: NextRequest) {
       inviteLink,
     });
     emailSent = true;
-    console.log('[invite] E-Mail erfolgreich gesendet an', email);
   } catch (mailErr) {
     console.error('[invite] E-Mail-Versand fehlgeschlagen:', mailErr);
   }

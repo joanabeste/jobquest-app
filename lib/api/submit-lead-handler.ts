@@ -28,7 +28,13 @@ export function createSubmitLeadHandler<T extends LeadBase>(
   logPrefix: string,
 ) {
   return async function POST(req: NextRequest) {
-    const { lead, contentId, companyName, karriereseiteUrl }: SubmitLeadBody<T> = await req.json();
+    let body: SubmitLeadBody<T>;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json({ error: 'Ungültige Anfrage' }, { status: 400 });
+    }
+    const { lead, contentId, companyName, karriereseiteUrl } = body;
 
     const admin = createAdminClient();
 
@@ -41,11 +47,7 @@ export function createSubmitLeadHandler<T extends LeadBase>(
       .eq('content_id', contentId)
       .single();
 
-    if (docErr) {
-      console.log(`[${logPrefix}] Kein FunnelDoc für contentId=${contentId} — keine E-Mail.`);
-    } else if (!docRow?.email_config) {
-      console.log(`[${logPrefix}] FunnelDoc gefunden, aber kein email_config gesetzt.`);
-    } else {
+    if (!docErr && docRow?.email_config) {
       const emailConfig = docRow.email_config as EmailConfig;
       const emailWillSend = emailConfig.confirmationEnabled || emailConfig.notificationEnabled;
       if (emailWillSend) {
@@ -68,10 +70,7 @@ export function createSubmitLeadHandler<T extends LeadBase>(
           }),
           timeoutPromise,
         ])
-          .then(() => {
-            console.log(`[${logPrefix}] E-Mail gesendet an ${lead.email}`);
-            return admin.from(table).update({ email_sent: true }).eq('id', lead.id);
-          })
+          .then(() => admin.from(table).update({ email_sent: true }).eq('id', lead.id))
           .catch((err: unknown) => {
             console.error(`[${logPrefix}] E-Mail-Versand fehlgeschlagen:`, err);
           });

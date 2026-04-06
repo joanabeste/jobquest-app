@@ -132,6 +132,10 @@ function contactLeadDefault() {
     headline: 'Interessiert?',
     subtext: 'Hinterlasse deine Kontaktdaten – wir melden uns bei dir.',
     buttonText: 'Jetzt bewerben',
+    thankYouHeadline: 'Vielen Dank!',
+    thankYouText: 'Wir melden uns bei dir.',
+    thankYouButtonText: '',
+    thankYouButtonUrl: '',
     fields: [
       { id: uid(), type: 'text',     label: 'Vorname',   placeholder: 'Vorname',                  required: true,  variable: 'vorname'     },
       { id: uid(), type: 'text',     label: 'Nachname',  placeholder: 'Nachname',                 required: false, variable: 'nachname'    },
@@ -183,19 +187,19 @@ export const DEFAULT_BLOCK_PROPS: Record<FunnelBlockType, Record<string, unknown
   quest_rating:        { question: 'Wie war dein Erlebnis?', emoji: '⭐', count: 5 },
   quest_hotspot:       { imageUrl: '', hotspots: [], requireAll: true, doneText: 'Weiter erkunden' },
   quest_sort:          { question: 'Bringe die Schritte in die richtige Reihenfolge:', items: [], showFeedback: false, feedbackText: 'Gut sortiert!', shuffleItems: true },
-  quest_lead:          { headline: 'Interessiert?', subtext: 'Hinterlasse deine Kontaktdaten – wir melden uns bei dir.', buttonText: 'Jetzt bewerben', privacyText: 'Ich stimme zu, dass @companyName meine Daten speichert und mich kontaktiert.', fields: [] },
+  quest_lead:          { headline: 'Interessiert?', subtext: 'Hinterlasse deine Kontaktdaten – wir melden uns bei dir.', buttonText: 'Jetzt bewerben', privacyText: 'Ich stimme zu, dass @companyName meine Daten speichert und mich kontaktiert.', thankYouHeadline: 'Vielen Dank!', thankYouText: 'Wir melden uns bei dir.', thankYouButtonText: '', thankYouButtonUrl: '', fields: [] },
   check_intro:         { headline: 'Bist du geeignet?', subtext: 'Mache jetzt den Check.', imageUrl: '', buttonText: 'Jetzt starten' },
   check_vorname:       { question: 'Wie heißt du?', placeholder: 'Dein Vorname', buttonText: 'Weiter' },
   check_frage:         { frageType: 'single_choice', question: 'Frage?', options: [] },
   check_ergebnisfrage: { question: 'Ergebnisfrage?', options: [] },
   check_selbst:        { question: 'Wie schätzt du dich ein?', sliderMin: 0, sliderMax: 10, sliderStep: 1, sliderLabelMin: 'Gar nicht', sliderLabelMax: 'Sehr' },
-  check_lead:          { headline: 'Interessiert?', subtext: 'Hinterlasse deine Kontaktdaten – wir melden uns bei dir.', buttonText: 'Jetzt bewerben', privacyText: 'Ich stimme zu, dass @companyName meine Daten speichert und mich kontaktiert.', fields: [] },
+  check_lead:          { headline: 'Interessiert?', subtext: 'Hinterlasse deine Kontaktdaten – wir melden uns bei dir.', buttonText: 'Jetzt bewerben', privacyText: 'Ich stimme zu, dass @companyName meine Daten speichert und mich kontaktiert.', thankYouHeadline: 'Vielen Dank!', thankYouText: 'Wir melden uns bei dir.', thankYouButtonText: '', thankYouButtonUrl: '', fields: [] },
   check_ergebnis:      { headline: 'Dein Ergebnis, @firstName!', subtext: 'Basierend auf deinen Antworten.', showDimensionBars: true },
   form_hero:           { headline: 'Jetzt anfragen', subtext: 'Wir melden uns bei dir.', imageUrl: '', ctaText: 'Jetzt anfragen' },
   form_text:           { headline: '', content: 'Ihr Text hier…' },
   form_image:          { imageUrl: '', caption: '' },
   form_step:           { title: 'Deine Angaben', description: '', fields: [] },
-  form_config:         { headline: 'Interessiert?', subtext: 'Hinterlasse deine Kontaktdaten – wir melden uns bei dir.', buttonText: 'Jetzt bewerben', privacyText: 'Ich stimme zu, dass @companyName meine Daten speichert und mich kontaktiert.', fields: [] },
+  form_config:         { headline: 'Interessiert?', subtext: 'Hinterlasse deine Kontaktdaten – wir melden uns bei dir.', buttonText: 'Jetzt bewerben', privacyText: 'Ich stimme zu, dass @companyName meine Daten speichert und mich kontaktiert.', thankYouHeadline: 'Vielen Dank!', thankYouText: 'Wir melden uns bei dir.', thankYouButtonText: '', thankYouButtonUrl: '', fields: [] },
 };
 
 // ─── Block type catalog per content type ─────────────────────────────────────

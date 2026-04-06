@@ -32,7 +32,12 @@ export async function PUT(req: NextRequest) {
   const session = await getSession();
   if (!session) return unauthorized();
 
-  const doc: FunnelDoc = await req.json();
+  let doc: FunnelDoc;
+  try {
+    doc = await req.json();
+  } catch {
+    return NextResponse.json({ error: 'Ungültige Anfrage' }, { status: 400 });
+  }
 
   if (!await ownsContent(session.company.id, doc.contentId, doc.contentType as FunnelContentType)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });

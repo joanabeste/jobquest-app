@@ -51,18 +51,7 @@ export default function ResetPasswordPage() {
     setSubmitting(true);
     const supabase = createClient();
 
-    const { data: { session } } = await supabase.auth.getSession();
-    console.log('[reset-password] session before updateUser:', {
-      hasSession: !!session,
-      userId: session?.user?.id,
-      email: session?.user?.email,
-    });
-
-    const { data: updateData, error: updateError } = await supabase.auth.updateUser({ password });
-    console.log('[reset-password] updateUser result:', {
-      hasUser: !!updateData?.user,
-      errorMessage: updateError?.message,
-    });
+    const { error: updateError } = await supabase.auth.updateUser({ password });
 
     if (updateError) {
       setError(updateError.message);

@@ -23,7 +23,12 @@ export async function POST(req: NextRequest) {
   const session = await getSession();
   if (!session) return unauthorized();
 
-  const check: CareerCheck = await req.json();
+  let check: CareerCheck;
+  try {
+    check = await req.json();
+  } catch {
+    return NextResponse.json({ error: 'Ungültige Anfrage' }, { status: 400 });
+  }
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from('career_checks')

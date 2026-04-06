@@ -23,7 +23,12 @@ export async function POST(req: NextRequest) {
   const session = await getSession();
   if (!session) return unauthorized();
 
-  const quest: JobQuest = await req.json();
+  let quest: JobQuest;
+  try {
+    quest = await req.json();
+  } catch {
+    return NextResponse.json({ error: 'Ungültige Anfrage' }, { status: 400 });
+  }
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from('job_quests')

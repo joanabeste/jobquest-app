@@ -3,30 +3,17 @@
 import { useRef, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { sanitizeHtml } from '@/lib/sanitize';
-import {
-  AlignLeft, ArrowDown, ArrowUp, CheckSquare, ChevronDown,
-  Lock, LockOpen, Mail, Phone, Plus, Type, X,
-} from 'lucide-react';
+import { ArrowDown, ArrowUp, Lock, LockOpen, Plus, X } from 'lucide-react';
 import type { LeadFieldDef, LeadFieldType } from '@/lib/funnel-types';
 import type { VariableDef } from '@/lib/funnel-variables';
 import { CONTEXT_VARIABLES } from '@/lib/funnel-variables';
 import { useCi } from '@/lib/ci-context';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFunnelEditorCtx } from './FunnelEditorContext';
+import { LEAD_FIELD_META, LEAD_FIELD_TYPES } from '@/lib/lead-field-meta';
 
 // Variables available in checkbox labels (context-only — no lead-field vars)
 const CHECKBOX_VARS: VariableDef[] = CONTEXT_VARIABLES;
-
-export const LEAD_FIELD_META: Record<LeadFieldType, { label: string; icon: React.ElementType; color: string }> = {
-  text:     { label: 'Text',       icon: Type,        color: 'text-blue-500'   },
-  email:    { label: 'E-Mail',     icon: Mail,        color: 'text-violet-500' },
-  tel:      { label: 'Telefon',    icon: Phone,       color: 'text-green-500'  },
-  textarea: { label: 'Mehrzeilig', icon: AlignLeft,   color: 'text-amber-500'  },
-  checkbox: { label: 'Checkbox',   icon: CheckSquare, color: 'text-rose-500'   },
-  select:   { label: 'Dropdown',   icon: ChevronDown, color: 'text-slate-500'  },
-};
-
-export const LEAD_FIELD_TYPES = Object.keys(LEAD_FIELD_META) as LeadFieldType[];
 
 // Apply only the variables that have a known value — leave unknowns as-is.
 function applyPreviewVars(html: string, vars: Record<string, string>): string {

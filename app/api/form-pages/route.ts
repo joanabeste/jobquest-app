@@ -23,7 +23,12 @@ export async function POST(req: NextRequest) {
   const session = await getSession();
   if (!session) return unauthorized();
 
-  const form: FormPage = await req.json();
+  let form: FormPage;
+  try {
+    form = await req.json();
+  } catch {
+    return NextResponse.json({ error: 'Ungültige Anfrage' }, { status: 400 });
+  }
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from('form_pages')

@@ -24,7 +24,13 @@ export async function POST(req: NextRequest) {
   const session = await getSession();
   if (!session) return unauthorized();
 
-  const { id, name, email, role, invitedBy, status } = await req.json();
+  let body: { id?: string; name?: string; email?: string; role?: string; invitedBy?: string; status?: string };
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: 'Ungültige Anfrage' }, { status: 400 });
+  }
+  const { id, name, email, role, invitedBy, status } = body;
   if (!name || !email || !role) {
     return NextResponse.json({ error: 'name, email and role are required' }, { status: 400 });
   }

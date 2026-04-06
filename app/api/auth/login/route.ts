@@ -47,8 +47,6 @@ export async function POST(req: NextRequest) {
             ? 'E-Mail oder Passwort ist falsch.'
             : `Anmeldung fehlgeschlagen: ${error?.message ?? 'Unbekannter Fehler'}`,
           code: isAuthError ? 'invalid_credentials' : 'auth_error',
-          // Include Supabase error for debugging (remove after fixing)
-          debug: { supabaseError: error?.message, supabaseCode: error?.code },
         },
         { status: 401 },
       );
