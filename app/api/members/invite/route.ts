@@ -54,26 +54,47 @@ export async function POST(req: NextRequest) {
     linkData = genData as unknown as LinkResult;
   } else if (linkError) {
     const msg = linkError.message ?? '';
+    console.log(`[invite] generateLink failed: ${msg} — checking for orphaned auth user`);
+
     // User exists in auth but not in workspace_members (e.g. previously deleted member)
     // → Delete the orphaned auth user and retry with a fresh invite
     if (msg.includes('already') || msg.includes('exist')) {
-      const { data: existingUsers } = await admin.auth.admin.listUsers();
-      const existingUser = existingUsers?.users?.find((u) => u.email === email.toLowerCase());
-      if (existingUser) {
-        await admin.auth.admin.deleteUser(existingUser.id);
-        const { data: retryData } = await admin.auth.admin.generateLink({
-          type: 'invite',
-          email,
-          options: { redirectTo: `${siteUrl}/accept-invite` },
-        });
-        if (retryData?.user) {
-          linkData = retryData as unknown as LinkResult;
+      // Query auth.users directly via SQL to avoid listUsers pagination issues
+      const { data: authRow } = await admin.rpc('get_auth_user_by_email', { lookup_email: email.toLowerCase() }).single();
+
+      // Fallback: try listUsers with high perPage if RPC doesn't exist
+      let orphanId: string | null = (authRow as { id?: string } | null)?.id ?? null;
+      if (!orphanId) {
+        const { data: listData } = await admin.auth.admin.listUsers({ perPage: 1000 });
+        const found = listData?.users?.find((u) => u.email === email.toLowerCase());
+        orphanId = found?.id ?? null;
+      }
+
+      if (orphanId) {
+        console.log(`[invite] Deleting orphaned auth user ${orphanId}`);
+        const { error: deleteErr } = await admin.auth.admin.deleteUser(orphanId);
+        if (deleteErr) {
+          console.error(`[invite] Failed to delete orphaned auth user:`, deleteErr);
+        } else {
+          const { data: retryData, error: retryErr } = await admin.auth.admin.generateLink({
+            type: 'invite',
+            email,
+            options: { redirectTo: `${siteUrl}/accept-invite` },
+          });
+          if (retryData?.user) {
+            linkData = retryData as unknown as LinkResult;
+            console.log(`[invite] Retry succeeded — fresh invite created`);
+          } else {
+            console.error(`[invite] Retry generateLink failed:`, retryErr);
+          }
         }
+      } else {
+        console.error(`[invite] Could not find orphaned auth user for ${email}`);
       }
     }
 
     if (!linkData) {
-      console.error('[invite] generateLink', linkError);
+      console.error('[invite] generateLink ultimately failed:', linkError);
       return NextResponse.json({ error: `Einladung fehlgeschlagen: ${msg || 'Unbekannter Fehler'}` }, { status: 500 });
     }
   }
