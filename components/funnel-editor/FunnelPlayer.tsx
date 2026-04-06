@@ -14,7 +14,8 @@ import { careerCheckStorage } from '@/lib/storage';
 import { useCorporateDesign } from '@/lib/use-corporate-design';
 import { useFavicon } from '@/lib/use-favicon';
 import { ChevronLeft, ChevronRight, MapPin } from 'lucide-react';
-import { CompletionScreen, StyledBlock, DialogLine, LeadForm, emptyLead } from './BlockRenderer';
+import { StyledBlock, DialogLine, LeadForm, emptyLead } from './BlockRenderer';
+import SuccessPage from '@/components/quest/SuccessPage';
 
 interface Props { doc: FunnelDoc; company: Company; contentDbId?: string; }
 
@@ -259,12 +260,7 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
       {/* ── Content ────────────────────────────────────────────────────────── */}
       <main className="max-w-lg mx-auto w-full pb-24">
         {completed ? (
-          <CompletionScreen
-            company={company}
-            headline={completionMsg?.headline ?? 'Vielen Dank!'}
-            text={completionMsg?.text ?? 'Wir haben deine Anfrage erhalten.'}
-            primary={primary}
-          />
+          <SuccessPage company={company} primary={primary} br={br} />
         ) : (
           currentPage.nodes.map((node) => {
             if (node.kind === 'layout') {
@@ -312,13 +308,6 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
         </div>
       )}
 
-      {/* ── Footer links ───────────────────────────────────────────────────── */}
-      {completed && (company.privacyUrl || company.imprintUrl) && (
-        <footer className="flex justify-center gap-5 py-4 text-xs text-slate-400">
-          {!!company.privacyUrl && <a href={company.privacyUrl} target="_blank" rel="noopener noreferrer" className="hover:text-slate-600">Datenschutz</a>}
-          {!!company.imprintUrl && <a href={company.imprintUrl} target="_blank" rel="noopener noreferrer" className="hover:text-slate-600">Impressum</a>}
-        </footer>
-      )}
     </div>
   );
 }

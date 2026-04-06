@@ -5,7 +5,8 @@ import { JobQuest, QuestModule, Company, DecisionModule, DialogModule, DEFAULT_C
 import { leadStorage, analyticsStorage } from '@/lib/storage';
 import { ChevronRight, ChevronLeft } from 'lucide-react';
 import ModuleRenderer from './QuestModules';
-import { LeadForm, ThankYou, LeadFormData } from './QuestLeadForm';
+import { LeadForm, LeadFormData } from './QuestLeadForm';
+import SuccessPage from './SuccessPage';
 
 interface Props {
   quest: JobQuest;
@@ -178,7 +179,7 @@ export default function QuestPlayer({ quest, company }: Props) {
         <div className="slide-in">
           {isLeadStep ? (
             leadSubmitted ? (
-              <ThankYou company={company} config={quest.leadConfig ?? DEFAULT_LEAD_CONFIG} />
+              <SuccessPage company={company} primary={primary} br={br} />
             ) : (
               <LeadForm
                 form={leadForm}

@@ -144,6 +144,42 @@ export const DEFAULT_CORPORATE_DESIGN: CorporateDesign = {
   bodyFontWeight: 400,
 };
 
+export interface SuccessJob {
+  id: string;
+  title: string;
+  url?: string;
+}
+
+export interface SuccessLink {
+  id: string;
+  label: string;
+  url: string;
+}
+
+export interface SuccessPageConfig {
+  headline: string;
+  text: string;
+  showJobs: boolean;
+  jobsHeadline: string;
+  jobs: SuccessJob[];
+  showQuests: boolean;
+  questsHeadline: string;
+  featuredQuestIds: string[];
+  links: SuccessLink[];
+}
+
+export const DEFAULT_SUCCESS_PAGE: SuccessPageConfig = {
+  headline: 'Vielen Dank für dein Interesse!',
+  text: 'Wir freuen uns auf dich und werden uns in Kürze bei dir melden.',
+  showJobs: false,
+  jobsHeadline: 'Unsere Ausbildungsberufe',
+  jobs: [],
+  showQuests: false,
+  questsHeadline: 'Weitere Quests entdecken',
+  featuredQuestIds: [],
+  links: [],
+};
+
 export interface Company {
   id: string;
   name: string;
@@ -157,6 +193,7 @@ export interface Company {
   contactEmail: string;
   createdAt: string;
   corporateDesign?: CorporateDesign;
+  successPage?: SuccessPageConfig;
 }
 
 export interface LeadFormConfig {

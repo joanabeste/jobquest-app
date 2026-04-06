@@ -21,6 +21,7 @@ export function companyFromDb(row: any): Company {
     contactEmail: row.contact_email,
     createdAt: row.created_at,
     corporateDesign: row.corporate_design ?? undefined,
+    successPage: row.success_page ?? undefined,
   };
 }
 
@@ -37,6 +38,7 @@ export function companyToDb(c: Company): Record<string, unknown> {
     contact_name: c.contactName,
     contact_email: c.contactEmail,
     corporate_design: c.corporateDesign ?? {},
+    success_page: c.successPage ?? null,
     created_at: c.createdAt,
   };
 }

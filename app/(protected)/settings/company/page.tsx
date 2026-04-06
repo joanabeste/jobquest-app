@@ -3,8 +3,8 @@
 import { useState, FormEvent, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { INDUSTRY_OPTIONS, CorporateDesign, DEFAULT_CORPORATE_DESIGN } from '@/lib/types';
-import { Building2, Save, CheckCircle, Palette, Type, Globe, Upload, SlidersHorizontal, Link2 } from 'lucide-react';
+import { INDUSTRY_OPTIONS, CorporateDesign, DEFAULT_CORPORATE_DESIGN, SuccessPageConfig, DEFAULT_SUCCESS_PAGE, SuccessJob, SuccessLink } from '@/lib/types';
+import { Building2, Save, CheckCircle, Palette, Type, Globe, Upload, SlidersHorizontal, Link2, Trophy, Plus, X, ExternalLink } from 'lucide-react';
 
 const FONT_OPTIONS = [
   { label: 'Standard (System)', value: 'system', preview: 'system-ui, sans-serif' },
@@ -17,7 +17,7 @@ const FONT_OPTIONS = [
   { label: 'Playfair Display', value: 'Playfair Display', preview: "'Playfair Display', serif" },
 ];
 
-type Tab = 'company' | 'design';
+type Tab = 'company' | 'design' | 'success';
 
 export default function SettingsCompanyPage() {
   const { company, updateCompany, can } = useAuth();
@@ -33,6 +33,11 @@ export default function SettingsCompanyPage() {
   }, []);
 
   const [activeTab, setActiveTab] = useState<Tab>('company');
+  const sp = company?.successPage;
+  const [successPage, setSuccessPage] = useState<SuccessPageConfig>({
+    ...DEFAULT_SUCCESS_PAGE,
+    ...sp,
+  });
   const cd = company?.corporateDesign ?? DEFAULT_CORPORATE_DESIGN;
 
   const [form, setForm] = useState({
@@ -94,7 +99,7 @@ export default function SettingsCompanyPage() {
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!company) return;
-    updateCompany({ ...company, name: form.name, industry: form.industry, location: form.location, logo: form.logo || undefined, privacyUrl: form.privacyUrl, imprintUrl: form.imprintUrl, careerPageUrl: form.careerPageUrl || undefined, corporateDesign: design });
+    updateCompany({ ...company, name: form.name, industry: form.industry, location: form.location, logo: form.logo || undefined, privacyUrl: form.privacyUrl, imprintUrl: form.imprintUrl, careerPageUrl: form.careerPageUrl || undefined, corporateDesign: design, successPage });
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
   }
@@ -104,6 +109,7 @@ export default function SettingsCompanyPage() {
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: 'company', label: 'Firmendaten', icon: <Building2 size={15} /> },
     { id: 'design', label: 'Corporate Design', icon: <Palette size={15} /> },
+    { id: 'success', label: 'Erfolgsseite', icon: <Trophy size={15} /> },
   ];
 
   return (
@@ -396,6 +402,97 @@ export default function SettingsCompanyPage() {
             </div>
 
             <DesignPreview name={form.name || company.name} logo={form.logo || company.logo} design={design} />
+          </div>
+        )}
+
+        {activeTab === 'success' && (
+          <div className="space-y-5">
+            {/* Bestätigungstext */}
+            <div className="card p-6 space-y-4">
+              <h2 className="font-semibold text-slate-900 flex items-center gap-2">
+                <Trophy size={17} className="text-slate-400" /> Bestätigungstext
+              </h2>
+              <div>
+                <label className="label">Überschrift</label>
+                <input type="text" className="input-field" value={successPage.headline}
+                  onChange={(e) => setSuccessPage((s) => ({ ...s, headline: e.target.value }))} />
+              </div>
+              <div>
+                <label className="label">Text</label>
+                <textarea className="input-field resize-none" rows={2} value={successPage.text}
+                  onChange={(e) => setSuccessPage((s) => ({ ...s, text: e.target.value }))} />
+              </div>
+            </div>
+
+            {/* Ausbildungsberufe */}
+            <div className="card p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="font-semibold text-slate-900">Ausbildungsberufe anzeigen</h2>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={successPage.showJobs}
+                    onChange={(e) => setSuccessPage((s) => ({ ...s, showJobs: e.target.checked }))}
+                    className="w-4 h-4 rounded accent-violet-600" />
+                  <span className="text-sm text-slate-600">Aktivieren</span>
+                </label>
+              </div>
+              {successPage.showJobs && (
+                <>
+                  <div>
+                    <label className="label">Überschrift</label>
+                    <input type="text" className="input-field" value={successPage.jobsHeadline}
+                      onChange={(e) => setSuccessPage((s) => ({ ...s, jobsHeadline: e.target.value }))} />
+                  </div>
+                  <div className="space-y-2">
+                    {successPage.jobs.map((job: SuccessJob) => (
+                      <div key={job.id} className="flex gap-2">
+                        <input type="text" className="input-field flex-1" placeholder="Berufsbezeichnung"
+                          value={job.title} onChange={(e) => setSuccessPage((s) => ({ ...s, jobs: s.jobs.map((j) => j.id === job.id ? { ...j, title: e.target.value } : j) }))} />
+                        <input type="url" className="input-field flex-1" placeholder="Link (optional)"
+                          value={job.url ?? ''} onChange={(e) => setSuccessPage((s) => ({ ...s, jobs: s.jobs.map((j) => j.id === job.id ? { ...j, url: e.target.value || undefined } : j) }))} />
+                        <button type="button" onClick={() => setSuccessPage((s) => ({ ...s, jobs: s.jobs.filter((j) => j.id !== job.id) }))}
+                          className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                          <X size={16} />
+                        </button>
+                      </div>
+                    ))}
+                    <button type="button"
+                      onClick={() => setSuccessPage((s) => ({ ...s, jobs: [...s.jobs, { id: crypto.randomUUID(), title: '', url: '' }] }))}
+                      className="flex items-center gap-1.5 text-sm text-violet-600 font-medium hover:text-violet-700 mt-1">
+                      <Plus size={15} /> Beruf hinzufügen
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* CTA-Links */}
+            <div className="card p-6 space-y-4">
+              <h2 className="font-semibold text-slate-900 flex items-center gap-2">
+                <ExternalLink size={17} className="text-slate-400" /> CTA-Links / Buttons
+              </h2>
+              <p className="text-xs text-slate-400">Bis zu 3 Buttons die auf der Erfolgsseite angezeigt werden.</p>
+              <div className="space-y-2">
+                {successPage.links.map((link: SuccessLink) => (
+                  <div key={link.id} className="flex gap-2">
+                    <input type="text" className="input-field flex-1" placeholder="Button-Beschriftung"
+                      value={link.label} onChange={(e) => setSuccessPage((s) => ({ ...s, links: s.links.map((l) => l.id === link.id ? { ...l, label: e.target.value } : l) }))} />
+                    <input type="url" className="input-field flex-1" placeholder="https://…"
+                      value={link.url} onChange={(e) => setSuccessPage((s) => ({ ...s, links: s.links.map((l) => l.id === link.id ? { ...l, url: e.target.value } : l) }))} />
+                    <button type="button" onClick={() => setSuccessPage((s) => ({ ...s, links: s.links.filter((l) => l.id !== link.id) }))}
+                      className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                      <X size={16} />
+                    </button>
+                  </div>
+                ))}
+                {successPage.links.length < 3 && (
+                  <button type="button"
+                    onClick={() => setSuccessPage((s) => ({ ...s, links: [...s.links, { id: crypto.randomUUID(), label: '', url: '' }] }))}
+                    className="flex items-center gap-1.5 text-sm text-violet-600 font-medium hover:text-violet-700 mt-1">
+                    <Plus size={15} /> Link hinzufügen
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
         )}
 
