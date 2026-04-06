@@ -85,6 +85,7 @@ function FunnelEditorInner({
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
   const [insertTarget, setInsertTarget] = useState<InsertTarget | null>(null);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [publishing, setPublishing] = useState(false);
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [showEmailConfig, setShowEmailConfig] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -418,14 +419,19 @@ function FunnelEditorInner({
         </button>
 
         {/* Publish */}
-        <button onClick={onPublish}
+        <button
+          onClick={() => { setPublishing(true); Promise.resolve(onPublish()).finally(() => setPublishing(false)); }}
+          disabled={publishing}
           className={`flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-semibold rounded-lg border transition-colors flex-shrink-0 ${
-            status === 'published'
+            publishing
+              ? 'border-slate-200 bg-slate-50 text-slate-400 cursor-wait'
+              : status === 'published'
               ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
               : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
           }`}>
-          <Globe size={13} />
-          {status === 'published' ? 'Live' : 'Veröffentlichen'}
+          {publishing
+            ? <><div className="w-3 h-3 rounded-full border-2 border-slate-300 border-t-slate-500 animate-spin" /> Wird veröffentlicht…</>
+            : <><Globe size={13} /> {status === 'published' ? 'Live' : 'Veröffentlichen'}</>}
         </button>
       </header>
 
