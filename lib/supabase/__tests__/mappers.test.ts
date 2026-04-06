@@ -42,6 +42,7 @@ describe('companyFromDb / companyToDb', () => {
     contact_email: 'max@acme.de',
     created_at: '2025-01-01T00:00:00Z',
     corporate_design: { primaryColor: '#7c3aed', accentColor: '#f59e0b', textColor: '#1e293b', headingColor: '#0f172a', borderRadius: 12, headingFontName: 'system', bodyFontName: 'system' },
+    success_page: null,
   };
 
   test('fromDb maps snake_case to camelCase', () => {
