@@ -19,6 +19,7 @@ interface UseContentListOptions<T extends { id: string; title: string }> {
 interface UseContentListResult<T> {
   items: T[];
   counts: Record<string, number>;
+  loading: boolean;
   deleteConfirm: { id: string; title: string } | null;
   setDeleteConfirm: (value: { id: string; title: string } | null) => void;
   reload: () => Promise<void>;
@@ -31,6 +32,7 @@ export function useContentList<T extends { id: string; title: string }>(
 ): UseContentListResult<T> {
   const [items, setItems] = useState<T[]>([]);
   const [counts, setCounts] = useState<Record<string, number>>({});
+  const [loading, setLoading] = useState(true);
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; title: string } | null>(null);
   const toast = useToast();
 
@@ -39,6 +41,7 @@ export function useContentList<T extends { id: string; title: string }>(
   optsRef.current = opts;
 
   const reload = useCallback(async () => {
+    setLoading(true);
     try {
       const { storage, getCount } = optsRef.current;
       const all = await storage.getAll();
@@ -53,6 +56,8 @@ export function useContentList<T extends { id: string; title: string }>(
     } catch (err) {
       console.error('[useContentList] reload failed:', err);
       toast.error('Inhalte konnten nicht geladen werden. Bitte Seite neu laden.');
+    } finally {
+      setLoading(false);
     }
   }, [toast]);
 
@@ -79,5 +84,5 @@ export function useContentList<T extends { id: string; title: string }>(
     }
   }, [reload, toast]);
 
-  return { items, counts, deleteConfirm, setDeleteConfirm, reload, handleDuplicate, handleDelete };
+  return { items, counts, loading, deleteConfirm, setDeleteConfirm, reload, handleDuplicate, handleDelete };
 }

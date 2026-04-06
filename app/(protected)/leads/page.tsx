@@ -7,6 +7,7 @@ import { questStorage, leadStorage, careerCheckStorage, careerCheckLeadStorage, 
 import { Dimension, FormField } from '@/lib/types';
 import { formatDateTime } from '@/lib/utils';
 import { Users, Download, Search, Mail, Phone, X, Filter, MailCheck, MailX, Trash2, AlertTriangle } from 'lucide-react';
+import { StatCardSkeleton, TableRowSkeleton } from '@/components/ui/Skeleton';
 
 type Source = 'jobquest' | 'berufscheck' | 'formular';
 type SourceFilter = 'all' | Source;
@@ -103,6 +104,7 @@ export default function LeadsPage() {
   const { company } = useAuth();
   const toast = useToast();
   const [allLeads, setAllLeads] = useState<UnifiedLead[]>([]);
+  const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [search, setSearch] = useState('');
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all');
@@ -112,6 +114,7 @@ export default function LeadsPage() {
 
   const load = useCallback(async () => {
     if (!company) return;
+    setLoading(true);
     const unified: UnifiedLead[] = [];
     try {
 
@@ -188,6 +191,8 @@ export default function LeadsPage() {
       console.error('[LeadsPage] load failed:', err);
       setLoadError(true);
       toast.error('Leads konnten nicht geladen werden. Bitte Seite neu laden.');
+    } finally {
+      setLoading(false);
     }
   }, [company, toast]);
 
@@ -253,7 +258,11 @@ export default function LeadsPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-        {[
+        {loading ? (
+          <>
+            {Array.from({ length: 4 }).map((_, i) => <StatCardSkeleton key={i} />)}
+          </>
+        ) : [
           { label: 'Kontakte gesamt', value: allLeads.length, color: 'violet' },
           { label: 'aus JobQuests', value: jqCount, color: 'indigo' },
           { label: 'aus Berufschecks', value: bcCount, color: 'blue' },
@@ -279,7 +288,27 @@ export default function LeadsPage() {
         ))}
       </div>
 
-      {allLeads.length === 0 ? (
+      {loading ? (
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-100 bg-slate-50">
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500">Name</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500">E-Mail</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 hidden md:table-cell">Telefon</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500">Quelle</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 hidden sm:table-cell">Eingegangen</th>
+                  <th className="px-4 py-3"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from({ length: 6 }).map((_, i) => <TableRowSkeleton key={i} />)}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : allLeads.length === 0 ? (
         <div className="bg-white rounded-2xl border border-slate-200 p-16 text-center shadow-sm">
           <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
             <Users size={28} className="text-slate-300" />

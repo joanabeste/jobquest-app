@@ -13,7 +13,7 @@ import { flatBlocks, isSubmitPage, computeScores } from '@/lib/funnel-utils';
 import { careerCheckStorage } from '@/lib/storage';
 import { useCorporateDesign } from '@/lib/use-corporate-design';
 import { useFavicon } from '@/lib/use-favicon';
-import { ChevronLeft, ChevronRight, MapPin } from 'lucide-react';
+import { ChevronLeft, ChevronRight, MapPin, CheckCircle, Send } from 'lucide-react';
 import { StyledBlock, DialogLine, LeadForm, emptyLead } from './BlockRenderer';
 import SuccessPage from '@/components/quest/SuccessPage';
 
@@ -31,10 +31,11 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
   const [completed, setCompleted]   = useState(false);
   const [_completionMsg, setCompletionMsg] = useState<{ headline: string; text: string } | null>(null);
   const [dialogVisible, setDialogVisible] = useState(0);
+  const [footerInputValue, setFooterInputValue] = useState('');
   const topRef = useRef<HTMLDivElement>(null);
 
-  // Reset dialog when page changes (must be before any conditional returns)
-  useEffect(() => { setDialogVisible(0); }, [pageIndex]);
+  // Reset dialog + footer input when page changes (must be before any conditional returns)
+  useEffect(() => { setDialogVisible(0); setFooterInputValue(''); }, [pageIndex]);
 
   const [careerCheck, setCareerCheck] = useState<import('@/lib/types').CareerCheck | null>(null);
   useEffect(() => {
@@ -159,9 +160,19 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
 
   // Weiter target: decision option > page setting > linear next
   const weiterTarget  = decisionTargetPageId ?? currentPage.nextPageId;
+
+  // Quiz check state: answer selected but not yet checked → button becomes "Überprüfen"
+  const quizAnswered  = quizBlock ? answers[quizBlock.id] !== undefined : true;
+  const quizChecked   = quizBlock ? answers[`${quizBlock.id}_checked`] === true : true;
+  const quizNeedsCheck = quizAnswered && !quizChecked;
+  // For multi-select: require at least 1 selection
+  const quizHasSelection = quizBlock
+    ? (Array.isArray(answers[quizBlock.id]) ? (answers[quizBlock.id] as string[]).length > 0 : answers[quizBlock.id] !== undefined)
+    : true;
+
   // Weiter is blocked until required interactions are done
   const weiterEnabled = (!decisionBlock || decisionSelected !== undefined)
-                     && (!quizBlock     || answers[quizBlock.id] !== undefined)
+                     && (!quizBlock     || quizHasSelection)
                      && (!ratingBlock   || answers[ratingBlock.id] !== undefined)
                      && (!sortBlock     || answers[`${sortBlock.id}_confirmed`] === true)
                      && dialogComplete
@@ -169,6 +180,12 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
 
   const isLastPage    = pageIndex === doc.pages.length - 1;
   const progress      = (pageIndex + 1) / doc.pages.length;
+
+  // Dialog input in footer: show when dialog has input, lines are done, and not yet submitted
+  const showDialogInput = dialogBlock && hasDialogInput && dialogComplete && !dialogInteractionAnswered;
+  const dialogInputMeta = dialogBlock
+    ? (dialogBlock.props.input as { placeholder?: string; captures?: string; followUpText?: string } | undefined)
+    : undefined;
 
   const sharedBlockProps = {
     company, primary, br,
@@ -185,6 +202,7 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
     dimensions,
     dialogVisible,
     onDialogAdvance: (count: number) => setDialogVisible(count),
+    dialogInputInFooter: hasDialogInput,
   };
 
   return (
@@ -290,24 +308,77 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
       {!completed && !submitPage && !spinnerBlock && (
         <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-slate-200 px-4 py-4">
           <div className="max-w-lg mx-auto flex gap-3">
-            {/* Back button – icon only, fixed width so Weiter is always at same position */}
-            <button
-              onClick={goBack}
-              disabled={pageIndex === 0}
-              className={`flex items-center justify-center w-11 flex-shrink-0 py-3.5 border border-slate-200 transition-colors ${pageIndex === 0 ? 'invisible' : 'text-slate-600 hover:bg-slate-50'}`}
-              style={{ borderRadius: br }}
-              aria-label="Zurück"
-            >
-              <ChevronLeft size={18} />
-            </button>
-            <button
-              onClick={() => goNext(weiterTarget)}
-              disabled={!weiterEnabled}
-              className="fp-btn flex-1 py-3.5 font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              style={{ borderRadius: br, background: primary, color: '#fff' }}
-            >
-              {isLastPage ? 'Fertig' : 'Weiter'} {!isLastPage && <ChevronRight size={15} />}
-            </button>
+            {showDialogInput ? (
+              /* ── Messenger-style input bar ─────────────────────────── */
+              <>
+                <input
+                  type="text"
+                  value={footerInputValue}
+                  onChange={(e) => setFooterInputValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && footerInputValue.trim() && dialogBlock) {
+                      const val = footerInputValue.trim();
+                      if (dialogInputMeta?.captures) {
+                        if ((dialogInputMeta.captures === 'firstName' || dialogInputMeta.captures === 'vorname')) setFirstName(val);
+                        handleCapture(dialogInputMeta.captures, val);
+                      }
+                      setAnswer(dialogBlock.id, val);
+                      setFooterInputValue('');
+                    }
+                  }}
+                  placeholder={dialogInputMeta?.placeholder ?? 'Deine Antwort…'}
+                  className="flex-1 px-4 py-3 text-sm rounded-2xl border-2 bg-white outline-none transition-colors focus:border-violet-400"
+                  style={{ borderColor: `${primary}40`, fontSize: '16px' }}
+                  autoFocus
+                />
+                <button
+                  onClick={() => {
+                    if (!footerInputValue.trim() || !dialogBlock) return;
+                    const val = footerInputValue.trim();
+                    if (dialogInputMeta?.captures) {
+                      if ((dialogInputMeta.captures === 'firstName' || dialogInputMeta.captures === 'vorname')) setFirstName(val);
+                      handleCapture(dialogInputMeta.captures, val);
+                    }
+                    setAnswer(dialogBlock.id, val);
+                    setFooterInputValue('');
+                  }}
+                  disabled={!footerInputValue.trim()}
+                  className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 disabled:opacity-40 transition-opacity"
+                  style={{ background: primary }}
+                >
+                  <Send size={18} className="text-white" />
+                </button>
+              </>
+            ) : (
+              /* ── Standard navigation buttons ──────────────────────── */
+              <>
+                <button
+                  onClick={goBack}
+                  disabled={pageIndex === 0}
+                  className={`flex items-center justify-center w-11 flex-shrink-0 py-3.5 border border-slate-200 transition-colors ${pageIndex === 0 ? 'invisible' : 'text-slate-600 hover:bg-slate-50'}`}
+                  style={{ borderRadius: br }}
+                  aria-label="Zurück"
+                >
+                  <ChevronLeft size={18} />
+                </button>
+                <button
+                  onClick={() => {
+                    if (quizNeedsCheck && quizBlock) {
+                      setAnswers((prev) => ({ ...prev, [`${quizBlock.id}_checked`]: true }));
+                      return;
+                    }
+                    goNext(weiterTarget);
+                  }}
+                  disabled={!weiterEnabled}
+                  className="fp-btn flex-1 py-3.5 font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  style={{ borderRadius: br, background: primary, color: '#fff' }}
+                >
+                  {quizNeedsCheck
+                    ? <><CheckCircle size={15} /> Überprüfen</>
+                    : <>{isLastPage ? 'Fertig' : 'Weiter'} {!isLastPage && <ChevronRight size={15} />}</>}
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}

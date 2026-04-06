@@ -9,6 +9,7 @@ import { JobQuest, CareerCheck, FormPage, DEFAULT_FORM_CONFIG } from '@/lib/type
 import { generateSlug, formatDateShort } from '@/lib/utils';
 import { useContentList } from '@/hooks/useContentList';
 import { useToast } from '@/components/ui/Toast';
+import { StatCardSkeleton, ListItemSkeleton } from '@/components/ui/Skeleton';
 import {
   Plus,
   Edit2,
@@ -123,6 +124,8 @@ export default function DashboardPage() {
       });
   }
 
+  const isLoading = questList.loading || checkList.loading || formList.loading;
+
   const filteredQuests = sortItems(questList.items);
   const filteredChecks = sortItems(checkList.items);
   const filteredForms = sortItems(formList.items);
@@ -166,7 +169,11 @@ export default function DashboardPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-        {[
+        {isLoading ? (
+          <>
+            {Array.from({ length: 4 }).map((_, i) => <StatCardSkeleton key={i} />)}
+          </>
+        ) : [
           { label: 'JobQuests', value: questList.items.length, icon: FileText, color: 'violet', tab: 'jobquests' as ActiveTab },
           { label: 'Berufschecks', value: checkList.items.length, icon: CheckSquare, color: 'indigo', tab: 'berufschecks' as ActiveTab },
           { label: 'Formulare', value: formList.items.length, icon: ClipboardList, color: 'emerald', tab: 'formulare' as ActiveTab },
@@ -287,7 +294,11 @@ export default function DashboardPage() {
       </div>
 
       {/* Content */}
-      {activeTab === 'jobquests' ? (
+      {isLoading ? (
+        <div className="space-y-3">
+          {Array.from({ length: 4 }).map((_, i) => <ListItemSkeleton key={i} />)}
+        </div>
+      ) : activeTab === 'jobquests' ? (
         <QuestList
           quests={filteredQuests}
           allQuests={questList.items}

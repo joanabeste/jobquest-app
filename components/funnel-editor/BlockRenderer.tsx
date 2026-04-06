@@ -162,6 +162,7 @@ export function BlockRenderer({
   leadForm, setLeadForm, leadSubmitted, onLeadSubmit, onFormSubmit,
   scores, dimensions,
   dialogVisible, onDialogAdvance,
+  dialogInputInFooter,
 }: {
   node: BlockNode; company: Company; primary: string; br: string;
   answers: Record<string, unknown>; firstName: string;
@@ -177,6 +178,7 @@ export function BlockRenderer({
   dimensions: Dimension[];
   dialogVisible: number;
   onDialogAdvance: (count: number) => void;
+  dialogInputInFooter?: boolean;
 }) {
   const p = node.props;
   const varsMap = {
@@ -341,6 +343,7 @@ export function BlockRenderer({
           capturedVars={capturedVars}
           answers={answers}
           br={br}
+          inputInFooter={dialogInputInFooter}
         />
       );
     }
@@ -413,7 +416,94 @@ export function BlockRenderer({
     }
 
     case 'quest_quiz': {
-      const opts        = (p.options as { id: string; text: string; correct: boolean; feedback?: string }[]) || [];
+      const opts = (p.options as { id: string; text: string; correct: boolean; feedback?: string }[]) || [];
+      const correctCount = opts.filter((o) => o.correct).length;
+      const isMulti = correctCount > 1;
+      const revealed = answers[`${node.id}_checked`] === true;
+
+      // ── Multi-Select ─────────────────────────────────────────────
+      if (isMulti) {
+        const selectedIds: string[] = Array.isArray(answers[node.id]) ? answers[node.id] as string[] : [];
+        const correctIds = new Set(opts.filter((o) => o.correct).map((o) => o.id));
+        const selectedSet = new Set(selectedIds);
+        const correctSelected = selectedIds.filter((id) => correctIds.has(id)).length;
+        const allCorrect = revealed && correctSelected === correctCount && selectedIds.length === correctCount;
+
+        return (
+          <div className="fp-card bg-white shadow-sm mx-4 my-3 p-5">
+            <p className="fp-heading font-semibold text-base mb-1" dangerouslySetInnerHTML={{ __html: sh(inlineHtml(s(p.question))) }} />
+            <p className="text-xs text-slate-400 mb-3">Mehrere Antworten möglich ({correctCount} richtig)</p>
+            <div className="space-y-2">
+              {opts.map((o) => {
+                const isSel = selectedSet.has(o.id);
+                return (
+                  <button key={o.id} disabled={revealed}
+                    onClick={() => {
+                      if (revealed) return;
+                      const next = selectedSet.has(o.id)
+                        ? selectedIds.filter((x) => x !== o.id)
+                        : [...selectedIds, o.id];
+                      onAnswer(node.id, next);
+                    }}
+                    className="w-full text-left fp-opt flex items-center gap-3 px-4 py-3 text-sm"
+                    style={!revealed ? (isSel ? { borderColor: primary, background: `${primary}08` } : {})
+                      : o.correct && isSel ? { borderColor: '#10b981', background: '#f0fdf4' }
+                      : !o.correct && isSel ? { borderColor: '#f87171', background: '#fef2f2' }
+                      : o.correct && !isSel ? { borderColor: '#f59e0b', background: '#fffbeb' }
+                      : { opacity: 0.4 }}>
+                    <div className="flex-shrink-0 w-4">
+                      {!revealed
+                        ? <div className={`w-3.5 h-3.5 rounded border-2 ${isSel ? 'border-transparent' : 'border-slate-300'}`}
+                            style={isSel ? { background: primary } : {}}>
+                            {isSel && <Check size={10} className="text-white" />}
+                          </div>
+                        : o.correct && isSel ? <Check size={14} className="text-emerald-600" />
+                        : !o.correct && isSel ? <X size={14} className="text-red-500" />
+                        : o.correct && !isSel ? <span className="text-amber-500 text-xs font-bold">!</span>
+                        : null}
+                    </div>
+                    <div className="flex-1 text-left">
+                      <span>{o.text}</span>
+                      {revealed && o.feedback && (isSel || o.correct) && (
+                        <p className={`text-xs mt-1 leading-relaxed ${o.correct ? 'text-emerald-600' : 'text-red-500'}`}>
+                          {o.feedback}
+                        </p>
+                      )}
+                    </div>
+                    {revealed && o.correct && isSel && (
+                      <span className="text-xs font-semibold text-emerald-600 flex-shrink-0">Richtig</span>
+                    )}
+                    {revealed && o.correct && !isSel && (
+                      <span className="text-xs font-semibold text-amber-600 flex-shrink-0">Nicht gewählt</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {revealed && (
+              <div className={`mt-4 px-4 py-3.5 flex items-start gap-3 ${allCorrect ? 'bg-emerald-50' : 'bg-amber-50'}`}
+                style={{ borderRadius: br }}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${allCorrect ? 'bg-emerald-100' : 'bg-amber-100'}`}>
+                  {allCorrect
+                    ? <Check size={15} className="text-emerald-600" />
+                    : <span className="text-amber-600 font-bold text-sm">{correctSelected}/{correctCount}</span>}
+                </div>
+                <div>
+                  <p className={`font-semibold text-sm ${allCorrect ? 'text-emerald-800' : 'text-amber-800'}`}>
+                    {allCorrect ? 'Alle richtig!' : `${correctSelected} von ${correctCount} richtig`}
+                  </p>
+                  <p className={`text-sm mt-0.5 leading-relaxed ${allCorrect ? 'text-emerald-700' : 'text-amber-700'}`}>
+                    {allCorrect ? 'Gut gemacht!' : 'Die richtigen Antworten sind oben markiert.'}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      }
+
+      // ── Single-Select ────────────────────────────────────────────
       const selectedId  = answers[node.id] as string | undefined;
       const selectedOpt = opts.find((o) => o.id === selectedId);
       const isCorrect   = selectedOpt?.correct ?? false;
@@ -423,16 +513,20 @@ export function BlockRenderer({
           <div className="space-y-2">
             {opts.map((o) => {
               const isSelected = selectedId === o.id;
-              const revealed   = selectedId !== undefined;
               return (
-                <button key={o.id} onClick={() => !selectedId && onAnswer(node.id, o.id)} disabled={!!selectedId}
+                <button key={o.id} disabled={revealed}
+                  onClick={() => !revealed && onAnswer(node.id, o.id)}
                   className="w-full text-left fp-opt flex items-center gap-3 px-4 py-3 text-sm"
-                  style={!revealed ? {} : o.correct
+                  style={!revealed ? (isSelected ? { borderColor: primary, background: `${primary}08` } : {})
+                    : o.correct
                     ? { borderColor: '#10b981', background: '#f0fdf4' }
                     : isSelected ? { borderColor: '#f87171', background: '#fef2f2' } : { opacity: 0.4 }}>
                   <div className="flex-shrink-0 w-4">
                     {!revealed
-                      ? <div className="w-3.5 h-3.5 rounded-full border-2 border-slate-300" />
+                      ? <div className={`w-3.5 h-3.5 rounded-full border-2 ${isSelected ? 'border-transparent' : 'border-slate-300'}`}
+                          style={isSelected ? { background: primary } : {}}>
+                          {isSelected && <Check size={10} className="text-white" />}
+                        </div>
                       : o.correct ? <Check size={14} className="text-emerald-600" />
                       : isSelected ? <X size={14} className="text-red-500" />
                       : null}
@@ -446,7 +540,7 @@ export function BlockRenderer({
             })}
           </div>
 
-          {selectedOpt && (
+          {revealed && selectedOpt && (
             <div className={`mt-4 px-4 py-3.5 flex items-start gap-3 ${isCorrect ? 'bg-emerald-50' : 'bg-red-50'}`}
               style={{ borderRadius: br }}>
               <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${isCorrect ? 'bg-emerald-100' : 'bg-red-100'}`}>

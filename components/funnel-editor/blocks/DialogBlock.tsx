@@ -27,7 +27,7 @@ function TypingIndicator({ primary }: { primary: string }) {
 }
 
 // ─── Dialog block – reveals bubbles one by one with typing animation ──────────
-export default function DialogBlock({ lines, primary, visibleCount, onAdvance, firstName, choices, input, nodeId, onAnswer, onSetFirstName, onCapture, capturedVars, answers, br }: {
+export default function DialogBlock({ lines, primary, visibleCount, onAdvance, firstName, choices, input, nodeId, onAnswer, onSetFirstName, onCapture, capturedVars, answers, br, inputInFooter }: {
   lines: DialogLine[];
   primary: string;
   visibleCount: number;
@@ -42,6 +42,7 @@ export default function DialogBlock({ lines, primary, visibleCount, onAdvance, f
   capturedVars?: Record<string, string>;
   answers?: Record<string, unknown>;
   br?: string;
+  inputInFooter?: boolean;
 }) {
   const [typing, setTyping] = useState(false);
 
@@ -57,6 +58,15 @@ export default function DialogBlock({ lines, primary, visibleCount, onAdvance, f
   const [inputValue, setInputValue] = useState(existingInputAnswer ?? '');
   const [inputSubmitted, setInputSubmitted] = useState(!!existingInputAnswer);
   const [inputFollowUpVisible, setInputFollowUpVisible] = useState(!!existingInputAnswer && !!input?.followUpText);
+
+  // Sync inputSubmitted from external answer (footer input)
+  useEffect(() => {
+    if (existingInputAnswer && !inputSubmitted) {
+      setInputValue(existingInputAnswer);
+      setInputSubmitted(true);
+      if (input?.followUpText) setTimeout(() => setInputFollowUpVisible(true), 1000);
+    }
+  }, [existingInputAnswer, inputSubmitted, input?.followUpText]);
 
   function handleInputSubmit() {
     const val = inputValue.trim();
@@ -157,8 +167,12 @@ export default function DialogBlock({ lines, primary, visibleCount, onAdvance, f
       {/* Reaction bubble after choice */}
       {choiceReactionVisible && selectedChoice?.reaction && (
         <div className="flex gap-3 px-5" style={{ animation: 'fadeSlideIn 0.3s ease-out' }}>
-          <div className="w-8 h-8 rounded-full flex-shrink-0 mt-auto" style={{ background: `${primary}30` }} />
+          <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 mt-auto text-white"
+            style={{ background: primary }}>
+            {followUpSpeaker?.speaker?.charAt(0) || '?'}
+          </div>
           <div className="max-w-[78%] flex flex-col">
+            <p className="text-[11px] text-slate-400 mb-1">{followUpSpeaker?.speaker || 'Sprecher'}</p>
             <div className="bg-slate-100 px-3 py-2.5 rounded-2xl text-sm leading-relaxed text-slate-700">
               {selectedChoice.reaction}
             </div>
@@ -183,8 +197,8 @@ export default function DialogBlock({ lines, primary, visibleCount, onAdvance, f
         </div>
       )}
 
-      {/* Input field – appears after all lines are revealed */}
-      {allLinesShown && hasInput && !inputSubmitted && (
+      {/* Input field – appears after all lines are revealed (hidden when rendered in footer) */}
+      {allLinesShown && hasInput && !inputSubmitted && !inputInFooter && (
         <div className="px-5 pt-2">
           <div className="flex gap-2 items-center">
             <input
