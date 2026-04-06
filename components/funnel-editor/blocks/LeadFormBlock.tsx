@@ -9,7 +9,7 @@ import { s, b, sh } from './helpers';
 export interface LeadForm { firstName: string; lastName: string; email: string; phone: string; gdpr: boolean; }
 export const emptyLead: LeadForm = { firstName: '', lastName: '', email: '', phone: '', gdpr: false };
 
-export default function LeadFormBlock({ props: p, company, br, primary, leadForm, setLeadForm, onSubmit }: {
+export default function LeadFormBlock({ props: p, company, br, primary, leadForm, setLeadForm: _setLeadForm, onSubmit }: {
   props: Record<string, unknown>; company: Company; br: string; primary: string;
   leadForm: LeadForm; setLeadForm?: (f: LeadForm) => void;
   onSubmit: (form: LeadForm, customFields?: Record<string, string>) => void;
