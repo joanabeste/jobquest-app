@@ -534,7 +534,7 @@ export interface FormSubmission {
 // ─── Workspace / Roles ───────────────────────────────────────────────────────
 
 // platform_admin is a hidden developer/support role – never shown in regular UI
-export type WorkspaceRole = 'platform_admin' | 'superadmin' | 'admin' | 'editor' | 'viewer';
+export type WorkspaceRole = 'platform_admin' | 'admin' | 'editor' | 'viewer';
 
 export interface WorkspaceMember {
   id: string;
@@ -549,21 +549,19 @@ export interface WorkspaceMember {
 
 // Visible roles only (platform_admin intentionally excluded from UI)
 export const VISIBLE_ROLES: Exclude<WorkspaceRole, 'platform_admin'>[] = [
-  'superadmin', 'admin', 'editor', 'viewer',
+  'admin', 'editor', 'viewer',
 ];
 
 export const ROLE_LABELS: Record<WorkspaceRole, string> = {
   platform_admin: 'Developer',
-  superadmin: 'Inhaber',
-  admin: 'Admin',
-  editor: 'Editor',
+  admin: 'Administrator',
+  editor: 'Redakteur',
   viewer: 'Betrachter',
 };
 
 export const ROLE_COLORS: Record<WorkspaceRole, string> = {
   platform_admin: 'bg-slate-900 text-slate-100',
-  superadmin: 'bg-violet-100 text-violet-700',
-  admin: 'bg-blue-100 text-blue-700',
+  admin: 'bg-violet-100 text-violet-700',
   editor: 'bg-emerald-100 text-emerald-700',
   viewer: 'bg-slate-100 text-slate-600',
 };
@@ -586,10 +584,9 @@ const ALL_PERMISSIONS: Permission[] = [
 
 export const ROLE_PERMISSIONS: Record<WorkspaceRole, Permission[]> = {
   platform_admin: ALL_PERMISSIONS,
-  superadmin: ALL_PERMISSIONS,
   admin: ALL_PERMISSIONS,
-  editor: ['create_content', 'edit_content', 'view_leads', 'export_leads'],
-  viewer: ['view_leads'],
+  editor: ['create_content', 'edit_content', 'publish_content', 'view_leads', 'export_leads'],
+  viewer: ['view_leads', 'view_team'],
 };
 
 export function can(role: WorkspaceRole | undefined, permission: Permission): boolean {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/lib/supabase/client';
@@ -20,12 +20,28 @@ export default function SettingsAccountPage() {
 
   const [confirmText, setConfirmText] = useState('');
   const [showDeleteSection, setShowDeleteSection] = useState(false);
+  const [isLastAdmin, setIsLastAdmin] = useState(false);
+
+  const checkLastAdmin = useCallback(async () => {
+    if (!company || !currentMember || currentMember.role !== 'admin') {
+      setIsLastAdmin(false);
+      return;
+    }
+    try {
+      const res = await fetch('/api/members');
+      if (!res.ok) return;
+      const members = await res.json();
+      const activeAdmins = members.filter((m: { role: string; status: string }) => m.role === 'admin' && m.status === 'active');
+      setIsLastAdmin(activeAdmins.length <= 1);
+    } catch { /* ignore */ }
+  }, [company, currentMember]);
+
+  useEffect(() => { checkLastAdmin(); }, [checkLastAdmin]);
 
   if (!currentMember || !company) return null;
 
-  const isSuperAdmin = currentMember.role === 'superadmin';
   const isPlatformAdmin = currentMember.role === 'platform_admin';
-  const deleteRequired = isSuperAdmin ? 'LÖSCHEN' : currentMember.name;
+  const deleteRequired = isLastAdmin ? 'LÖSCHEN' : currentMember.name;
 
   async function handleSavePassword() {
     setPwError('');
@@ -38,7 +54,6 @@ export default function SettingsAccountPage() {
       return;
     }
     const supabase = createClient();
-    // Verify old password
     const { error: signInError } = await supabase.auth.signInWithPassword({
       email: currentMember!.email,
       password: oldPw,
@@ -59,7 +74,7 @@ export default function SettingsAccountPage() {
 
   async function handleDeleteAccount() {
     if (!currentMember || !company) return;
-    if (isSuperAdmin) {
+    if (isLastAdmin) {
       await fetch('/api/companies/me/delete', { method: 'POST' });
     } else {
       await fetch(`/api/members/${currentMember.id}`, { method: 'DELETE' });
@@ -154,18 +169,18 @@ export default function SettingsAccountPage() {
             )}
           </div>
           <p className="text-sm text-slate-500 mb-4">
-            {isSuperAdmin
-              ? 'Löscht den gesamten Workspace unwiderruflich – inklusive aller Inhalte und Mitglieder.'
+            {isLastAdmin
+              ? 'Du bist der letzte Admin. Das Löschen entfernt den gesamten Workspace unwiderruflich.'
               : 'Entfernt deinen Zugang zu diesem Workspace. Die Inhalte bleiben erhalten.'}
           </p>
 
           {showDeleteSection && (
             <div className="space-y-4 border-t border-red-100 pt-4">
-              {isSuperAdmin && (
+              {isLastAdmin && (
                 <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex gap-2">
                   <AlertTriangle size={16} className="text-red-600 mt-0.5 flex-shrink-0" />
                   <p className="text-sm text-red-700">
-                    Du bist der Inhaber. <strong>Alle Daten werden unwiderruflich gelöscht.</strong>
+                    Du bist der letzte Administrator. <strong>Alle Daten werden unwiderruflich gelöscht.</strong>
                   </p>
                 </div>
               )}

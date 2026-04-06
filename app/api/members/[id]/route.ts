@@ -2,14 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getSession, unauthorized } from '@/lib/api-auth';
 import { memberFromDb } from '@/lib/supabase/mappers';
+import { can } from '@/lib/types';
 import type { WorkspaceRole } from '@/lib/types';
 import { parseBody } from '@/lib/api/helpers';
-
-const PRIVILEGED_ROLES: WorkspaceRole[] = ['platform_admin', 'superadmin'];
-
-function isPrivileged(role: WorkspaceRole) {
-  return PRIVILEGED_ROLES.includes(role);
-}
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
@@ -39,14 +34,14 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const isSelf = id === session.member.id;
   const requesterRole = session.member.role as WorkspaceRole;
 
-  // Changing another member's password requires superadmin+
-  if (updates.password !== undefined && !isSelf && !isPrivileged(requesterRole)) {
+  // Changing another member's password requires manage_members
+  if (updates.password !== undefined && !isSelf && !can(requesterRole, 'manage_members')) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  // Role changes require superadmin+, and nobody may elevate their own role
+  // Role changes require manage_members, and nobody may change their own role
   if (updates.role !== undefined) {
-    if (!isPrivileged(requesterRole)) {
+    if (!can(requesterRole, 'manage_members')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
     if (isSelf) {
@@ -87,17 +82,44 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   const { id } = await params;
   const requesterRole = session.member.role as WorkspaceRole;
 
-  // Only superadmin+ can delete members
-  if (!isPrivileged(requesterRole)) {
+  // Only users with manage_members can delete members
+  if (!can(requesterRole, 'manage_members')) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  // Nobody can delete themselves
+  // Nobody can delete themselves via this endpoint (use account deletion instead)
   if (id === session.member.id) {
     return NextResponse.json({ error: 'Cannot delete your own account' }, { status: 403 });
   }
 
   const supabase = createAdminClient();
+
+  // Check if target is the last admin of the company
+  const { data: target } = await supabase
+    .from('workspace_members')
+    .select('role')
+    .eq('id', id)
+    .eq('company_id', session.company.id)
+    .single();
+
+  if (!target) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+  if (target.role === 'admin') {
+    const { count } = await supabase
+      .from('workspace_members')
+      .select('id', { count: 'exact', head: true })
+      .eq('company_id', session.company.id)
+      .eq('role', 'admin')
+      .eq('status', 'active');
+
+    if ((count ?? 0) <= 1) {
+      return NextResponse.json(
+        { error: 'last_admin', message: 'Dies ist der letzte Admin. Das Entfernen löscht das gesamte Unternehmen.' },
+        { status: 409 },
+      );
+    }
+  }
+
   const { error } = await supabase.from('workspace_members').delete().eq('id', id).eq('company_id', session.company.id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });

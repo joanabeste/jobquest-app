@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
         company_id: companyId,
         name: contactName || name,
         email: contactEmail,
-        role: 'superadmin',
+        role: 'admin',
         status: 'active',
         created_at: now,
       });
@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
       companyId,
       name: contactName || name,
       email: contactEmail,
-      role: 'superadmin',
+      role: 'admin',
       status: 'active',
       createdAt: now,
     };

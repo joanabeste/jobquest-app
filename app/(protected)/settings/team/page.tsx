@@ -1,38 +1,38 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/Toast';
 import { WorkspaceMember, WorkspaceRole, ROLE_LABELS, ROLE_COLORS, VISIBLE_ROLES } from '@/lib/types';
 import {
-  Users, UserPlus, Trash2, Shield, Eye, Edit3, Crown,
+  Users, UserPlus, Trash2, Shield, Eye, Edit3,
   ChevronDown, X, Check, AlertTriangle, CheckCircle, Copy, Link,
 } from 'lucide-react';
 
-const ROLE_ORDER: WorkspaceRole[] = ['superadmin', 'admin', 'editor', 'viewer'];
+const ROLE_ORDER: WorkspaceRole[] = ['admin', 'editor', 'viewer'];
 
-const ROLE_DESCRIPTIONS: Record<WorkspaceRole, string> = {
-  platform_admin: '',
-  superadmin: 'Vollzugriff auf alles. Kann alle Mitglieder und Rollen verwalten.',
-  admin: 'Kann Inhalte erstellen, bearbeiten, löschen, veröffentlichen & Mitglieder einladen.',
-  editor: 'Kann Inhalte erstellen & bearbeiten, aber nicht löschen oder veröffentlichen.',
-  viewer: 'Kann Leads und Inhalte nur lesen (kein Bearbeiten).',
+const ROLE_DESCRIPTIONS: Record<string, string> = {
+  admin: 'Vollzugriff: Inhalte verwalten, veröffentlichen, löschen, Team & Einstellungen pflegen.',
+  editor: 'Kann Inhalte erstellen, bearbeiten & veröffentlichen. Kann Leads einsehen & exportieren.',
+  viewer: 'Kann Leads und Teammitglieder nur einsehen (kein Bearbeiten).',
 };
 
-const ROLE_ICONS: Record<WorkspaceRole, React.ReactNode> = {
-  platform_admin: null,
-  superadmin: <Crown size={14} />,
+const ROLE_ICONS: Record<string, React.ReactNode> = {
   admin: <Shield size={14} />,
   editor: <Edit3 size={14} />,
   viewer: <Eye size={14} />,
 };
 
 export default function SettingsTeamPage() {
-  const { company, currentMember, can } = useAuth();
+  const { company, currentMember, can, logout } = useAuth();
   const toast = useToast();
+  const router = useRouter();
   const [members, setMembers] = useState<WorkspaceMember[]>([]);
   const [showInvite, setShowInvite] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [lastAdminConfirm, setLastAdminConfirm] = useState<WorkspaceMember | null>(null);
+  const [deletingCompany, setDeletingCompany] = useState(false);
 
   const [invite, setInvite] = useState({
     name: '',
@@ -102,7 +102,6 @@ export default function SettingsTeamPage() {
   }
 
   async function handleRoleChange(member: WorkspaceMember, newRole: WorkspaceRole) {
-    if (member.role === 'superadmin') return;
     try {
       const res = await fetch(`/api/members/${member.id}`, {
         method: 'PUT',
@@ -118,21 +117,45 @@ export default function SettingsTeamPage() {
   }
 
   async function handleRemove(member: WorkspaceMember) {
-    if (member.role === 'superadmin' || member.role === 'platform_admin') return;
+    if (member.role === 'platform_admin') return;
     if (member.id === currentMember?.id) return;
     try {
       const res = await fetch(`/api/members/${member.id}`, { method: 'DELETE' });
+      if (res.status === 409) {
+        const body = await res.json();
+        if (body.error === 'last_admin') {
+          setLastAdminConfirm(member);
+          return;
+        }
+      }
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       await reload();
+      toast.success('Mitglied entfernt.');
     } catch {
       toast.error('Mitglied konnte nicht entfernt werden. Bitte erneut versuchen.');
+    }
+  }
+
+  async function handleDeleteCompanyWithLastAdmin() {
+    if (!company) return;
+    setDeletingCompany(true);
+    try {
+      const res = await fetch(`/api/companies/${company.id}/delete-with-last-admin`, { method: 'POST' });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || 'Löschen fehlgeschlagen');
+      }
+      await logout();
+      router.push('/login');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Löschen fehlgeschlagen');
+      setDeletingCompany(false);
     }
   }
 
   if (!company || !currentMember) return null;
 
   const visibleMembers = members.filter((m) => m.role !== 'platform_admin');
-  const isSuperAdmin = currentMember.role === 'superadmin';
   const canManage = can('manage_members');
 
   return (
@@ -196,10 +219,10 @@ export default function SettingsTeamPage() {
 
       <div className="card p-5 mb-6">
         <h2 className="text-sm font-semibold text-slate-700 mb-3">Rollenübersicht</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           {ROLE_ORDER.map((role) => (
-            <div key={role} className="flex items-start gap-3 p-3 rounded-xl bg-slate-50">
-              <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-semibold flex-shrink-0 ${ROLE_COLORS[role]}`}>
+            <div key={role} className="flex flex-col gap-2 p-3 rounded-xl bg-slate-50">
+              <span className={`inline-flex self-start items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-semibold ${ROLE_COLORS[role]}`}>
                 {ROLE_ICONS[role]}
                 {ROLE_LABELS[role]}
               </span>
@@ -217,7 +240,6 @@ export default function SettingsTeamPage() {
               key={member.id}
               member={member}
               isSelf={member.id === currentMember.id}
-              isSuperAdmin={isSuperAdmin}
               canManage={canManage}
               onRoleChange={handleRoleChange}
               onRemove={handleRemove}
@@ -225,6 +247,7 @@ export default function SettingsTeamPage() {
           ))}
       </div>
 
+      {/* Invite modal */}
       {showInvite && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
@@ -251,17 +274,17 @@ export default function SettingsTeamPage() {
               </div>
               <div>
                 <label className="label">Rolle *</label>
-                <div className="grid grid-cols-2 gap-2 mt-1">
-                  {VISIBLE_ROLES.filter((r) => r !== 'superadmin').map((role) => (
+                <div className="grid grid-cols-3 gap-2 mt-1">
+                  {VISIBLE_ROLES.map((role) => (
                     <button key={role} type="button" onClick={() => setInvite((p) => ({ ...p, role }))}
-                      className={`flex items-start gap-2 p-3 rounded-xl border-2 text-left transition-all ${
+                      className={`flex flex-col items-start gap-1.5 p-3 rounded-xl border-2 text-left transition-all ${
                         invite.role === role ? 'border-violet-400 bg-violet-50' : 'border-slate-200 hover:border-slate-300 bg-white'
                       }`}>
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold flex-shrink-0 ${ROLE_COLORS[role]}`}>
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold ${ROLE_COLORS[role]}`}>
                         {ROLE_ICONS[role]}
                         {ROLE_LABELS[role]}
                       </span>
-                      {invite.role === role && <Check size={14} className="text-violet-600 ml-auto flex-shrink-0 mt-0.5" />}
+                      {invite.role === role && <Check size={14} className="text-violet-600 ml-auto" />}
                     </button>
                   ))}
                 </div>
@@ -287,21 +310,50 @@ export default function SettingsTeamPage() {
           </div>
         </div>
       )}
+
+      {/* Last admin deletion warning */}
+      {lastAdminConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                <AlertTriangle size={20} className="text-red-600" />
+              </div>
+              <h2 className="text-lg font-semibold text-slate-900">Unternehmen löschen?</h2>
+            </div>
+            <p className="text-sm text-slate-600 mb-2">
+              <strong>{lastAdminConfirm.name}</strong> ist der letzte Administrator dieses Unternehmens.
+            </p>
+            <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-5">
+              Das Entfernen löscht das gesamte Unternehmen <strong>{company?.name}</strong> und alle zugehörigen Daten
+              (JobQuests, Leads, Berufschecks, Formulare, Teammitglieder) unwiderruflich.
+            </p>
+            <div className="flex gap-2">
+              <button onClick={() => setLastAdminConfirm(null)} disabled={deletingCompany}
+                className="flex-1 px-4 py-2 rounded-xl border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 transition-colors">
+                Abbrechen
+              </button>
+              <button onClick={handleDeleteCompanyWithLastAdmin} disabled={deletingCompany}
+                className="flex-1 px-4 py-2 rounded-xl bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-60">
+                {deletingCompany ? 'Wird gelöscht…' : 'Endgültig löschen'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-function MemberRow({ member, isSelf, isSuperAdmin, canManage, onRoleChange, onRemove }: {
-  member: WorkspaceMember; isSelf: boolean; isSuperAdmin: boolean; canManage: boolean;
+function MemberRow({ member, isSelf, canManage, onRoleChange, onRemove }: {
+  member: WorkspaceMember; isSelf: boolean; canManage: boolean;
   onRoleChange: (member: WorkspaceMember, role: WorkspaceRole) => void;
   onRemove: (member: WorkspaceMember) => void;
 }) {
   const [roleMenuOpen, setRoleMenuOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const isOwner = member.role === 'superadmin' || member.role === 'platform_admin';
-  const canEdit = canManage && !isOwner && !isSelf;
-  const canDelete = canManage && !isOwner && !isSelf;
-  const assignableRoles = VISIBLE_ROLES.filter((r) => r !== 'superadmin');
+  const canEdit = canManage && !isSelf;
+  const canDelete = canManage && !isSelf;
 
   return (
     <div className="flex items-center gap-3 px-5 py-4">
@@ -331,7 +383,7 @@ function MemberRow({ member, isSelf, isSuperAdmin, canManage, onRoleChange, onRe
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setRoleMenuOpen(false)} />
                 <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-xl border border-slate-200 shadow-lg py-1 z-20">
-                  {assignableRoles.map((role) => (
+                  {VISIBLE_ROLES.map((role) => (
                     <button key={role} onClick={() => { onRoleChange(member, role); setRoleMenuOpen(false); }}
                       className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-left transition-colors ${
                         member.role === role ? 'bg-violet-50 text-violet-700' : 'hover:bg-slate-50 text-slate-700'
@@ -372,7 +424,6 @@ function MemberRow({ member, isSelf, isSuperAdmin, canManage, onRoleChange, onRe
           </button>
         )
       )}
-      {isOwner && isSuperAdmin && !isSelf && <span className="text-xs text-slate-300 flex-shrink-0">–</span>}
     </div>
   );
 }
