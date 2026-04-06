@@ -55,18 +55,19 @@ export async function POST(req: NextRequest) {
   } else if (linkError) {
     const msg = linkError.message ?? '';
     // User exists in auth but not in workspace_members (e.g. previously deleted member)
-    // → Try to reuse the existing auth user with a magic link instead
+    // → Delete the orphaned auth user and retry with a fresh invite
     if (msg.includes('already') || msg.includes('exist')) {
       const { data: existingUsers } = await admin.auth.admin.listUsers();
       const existingUser = existingUsers?.users?.find((u) => u.email === email.toLowerCase());
       if (existingUser) {
-        const { data: magicData } = await admin.auth.admin.generateLink({
-          type: 'magiclink',
+        await admin.auth.admin.deleteUser(existingUser.id);
+        const { data: retryData } = await admin.auth.admin.generateLink({
+          type: 'invite',
           email,
           options: { redirectTo: `${siteUrl}/accept-invite` },
         });
-        if (magicData?.user) {
-          linkData = magicData as unknown as LinkResult;
+        if (retryData?.user) {
+          linkData = retryData as unknown as LinkResult;
         }
       }
     }
