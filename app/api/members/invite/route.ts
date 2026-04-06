@@ -110,18 +110,25 @@ export async function POST(req: NextRequest) {
   }
 
   // ── Step 4: Send invite email via our own SMTP ──
+  const smtpConfigured = !!(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
   let emailSent = false;
-  try {
-    await sendInviteEmail({
-      to: email,
-      invitedBy: session.member.name,
-      companyName: session.company.name,
-      inviteLink,
-    });
-    emailSent = true;
-    console.log(`[invite] Email sent to ${email}`);
-  } catch (mailErr) {
-    console.error('[invite] E-Mail-Versand fehlgeschlagen:', mailErr);
+
+  if (!smtpConfigured) {
+    console.error(`[invite] SMTP nicht konfiguriert: HOST=${!!process.env.SMTP_HOST}, USER=${!!process.env.SMTP_USER}, PASS=${!!process.env.SMTP_PASS}`);
+  } else {
+    try {
+      console.log(`[invite] Sende E-Mail an ${email} via ${process.env.SMTP_HOST}…`);
+      await sendInviteEmail({
+        to: email,
+        invitedBy: session.member.name,
+        companyName: session.company.name,
+        inviteLink,
+      });
+      emailSent = true;
+      console.log(`[invite] E-Mail erfolgreich gesendet an ${email}`);
+    } catch (mailErr) {
+      console.error('[invite] E-Mail-Versand fehlgeschlagen:', mailErr);
+    }
   }
 
   return NextResponse.json({
