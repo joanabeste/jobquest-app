@@ -32,11 +32,11 @@ export default function LoginPage() {
     setError('');
     setSubmitting(true);
     await new Promise((r) => setTimeout(r, 300));
-    const ok = await login(email, password);
-    if (ok) {
+    const err = await login(email, password);
+    if (!err) {
       router.push('/dashboard');
     } else {
-      setError('E-Mail oder Passwort ist falsch.');
+      setError(err);
       setSubmitting(false);
     }
   }

@@ -8,7 +8,7 @@ interface AuthContextType {
   company: Company | null;
   currentMember: WorkspaceMember | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<string | null>; // null = success, string = error message
   logout: () => Promise<void>;
   updateCompany: (company: Company) => Promise<void>;
   register: (data: Omit<Company, 'id' | 'createdAt'> & { password: string }) => Promise<Company>;
@@ -42,21 +42,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     restoreSession();
   }, []);
 
-  const login = useCallback(async (email: string, password: string): Promise<boolean> => {
+  const login = useCallback(async (email: string, password: string): Promise<string | null> => {
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
-      if (!res.ok) return false;
       const data = await res.json();
+      if (!res.ok) return data?.error ?? 'Anmeldung fehlgeschlagen.';
       setCurrentMember(data.member);
       setCompany(data.company);
-      return true;
+      return null;
     } catch (err) {
       console.error('[auth] login error', err);
-      return false;
+      return 'Netzwerkfehler. Bitte versuche es erneut.';
     }
   }, []);
 
