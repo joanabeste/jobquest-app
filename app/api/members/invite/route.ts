@@ -128,8 +128,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: `Einladung fehlgeschlagen: ${error.message}` }, { status: 500 });
   }
 
-  // Send invite email via our own SMTP
-  const inviteLink = linkData.properties.action_link;
+  // Fix redirect_to in the action link (Supabase sometimes ignores the redirectTo option)
+  const rawLink = linkData.properties.action_link;
+  const linkUrl = new URL(rawLink);
+  linkUrl.searchParams.set('redirect_to', redirectTo);
+  const inviteLink = linkUrl.toString();
+  console.log(`[invite] action_link redirect fixed: ${rawLink} → ${inviteLink}`);
 
   let emailSent = false;
   try {
