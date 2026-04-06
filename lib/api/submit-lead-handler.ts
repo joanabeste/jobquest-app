@@ -41,43 +41,65 @@ export function createSubmitLeadHandler<T extends LeadBase>(
     const { error } = await admin.from(table).insert(toDb(lead));
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
+    let emailStatus: 'sent' | 'skipped' | 'error' = 'skipped';
+    let emailError: string | undefined;
+
     const { data: docRow, error: docErr } = await admin
       .from('funnel_docs')
       .select('email_config')
       .eq('content_id', contentId)
       .single();
 
+    if (docErr) {
+      console.error(`[${logPrefix}] funnel_docs lookup failed:`, docErr.message);
+    }
+
     if (!docErr && docRow?.email_config) {
       const emailConfig = docRow.email_config as EmailConfig;
       const emailWillSend = emailConfig.confirmationEnabled || emailConfig.notificationEnabled;
-      if (emailWillSend) {
-        // Await with a hard timeout — must be awaited on serverless (Vercel kills unawaited promises after response)
-        const EMAIL_TIMEOUT_MS = 8_000;
-        const timeoutPromise = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('E-Mail-Timeout nach 8s')), EMAIL_TIMEOUT_MS),
-        );
-        try {
-          await Promise.race([
-            sendLeadEmails({
-              emailConfig,
-              vars: {
-                firstName: lead.firstName,
-                lastName: lead.lastName,
-                email: lead.email,
-                phone: lead.phone ?? '',
-                companyName,
-                karriereseiteUrl: karriereseiteUrl ?? '',
-              },
-            }),
-            timeoutPromise,
-          ]);
-          await admin.from(table).update({ email_sent: true }).eq('id', lead.id);
-        } catch (err: unknown) {
-          console.error(`[${logPrefix}] E-Mail-Versand fehlgeschlagen:`, err);
+
+      if (!emailWillSend) {
+        console.log(`[${logPrefix}] E-Mail nicht aktiviert (confirmation=${emailConfig.confirmationEnabled}, notification=${emailConfig.notificationEnabled})`);
+      } else {
+        // Check SMTP env vars before attempting
+        const smtpConfigured = !!(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
+        if (!smtpConfigured) {
+          console.error(`[${logPrefix}] SMTP nicht konfiguriert: SMTP_HOST=${!!process.env.SMTP_HOST}, SMTP_USER=${!!process.env.SMTP_USER}, SMTP_PASS=${!!process.env.SMTP_PASS}`);
+          emailStatus = 'error';
+          emailError = 'SMTP-Umgebungsvariablen nicht gesetzt';
+        } else {
+          const EMAIL_TIMEOUT_MS = 8_000;
+          const timeoutPromise = new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('E-Mail-Timeout nach 8s')), EMAIL_TIMEOUT_MS),
+          );
+          try {
+            console.log(`[${logPrefix}] Sende E-Mail via ${process.env.SMTP_HOST}:${process.env.SMTP_PORT ?? '587'}…`);
+            await Promise.race([
+              sendLeadEmails({
+                emailConfig,
+                vars: {
+                  firstName: lead.firstName,
+                  lastName: lead.lastName,
+                  email: lead.email,
+                  phone: lead.phone ?? '',
+                  companyName,
+                  karriereseiteUrl: karriereseiteUrl ?? '',
+                },
+              }),
+              timeoutPromise,
+            ]);
+            await admin.from(table).update({ email_sent: true }).eq('id', lead.id);
+            emailStatus = 'sent';
+            console.log(`[${logPrefix}] E-Mail erfolgreich gesendet`);
+          } catch (err: unknown) {
+            emailStatus = 'error';
+            emailError = err instanceof Error ? err.message : String(err);
+            console.error(`[${logPrefix}] E-Mail-Versand fehlgeschlagen:`, emailError);
+          }
         }
       }
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, emailStatus, emailError });
   };
 }

@@ -104,6 +104,10 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
         const body = await res.json().catch(() => ({}));
         throw new Error(`HTTP ${res.status}: ${(body as { error?: string }).error ?? 'unknown'}`);
       }
+      const result = await res.json().catch(() => ({}));
+      if ((result as { emailStatus?: string }).emailStatus === 'error') {
+        console.warn('[FunnelPlayer] Lead gespeichert, aber E-Mail fehlgeschlagen:', (result as { emailError?: string }).emailError);
+      }
     } catch (err) {
       console.error('[FunnelPlayer] submit-lead fehlgeschlagen:', err);
       setLeadSaveError(true);
