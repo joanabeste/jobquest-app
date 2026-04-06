@@ -5,7 +5,7 @@ import { X, Sparkles } from 'lucide-react';
 import { FunnelPage } from '@/lib/funnel-types';
 
 interface Props {
-  onGenerate: (pages: FunnelPage[]) => void;
+  onGenerate: (pages: FunnelPage[], title: string) => void;
   onClose: () => void;
 }
 
@@ -64,7 +64,7 @@ export default function GenerateQuestModal({ onGenerate, onClose }: Props) {
       if (!res.ok) throw new Error(data.error ?? 'Unbekannter Fehler');
       if (!data.pages?.length) throw new Error('Keine Seiten generiert');
       setLoadingProgress(100);
-      setTimeout(() => onGenerate(data.pages!), 400);
+      setTimeout(() => onGenerate(data.pages!, beruf.trim()), 400);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Fehler beim Generieren');
       setLoading(false);

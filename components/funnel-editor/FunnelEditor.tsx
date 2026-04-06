@@ -260,13 +260,14 @@ function FunnelEditorInner({
   }
 
   // ── AI generation ───────────────────────────────────────────────────────────
-  function handleGenerateQuest(pages: FunnelPage[]) {
+  function handleGenerateQuest(pages: FunnelPage[], jobTitle: string) {
     const next = { ...doc, pages };
     push(next);
     funnelStorage.save(next);
     setActivePageId(pages[0]?.id ?? '');
     setSelectedNodeId(null);
     setShowGenerateModal(false);
+    if (jobTitle) onTitleChange(jobTitle);
   }
 
   // ── selected node ───────────────────────────────────────────────────────────
