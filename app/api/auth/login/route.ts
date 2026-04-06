@@ -4,6 +4,22 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { memberFromDb, companyFromDb } from '@/lib/supabase/mappers';
 
 export async function POST(req: NextRequest) {
+  // Check required env vars first — missing vars cause cryptic 500s
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabaseUrl || !supabaseAnon || !serviceRoleKey) {
+    console.error('[login] Missing environment variables', {
+      hasUrl: !!supabaseUrl,
+      hasAnon: !!supabaseAnon,
+      hasServiceRole: !!serviceRoleKey,
+    });
+    return NextResponse.json(
+      { error: 'Serverkonfiguration unvollständig. Bitte Support kontaktieren.', code: 'env_missing' },
+      { status: 500 },
+    );
+  }
+
   try {
     const { email, password } = await req.json();
     if (!email || !password) {
