@@ -38,7 +38,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: msg }, { status: 409 });
   }
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+  const origin = req.headers.get('origin') || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+  const redirectTo = `${origin}/accept-invite`;
 
   // Generate invite link without Supabase sending the email
   type LinkResult = { user: { id: string }; properties: { action_link: string } };
@@ -47,7 +48,7 @@ export async function POST(req: NextRequest) {
   const { data: genData, error: linkError } = await admin.auth.admin.generateLink({
     type: 'invite',
     email,
-    options: { redirectTo: `${siteUrl}/accept-invite` },
+    options: { redirectTo },
   });
 
   if (genData?.user) {
@@ -79,7 +80,7 @@ export async function POST(req: NextRequest) {
           const { data: retryData, error: retryErr } = await admin.auth.admin.generateLink({
             type: 'invite',
             email,
-            options: { redirectTo: `${siteUrl}/accept-invite` },
+            options: { redirectTo },
           });
           if (retryData?.user) {
             linkData = retryData as unknown as LinkResult;
