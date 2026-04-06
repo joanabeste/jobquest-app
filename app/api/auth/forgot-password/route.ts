@@ -8,20 +8,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Email required' }, { status: 400 });
     }
 
-    const allowedOrigins = [
-      process.env.NEXT_PUBLIC_SITE_URL,
-      'http://localhost:3000',
-    ].filter(Boolean) as string[];
-
-    const requestOrigin = req.headers.get('origin') ?? '';
-    const safeOrigin = allowedOrigins.includes(requestOrigin)
-      ? requestOrigin
-      : (allowedOrigins[0] ?? 'http://localhost:3000');
+    // Use the browser's origin so the link always points to the correct domain,
+    // whether running locally or on the live server.
+    const origin = req.headers.get('origin')
+      ?? process.env.NEXT_PUBLIC_SITE_URL
+      ?? 'http://localhost:3000';
 
     const supabase = await createServerSupabaseClient();
 
     await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${safeOrigin}/reset-password`,
+      redirectTo: `${origin}/reset-password`,
     });
 
     // Always return ok to avoid email enumeration
