@@ -48,11 +48,14 @@ export function createSubmitLeadHandler<T extends LeadBase>(
     } else {
       const emailConfig = docRow.email_config as EmailConfig;
       const emailWillSend = emailConfig.confirmationEnabled || emailConfig.notificationEnabled;
-      if (!emailWillSend) {
-        console.log(`[${logPrefix}] email_config vorhanden, aber confirmationEnabled und notificationEnabled sind beide false.`);
-      } else {
-        try {
-          await sendLeadEmails({
+      if (emailWillSend) {
+        // Fire email with a hard 8-second timeout — never block the success response
+        const EMAIL_TIMEOUT_MS = 8_000;
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('E-Mail-Timeout nach 8s')), EMAIL_TIMEOUT_MS),
+        );
+        Promise.race([
+          sendLeadEmails({
             emailConfig,
             vars: {
               firstName: lead.firstName,
@@ -62,12 +65,16 @@ export function createSubmitLeadHandler<T extends LeadBase>(
               companyName,
               karriereseiteUrl: karriereseiteUrl ?? '',
             },
+          }),
+          timeoutPromise,
+        ])
+          .then(() => {
+            console.log(`[${logPrefix}] E-Mail gesendet an ${lead.email}`);
+            return admin.from(table).update({ email_sent: true }).eq('id', lead.id);
+          })
+          .catch((err: unknown) => {
+            console.error(`[${logPrefix}] E-Mail-Versand fehlgeschlagen:`, err);
           });
-          console.log(`[${logPrefix}] E-Mail erfolgreich gesendet an ${lead.email}`);
-          await admin.from(table).update({ email_sent: true }).eq('id', lead.id);
-        } catch (err) {
-          console.error(`[${logPrefix}] E-Mail-Versand fehlgeschlagen:`, err);
-        }
       }
     }
 
