@@ -1,275 +1,20 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ArrowRight, Trophy, FileDown, Check, X, ChevronRight, MapPin, ChevronUp, ChevronDown, GripVertical } from 'lucide-react';
-import { BlockNode, LeadFieldDef } from '@/lib/funnel-types';
+import { ArrowRight, Trophy, FileDown, Check, X, ChevronRight } from 'lucide-react';
+import { BlockNode } from '@/lib/funnel-types';
 import { applyVars } from '@/lib/funnel-variables';
-import { sanitizeHtml } from '@/lib/sanitize';
 import { Company, Dimension } from '@/lib/types';
 import { DECISION_ICONS, isIconName } from '@/lib/decision-icons';
+import { s, n, b, sh, inlineHtml } from './blocks/helpers';
+import DialogBlock, { type DialogLine } from './blocks/DialogBlock';
+import HotspotBlock from './blocks/HotspotBlock';
+import SortBlock, { type SortItem } from './blocks/SortBlock';
+import LeadFormBlock, { LeadForm } from './blocks/LeadFormBlock';
 
-// ─── Safe prop helpers ────────────────────────────────────────────────────────
-const s = (v: unknown, fallback = ''): string => (v != null ? String(v) : fallback);
-const n = (v: unknown, fallback = 0): number => (typeof v === 'number' ? v : fallback);
-const b = (v: unknown): boolean => Boolean(v);
-const inlineHtml = (v: string): string => v.replace(/^<p>([\s\S]*?)<\/p>$/, '$1');
-// sh — sanitize before injecting as HTML
-const sh = (v: string): string => sanitizeHtml(v);
-
-export interface LeadForm { firstName: string; lastName: string; email: string; phone: string; gdpr: boolean; }
-export const emptyLead: LeadForm = { firstName: '', lastName: '', email: '', phone: '', gdpr: false };
-
-// avatar type removed
-
-// ─── Dialog line type ─────────────────────────────────────────────────────────
-export interface DialogLine { id: string; speaker: string; text: string; imageUrl?: string; position?: 'left' | 'right'; }
-interface DialogChoice { id: string; text: string; reaction?: string; }
-interface DialogInput { placeholder?: string; captures?: string; followUpText?: string; }
-
-// ─── Typing indicator (three bouncing dots) ───────────────────────────────────
-function TypingIndicator({ primary }: { primary: string }) {
-  return (
-    <div className="flex gap-3 px-5">
-      <div className="w-8 h-8 rounded-full flex-shrink-0" style={{ background: `${primary}30` }} />
-      <div className="bg-slate-100 rounded-2xl px-4 py-3 flex items-center gap-1.5">
-        {[0, 1, 2].map((i) => (
-          <span
-            key={i}
-            className="w-2 h-2 rounded-full bg-slate-400 animate-bounce"
-            style={{ animationDelay: `${i * 150}ms`, animationDuration: '900ms' }}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ─── Dialog block – reveals bubbles one by one with typing animation ──────────
-function DialogBlock({ lines, primary, visibleCount, onAdvance, firstName, choices, input, nodeId, onAnswer, onSetFirstName, onCapture, capturedVars, answers, br }: {
-  lines: DialogLine[];
-  primary: string;
-  visibleCount: number;
-  onAdvance: (count: number) => void;
-  firstName: string;
-  choices?: DialogChoice[];
-  input?: DialogInput;
-  nodeId?: string;
-  onAnswer?: (id: string, val: unknown) => void;
-  onSetFirstName?: (v: string) => void;
-  onCapture?: (varName: string, value: string) => void;
-  capturedVars?: Record<string, string>;
-  answers?: Record<string, unknown>;
-  br?: string;
-}) {
-  const [typing, setTyping] = useState(false);
-
-  const hasChoices = !!choices && choices.length > 0;
-  const selectedChoiceId = hasChoices && nodeId && answers ? answers[nodeId] as string | undefined : undefined;
-  const selectedChoice = selectedChoiceId ? choices?.find((c) => c.id === selectedChoiceId) : undefined;
-  // Start as true if already answered (back-navigation), false if fresh
-  const [choiceReactionVisible, setChoiceReactionVisible] = useState(!!selectedChoiceId);
-
-  // Input field state
-  const hasInput = !!input;
-  const existingInputAnswer = hasInput && nodeId && answers ? (answers[nodeId] as string | undefined) : undefined;
-  const [inputValue, setInputValue] = useState(existingInputAnswer ?? '');
-  const [inputSubmitted, setInputSubmitted] = useState(!!existingInputAnswer);
-  const [inputFollowUpVisible, setInputFollowUpVisible] = useState(!!existingInputAnswer && !!input?.followUpText);
-
-  function handleInputSubmit() {
-    const val = inputValue.trim();
-    if (!val) return;
-    if (input?.captures) {
-      if ((input.captures === 'firstName' || input.captures === 'vorname') && onSetFirstName) onSetFirstName(val);
-      if (onCapture) onCapture(input.captures, val);
-    }
-    if (nodeId && onAnswer) onAnswer(nodeId, val);
-    setInputSubmitted(true);
-    if (input?.followUpText) {
-      setTimeout(() => setInputFollowUpVisible(true), 1000);
-    }
-  }
-
-  useEffect(() => {
-    if (visibleCount >= lines.length) return;
-    // Show typing indicator, then reveal next bubble
-    setTyping(true);
-    const delay = lines[visibleCount]?.text?.length > 60 ? 1200 : 850;
-    const t = setTimeout(() => {
-      setTyping(false);
-      onAdvance(visibleCount + 1);
-    }, delay);
-    return () => clearTimeout(t);
-  // onAdvance is stable (defined inline in parent, but we only want this to run on visibleCount changes)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visibleCount, lines.length]);
-
-  // Show reaction bubble after a choice is picked
-  useEffect(() => {
-    if (!selectedChoiceId || !selectedChoice?.reaction || choiceReactionVisible) return;
-    const t = setTimeout(() => setChoiceReactionVisible(true), 1200);
-    return () => clearTimeout(t);
-  }, [selectedChoiceId, selectedChoice?.reaction, choiceReactionVisible]);
-
-  if (lines.length === 0 && !hasChoices && !hasInput) return null;
-
-  const visible = lines.slice(0, visibleCount);
-  const allLinesShown = visibleCount >= lines.length;
-  const showChoiceButtons = allLinesShown && hasChoices && !selectedChoiceId;
-  const showChoiceTyping = !!selectedChoiceId && !!selectedChoice?.reaction && !choiceReactionVisible;
-  const followUpSpeaker = lines.filter(l => l.position !== 'right').at(-1) ?? lines[0];
-
-  return (
-    <div className="py-4 space-y-3">
-      {visible.map((line, idx) => {
-        const isRight = line.position === 'right';
-        return (
-          <div
-            key={line.id}
-            className={`flex gap-3 px-5 ${isRight ? 'flex-row-reverse' : ''}`}
-            style={{ animation: idx === visibleCount - 1 ? 'fadeSlideIn 0.3s ease-out' : undefined }}
-          >
-            <div className="w-8 h-8 rounded-full flex-shrink-0 mt-auto overflow-hidden flex items-center justify-center font-bold text-white text-sm"
-              style={{ background: primary }}>
-              <span>{line.speaker?.charAt(0) || '?'}</span>
-            </div>
-            <div className={`max-w-[78%] ${isRight ? 'items-end' : ''} flex flex-col`}>
-              <p className="text-[11px] text-slate-400 mb-1">{isRight && firstName ? firstName : line.speaker}</p>
-              {!!line.imageUrl && (
-                 
-                <img src={line.imageUrl} alt="" className="w-full rounded-2xl mb-1.5 max-h-44 object-cover shadow-sm" />
-              )}
-              {!!line.text && (
-                <div className={`px-3 py-2.5 rounded-2xl text-sm leading-relaxed ${isRight ? 'text-white' : 'bg-slate-100 text-slate-700'}`}
-                  style={isRight ? { background: primary } : {}}>
-                  {line.text}
-                </div>
-              )}
-            </div>
-          </div>
-        );
-      })}
-
-      {/* Typing indicator for auto-advancing main lines */}
-      {!allLinesShown && typing && <TypingIndicator primary={primary} />}
-
-      {/* User's selected choice shown as right bubble */}
-      {selectedChoice && (
-        <div className="flex gap-3 px-5 flex-row-reverse" style={{ animation: 'fadeSlideIn 0.3s ease-out' }}>
-          <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 mt-auto text-white"
-            style={{ background: primary }}>
-            {firstName?.charAt(0) || 'I'}
-          </div>
-          <div className="max-w-[78%] items-end flex flex-col">
-            <p className="text-[11px] text-slate-400 mb-1">{firstName || 'Ich'}</p>
-            <div className="px-3 py-2.5 rounded-2xl text-sm leading-relaxed text-white" style={{ background: primary }}>
-              {selectedChoice.text}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Typing indicator while waiting for reaction */}
-      {showChoiceTyping && <TypingIndicator primary={primary} />}
-
-      {/* Reaction bubble after choice */}
-      {choiceReactionVisible && selectedChoice?.reaction && (
-        <div className="flex gap-3 px-5" style={{ animation: 'fadeSlideIn 0.3s ease-out' }}>
-          <div className="w-8 h-8 rounded-full flex-shrink-0 mt-auto" style={{ background: `${primary}30` }} />
-          <div className="max-w-[78%] flex flex-col">
-            <div className="bg-slate-100 px-3 py-2.5 rounded-2xl text-sm leading-relaxed text-slate-700">
-              {selectedChoice.reaction}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Choice buttons – appear after all lines are revealed */}
-      {showChoiceButtons && (
-        <div className="px-5 pt-2 space-y-2">
-          <p className="text-[11px] text-slate-400 text-center mb-1">Deine Antwort:</p>
-          {choices!.map((c) => (
-            <button
-              key={c.id}
-              onClick={() => { if (nodeId && onAnswer) onAnswer(nodeId, c.id); }}
-              className="w-full text-left px-4 py-3 text-sm rounded-2xl border-2 transition-all hover:shadow-sm active:scale-[0.98] font-medium"
-              style={{ borderColor: primary, color: primary, background: `${primary}08`, borderRadius: br ?? '12px' }}
-            >
-              {c.text}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Input field – appears after all lines are revealed */}
-      {allLinesShown && hasInput && !inputSubmitted && (
-        <div className="px-5 pt-2">
-          <div className="flex gap-2 items-center">
-            <input
-              type="text"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleInputSubmit()}
-              placeholder={input?.placeholder ?? 'Deine Antwort…'}
-              className="flex-1 px-4 py-2.5 text-sm rounded-2xl border-2 bg-white outline-none transition-colors focus:border-violet-400"
-              style={{ borderColor: `${primary}40` }}
-              autoFocus
-            />
-            <button
-              onClick={handleInputSubmit}
-              disabled={!inputValue.trim()}
-              className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 disabled:opacity-40 transition-opacity"
-              style={{ background: primary }}
-            >
-              <ArrowRight size={16} className="text-white" />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* User's typed input shown as right bubble */}
-      {inputSubmitted && (
-        <div className="flex gap-3 px-5 flex-row-reverse" style={{ animation: 'fadeSlideIn 0.3s ease-out' }}>
-          <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 mt-auto text-white"
-            style={{ background: primary }}>
-            {(firstName || inputValue)?.charAt(0).toUpperCase() || 'I'}
-          </div>
-          <div className="max-w-[78%] items-end flex flex-col">
-            <p className="text-[11px] text-slate-400 mb-1">{firstName || 'Ich'}</p>
-            <div className="px-3 py-2.5 rounded-2xl text-sm leading-relaxed text-white" style={{ background: primary }}>
-              {existingInputAnswer ?? inputValue}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Typing indicator while waiting for follow-up after input */}
-      {inputSubmitted && !!input?.followUpText && !inputFollowUpVisible && (
-        <TypingIndicator primary={primary} />
-      )}
-
-      {/* Follow-up bubble after input submission */}
-      {inputFollowUpVisible && input?.followUpText && (
-        <div className="flex gap-3 px-5" style={{ animation: 'fadeSlideIn 0.3s ease-out' }}>
-          <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 mt-auto text-white"
-            style={{ background: primary }}>
-            {followUpSpeaker?.speaker?.charAt(0) || '?'}
-          </div>
-          <div className="max-w-[78%] flex flex-col">
-            <p className="text-[11px] text-slate-400 mb-1">{followUpSpeaker?.speaker || 'Sprecher'}</p>
-            <div className="bg-slate-100 px-3 py-2.5 rounded-2xl text-sm leading-relaxed text-slate-700">
-              {applyVars(input.followUpText, {
-                ...(capturedVars ?? {}),
-                firstName: firstName || '',
-                ...(input.captures && inputValue ? { [input.captures]: inputValue.trim() } : {}),
-              })}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
+export type { DialogLine } from './blocks/DialogBlock';
+export type { LeadForm } from './blocks/LeadFormBlock';
+export { emptyLead } from './blocks/LeadFormBlock';
 
 // ─── Spinner block (auto-advances after configurable duration) ────────────────
 function SpinnerBlock({ text, doneText, primary, onNext, duration }: {
@@ -293,276 +38,6 @@ function SpinnerBlock({ text, doneText, primary, onNext, duration }: {
           style={{ borderTopColor: primary }} />
       )}
       <p className="text-base font-medium text-slate-700">{done ? doneText : text}</p>
-    </div>
-  );
-}
-
-// ─── Hotspot block ────────────────────────────────────────────────────────────
-function HotspotBlock({ imageUrl, hotspots, requireAll, doneText, primary, br, nodeId, answers, onAnswer, onNext }: {
-  imageUrl: string;
-  hotspots: { id: string; x: number; y: number; label: string; description: string; icon?: string }[];
-  requireAll: boolean;
-  doneText: string;
-  primary: string;
-  br: string;
-  nodeId: string;
-  answers: Record<string, unknown>;
-  onAnswer: (id: string, val: unknown) => void;
-  onNext: () => void;
-}) {
-  const discovered = new Set<string>(((answers[nodeId] as string[] | undefined) ?? []));
-  const [activeId, setActiveId] = useState<string | null>(null);
-
-  function discover(id: string) {
-    const next = new Set(discovered);
-    next.add(id);
-    onAnswer(nodeId, Array.from(next));
-    setActiveId(id);
-  }
-
-  const activeSpot = hotspots.find((h) => h.id === activeId);
-  const allFound = hotspots.length > 0 && discovered.size >= hotspots.length;
-  const canContinue = !requireAll || allFound;
-
-  if (!imageUrl) {
-    return (
-      <div className="mx-4 my-3 flex flex-col items-center justify-center gap-2 py-10 bg-slate-50 rounded-xl border border-dashed border-slate-200 text-slate-400">
-        <MapPin size={24} />
-        <span className="text-sm">Kein Bild hochgeladen</span>
-      </div>
-    );
-  }
-
-  return (
-    <div className="mx-4 my-3 space-y-3">
-      {/* Image with hotspot pins */}
-      <div className="relative overflow-hidden rounded-xl" style={{ borderRadius: br }}>
-        <img src={imageUrl} alt="" className="w-full object-cover" style={{ maxHeight: 320, display: 'block' }} />
-
-        {hotspots.map((h) => {
-          const isFound = discovered.has(h.id);
-          const isActive = activeId === h.id;
-          const IconComp = isIconName(h.icon) ? DECISION_ICONS[h.icon] : null;
-          return (
-            <button
-              key={h.id}
-              onClick={() => discover(h.id)}
-              className="absolute focus:outline-none"
-              style={{ left: `${h.x}%`, top: `${h.y}%`, transform: 'translate(-50%, -50%)' }}
-              title={h.label}
-            >
-              {/* Pulse ring — only for undiscovered */}
-              {!isFound && (
-                <span
-                  className="absolute inset-0 rounded-full animate-ping opacity-60"
-                  style={{ background: primary }}
-                />
-              )}
-              <span
-                className="relative flex items-center justify-center w-9 h-9 rounded-full shadow-lg transition-all duration-200"
-                style={{
-                  background: isFound ? primary : '#fff',
-                  border: `2.5px solid ${primary}`,
-                  transform: isActive ? 'scale(1.15)' : 'scale(1)',
-                }}
-              >
-                {isFound
-                  ? <Check size={16} className="text-white" />
-                  : IconComp
-                    ? <IconComp size={16} style={{ color: primary }} />
-                    : <MapPin size={15} style={{ color: primary }} />
-                }
-              </span>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Progress indicator */}
-      {hotspots.length > 1 && (
-        <p className="text-xs text-slate-400 text-center">
-          {discovered.size} / {hotspots.length} entdeckt
-        </p>
-      )}
-
-      {/* Active hotspot info panel */}
-      {activeSpot && (
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-slate-100">
-          <div className="px-4 py-3.5 flex items-start gap-3">
-            <div
-              className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
-              style={{ background: `${primary}20` }}
-            >
-              {isIconName(activeSpot.icon)
-                ? (() => { const Ic = DECISION_ICONS[activeSpot.icon!]; return <Ic size={16} style={{ color: primary }} />; })()
-                : <MapPin size={14} style={{ color: primary }} />
-              }
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-slate-800 mb-0.5">{activeSpot.label}</p>
-              {activeSpot.description && (
-                <p className="text-sm text-slate-600 leading-relaxed">{activeSpot.description}</p>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Continue button */}
-      {canContinue && (
-        <button
-          onClick={onNext}
-          className="w-full fp-btn py-3 font-semibold text-sm flex items-center justify-center gap-2"
-          style={{ borderRadius: br, background: primary, color: '#fff' }}
-        >
-          {doneText}
-          <ArrowRight size={16} />
-        </button>
-      )}
-
-      {/* Hint when requireAll and not all found yet */}
-      {requireAll && !allFound && hotspots.length > 0 && (
-        <p className="text-xs text-slate-400 text-center">
-          Entdecke alle {hotspots.length} Punkte um fortzufahren
-        </p>
-      )}
-    </div>
-  );
-}
-
-// ─── Sort block ───────────────────────────────────────────────────────────────
-type SortItem = { id: string; text: string; correctIndex?: number };
-
-function SortBlock({ question, items: rawItems, showFeedback, feedbackText, shuffleItems, primary, br, nodeId, answers, onAnswer, onNext }: {
-  question: string;
-  items: SortItem[];
-  showFeedback: boolean;
-  feedbackText: string;
-  shuffleItems: boolean;
-  primary: string;
-  br: string;
-  nodeId: string;
-  answers: Record<string, unknown>;
-  onAnswer: (id: string, val: unknown) => void;
-  onNext: () => void;
-}) {
-  // On first render: shuffle if needed, then keep stable via answers state
-  const [order, setOrder] = useState<SortItem[]>(() => {
-    const saved = answers[nodeId] as string[] | undefined;
-    if (saved) {
-      return saved.map((id) => rawItems.find((it) => it.id === id)!).filter(Boolean);
-    }
-    const list = [...rawItems];
-    if (shuffleItems) {
-      for (let i = list.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [list[i], list[j]] = [list[j], list[i]];
-      }
-    }
-    return list;
-  });
-  const [confirmed, setConfirmed] = useState(answers[`${nodeId}_confirmed`] === true);
-  const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(
-    (answers[`${nodeId}_feedback`] as 'correct' | 'wrong' | null) ?? null,
-  );
-
-  function move(idx: number, dir: 'up' | 'down') {
-    if (confirmed) return;
-    const next = [...order];
-    const swap = dir === 'up' ? idx - 1 : idx + 1;
-    if (swap < 0 || swap >= next.length) return;
-    [next[idx], next[swap]] = [next[swap], next[idx]];
-    setOrder(next);
-  }
-
-  function confirm() {
-    const ids = order.map((it) => it.id);
-    onAnswer(nodeId, ids);
-
-    let fb: 'correct' | 'wrong' | null = null;
-    if (showFeedback) {
-      const itemsWithCorrect = rawItems.filter((it) => it.correctIndex !== undefined);
-      if (itemsWithCorrect.length > 0) {
-        const allCorrect = itemsWithCorrect.every((it) => order[it.correctIndex!]?.id === it.id);
-        fb = allCorrect ? 'correct' : 'wrong';
-      }
-    }
-    setFeedback(fb);
-    onAnswer(`${nodeId}_feedback`, fb);
-    setConfirmed(true);
-    onAnswer(`${nodeId}_confirmed`, true);
-  }
-
-  return (
-    <div className="mx-4 my-3 space-y-3">
-      <p className="fp-heading font-semibold text-base text-center px-1" dangerouslySetInnerHTML={{ __html: question }} />
-
-      <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-slate-100">
-        {order.map((item, i) => {
-          const isCorrect = feedback === 'correct' || (feedback === 'wrong' && showFeedback && item.correctIndex !== undefined && order[item.correctIndex]?.id === item.id);
-          const isWrong = feedback === 'wrong' && showFeedback && item.correctIndex !== undefined && order[item.correctIndex]?.id !== item.id;
-          return (
-            <div
-              key={item.id}
-              className={`flex items-center gap-3 px-4 py-3.5 border-b border-slate-50 last:border-0 transition-colors ${
-                isCorrect ? 'bg-emerald-50' : isWrong ? 'bg-red-50' : 'bg-white'
-              }`}
-            >
-              <GripVertical size={14} className="text-slate-300 flex-shrink-0" />
-              <span
-                className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0"
-                style={{ background: `${primary}20`, color: primary }}
-              >
-                {i + 1}
-              </span>
-              <span className="flex-1 text-sm text-slate-700">{item.text}</span>
-              {!confirmed && (
-                <div className="flex flex-col gap-0.5">
-                  <button onClick={() => move(i, 'up')} disabled={i === 0} className="text-slate-400 hover:text-slate-600 disabled:opacity-20 p-0.5">
-                    <ChevronUp size={14} />
-                  </button>
-                  <button onClick={() => move(i, 'down')} disabled={i === order.length - 1} className="text-slate-400 hover:text-slate-600 disabled:opacity-20 p-0.5">
-                    <ChevronDown size={14} />
-                  </button>
-                </div>
-              )}
-              {confirmed && isCorrect && <Check size={14} className="text-emerald-500 flex-shrink-0" />}
-              {confirmed && isWrong && <X size={14} className="text-red-400 flex-shrink-0" />}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Feedback banner */}
-      {confirmed && feedback === 'correct' && feedbackText && (
-        <div className="px-4 py-3 rounded-xl text-sm font-medium text-emerald-800 bg-emerald-50 border border-emerald-200 flex items-center gap-2">
-          <Check size={15} className="text-emerald-600 flex-shrink-0" />
-          {feedbackText}
-        </div>
-      )}
-      {confirmed && feedback === 'wrong' && (
-        <div className="px-4 py-3 rounded-xl text-sm text-slate-600 bg-slate-50 border border-slate-200">
-          Nicht ganz — schau dir die markierten Felder an.
-        </div>
-      )}
-
-      {!confirmed ? (
-        <button
-          onClick={confirm}
-          className="w-full fp-btn py-3 font-semibold text-sm"
-          style={{ borderRadius: br, background: primary, color: '#fff' }}
-        >
-          Reihenfolge bestätigen
-        </button>
-      ) : (
-        <button
-          onClick={onNext}
-          className="w-full fp-btn py-3 font-semibold text-sm flex items-center justify-center gap-2"
-          style={{ borderRadius: br, background: primary, color: '#fff' }}
-        >
-          Weiter <ArrowRight size={16} />
-        </button>
-      )}
     </div>
   );
 }
@@ -676,7 +151,6 @@ export function BlockRenderer({
   onDialogAdvance: (count: number) => void;
 }) {
   const p = node.props;
-  // Interpolation helper: substitutes all template variables
   const varsMap = {
     companyName:    company.name,
     datenschutzUrl: company.privacyUrl ?? '',
@@ -710,10 +184,10 @@ export function BlockRenderer({
       );
 
     case 'button': {
-      const url  = s(p.url);
-      const text = s(p.text);
-      const isSec = s(p.variant, 'primary') === 'secondary';
-      const cls  = isSec ? 'fp-btn-sec' : 'fp-btn';
+      const url    = s(p.url);
+      const text   = s(p.text);
+      const isSec  = s(p.variant, 'primary') === 'secondary';
+      const cls    = isSec ? 'fp-btn-sec' : 'fp-btn';
       const btnStyle = isSec
         ? { borderRadius: br, border: `2px solid ${primary}`, color: primary }
         : { borderRadius: br, background: primary, color: '#fff' };
@@ -737,16 +211,16 @@ export function BlockRenderer({
     }
 
     case 'image': {
-      const src = s(p.src);
+      const src      = s(p.src);
       if (!src) return null;
-      const imgSize = s(p.size, 'full');
-      const fit = s(p.objectFit, 'cover');
+      const imgSize  = s(p.size, 'full');
+      const fit      = s(p.objectFit, 'cover');
       const imgHeight = p.height as number | undefined;
-      const cropBox = p.cropBox as { left: number; top: number; right: number; bottom: number } | undefined;
+      const cropBox  = p.cropBox as { left: number; top: number; right: number; bottom: number } | undefined;
       const sizeClass: Record<string, string> = { full: 'w-full', l: 'max-w-lg mx-auto', m: 'max-w-sm mx-auto', s: 'max-w-xs mx-auto', xs: 'max-w-[128px] mx-auto' };
-      const wrapCls = sizeClass[imgSize] ?? 'w-full';
+      const wrapCls  = sizeClass[imgSize] ?? 'w-full';
       const containerStyle: React.CSSProperties = { ...(imgHeight ? { height: imgHeight } : {}), overflow: 'hidden', position: 'relative' };
-      const hasCrop = cropBox && (cropBox.left !== 0 || cropBox.top !== 0 || cropBox.right !== 100 || cropBox.bottom !== 100);
+      const hasCrop  = cropBox && (cropBox.left !== 0 || cropBox.top !== 0 || cropBox.right !== 100 || cropBox.bottom !== 100);
       return (
         <div>
           <div className={wrapCls} style={containerStyle}>
@@ -791,14 +265,13 @@ export function BlockRenderer({
 
     // ── Quest blocks ──────────────────────────────────────────────────────────
     case 'quest_scene': {
-      const imageUrl    = s(p.imageUrl);
-      const subtext     = s(p.subtext);
-      const accentText  = s(p.accentText);
+      const imageUrl     = s(p.imageUrl);
+      const subtext      = s(p.subtext);
+      const accentText   = s(p.accentText);
       const bulletPoints = (p.bulletPoints as string[]) || [];
       return (
         <div>
           {imageUrl ? (
-             
             <img src={imageUrl} alt="" className="w-full max-h-72 object-cover" />
           ) : (
             <div className="h-3" style={{ background: primary }} />
@@ -828,12 +301,11 @@ export function BlockRenderer({
     }
 
     case 'quest_dialog': {
-      const rawLines = (p.lines as DialogLine[]) || [];
-      const lines = rawLines.map((l) => ({ ...l, text: si(l.text), speaker: si(l.speaker) }));
-      const rawChoices = (p.choices as DialogChoice[]) || [];
-      const choices = rawChoices.map((c) => ({ ...c, text: si(c.text), reaction: c.reaction ? si(c.reaction) : undefined }));
-      const rawInput = p.input as DialogInput | undefined;
-      // followUpText is passed raw so DialogBlock can substitute the just-entered value at submit time
+      const rawLines  = (p.lines as DialogLine[]) || [];
+      const lines     = rawLines.map((l) => ({ ...l, text: si(l.text), speaker: si(l.speaker) }));
+      const rawChoices = ((p.choices as { id: string; text: string; reaction?: string }[]) ?? []);
+      const choices   = rawChoices.map((c) => ({ ...c, text: si(c.text), reaction: c.reaction ? si(c.reaction) : undefined }));
+      const rawInput  = p.input as { placeholder?: string; captures?: string; followUpText?: string } | undefined;
       return (
         <DialogBlock
           lines={lines}
@@ -865,11 +337,10 @@ export function BlockRenderer({
           <p className="fp-heading font-semibold text-base mb-4 px-1 text-center" dangerouslySetInnerHTML={{ __html: sh(inlineHtml(si(p.question))) }} />
 
           {hasEmojis ? (
-            /* ── Card grid layout with emojis ─────────────────────────────── */
             <div className={`grid gap-3 ${opts.length === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
               {opts.map((o) => {
                 const isSelected = selected === o.id;
-                const IconComp = isIconName(o.emoji) ? DECISION_ICONS[o.emoji] : null;
+                const IconComp   = isIconName(o.emoji) ? DECISION_ICONS[o.emoji] : null;
                 return (
                   <button
                     key={o.id}
@@ -892,7 +363,6 @@ export function BlockRenderer({
               })}
             </div>
           ) : (
-            /* ── Standard list layout ──────────────────────────────────────── */
             <div className="fp-card bg-white shadow-sm p-2 space-y-1.5">
               {opts.map((o) => {
                 const isSelected = selected === o.id;
@@ -909,7 +379,6 @@ export function BlockRenderer({
             </div>
           )}
 
-          {/* ── Prominent reaction feedback ─────────────────────────────── */}
           {selectedOpt?.reaction && (
             <div className="mt-4 bg-white rounded-xl shadow-sm overflow-hidden" style={{ borderLeft: `4px solid ${primary}` }}>
               <div className="px-4 py-4 flex items-start gap-3">
@@ -958,7 +427,6 @@ export function BlockRenderer({
             })}
           </div>
 
-          {/* Result banner */}
           {selectedOpt && (
             <div className={`mt-4 px-4 py-3.5 flex items-start gap-3 ${isCorrect ? 'bg-emerald-50' : 'bg-red-50'}`}
               style={{ borderRadius: br }}>
@@ -1053,11 +521,10 @@ export function BlockRenderer({
     }
 
     case 'quest_hotspot': {
-      const imageUrl = s(p.imageUrl);
-      const hotspots = (p.hotspots as { id: string; x: number; y: number; label: string; description: string; icon?: string }[]) || [];
+      const imageUrl  = s(p.imageUrl);
+      const hotspots  = (p.hotspots as { id: string; x: number; y: number; label: string; description: string; icon?: string }[]) || [];
       const requireAll = b(p.requireAll ?? true);
-      const doneText = s(p.doneText, 'Weiter erkunden');
-
+      const doneText  = s(p.doneText, 'Weiter erkunden');
       return (
         <HotspotBlock
           imageUrl={imageUrl}
@@ -1076,7 +543,7 @@ export function BlockRenderer({
 
     case 'quest_lead':
       return leadSubmitted
-        ? <CompletionScreen company={company} headline={s(p.headline, 'Vielen Dank!')} text={s(p.subtext)} primary={primary} />
+        ? <CompletionScreen company={company} headline={s(p.thankYouHeadline, 'Vielen Dank!')} text={s(p.thankYouText)} primary={primary} buttonText={s(p.thankYouButtonText)} buttonUrl={s(p.thankYouButtonUrl)} />
         : <LeadFormBlock props={p} company={company} br={br} primary={primary} leadForm={leadForm} setLeadForm={setLeadForm} onSubmit={(form, cf) => onLeadSubmit(form, cf)} />;
 
     // ── BerufsCheck blocks ────────────────────────────────────────────────────
@@ -1085,7 +552,6 @@ export function BlockRenderer({
       return (
         <div className="px-6 py-10 text-white text-center min-h-[320px] flex flex-col justify-center" style={{ background: primary }}>
           {!!imageUrl && (
-             
             <img src={imageUrl} alt="" className="w-full max-h-48 object-cover rounded-xl mb-4 opacity-90" />
           )}
           <h1 className="text-2xl font-bold mb-3 leading-tight" dangerouslySetInnerHTML={{ __html: sh(inlineHtml(s(p.headline))) }} />
@@ -1157,7 +623,7 @@ export function BlockRenderer({
 
     case 'check_lead':
       return leadSubmitted
-        ? <CompletionScreen company={company} headline={s(p.headline, 'Vielen Dank!')} text="" primary={primary} />
+        ? <CompletionScreen company={company} headline={s(p.thankYouHeadline, 'Vielen Dank!')} text={s(p.thankYouText)} primary={primary} buttonText={s(p.thankYouButtonText)} buttonUrl={s(p.thankYouButtonUrl)} />
         : <LeadFormBlock props={p} company={company} br={br} primary={primary} leadForm={leadForm} setLeadForm={setLeadForm} onSubmit={(form) => onLeadSubmit(form)} />;
 
     case 'check_ergebnis': {
@@ -1208,7 +674,6 @@ export function BlockRenderer({
       return (
         <div className="relative min-h-[320px] flex items-center justify-center text-center overflow-hidden" style={{ background: primary }}>
           {!!imageUrl && (
-             
             <img src={imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover opacity-30" />
           )}
           <div className="relative z-10 px-8 py-12">
@@ -1238,7 +703,6 @@ export function BlockRenderer({
       const imageUrl = s(p.imageUrl);
       return imageUrl ? (
         <div>
-          { }
           <img src={imageUrl} alt="" className="w-full" />
           {b(p.caption) && <p className="text-xs text-slate-400 text-center px-4 pt-1">{s(p.caption)}</p>}
         </div>
@@ -1262,7 +726,6 @@ export function BlockRenderer({
                   onChange={(e) => {
                     const newData = { ...stepData, [f.id]: e.target.value };
                     onAnswer(node.id, newData);
-                    // Mirror email/name/phone into leadForm for final submission
                     if (f.type === 'email') setLeadForm({ ...leadForm, email: e.target.value });
                     else if (f.label.toLowerCase().includes('vorname') || f.label.toLowerCase().includes('name')) {
                       setLeadForm({ ...leadForm, firstName: e.target.value });
@@ -1280,9 +743,8 @@ export function BlockRenderer({
     }
 
     case 'form_config':
-      // reuse the generic lead form block so styling matches quest/check
       return leadSubmitted
-        ? <CompletionScreen company={company} headline={s(p.thankYouHeadline, 'Vielen Dank!')} text={s(p.thankYouText)} primary={primary} />
+        ? <CompletionScreen company={company} headline={s(p.thankYouHeadline, 'Vielen Dank!')} text={s(p.thankYouText)} primary={primary} buttonText={s(p.thankYouButtonText)} buttonUrl={s(p.thankYouButtonUrl)} />
         : <LeadFormBlock
             props={p}
             company={company}
@@ -1298,136 +760,10 @@ export function BlockRenderer({
   }
 }
 
-// ─── Lead form block (check_lead / quest_lead) ────────────────────────────────
-function LeadFormBlock({ props: p, company, br, primary, leadForm, setLeadForm, onSubmit }: {
-  props: Record<string, unknown>; company: Company; br: string; primary: string;
-  leadForm: LeadForm; setLeadForm: (f: LeadForm) => void;
-  onSubmit: (form: LeadForm, customFields?: Record<string, string>) => void;
-}) {
-  const u = (partial: Partial<LeadForm>) => setLeadForm({ ...leadForm, ...partial });
-  const fieldDefs = (p.fields as LeadFieldDef[]) ?? [];
-  const useFields = fieldDefs.length > 0;
-  const [vals, setVals] = useState<Record<string, string>>({});
-  const varsMap = {
-    companyName:    company.name,
-    datenschutzUrl: company.privacyUrl ?? '',
-    impressumUrl:   company.imprintUrl ?? '',
-  };
-  const setVal = (id: string, val: string) => setVals((prev) => ({ ...prev, [id]: val }));
-
-  const emailField = fieldDefs.find((f) => f.type === 'email');
-  const emailValue = useFields ? (emailField ? (vals[emailField.id] ?? '') : '') : leadForm.email;
-  const requiredCheckboxesMet = useFields
-    ? fieldDefs.filter((f) => f.type === 'checkbox' && f.required).every((f) => vals[f.id] === 'true')
-    : leadForm.gdpr;
-  const canSubmit = emailValue.includes('@') && requiredCheckboxesMet;
-
-  const inputCls = 'w-full px-3 py-2.5 border-2 border-slate-200 text-sm focus:outline-none';
-
-  function handleSubmit() {
-    const finalForm: LeadForm = { ...leadForm };
-    if (useFields) {
-      if (emailField) finalForm.email = vals[emailField.id] ?? '';
-      const textFields = fieldDefs.filter((f) => f.type === 'text');
-      if (textFields[0]) finalForm.firstName = vals[textFields[0].id] ?? '';
-      if (textFields[1]) finalForm.lastName = vals[textFields[1].id] ?? '';
-      const telField = fieldDefs.find((f) => f.type === 'tel');
-      if (telField) finalForm.phone = vals[telField.id] ?? '';
-      finalForm.gdpr = true; // required checkboxes already verified by canSubmit
-      onSubmit(finalForm, vals);
-    } else {
-      onSubmit(leadForm);
-    }
-  }
-
-  return (
-    <div className="fp-card bg-white shadow-sm mx-4 my-3 p-6">
-      <h2 className="fp-heading text-xl font-bold mb-1">{s(p.headline)}</h2>
-      {b(p.subtext) && <p className="text-slate-500 text-sm mb-4">{s(p.subtext)}</p>}
-      <div className="space-y-3 mt-3">
-        {useFields ? (
-          fieldDefs.map((f) => {
-            if (f.type === 'checkbox') {
-              return (
-                <label key={f.id} className="flex items-start gap-3 cursor-pointer">
-                  <input type="checkbox" checked={!!(vals[f.id])}
-                    onChange={(e) => setVal(f.id, e.target.checked ? 'true' : '')}
-                    className="fp-check mt-0.5 flex-shrink-0" />
-                  <span
-                    className="text-xs text-slate-500 leading-relaxed [&_a]:underline [&_a]:hover:text-slate-700"
-                    dangerouslySetInnerHTML={{ __html: sh(applyVars(f.label, varsMap)) + (f.required ? ' *' : '') }}
-                  />
-                </label>
-              );
-            }
-            if (f.type === 'textarea') {
-              return (
-                <textarea key={f.id} placeholder={f.placeholder ?? f.label}
-                  value={vals[f.id] ?? ''} onChange={(e) => setVal(f.id, e.target.value)}
-                  rows={3} className={`${inputCls} resize-none`} style={{ borderRadius: br }} />
-              );
-            }
-            if (f.type === 'select') {
-              const opts = (f.options ?? []).filter(Boolean);
-              return (
-                <select key={f.id} value={vals[f.id] ?? ''}
-                  onChange={(e) => setVal(f.id, e.target.value)}
-                  className={inputCls} style={{ borderRadius: br }}>
-                  <option value="">{f.placeholder ?? f.label}{f.required ? ' *' : ''}</option>
-                  {opts.map((o, i) => <option key={i} value={o}>{o}</option>)}
-                </select>
-              );
-            }
-            return (
-              <input key={f.id} type={f.type} placeholder={(f.placeholder ?? f.label) + (f.required ? ' *' : '')}
-                value={vals[f.id] ?? ''} onChange={(e) => setVal(f.id, e.target.value)}
-                className={inputCls} style={{ borderRadius: br }} />
-            );
-          })
-        ) : (
-          <>
-            {b(p.showName) && (
-              <div className="grid grid-cols-2 gap-3">
-                <input type="text" placeholder="Vorname" value={leadForm.firstName} onChange={(e) => u({ firstName: e.target.value })}
-                  className={inputCls} style={{ borderRadius: br }} />
-                <input type="text" placeholder="Nachname" value={leadForm.lastName} onChange={(e) => u({ lastName: e.target.value })}
-                  className={inputCls} style={{ borderRadius: br }} />
-              </div>
-            )}
-            <input type="email" placeholder="E-Mail-Adresse *" value={leadForm.email} onChange={(e) => u({ email: e.target.value })}
-              className={inputCls} style={{ borderRadius: br }} />
-            {b(p.showPhone) && (
-              <input type="tel" placeholder="Telefonnummer" value={leadForm.phone} onChange={(e) => u({ phone: e.target.value })}
-                className={inputCls} style={{ borderRadius: br }} />
-            )}
-          </>
-        )}
-        {/* Legacy: hardcoded GDPR checkbox for forms without a fields array */}
-        {!useFields && (
-          <label className="flex items-start gap-3 cursor-pointer">
-            <input type="checkbox" checked={leadForm.gdpr} onChange={(e) => u({ gdpr: e.target.checked })} className="fp-check mt-0.5 flex-shrink-0" />
-            <span className="text-xs text-slate-500 leading-relaxed">
-              {applyVars(s(p.privacyText, 'Ich stimme zu, dass @companyName meine Daten verarbeitet.'), { companyName: company.name })}
-              {company.privacyUrl && (
-                <> <a href={company.privacyUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-slate-700">Datenschutzerklärung</a></>
-              )}
-              {' '}*
-            </span>
-          </label>
-        )}
-      </div>
-      <button onClick={handleSubmit} disabled={!canSubmit}
-        className="fp-btn w-full mt-4 py-3.5 font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-        style={{ borderRadius: br, background: primary, color: '#fff' }}>
-        {s(p.buttonText, 'Abschicken')}
-      </button>
-    </div>
-  );
-}
-
 // ─── Completion / Thank you screen ────────────────────────────────────────────
-export function CompletionScreen({ company, headline, text, primary }: {
+export function CompletionScreen({ company, headline, text, primary, buttonText, buttonUrl }: {
   company: Company; headline: string; text: string; primary: string;
+  buttonText?: string; buttonUrl?: string;
 }) {
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] px-8 text-center">
@@ -1436,9 +772,19 @@ export function CompletionScreen({ company, headline, text, primary }: {
       </div>
       <h2 className="fp-heading text-2xl font-bold mb-3">{headline}</h2>
       {text && <p className="text-slate-500 text-base leading-relaxed max-w-xs">{text}</p>}
+      {buttonText && buttonUrl && (
+        <a
+          href={buttonUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-5 inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm text-white"
+          style={{ background: primary }}
+        >
+          {buttonText} →
+        </a>
+      )}
       <div className="mt-8 flex items-center gap-2 text-slate-400 text-xs">
         {company.logo
-           
           ? <img src={company.logo} alt="" className="h-5 w-5 rounded object-contain" />
           : <div className="w-5 h-5 rounded flex items-center justify-center text-white text-[10px] font-bold" style={{ background: primary }}>{company.name.charAt(0)}</div>}
         <span>{company.name}</span>

@@ -26,15 +26,6 @@ export default function AuthCallbackPage() {
     const code = searchParams.get('code');
     const hash = window.location.hash;
 
-    // Debug — visible in browser devtools console
-    console.log('[auth/callback] URL debug', {
-      href: window.location.href,
-      search: window.location.search,
-      hash,
-      code,
-      hasHashToken: hash.includes('access_token'),
-    });
-
     const hasCode = !!code;
     const hasHashToken = hash.includes('access_token');
 
@@ -49,8 +40,7 @@ export default function AuthCallbackPage() {
     // For PKCE (?code=), the Supabase client auto-exchanges the code when initialized.
     // For implicit (#access_token=), the client auto-detects and fires PASSWORD_RECOVERY.
     // We listen to the resulting event instead of manually calling exchangeCodeForSession.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('[auth/callback] onAuthStateChange', { event, hasSession: !!session });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, _session) => {
       if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
         subscription.unsubscribe();
         clearTimeout(timer);
@@ -64,7 +54,6 @@ export default function AuthCallbackPage() {
 
     // Fallback: session may already be set if client processed URL synchronously
     supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('[auth/callback] getSession result', { hasSession: !!session });
       if (session) {
         subscription.unsubscribe();
         clearTimeout(timer);
@@ -77,11 +66,9 @@ export default function AuthCallbackPage() {
       const hashParams = new URLSearchParams(hash.replace(/^#/, ''));
       const accessToken = hashParams.get('access_token');
       const refreshToken = hashParams.get('refresh_token');
-      console.log('[auth/callback] Trying manual setSession from hash', { hasAccessToken: !!accessToken, hasRefreshToken: !!refreshToken });
       if (accessToken && refreshToken) {
         supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken })
           .then(({ data, error }) => {
-            console.log('[auth/callback] setSession result', { hasSession: !!data.session, error: error?.message });
             if (data.session && !error) {
               subscription.unsubscribe();
               clearTimeout(timer);
