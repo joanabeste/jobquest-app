@@ -41,77 +41,59 @@ export async function POST(req: NextRequest) {
   const origin = req.headers.get('origin') || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
   const redirectTo = `${origin}/accept-invite`;
 
-  // Generate invite link without Supabase sending the email
-  type LinkResult = { user: { id: string }; properties: { action_link: string } };
-  let linkData: LinkResult | null = null;
+  // ── Step 1: Ensure auth user exists (without triggering Supabase auto-emails) ──
+  // Try createUser first (no email sent). If user already exists, find and reuse them.
+  let userId: string;
 
-  const { data: genData, error: linkError } = await admin.auth.admin.generateLink({
-    type: 'invite',
-    email,
+  const { data: newUser, error: createErr } = await admin.auth.admin.createUser({
+    email: email.toLowerCase(),
+    email_confirm: true, // auto-confirm, no confirmation email
+  });
+
+  if (newUser?.user) {
+    userId = newUser.user.id;
+    console.log(`[invite] Created new auth user ${userId}`);
+  } else {
+    // User already exists in auth — find their ID
+    console.log(`[invite] createUser failed (${createErr?.message}), looking up existing user`);
+    const { data: listData } = await admin.auth.admin.listUsers({ perPage: 1000 });
+    const existing = listData?.users?.find((u) => u.email === email.toLowerCase());
+    if (!existing) {
+      console.error(`[invite] Could not find or create auth user for ${email}`);
+      return NextResponse.json({ error: 'Einladung fehlgeschlagen: Auth-User konnte nicht erstellt werden.' }, { status: 500 });
+    }
+    userId = existing.id;
+    console.log(`[invite] Reusing existing auth user ${userId}`);
+  }
+
+  // ── Step 2: Generate a magic link for the user (no email sent by Supabase) ──
+  const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
+    type: 'magiclink',
+    email: email.toLowerCase(),
     options: { redirectTo },
   });
 
-  if (genData?.user) {
-    linkData = genData as unknown as LinkResult;
-  } else if (linkError) {
-    const msg = linkError.message ?? '';
-    console.log(`[invite] generateLink failed: ${msg} — checking for orphaned auth user`);
-
-    // User exists in auth but not in workspace_members (e.g. previously deleted member)
-    // → Delete the orphaned auth user and retry with a fresh invite
-    if (msg.includes('already') || msg.includes('exist')) {
-      // Query auth.users directly via SQL to avoid listUsers pagination issues
-      const { data: authRow } = await admin.rpc('get_auth_user_by_email', { lookup_email: email.toLowerCase() }).single();
-
-      // Fallback: try listUsers with high perPage if RPC doesn't exist
-      let orphanId: string | null = (authRow as { id?: string } | null)?.id ?? null;
-      if (!orphanId) {
-        const { data: listData } = await admin.auth.admin.listUsers({ perPage: 1000 });
-        const found = listData?.users?.find((u) => u.email === email.toLowerCase());
-        orphanId = found?.id ?? null;
-      }
-
-      if (orphanId) {
-        console.log(`[invite] Deleting orphaned auth user ${orphanId}`);
-        const { error: deleteErr } = await admin.auth.admin.deleteUser(orphanId);
-        if (deleteErr) {
-          console.error(`[invite] Failed to delete orphaned auth user:`, deleteErr);
-        } else {
-          const { data: retryData, error: retryErr } = await admin.auth.admin.generateLink({
-            type: 'invite',
-            email,
-            options: { redirectTo },
-          });
-          if (retryData?.user) {
-            linkData = retryData as unknown as LinkResult;
-            console.log(`[invite] Retry succeeded — fresh invite created`);
-          } else {
-            console.error(`[invite] Retry generateLink failed:`, retryErr);
-          }
-        }
-      } else {
-        console.error(`[invite] Could not find orphaned auth user for ${email}`);
-      }
-    }
-
-    if (!linkData) {
-      console.error('[invite] generateLink ultimately failed:', linkError);
-      return NextResponse.json({ error: `Einladung fehlgeschlagen: ${msg || 'Unbekannter Fehler'}` }, { status: 500 });
-    }
+  if (!linkData?.properties?.action_link) {
+    console.error(`[invite] generateLink failed:`, linkErr);
+    return NextResponse.json({ error: `Einladung fehlgeschlagen: ${linkErr?.message ?? 'Link konnte nicht erstellt werden.'}` }, { status: 500 });
   }
 
-  if (!linkData) {
-    return NextResponse.json({ error: 'Einladung fehlgeschlagen.' }, { status: 500 });
-  }
+  // Fix redirect_to in the link (Supabase often ignores the redirectTo option)
+  const rawLink = linkData.properties.action_link;
+  const linkUrl = new URL(rawLink);
+  linkUrl.searchParams.set('redirect_to', redirectTo);
+  const inviteLink = linkUrl.toString();
+  console.log(`[invite] Link: ${inviteLink}`);
 
+  // ── Step 3: Create workspace member ──
   const { data, error } = await admin
     .from('workspace_members')
     .upsert(
       {
-        id: linkData.user.id,
+        id: userId,
         company_id: session.company.id,
         name,
-        email,
+        email: email.toLowerCase(),
         role,
         invited_by: session.member.id,
         status: 'pending',
@@ -123,18 +105,11 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (error) {
-    await admin.auth.admin.deleteUser(linkData.user.id);
     console.error('[invite] member upsert', error);
     return NextResponse.json({ error: `Einladung fehlgeschlagen: ${error.message}` }, { status: 500 });
   }
 
-  // Fix redirect_to in the action link (Supabase sometimes ignores the redirectTo option)
-  const rawLink = linkData.properties.action_link;
-  const linkUrl = new URL(rawLink);
-  linkUrl.searchParams.set('redirect_to', redirectTo);
-  const inviteLink = linkUrl.toString();
-  console.log(`[invite] action_link redirect fixed: ${rawLink} → ${inviteLink}`);
-
+  // ── Step 4: Send invite email via our own SMTP ──
   let emailSent = false;
   try {
     await sendInviteEmail({
@@ -144,6 +119,7 @@ export async function POST(req: NextRequest) {
       inviteLink,
     });
     emailSent = true;
+    console.log(`[invite] Email sent to ${email}`);
   } catch (mailErr) {
     console.error('[invite] E-Mail-Versand fehlgeschlagen:', mailErr);
   }
