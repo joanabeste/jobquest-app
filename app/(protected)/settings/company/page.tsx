@@ -23,6 +23,8 @@ export default function SettingsCompanyPage() {
   const { company, updateCompany, can } = useAuth();
   const router = useRouter();
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   const [cropSrc, setCropSrc] = useState<string | null>(null);
 
   useEffect(() => {
@@ -96,12 +98,20 @@ export default function SettingsCompanyPage() {
     e.target.value = '';
   }
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!company) return;
-    updateCompany({ ...company, name: form.name, industry: form.industry, location: form.location, logo: form.logo || undefined, privacyUrl: form.privacyUrl, imprintUrl: form.imprintUrl, careerPageUrl: form.careerPageUrl || undefined, corporateDesign: design, successPage });
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+    setSaving(true);
+    setSaveError(null);
+    try {
+      await updateCompany({ ...company, name: form.name, industry: form.industry, location: form.location, logo: form.logo || undefined, privacyUrl: form.privacyUrl, imprintUrl: form.imprintUrl, careerPageUrl: form.careerPageUrl || undefined, corporateDesign: design, successPage });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Speichern fehlgeschlagen. Bitte versuche es erneut.');
+    } finally {
+      setSaving(false);
+    }
   }
 
   if (!company) return null;
@@ -496,16 +506,24 @@ export default function SettingsCompanyPage() {
           </div>
         )}
 
-        <div className="mt-6 flex items-center gap-3">
-          <button type="submit" className="btn-primary" style={{ backgroundColor: design.primaryColor }}>
-            <Save size={16} />
-            Änderungen speichern
-          </button>
-          {saved && (
-            <span className="flex items-center gap-1.5 text-sm text-green-600 font-medium">
-              <CheckCircle size={16} />
-              Gespeichert!
-            </span>
+        <div className="mt-6 space-y-3">
+          <div className="flex items-center gap-3">
+            <button type="submit" disabled={saving} className="btn-primary disabled:opacity-60" style={{ backgroundColor: design.primaryColor }}>
+              <Save size={16} />
+              {saving ? 'Speichern…' : 'Änderungen speichern'}
+            </button>
+            {saved && (
+              <span className="flex items-center gap-1.5 text-sm text-green-600 font-medium">
+                <CheckCircle size={16} />
+                Gespeichert!
+              </span>
+            )}
+          </div>
+          {saveError && (
+            <div className="flex items-start gap-2 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+              <span className="flex-shrink-0 mt-0.5">⚠️</span>
+              <span>{saveError}</span>
+            </div>
           )}
         </div>
       </form>
