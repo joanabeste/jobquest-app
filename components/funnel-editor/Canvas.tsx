@@ -116,7 +116,7 @@ export default function Canvas({
       </div>
 
       {/* Page container – white, looks like the live output */}
-      <div className="max-w-[480px] mx-auto mb-10 rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.10)] overflow-hidden min-h-[200px] ring-1 ring-black/6">
+      <div className="max-w-[480px] mx-auto mb-6 rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.10)] overflow-hidden ring-1 ring-black/6">
         <div className="bg-white">
           <DndContext
             sensors={sensors}

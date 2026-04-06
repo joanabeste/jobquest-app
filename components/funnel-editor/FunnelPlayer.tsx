@@ -183,7 +183,7 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
   };
 
   return (
-    <div className="fp-root min-h-screen bg-slate-50">
+    <div className="fp-root min-h-[100dvh] bg-slate-50">
       <style>{css}{`
         @keyframes fadeSlideIn {
           from { opacity: 0; transform: translateY(6px); }
@@ -257,7 +257,7 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
       )}
 
       {/* ── Content ────────────────────────────────────────────────────────── */}
-      <main className="max-w-lg mx-auto w-full pb-28">
+      <main className="max-w-lg mx-auto w-full pb-24">
         {completed ? (
           <CompletionScreen
             company={company}
