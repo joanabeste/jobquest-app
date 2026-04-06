@@ -5,7 +5,7 @@ import {
   Type, AlignLeft, MousePointer2, ImageIcon, Minus, Video,
   Play, MessageSquare, GitBranch, HelpCircle, Info, FileText,
   User, Sliders, List, CheckSquare, Phone, Trophy,
-  Layout, Zap, FileDown, Send, Star, Timer, MapPin, ArrowUpDown,
+  Layout, Zap, FileDown, Send, Star, Timer, MapPin, ArrowLeftRight,
   Copy, Trash2,
 } from 'lucide-react';
 import { BlockNode, FunnelBlockType, LayoutNode, FunnelNode, BLOCK_LABELS, FunnelStyle } from '@/lib/funnel-types';
@@ -29,7 +29,7 @@ const BLOCK_META: Record<FunnelBlockType, { icon: React.ElementType; color: stri
   quest_spinner:       { icon: Timer,         color: 'text-slate-600',   bg: 'bg-slate-100' },
   quest_rating:        { icon: Star,          color: 'text-amber-500',   bg: 'bg-amber-50' },
   quest_hotspot:       { icon: MapPin,        color: 'text-rose-500',    bg: 'bg-rose-50' },
-  quest_sort:          { icon: ArrowUpDown,   color: 'text-indigo-500',  bg: 'bg-indigo-50' },
+  quest_zuordnung:     { icon: ArrowLeftRight, color: 'text-teal-500',   bg: 'bg-teal-50' },
   check_intro:         { icon: Zap,           color: 'text-violet-600',  bg: 'bg-violet-50' },
   check_vorname:       { icon: User,          color: 'text-blue-600',    bg: 'bg-blue-50' },
   check_frage:         { icon: HelpCircle,    color: 'text-amber-600',   bg: 'bg-amber-50' },

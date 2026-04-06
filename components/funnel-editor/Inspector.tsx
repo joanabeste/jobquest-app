@@ -18,7 +18,7 @@ import { QuizEditor } from './inspectors/QuizEditor';
 import { FrageEditor, ErgebnisfrageEditor } from './inspectors/FrageEditor';
 import { FormStepEditor } from './inspectors/FormStepEditor';
 import { HotspotEditor } from './inspectors/HotspotEditor';
-import { SortEditor } from './inspectors/SortEditor';
+import { ZuordnungEditor } from './inspectors/ZuordnungEditor';
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -305,8 +305,8 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars }: {
     case 'quest_hotspot':
       return <HotspotEditor props={props} onChange={onChange} variables={availableVars} />;
 
-    case 'quest_sort':
-      return <SortEditor props={props} onChange={onChange} variables={availableVars} />;
+    case 'quest_zuordnung':
+      return <ZuordnungEditor props={props} onChange={onChange} variables={availableVars} />;
 
     case 'quest_info':
       return (

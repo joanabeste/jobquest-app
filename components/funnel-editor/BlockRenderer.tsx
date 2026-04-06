@@ -9,12 +9,41 @@ import { DECISION_ICONS, isIconName } from '@/lib/decision-icons';
 import { s, n, b, sh, inlineHtml } from './blocks/helpers';
 import DialogBlock, { type DialogLine } from './blocks/DialogBlock';
 import HotspotBlock from './blocks/HotspotBlock';
-import SortBlock, { type SortItem } from './blocks/SortBlock';
+import ZuordnungBlock, { type ZuordnungPair } from './blocks/ZuordnungBlock';
 import LeadFormBlock, { LeadForm } from './blocks/LeadFormBlock';
 
 export type { DialogLine } from './blocks/DialogBlock';
 export type { LeadForm } from './blocks/LeadFormBlock';
 export { emptyLead } from './blocks/LeadFormBlock';
+
+// ─── Cropped image ────────────────────────────────────────────────────────────
+type CropBox = { left: number; top: number; right: number; bottom: number };
+
+function CroppedImage({ src, alt, cropBox, height }: { src: string; alt: string; cropBox: CropBox; height?: number }) {
+  const [aspectRatio, setAspectRatio] = useState<number | null>(null);
+  const cW = cropBox.right - cropBox.left;
+  const cH = cropBox.bottom - cropBox.top;
+  return (
+    <div style={{
+      position: 'relative', overflow: 'hidden', width: '100%',
+      ...(height ? { height } : aspectRatio ? { aspectRatio: String(aspectRatio) } : { minHeight: 120 }),
+    }}>
+      <img
+        src={src} alt={alt}
+        onLoad={(e) => {
+          const img = e.currentTarget;
+          setAspectRatio((img.naturalWidth / img.naturalHeight) * (cW / cH));
+        }}
+        style={{
+          position: 'absolute',
+          width: `${10000 / cW}%`, height: `${10000 / cH}%`,
+          left: `${-100 * cropBox.left / cW}%`, top: `${-100 * cropBox.top / cH}%`,
+          display: 'block', objectFit: 'cover',
+        }}
+      />
+    </div>
+  );
+}
 
 // ─── Spinner block (auto-advances after configurable duration) ────────────────
 function SpinnerBlock({ text, doneText, primary, onNext, duration }: {
@@ -219,23 +248,14 @@ export function BlockRenderer({
       const cropBox  = p.cropBox as { left: number; top: number; right: number; bottom: number } | undefined;
       const sizeClass: Record<string, string> = { full: 'w-full', l: 'max-w-lg mx-auto', m: 'max-w-sm mx-auto', s: 'max-w-xs mx-auto', xs: 'max-w-[128px] mx-auto' };
       const wrapCls  = sizeClass[imgSize] ?? 'w-full';
-      const containerStyle: React.CSSProperties = { ...(imgHeight ? { height: imgHeight } : {}), overflow: 'hidden', position: 'relative' };
       const hasCrop  = cropBox && (cropBox.left !== 0 || cropBox.top !== 0 || cropBox.right !== 100 || cropBox.bottom !== 100);
       return (
         <div>
-          <div className={wrapCls} style={containerStyle}>
+          <div className={wrapCls}>
             {hasCrop ? (
-              <div style={{
-                position: 'absolute',
-                width: `${10000 / (cropBox!.right - cropBox!.left)}%`,
-                height: `${10000 / (cropBox!.bottom - cropBox!.top)}%`,
-                left: `${-100 * cropBox!.left / (cropBox!.right - cropBox!.left)}%`,
-                top: `${-100 * cropBox!.top / (cropBox!.bottom - cropBox!.top)}%`,
-              }}>
-                <img src={src} alt={s(p.alt)} style={{ width: '100%', height: '100%', display: 'block', objectFit: 'cover' }} />
-              </div>
+              <CroppedImage src={src} alt={s(p.alt)} cropBox={cropBox!} height={imgHeight} />
             ) : (
-              <img src={src} alt={s(p.alt)} className={fit === 'none' ? '' : `w-full h-full ${fit === 'cover' ? 'object-cover' : 'object-contain'}`} />
+              <img src={src} alt={s(p.alt)} className={fit === 'none' ? '' : `w-full ${fit === 'cover' ? 'object-cover' : 'object-contain'}`} style={imgHeight ? { height: imgHeight } : {}} />
             )}
           </div>
           {b(p.caption) && <p className="text-xs text-slate-400 text-center px-4 pt-1">{s(p.caption)}</p>}
@@ -501,15 +521,15 @@ export function BlockRenderer({
         />
       );
 
-    case 'quest_sort': {
-      const sortItems = (p.items as SortItem[]) || [];
+    case 'quest_zuordnung': {
+      const pairs = (p.pairs as ZuordnungPair[]) || [];
       return (
-        <SortBlock
+        <ZuordnungBlock
           question={si(p.question)}
-          items={sortItems}
-          showFeedback={b(p.showFeedback)}
-          feedbackText={s(p.feedbackText, 'Gut sortiert!')}
-          shuffleItems={b(p.shuffleItems ?? true)}
+          pairs={pairs}
+          shuffleRight={b(p.shuffleRight ?? true)}
+          showFeedback={b(p.showFeedback ?? true)}
+          feedbackText={s(p.feedbackText, 'Gut gemacht!')}
           primary={primary}
           br={br}
           nodeId={node.id}

@@ -133,7 +133,7 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
   const decisionBlock = blocks.find((bl) => bl.type === 'quest_decision');
   const quizBlock     = blocks.find((bl) => bl.type === 'quest_quiz');
   const ratingBlock   = blocks.find((bl) => bl.type === 'quest_rating');
-  const sortBlock     = blocks.find((bl) => bl.type === 'quest_sort');
+  const sortBlock     = blocks.find((bl) => bl.type === 'quest_zuordnung');
   const dialogBlock   = blocks.find((bl) => bl.type === 'quest_dialog');
   const dialogLines   = dialogBlock ? ((dialogBlock.props.lines as DialogLine[]) || []) : [];
   const dialogComplete = !dialogBlock || dialogVisible >= dialogLines.length;

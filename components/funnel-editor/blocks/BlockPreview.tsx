@@ -47,6 +47,35 @@ const FontSizeWeight = Extension.create({
 });
 
 // ─── Toolbar button ───────────────────────────────────────────────────────────
+// ─── Cropped image ────────────────────────────────────────────────────────────
+type CropBox = { left: number; top: number; right: number; bottom: number };
+
+function CroppedImage({ src, alt, cropBox, height }: { src: string; alt: string; cropBox: CropBox; height?: number }) {
+  const [aspectRatio, setAspectRatio] = useState<number | null>(null);
+  const cW = cropBox.right - cropBox.left;
+  const cH = cropBox.bottom - cropBox.top;
+  return (
+    <div style={{
+      position: 'relative', overflow: 'hidden', width: '100%',
+      ...(height ? { height } : aspectRatio ? { aspectRatio: String(aspectRatio) } : { minHeight: 120 }),
+    }}>
+      <img
+        src={src} alt={alt} draggable={false}
+        onLoad={(e) => {
+          const img = e.currentTarget;
+          setAspectRatio((img.naturalWidth / img.naturalHeight) * (cW / cH));
+        }}
+        style={{
+          position: 'absolute',
+          width: `${10000 / cW}%`, height: `${10000 / cH}%`,
+          left: `${-100 * cropBox.left / cW}%`, top: `${-100 * cropBox.top / cH}%`,
+          display: 'block', objectFit: 'cover',
+        }}
+      />
+    </div>
+  );
+}
+
 function ToolBtn({ active, onClick, title, children }: {
   active: boolean; onClick: () => void; title: string; children: React.ReactNode;
 }) {
@@ -413,24 +442,15 @@ export default function BlockPreview({ node, onUpdate }: {
       const cropBox   = p.cropBox as { left: number; top: number; right: number; bottom: number } | undefined;
       const sizeClass: Record<string, string> = { full: 'w-full', l: 'max-w-lg mx-auto', m: 'max-w-sm mx-auto', s: 'max-w-xs mx-auto', xs: 'max-w-[128px] mx-auto' };
       const wrapCls = sizeClass[imgSize] ?? 'w-full';
-      const containerStyle: React.CSSProperties = { ...(imgHeight ? { height: imgHeight } : {}), overflow: 'hidden', position: 'relative' };
       const hasCrop = cropBox && (cropBox.left !== 0 || cropBox.top !== 0 || cropBox.right !== 100 || cropBox.bottom !== 100);
       return (
         <div className="overflow-hidden">
           {p.src ? (
-            <div className={wrapCls} style={containerStyle}>
+            <div className={wrapCls}>
               {hasCrop ? (
-                <div style={{
-                  position: 'absolute',
-                  width: `${10000 / (cropBox!.right - cropBox!.left)}%`,
-                  height: `${10000 / (cropBox!.bottom - cropBox!.top)}%`,
-                  left: `${-100 * cropBox!.left / (cropBox!.right - cropBox!.left)}%`,
-                  top: `${-100 * cropBox!.top / (cropBox!.bottom - cropBox!.top)}%`,
-                }}>
-                  <img src={p.src as string} alt={(p.alt as string) || ''} style={{ width: '100%', height: '100%', display: 'block', objectFit: 'cover' }} draggable={false} />
-                </div>
+                <CroppedImage src={p.src as string} alt={(p.alt as string) || ''} cropBox={cropBox!} height={imgHeight} />
               ) : (
-                <img src={p.src as string} alt={(p.alt as string) || ''} className={fit === 'none' ? '' : `w-full h-full ${fit === 'cover' ? 'object-cover' : 'object-contain'}`} />
+                <img src={p.src as string} alt={(p.alt as string) || ''} className={fit === 'none' ? '' : `w-full ${fit === 'cover' ? 'object-cover' : 'object-contain'}`} style={imgHeight ? { height: imgHeight } : {}} draggable={false} />
               )}
             </div>
           ) : (
@@ -613,22 +633,29 @@ export default function BlockPreview({ node, onUpdate }: {
     case 'quest_hotspot':
       return <QuestHotspotPreview p={p} onUpdate={onUpdate} />;
 
-    case 'quest_sort': {
-      const items = (p.items as { id: string; text: string }[]) || [];
+    case 'quest_zuordnung': {
+      const pairs = (p.pairs as { id: string; left: string; right: string }[]) || [];
       return (
         <div className="mx-4 my-3">
-          <RichEd v={(p.question as string) ?? ''} up={up?.('question')} ph="Bringe die Elemente in die richtige Reihenfolge…" cl="fp-heading mb-3 block" />
-          <div className="bg-white border border-slate-200 rounded-xl shadow-sm divide-y divide-slate-100 overflow-hidden">
-            {items.map((item, i) => (
-              <div key={item.id} className="flex items-center gap-3 px-4 py-3">
-                <span className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-600 text-[10px] font-bold flex items-center justify-center flex-shrink-0">{i + 1}</span>
-                <span className="flex-1 text-sm text-slate-700">{item.text || `Element ${i + 1}`}</span>
-                <div className="flex flex-col gap-0.5 text-slate-300">
-                  <ChevronRight size={12} className="rotate-[-90deg]" />
-                  <ChevronRight size={12} className="rotate-90" />
+          <RichEd v={(p.question as string) ?? ''} up={up?.('question')} ph="Ordne die Begriffe zu…" cl="fp-heading mb-3 block" />
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1.5">
+              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider text-center mb-1">Begriffe</p>
+              {pairs.map((pair, i) => (
+                <div key={pair.id} className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-700 truncate">
+                  <span className="w-4 h-4 rounded-full bg-teal-100 text-teal-600 text-[9px] font-bold inline-flex items-center justify-center mr-1.5">{i + 1}</span>
+                  {pair.left || `Begriff ${i + 1}`}
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
+            <div className="space-y-1.5">
+              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider text-center mb-1">Erklärungen</p>
+              {pairs.map((pair, i) => (
+                <div key={pair.id} className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-500 truncate">
+                  {pair.right || `Erklärung ${i + 1}`}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       );

@@ -50,9 +50,9 @@ Seite  8: quest_scene     → Pfad B, Teil 1 – unmittelbare Konsequenz der Wah
 Seite  9: quest_dialog    → Pfad B, Teil 2 – Entwicklung Wahl B  (kein nextPageIndex)
 Seite 10: quest_scene     → ★ KONVERGENZ 1 – neutral, passt zu beiden Pfaden
 Seite 11: quest_quiz      → Quiz 1: Fachliches Wissen aus dem bisher Erlebten
-Seite 12: quest_info / quest_hotspot / quest_sort  → Typ je nach Story wählen:
+Seite 12: quest_info / quest_hotspot / quest_zuordnung  → Typ je nach Story wählen:
                           quest_hotspot: Ort, Raum oder Gerät in der Story → Nutzer erkundet ihn
-                          quest_sort: Ablauf oder Prozessschritte → Nutzer bringt sie in Reihenfolge
+                          quest_zuordnung: Begriffe/Konzepte → Nutzer ordnet sie den richtigen Erklärungen zu
                           quest_info: Überraschender Berufsfakt ohne Interaktion
 Seite 13: quest_decision  → BRANCHING 2 (Option A → nextPageIndex:14, Option B → nextPageIndex:16)
 Seite 14: quest_scene     → Pfad A, Teil 1 – Konsequenz der Wahl A
@@ -169,18 +169,17 @@ quest_hotspot
   → doneText: passend zur Situation, z.B. "Alles erkundet!" oder "Weiter erkunden".
   → Beispiel: "Erkunde die Intensivstation" mit Pins für Monitor, Medikamentenschrank, Pflegebett, Notrufanlage.
 
-quest_sort
-  Props: { question: string, items: [{ id: "UUID", text: string, correctIndex?: number }], showFeedback: boolean, feedbackText: string, shuffleItems: boolean }
-  → Nutzer bringt eine Liste von Elementen per ↑↓-Buttons in die richtige Reihenfolge.
-  → Ideal für: Handlungsabläufe, Prioritäten setzen, Prozessschritte kennenlernen.
-  → question: direkte Aufgabenstellung (z.B. "Bring die Schritte in die richtige Reihenfolge!").
-  → items: 4–6 Elemente. correctIndex (0-basiert) setzen wenn es eine richtige Reihenfolge gibt
-    (0 = das Element das an erster Stelle stehen soll, 1 = zweite Stelle, usw.).
-  → showFeedback: true wenn correctIndex gesetzt ist — dann erscheint nach Bestätigen grünes/rotes Feedback.
-  → feedbackText: positiv und informativ (z.B. "Genau! So läuft es in der Praxis ab.").
-  → shuffleItems: true (Standard – Items werden beim Laden zufällig gemischt).
-  → Beispiel: "Bring die Schritte der Patientenaufnahme in die richtige Reihenfolge"
-    Items: Empfang, Versicherungsprüfung, Erstanamnese, Arzt informieren, Bett zuweisen
+quest_zuordnung
+  Props: { question: string, pairs: [{ id: "UUID", left: string, right: string }], shuffleRight: boolean, showFeedback: boolean, feedbackText: string }
+  → Nutzer ordnet Begriffe (links) den richtigen Erklärungen/Werten (rechts) zu – per Klick/Tap, mobilfreundlich.
+  → Ideal für: Fachbegriffe erklären, Tools ↔ Einsatzgebiete, Aufgaben ↔ Abteilungen, Werte ↔ Bedeutungen.
+  → question: klare Aufgabenstellung (z.B. "Ordne die Werkzeuge dem richtigen Einsatzgebiet zu!").
+  → pairs: 3–6 Paare. left = Begriff/Kürzel, right = passende Erklärung/Definition.
+  → shuffleRight: true (rechte Seite wird beim Laden gemischt – Standard).
+  → showFeedback: true – zeigt nach Bestätigung grün/rot pro Paar.
+  → feedbackText: positiv, z.B. "Genau! Jetzt kennst du die wichtigsten Werkzeuge.".
+  → Beispiel: "Ordne die medizinischen Abkürzungen ihrer Bedeutung zu"
+    Paare: EKG ↔ Herzaktivität messen, MRT ↔ Schichtaufnahmen des Körpers, RR ↔ Blutdruckmessung
 
 quest_rating (⭐ – drittletzte Seite)
   Props: { question: "Wie war dein Arbeitstag?", emoji: "⭐", count: 5 }
@@ -231,10 +230,10 @@ INTERAKTIVITÄT & BLOCKVIELFALT:
 • Nutze die volle Bandbreite aller Block-Typen – nicht nur quest_scene und quest_dialog.
 • Vermeide mehrere gleichartige Blöcke direkt hintereinander (z.B. zwei quest_scene ohne Interaktion dazwischen).
 • Setze quest_hotspot ein wenn ein Ort, Raum oder Gerät in der Story auftaucht.
-• Setze quest_sort ein wenn Abläufe, Reihenfolgen oder Prioritäten thematisiert werden.
+• Setze quest_zuordnung ein wenn Fachbegriffe, Konzepte oder Werkzeuge erklärt werden sollen.
 • Die Quest soll sich wie ein interaktives Filmerlebnis anfühlen: Spannung, Wendungen, echte Charaktere.
 • Pflicht pro Quest: mindestens 3 × quest_decision, 2 × quest_quiz, 1 × quest_dialog mit choices,
-  und mindestens 1 × quest_sort ODER quest_hotspot (je nach Beruf und Storytelling).
+  und mindestens 1 × quest_zuordnung ODER quest_hotspot (je nach Beruf und Storytelling).
 
 SPRACHE & STIL:
 • Keine Großschreibung für ganze Wörter oder Sätze (kein ALL CAPS).
