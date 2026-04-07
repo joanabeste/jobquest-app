@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { X, Sparkles, Upload, Trash2 } from 'lucide-react';
 import { FunnelPage } from '@/lib/funnel-types';
 import type { MediaAsset } from '@/lib/types';
+import { compressImage } from '@/lib/image-compress';
 
 interface Props {
   onGenerate: (pages: FunnelPage[], title: string) => void;
@@ -34,8 +35,9 @@ export default function GenerateQuestModal({ onGenerate, onClose }: Props) {
     setUploadingImage(true);
     setError('');
     try {
+      const compressed = await compressImage(file);
       const fd = new FormData();
-      fd.append('file', file);
+      fd.append('file', compressed);
       const res = await fetch('/api/media', { method: 'POST', body: fd });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));

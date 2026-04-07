@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, Upload, Image as ImageIcon, Trash2, Check } from 'lucide-react';
 import type { MediaAsset } from '@/lib/types';
+import { compressImage } from '@/lib/image-compress';
 
 interface Props {
   open: boolean;
@@ -30,9 +31,10 @@ export default function MediaLibraryPicker({ open, onClose, onSelect }: Props) {
   async function handleUpload(file: File) {
     setError('');
     setUploading(true);
-    const fd = new FormData();
-    fd.append('file', file);
     try {
+      const compressed = await compressImage(file);
+      const fd = new FormData();
+      fd.append('file', compressed);
       const res = await fetch('/api/media', { method: 'POST', body: fd });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
