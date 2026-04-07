@@ -55,9 +55,12 @@ export default function EmailConfigModal({ initial, onSave, onClose, availableVa
   type TestState = { status: 'idle' | 'sending' | 'ok' | 'error'; message?: string; detail?: string };
   const [confirmTest, setConfirmTest] = useState<TestState>({ status: 'idle' });
   const [notifTest,   setNotifTest]   = useState<TestState>({ status: 'idle' });
+  const [confirmTestTo, setConfirmTestTo] = useState('');
+  const [notifTestTo,   setNotifTestTo]   = useState('');
 
   async function sendTest(kind: 'confirmation' | 'notification') {
     const setState = kind === 'confirmation' ? setConfirmTest : setNotifTest;
+    const to = (kind === 'confirmation' ? confirmTestTo : notifTestTo).trim();
     setState({ status: 'sending' });
     try {
       const res = await fetch('/api/test-email', {
@@ -65,8 +68,10 @@ export default function EmailConfigModal({ initial, onSave, onClose, availableVa
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           kind,
+          to: to || undefined,
           config: {
             ...cfg,
+            ...(kind === 'notification' && to ? { notificationRecipient: to } : null),
             confirmationAttachment: cfg.confirmationAttachment?.url ? cfg.confirmationAttachment : undefined,
           },
         }),
@@ -203,8 +208,10 @@ export default function EmailConfigModal({ initial, onSave, onClose, availableVa
                   />
                 </Field>
                 <TestEmailRow
-                  label="Test-E-Mail an dich selbst senden"
+                  label="Test-E-Mail senden"
                   state={confirmTest}
+                  to={confirmTestTo}
+                  onToChange={setConfirmTestTo}
                   onSend={() => sendTest('confirmation')}
                 />
               </div>
@@ -258,8 +265,11 @@ export default function EmailConfigModal({ initial, onSave, onClose, availableVa
                   )}
                 </Field>
                 <TestEmailRow
-                  label={`Test-E-Mail an ${cfg.notificationRecipient || 'Empfänger'} senden`}
+                  label="Test-E-Mail senden"
                   state={notifTest}
+                  to={notifTestTo}
+                  onToChange={setNotifTestTo}
+                  placeholder={cfg.notificationRecipient || 'empfaenger@firma.de'}
                   onSend={() => sendTest('notification')}
                 />
               </div>
@@ -331,23 +341,36 @@ function AttachmentField({
 
 // ─── Test-E-Mail Zeile ────────────────────────────────────────────────────────
 function TestEmailRow({
-  label, state, onSend,
+  label, state, to, onToChange, placeholder, onSend,
 }: {
   label: string;
   state: { status: 'idle' | 'sending' | 'ok' | 'error'; message?: string; detail?: string };
+  to: string;
+  onToChange: (v: string) => void;
+  placeholder?: string;
   onSend: () => void;
 }) {
   return (
-    <div className="space-y-1.5 pt-1 border-t border-slate-100">
-      <button
-        type="button"
-        onClick={onSend}
-        disabled={state.status === 'sending'}
-        className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-violet-50 text-violet-700 hover:bg-violet-100 disabled:opacity-50 transition-colors"
-      >
-        <Send size={12} className={state.status === 'sending' ? 'animate-pulse' : ''} />
-        {state.status === 'sending' ? 'Sende…' : label}
-      </button>
+    <div className="space-y-1.5 pt-2 border-t border-slate-100">
+      <label className="label">Empfänger der Test-E-Mail</label>
+      <div className="flex gap-2">
+        <input
+          type="email"
+          value={to}
+          onChange={(e) => onToChange(e.target.value)}
+          placeholder={placeholder ?? 'leer = an dich selbst'}
+          className="input-field flex-1"
+        />
+        <button
+          type="button"
+          onClick={onSend}
+          disabled={state.status === 'sending'}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-violet-50 text-violet-700 hover:bg-violet-100 disabled:opacity-50 transition-colors whitespace-nowrap"
+        >
+          <Send size={12} className={state.status === 'sending' ? 'animate-pulse' : ''} />
+          {state.status === 'sending' ? 'Sende…' : label}
+        </button>
+      </div>
       {state.status === 'ok' && (
         <div className="flex items-start gap-1.5 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-2.5 py-1.5">
           <CheckCircle2 size={13} className="flex-shrink-0 mt-0.5" />
