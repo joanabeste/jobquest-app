@@ -685,20 +685,22 @@ function LogoCropModal({ src, onConfirm, onCancel }: {
     const nh = img.naturalHeight;
     setNatW(nw);
     setNatH(nh);
-    const aspect = nw / nh;
-    const min = Math.max(aspect >= 1 ? aspect : 1 / aspect, 1);
-    setMinZoom(min);
-    setZoom(min);
+    // Min zoom = factor needed so the image fully covers the square preview
+    setMinZoom(1);
+    setZoom(1);
   }
 
   const aspect = natW && natH ? natW / natH : 1;
   let dw: number, dh: number;
+  // Cover behavior: at zoom=1 the smaller side equals PREVIEW so the square is fully covered
   if (aspect >= 1) {
-    dw = PREVIEW * zoom;
-    dh = dw / aspect;
-  } else {
+    // Wide: height = PREVIEW, width = larger
     dh = PREVIEW * zoom;
     dw = dh * aspect;
+  } else {
+    // Tall: width = PREVIEW, height = larger
+    dw = PREVIEW * zoom;
+    dh = dw / aspect;
   }
   const ovx = Math.max(0, dw - PREVIEW);
   const ovy = Math.max(0, dh - PREVIEW);
@@ -737,7 +739,7 @@ function LogoCropModal({ src, onConfirm, onCancel }: {
     onConfirm(canvas.toDataURL('image/png'));
   }
 
-  const maxZoom = Math.max(4, aspect >= 1 ? aspect * 2 : (1 / aspect) * 2);
+  const maxZoom = 4;
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"

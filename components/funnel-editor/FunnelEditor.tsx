@@ -291,7 +291,7 @@ function FunnelEditorInner({
     <>
     <div className="flex flex-col h-[calc(100vh-3.5rem)] bg-slate-50">
       {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <header className="h-[52px] flex items-center gap-2 px-3 bg-white border-b border-slate-200 flex-shrink-0 z-20">
+      <header className="h-[52px] flex items-center gap-2 px-3 bg-white border-b border-slate-200 flex-shrink-0 z-20 overflow-x-auto">
 
         {/* Back */}
         <button onClick={onBack} title="Zurück"
@@ -315,7 +315,7 @@ function FunnelEditorInner({
             if (e.key === 'Enter') { e.currentTarget.blur(); }
             if (e.key === 'Escape') { setDraftTitle(title); e.currentTarget.blur(); }
           }}
-          className="w-44 text-[13px] font-semibold text-slate-800 bg-transparent border-none outline-none hover:bg-slate-50 focus:bg-slate-100 rounded-lg px-2 py-1 transition-colors"
+          className="min-w-0 flex-shrink w-32 lg:w-44 text-[13px] font-semibold text-slate-800 bg-transparent border-none outline-none hover:bg-slate-50 focus:bg-slate-100 rounded-lg px-2 py-1 transition-colors"
         />
 
         <div className="w-px h-5 bg-slate-200 flex-shrink-0" />
