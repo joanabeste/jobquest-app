@@ -86,8 +86,34 @@ export default function ShowcasePage() {
   }
   if (!company) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <p className="text-slate-400 text-sm">Laden…</p>
+      <div className="min-h-screen bg-slate-50">
+        <header className="bg-white border-b border-slate-200">
+          <div className="max-w-5xl mx-auto px-4 md:px-6 py-6 flex items-center gap-4">
+            <div className="h-12 w-12 rounded-xl bg-slate-200 animate-pulse flex-shrink-0" />
+            <div className="flex-1 space-y-2">
+              <div className="h-3 w-16 rounded bg-slate-200 animate-pulse" />
+              <div className="h-4 w-40 rounded bg-slate-200 animate-pulse" />
+            </div>
+          </div>
+        </header>
+        <section className="max-w-5xl mx-auto px-4 md:px-6 pt-10 pb-6 text-center space-y-3">
+          <div className="h-8 sm:h-10 w-3/4 max-w-md mx-auto rounded bg-slate-200 animate-pulse" />
+          <div className="h-4 w-2/3 max-w-sm mx-auto rounded bg-slate-200 animate-pulse" />
+        </section>
+        <section className="max-w-5xl mx-auto px-4 md:px-6 pb-16">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
+                <div className="aspect-[16/10] bg-slate-100 animate-pulse" />
+                <div className="p-5 space-y-3">
+                  <div className="h-3 w-16 rounded bg-slate-200 animate-pulse" />
+                  <div className="h-5 w-3/4 rounded bg-slate-200 animate-pulse" />
+                  <div className="h-4 w-1/3 rounded bg-slate-100 animate-pulse mt-4" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
       </div>
     );
   }
