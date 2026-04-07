@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { X, Mail, Bell, Paperclip, ChevronDown, ChevronUp, Upload, FileText, Send, CheckCircle2, AlertCircle } from 'lucide-react';
+import { X, Mail, Bell, Paperclip, ChevronDown, ChevronUp, Upload, FileText, Send, CheckCircle2, AlertCircle, Info } from 'lucide-react';
 import type { EmailConfig, EmailAttachment } from '@/lib/funnel-types';
 import { VarInput } from './VarInput';
 import RichTextEditor from './RichTextEditor';
@@ -155,6 +155,14 @@ export default function EmailConfigModal({ initial, onSave, onClose, availableVa
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
 
+          {/* Info banner about variables */}
+          <div className="flex items-start gap-2 px-3 py-2 bg-violet-50 border border-violet-100 rounded-lg text-xs text-violet-800">
+            <Info size={13} className="flex-shrink-0 mt-0.5" />
+            <span>
+              Tippe <span className="font-mono font-semibold">@</span> in Betreff oder Nachricht, um eine Variable einzufügen. Verfügbar sind nur Felder, die in dieser JobQuest oder deinem Firmenprofil hinterlegt sind.
+            </span>
+          </div>
+
           {/* ── Bestätigungs-E-Mail ─────────────────────────────────────── */}
           <Section
             icon={<Mail className="w-4 h-4 text-violet-500" />}
@@ -174,7 +182,7 @@ export default function EmailConfigModal({ initial, onSave, onClose, availableVa
                   <VarInput
                     value={cfg.confirmationSubject}
                     onChange={(v) => patch({ confirmationSubject: v })}
-                    placeholder="Betreff – tippe @ für Variablen"
+                    placeholder="z. B. Danke für deine Bewerbung, @firstName!"
                     variables={availableVars}
                   />
                 </Field>
@@ -241,7 +249,7 @@ export default function EmailConfigModal({ initial, onSave, onClose, availableVa
                   <VarInput
                     value={cfg.notificationSubject}
                     onChange={(v) => patch({ notificationSubject: v })}
-                    placeholder="Betreff – tippe @ für Variablen"
+                    placeholder="z. B. Neuer Lead: @firstName @lastName"
                     variables={availableVars}
                   />
                 </Field>

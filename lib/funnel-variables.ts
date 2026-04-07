@@ -29,6 +29,22 @@ export const EMAIL_VARIABLES: VariableDef[] = [
   { key: 'karriereseiteUrl', label: 'Karriereseite' },
 ];
 
+/**
+ * Returns the list of variables available in E-Mail templates, filtered to
+ * those that will actually be substituted at send time.
+ *  - firstName / lastName / email / phone are always available (lead form fields).
+ *  - companyName / karriereseiteUrl are only included when the company profile
+ *    actually has a non-empty value for them.
+ */
+export function getEmailVariables(companyContext: Record<string, string> = {}): VariableDef[] {
+  return EMAIL_VARIABLES.filter((v) => {
+    if (v.key === 'companyName' || v.key === 'karriereseiteUrl') {
+      return !!companyContext[v.key];
+    }
+    return true;
+  });
+}
+
 // ─── Always-available context variables ───────────────────────────────────────
 // Only non-empty values from the company profile are included.
 // vorname is NOT here — it's picked up dynamically from quest_dialog blocks.
