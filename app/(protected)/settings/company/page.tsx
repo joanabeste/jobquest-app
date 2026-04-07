@@ -4,8 +4,9 @@ import { useState, FormEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { INDUSTRY_OPTIONS, CorporateDesign, DEFAULT_CORPORATE_DESIGN, SuccessPageConfig, DEFAULT_SUCCESS_PAGE, SuccessJob, SuccessLink } from '@/lib/types';
-import { Building2, Save, CheckCircle, Palette, Type, Globe, Upload, SlidersHorizontal, Link2, Trophy, Plus, X, ExternalLink } from 'lucide-react';
+import { Building2, Save, CheckCircle, Palette, Type, Globe, Upload, SlidersHorizontal, Link2, Trophy, Plus, X, ExternalLink, Sparkles } from 'lucide-react';
 import ImageCropModal from '@/components/shared/ImageCropModal';
+import ImportFromWebsiteModal, { ExtractedProfile } from '@/components/company/ImportFromWebsiteModal';
 
 const FONT_OPTIONS = [
   { label: 'Standard (System)', value: 'system', preview: 'system-ui, sans-serif' },
@@ -27,6 +28,32 @@ export default function SettingsCompanyPage() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [cropState, setCropState] = useState<{ src: string; target: 'logo' | 'favicon' } | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
+
+  function handleImportApply(data: ExtractedProfile) {
+    setForm((prev) => ({
+      ...prev,
+      name: data.name ?? prev.name,
+      description: data.description ?? prev.description,
+      industry: data.industry ?? prev.industry,
+      location: data.location ?? prev.location,
+      logo: data.logo ?? prev.logo,
+      privacyUrl: data.privacyUrl ?? prev.privacyUrl,
+      imprintUrl: data.imprintUrl ?? prev.imprintUrl,
+      careerPageUrl: data.careerPageUrl ?? prev.careerPageUrl,
+    }));
+    if (data.design) {
+      setDesign((prev) => ({
+        ...prev,
+        primaryColor: data.design?.primaryColor ?? prev.primaryColor,
+        accentColor: data.design?.accentColor ?? prev.accentColor,
+        headingFontName: data.design?.headingFontName ?? prev.headingFontName,
+        bodyFontName: data.design?.bodyFontName ?? prev.bodyFontName,
+        faviconUrl: data.design?.faviconUrl ?? prev.faviconUrl,
+      }));
+    }
+    setImportOpen(false);
+  }
 
   useEffect(() => {
     if (!can('edit_company')) {
@@ -135,6 +162,12 @@ export default function SettingsCompanyPage() {
 
   return (
     <div className="max-w-3xl mx-auto px-6 py-8">
+      {importOpen && (
+        <ImportFromWebsiteModal
+          onClose={() => setImportOpen(false)}
+          onApply={handleImportApply}
+        />
+      )}
       {cropState && (
         <ImageCropModal
           src={cropState.src}
@@ -177,7 +210,17 @@ export default function SettingsCompanyPage() {
 
         {activeTab === 'company' && (
           <div className="card p-6 space-y-4">
-            <h2 className="font-semibold text-slate-900 mb-1">Unternehmensdaten</h2>
+            <div className="flex items-center justify-between mb-1">
+              <h2 className="font-semibold text-slate-900">Unternehmensdaten</h2>
+              <button
+                type="button"
+                onClick={() => setImportOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-violet-50 text-violet-700 hover:bg-violet-100 transition"
+              >
+                <Sparkles size={14} />
+                Von Website importieren
+              </button>
+            </div>
             <div>
               <label className="label">Firmenname *</label>
               <input type="text" className="input-field" value={form.name}
