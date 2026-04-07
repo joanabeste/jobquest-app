@@ -43,16 +43,19 @@ export default function DashboardPage() {
   const [sortBy, setSortBy] = useState<'updated' | 'created' | 'title'>('updated');
 
   const questList = useContentList<JobQuest>({
+    cacheKey: 'quests',
     storage: questStorage,
-    getCount: (id) => leadStorage.getByQuest(id).then((l) => l.length),
+    getCounts: () => leadStorage.getCounts(),
   });
   const checkList = useContentList<CareerCheck>({
+    cacheKey: 'career-checks',
     storage: careerCheckStorage,
-    getCount: (id) => careerCheckLeadStorage.getByCheck(id).then((l) => l.length),
+    getCounts: () => careerCheckLeadStorage.getCounts(),
   });
   const formList = useContentList<FormPage>({
+    cacheKey: 'form-pages',
     storage: formPageStorage,
-    getCount: (id) => formSubmissionStorage.getByForm(id).then((s) => s.length),
+    getCounts: () => formSubmissionStorage.getCounts(),
   });
 
   useEffect(() => {

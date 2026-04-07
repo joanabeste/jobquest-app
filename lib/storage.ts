@@ -132,6 +132,8 @@ export const leadStorage = {
     return apiFetch<Lead[]>(`/api/leads?questId=${questId}`);
   },
 
+  getCounts: (): Promise<Record<string, number>> => apiFetch<Record<string, number>>('/api/leads/counts'),
+
   getByCompany: (_companyId: string) => leadStorage.getAll(),
 
   save: async (lead: Lead): Promise<void> => {
@@ -184,6 +186,8 @@ export const careerCheckLeadStorage = {
     return apiFetch<CareerCheckLead[]>(`/api/career-check-leads?checkId=${careerCheckId}`);
   },
 
+  getCounts: (): Promise<Record<string, number>> => apiFetch<Record<string, number>>('/api/career-check-leads/counts'),
+
   getByCompany: (_companyId: string) => careerCheckLeadStorage.getAll(),
 
   save: async (lead: CareerCheckLead): Promise<void> => {
@@ -216,6 +220,8 @@ export const formSubmissionStorage = {
   getByForm: async (formPageId: string): Promise<FormSubmission[]> => {
     return apiFetch<FormSubmission[]>(`/api/form-submissions?formId=${formPageId}`);
   },
+
+  getCounts: (): Promise<Record<string, number>> => apiFetch<Record<string, number>>('/api/form-submissions/counts'),
 
   getByCompany: (_companyId: string) => formSubmissionStorage.getAll(),
 

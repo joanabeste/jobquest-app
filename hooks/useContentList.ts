@@ -11,8 +11,12 @@ interface ContentListStorage<T> {
 }
 
 interface UseContentListOptions<T extends { id: string; title: string }> {
+  /** Stable key used to share the cache across mounts/navigations. */
+  cacheKey: string;
   storage: ContentListStorage<T>;
-  /** Called once per item after loading to get its count (e.g. leads, submissions). */
+  /** Single grouped count fetch — preferred over getCount. */
+  getCounts?: () => Promise<Record<string, number>>;
+  /** Per-item count fallback. Triggers N requests; avoid for dashboards. */
   getCount?: (id: string) => Promise<number>;
 }
 
@@ -27,12 +31,21 @@ interface UseContentListResult<T> {
   handleDelete: (id: string) => Promise<void>;
 }
 
+interface CacheEntry<T> {
+  items: T[];
+  counts: Record<string, number>;
+}
+
+// Module-global cache, shared across all useContentList mounts.
+const cache = new Map<string, CacheEntry<unknown>>();
+
 export function useContentList<T extends { id: string; title: string }>(
   opts: UseContentListOptions<T>,
 ): UseContentListResult<T> {
-  const [items, setItems] = useState<T[]>([]);
-  const [counts, setCounts] = useState<Record<string, number>>({});
-  const [loading, setLoading] = useState(false);
+  const cached = cache.get(opts.cacheKey) as CacheEntry<T> | undefined;
+  const [items, setItems] = useState<T[]>(cached?.items ?? []);
+  const [counts, setCounts] = useState<Record<string, number>>(cached?.counts ?? {});
+  const [loading, setLoading] = useState(!cached);
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; title: string } | null>(null);
   const toast = useToast();
 
@@ -41,30 +54,39 @@ export function useContentList<T extends { id: string; title: string }>(
   optsRef.current = opts;
 
   const reload = useCallback(async () => {
-    setLoading(true);
+    const { cacheKey, storage, getCounts, getCount } = optsRef.current;
+    const hasCached = cache.has(cacheKey);
+    // Show spinner only when nothing is cached. Otherwise revalidate silently.
+    if (!hasCached) setLoading(true);
     try {
-      const { storage, getCount } = optsRef.current;
       const all = await storage.getAll();
       setItems(all);
-      setLoading(false); // Show items immediately, load counts in background
+      if (!hasCached) setLoading(false);
 
-      if (getCount) {
-        // Load all counts in parallel instead of sequentially
+      let nextCounts: Record<string, number> = {};
+      if (getCounts) {
+        nextCounts = await getCounts();
+        setCounts(nextCounts);
+      } else if (getCount) {
         const entries = await Promise.all(
           all.map(async (item) => [item.id, await getCount(item.id)] as const),
         );
-        setCounts(Object.fromEntries(entries));
+        nextCounts = Object.fromEntries(entries);
+        setCounts(nextCounts);
       }
+
+      cache.set(cacheKey, { items: all, counts: nextCounts });
     } catch (err) {
       console.error('[useContentList] reload failed:', err);
       toast.error('Inhalte konnten nicht geladen werden. Bitte Seite neu laden.');
-      setLoading(false);
+      if (!hasCached) setLoading(false);
     }
   }, [toast]);
 
   const handleDuplicate = useCallback(async (item: T) => {
     try {
       await optsRef.current.storage.duplicate(item.id, crypto.randomUUID(), generateSlug(item.title));
+      cache.delete(optsRef.current.cacheKey);
       await reload();
       toast.success('Erfolgreich dupliziert.');
     } catch (err) {
@@ -77,6 +99,7 @@ export function useContentList<T extends { id: string; title: string }>(
     try {
       await optsRef.current.storage.delete(id);
       setDeleteConfirm(null);
+      cache.delete(optsRef.current.cacheKey);
       await reload();
     } catch (err) {
       console.error('[useContentList] delete failed:', err);
@@ -86,4 +109,9 @@ export function useContentList<T extends { id: string; title: string }>(
   }, [reload, toast]);
 
   return { items, counts, loading, deleteConfirm, setDeleteConfirm, reload, handleDuplicate, handleDelete };
+}
+
+/** Invalidate a specific cache entry — call from outside the hook (e.g., after a save). */
+export function invalidateContentList(cacheKey: string) {
+  cache.delete(cacheKey);
 }
