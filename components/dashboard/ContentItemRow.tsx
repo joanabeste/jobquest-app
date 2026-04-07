@@ -50,37 +50,45 @@ export default function ContentItemRow<T extends BaseContentItem>({
           onClose={() => setShareOpen(false)}
         />
       )}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+      <div className="flex items-center gap-4">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1.5">
+          <div className="flex items-center gap-2 mb-1">
             <h3 className="font-semibold text-slate-900 truncate">{item.title}</h3>
             {isPublished
               ? <span className="badge-published">Veröffentlicht</span>
               : <span className="badge-draft">Entwurf</span>}
           </div>
-          <div className="flex flex-wrap items-center text-xs text-slate-500">
+          <div className="flex flex-wrap items-center text-xs text-slate-500 gap-x-2 gap-y-1">
             <span className="flex items-center gap-1">
               <Users size={11} />
               {count} {config.countLabel}
             </span>
             {extraMeta.map((m) => (
-              <span key={m} className="flex items-center"><span className="mx-2 text-slate-300">·</span>{m}</span>
+              <span key={m} className="flex items-center gap-2"><span className="text-slate-300">·</span>{m}</span>
             ))}
-            <span className="flex items-center"><span className="mx-2 text-slate-300">·</span>Aktualisiert {formatDateShort(item.updatedAt)}</span>
+            <span className="flex items-center gap-2"><span className="text-slate-300">·</span>Aktualisiert {formatDateShort(item.updatedAt)}</span>
           </div>
           {isPublished && (
             <Link href={publicHref} target="_blank"
-              className="group inline-flex items-center gap-1.5 mt-2 text-xs text-slate-500 hover:text-violet-700 truncate max-w-full">
-              <ExternalLink size={11} className="flex-shrink-0 opacity-60 group-hover:opacity-100" />
+              className="md:hidden inline-flex items-center gap-1.5 mt-1.5 text-xs text-slate-500 hover:text-violet-700 max-w-full">
+              <ExternalLink size={11} className="flex-shrink-0 opacity-60" />
               <span className="font-mono truncate">{publicHref}</span>
             </Link>
           )}
         </div>
-        <div className="flex items-center gap-1.5 flex-shrink-0">
+        {isPublished && (
+          <Link href={publicHref} target="_blank"
+            className="group hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs text-slate-500 hover:text-violet-700 hover:bg-slate-50 max-w-[280px] flex-shrink min-w-0"
+            title={publicHref}>
+            <ExternalLink size={11} className="flex-shrink-0 opacity-60 group-hover:opacity-100" />
+            <span className="font-mono truncate">{publicHref}</span>
+          </Link>
+        )}
+        <div className="flex items-center gap-1 flex-shrink-0">
           <Link href={editorHref}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 rounded-lg transition-colors"
             title="Bearbeiten">
-            <Edit2 size={14} />
+            <Edit2 size={13} className="text-slate-500" />
             <span className="hidden sm:block">Bearbeiten</span>
           </Link>
           <div className="relative" ref={menuRef}>
