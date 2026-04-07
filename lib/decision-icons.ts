@@ -1,78 +1,144 @@
 import {
   // Work & Office
-  Briefcase, Clipboard, FileText, FolderOpen, Printer, Monitor, Laptop, Smartphone,
-  Mail, Phone, MessageCircle, MessageSquare, Send, Inbox,
+  Briefcase, Clipboard, ClipboardCheck, ClipboardList, FileText, FilePlus, FileCheck, FileSearch,
+  FolderOpen, Folder, Printer, Monitor, Laptop, Smartphone, Tablet,
+  Mail, MailOpen, Phone, PhoneCall, MessageCircle, MessageSquare, MessagesSquare, Send, Inbox, Archive,
   // People & Social
-  Users, User, UserCheck, UserPlus, Heart, Handshake, Baby, HeartHandshake,
+  Users, User, UserCheck, UserPlus, UserMinus, UserCog, UserX, Contact,
+  Heart, Handshake, Baby, HeartHandshake, PersonStanding, Accessibility,
   // Actions & Navigation
-  ArrowRight, ArrowLeft, ArrowUp, ArrowDown, ChevronRight, ChevronLeft,
-  ThumbsUp, ThumbsDown, Check, CheckCircle, XCircle,
+  ArrowRight, ArrowLeft, ArrowUp, ArrowDown, ArrowUpRight, ArrowDownRight,
+  ChevronRight, ChevronLeft, ChevronUp, ChevronDown,
+  ThumbsUp, ThumbsDown, Check, CheckCircle, CheckCheck, XCircle, X as XIcon,
   // Time & Planning
-  Clock, Timer, Calendar, CalendarDays, AlarmClock,
+  Clock, Clock1, Clock12, Timer, Hourglass, Calendar, CalendarDays, CalendarCheck, CalendarClock,
+  AlarmClock, Watch,
   // Nature & Environment
-  Sun, Moon, Cloud, Leaf, Flower2, Globe, TreePine,
+  Sun, Sunrise, Sunset, Moon, Cloud, CloudRain, CloudSnow, Snowflake,
+  Leaf, Flower, Flower2, TreePine, TreeDeciduous, Sprout, Mountain, Waves,
+  Globe, Earth,
   // Tools & Tech
-  Settings, Wrench, Hammer, Scissors, PenTool, Pencil, Ruler,
-  Search, Microscope, FlaskConical, Cpu, Database, Code,
+  Settings, Settings2, Wrench, Hammer, Scissors, Drill, HardHat,
+  PenTool, Pencil, Pen, Highlighter, Eraser, Ruler, Paintbrush, Palette,
+  Search, SearchCheck, Microscope, FlaskConical, TestTube, Atom,
+  Cpu, Database, Server, HardDrive, Code, Code2, Terminal, Bug, GitBranch,
   // Health & Safety
-  Shield, ShieldCheck, HeartPulse, Stethoscope, Pill, Syringe,
+  Shield, ShieldCheck, ShieldAlert, HeartPulse, Activity, Stethoscope,
+  Pill, Syringe, Bandage, Cross, Brain, Bone, Eye as EyeIcon, Ear,
   // Finance & Business
-  TrendingUp, TrendingDown, BarChart, PieChart, DollarSign, Euro, Coins, CreditCard,
+  TrendingUp, TrendingDown, BarChart, BarChart2, BarChart3, LineChart, PieChart,
+  DollarSign, Euro, PoundSterling, Coins, Banknote, CreditCard, Wallet, Receipt, Calculator,
   // Energy & Power
-  Zap, Flame, Battery, BatteryCharging, Power, Lightbulb,
+  Zap, ZapOff, Flame, Battery, BatteryCharging, BatteryLow, BatteryFull, Power, PowerOff,
+  Lightbulb, LightbulbOff, Fuel, Plug,
   // Transport
-  Car, Truck, Bike, Plane, Train, Ship,
+  Car, CarFront, Truck, TruckIcon, Bus, Bike, Plane, PlaneTakeoff, PlaneLanding,
+  Train, TrainFront, Ship, Sailboat, Anchor, Fuel as GasIcon,
   // Food & Lifestyle
-  Coffee, Pizza, Apple, Utensils, ShoppingCart, ShoppingBag, Gift,
+  Coffee, CupSoda, Pizza, Apple, Cherry, Carrot, Croissant, Sandwich, Salad,
+  Utensils, UtensilsCrossed, ChefHat, Soup, IceCream, Cookie, Beer, Wine,
+  ShoppingCart, ShoppingBag, ShoppingBasket, Gift, PartyPopper,
   // Emotions & Fun
-  Smile, Frown, Laugh, Meh, Star, Sparkles, Trophy, Award, Medal,
+  Smile, Frown, Laugh, Meh, Angry, Annoyed, SmilePlus,
+  Star, StarHalf, Sparkles, Trophy, Award, Medal, Crown, Gem,
   // Alerts & Info
-  AlertTriangle, AlertCircle, Info, HelpCircle, Flag, Bookmark, Bell,
+  AlertTriangle, AlertCircle, AlertOctagon, Info, HelpCircle, CircleHelp,
+  Flag, FlagTriangleRight, Bookmark, BookmarkPlus, Bell, BellOff, BellRing,
+  Megaphone, Volume2, VolumeX,
   // Media & Content
-  Image, Video, Music, Headphones, Mic, Camera, Play, Pause,
+  Image, ImagePlus, Images, Video, VideoOff, Film, Music, Music2,
+  Headphones, HeadphoneOff, Mic, MicOff, Camera, CameraOff, Play, PlayCircle, Pause, PauseCircle,
+  SkipForward, SkipBack, Repeat, Shuffle,
   // Navigation & Location
-  MapPin, Map, Compass, Navigation, Home, Building, Building2,
+  MapPin, MapPinned, Map, Compass, Navigation, Navigation2, Home, House,
+  Building, Building2, Hotel, Store, School, Hospital, Factory, Warehouse,
+  Castle, Church, Landmark, Tent,
+  // Books & Education
+  Book, BookOpen, BookMarked, Library, GraduationCap, Backpack,
+  // Sports & Activities
+  Dumbbell, Bike as BikeIcon, Footprints, Trophy as TrophyIcon, Medal as MedalIcon,
+  // Weather
+  CloudLightning, CloudDrizzle, CloudFog, Wind, Umbrella, Rainbow,
   // Misc
-  Rocket, Target, Eye, Lock, Unlock, Key, Package, Box, Layers, Grid,
+  Rocket, Target, Eye, Lock, Unlock, Key, KeyRound, Package, PackageCheck, PackageOpen,
+  Box, Boxes, Layers, Grid, Grid3X3, List, LayoutGrid,
+  Puzzle, Dice1, Dice5, Hash, AtSign, Percent, Sigma, Infinity,
+  Cog, Filter, Funnel, Recycle, Trash, Trash2, Tag, Tags, Ticket,
+  Pin, PinOff, PaperclipIcon, Paperclip, Link, Link2, Share, Share2, ExternalLink,
+  Download, Upload, RefreshCw, RotateCw, RotateCcw, Maximize, Minimize, Expand,
+  Plus, Minus, Equal, Divide, X as Multiply,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 export const DECISION_ICONS: Record<string, LucideIcon> = {
   // Work & Office
-  Briefcase, Clipboard, FileText, FolderOpen, Printer, Monitor, Laptop, Smartphone,
-  Mail, Phone, MessageCircle, MessageSquare, Send, Inbox,
+  Briefcase, Clipboard, ClipboardCheck, ClipboardList, FileText, FilePlus, FileCheck, FileSearch,
+  FolderOpen, Folder, Printer, Monitor, Laptop, Smartphone, Tablet,
+  Mail, MailOpen, Phone, PhoneCall, MessageCircle, MessageSquare, MessagesSquare, Send, Inbox, Archive,
   // People & Social
-  Users, User, UserCheck, UserPlus, Heart, Handshake, Baby, HeartHandshake,
+  Users, User, UserCheck, UserPlus, UserMinus, UserCog, UserX, Contact,
+  Heart, Handshake, Baby, HeartHandshake, PersonStanding, Accessibility,
   // Actions
-  ArrowRight, ArrowLeft, ArrowUp, ArrowDown, ChevronRight, ChevronLeft,
-  ThumbsUp, ThumbsDown, Check, CheckCircle, XCircle,
+  ArrowRight, ArrowLeft, ArrowUp, ArrowDown, ArrowUpRight, ArrowDownRight,
+  ChevronRight, ChevronLeft, ChevronUp, ChevronDown,
+  ThumbsUp, ThumbsDown, Check, CheckCircle, CheckCheck, XCircle, X: XIcon,
   // Time & Planning
-  Clock, Timer, Calendar, CalendarDays, AlarmClock,
+  Clock, Clock1, Clock12, Timer, Hourglass, Calendar, CalendarDays, CalendarCheck, CalendarClock,
+  AlarmClock, Watch,
   // Nature
-  Sun, Moon, Cloud, Leaf, Flower2, Globe, TreePine,
+  Sun, Sunrise, Sunset, Moon, Cloud, CloudRain, CloudSnow, Snowflake,
+  Leaf, Flower, Flower2, TreePine, TreeDeciduous, Sprout, Mountain, Waves,
+  Globe, Earth,
   // Tools & Tech
-  Settings, Wrench, Hammer, Scissors, PenTool, Pencil, Ruler,
-  Search, Microscope, FlaskConical, Cpu, Database, Code,
+  Settings, Settings2, Wrench, Hammer, Scissors, Drill, HardHat,
+  PenTool, Pencil, Pen, Highlighter, Eraser, Ruler, Paintbrush, Palette,
+  Search, SearchCheck, Microscope, FlaskConical, TestTube, Atom,
+  Cpu, Database, Server, HardDrive, Code, Code2, Terminal, Bug, GitBranch,
   // Health & Safety
-  Shield, ShieldCheck, HeartPulse, Stethoscope, Pill, Syringe,
+  Shield, ShieldCheck, ShieldAlert, HeartPulse, Activity, Stethoscope,
+  Pill, Syringe, Bandage, Cross, Brain, Bone, EyeIcon, Ear,
   // Finance
-  TrendingUp, TrendingDown, BarChart, PieChart, DollarSign, Euro, Coins, CreditCard,
+  TrendingUp, TrendingDown, BarChart, BarChart2, BarChart3, LineChart, PieChart,
+  DollarSign, Euro, PoundSterling, Coins, Banknote, CreditCard, Wallet, Receipt, Calculator,
   // Energy
-  Zap, Flame, Battery, BatteryCharging, Power, Lightbulb,
+  Zap, ZapOff, Flame, Battery, BatteryCharging, BatteryLow, BatteryFull, Power, PowerOff,
+  Lightbulb, LightbulbOff, Fuel, Plug,
   // Transport
-  Car, Truck, Bike, Plane, Train, Ship,
+  Car, CarFront, Truck, TruckIcon, Bus, Bike, Plane, PlaneTakeoff, PlaneLanding,
+  Train, TrainFront, Ship, Sailboat, Anchor, GasIcon,
   // Food & Lifestyle
-  Coffee, Pizza, Apple, Utensils, ShoppingCart, ShoppingBag, Gift,
+  Coffee, CupSoda, Pizza, Apple, Cherry, Carrot, Croissant, Sandwich, Salad,
+  Utensils, UtensilsCrossed, ChefHat, Soup, IceCream, Cookie, Beer, Wine,
+  ShoppingCart, ShoppingBag, ShoppingBasket, Gift, PartyPopper,
   // Emotions & Fun
-  Smile, Frown, Laugh, Meh, Star, Sparkles, Trophy, Award, Medal,
+  Smile, Frown, Laugh, Meh, Angry, Annoyed, SmilePlus,
+  Star, StarHalf, Sparkles, Trophy, Award, Medal, Crown, Gem,
   // Alerts & Info
-  AlertTriangle, AlertCircle, Info, HelpCircle, Flag, Bookmark, Bell,
+  AlertTriangle, AlertCircle, AlertOctagon, Info, HelpCircle, CircleHelp,
+  Flag, FlagTriangleRight, Bookmark, BookmarkPlus, Bell, BellOff, BellRing,
+  Megaphone, Volume2, VolumeX,
   // Media
-  Image, Video, Music, Headphones, Mic, Camera, Play, Pause,
+  Image, ImagePlus, Images, Video, VideoOff, Film, Music, Music2,
+  Headphones, HeadphoneOff, Mic, MicOff, Camera, CameraOff, Play, PlayCircle, Pause, PauseCircle,
+  SkipForward, SkipBack, Repeat, Shuffle,
   // Location
-  MapPin, Map, Compass, Navigation, Home, Building, Building2,
+  MapPin, MapPinned, Map, Compass, Navigation, Navigation2, Home, House,
+  Building, Building2, Hotel, Store, School, Hospital, Factory, Warehouse,
+  Castle, Church, Landmark, Tent,
+  // Books & Education
+  Book, BookOpen, BookMarked, Library, GraduationCap, Backpack,
+  // Sports & Activities
+  Dumbbell, BikeIcon, Footprints, TrophyIcon, MedalIcon,
+  // Weather
+  CloudLightning, CloudDrizzle, CloudFog, Wind, Umbrella, Rainbow,
   // Misc
-  Rocket, Target, Eye, Lock, Unlock, Key, Package, Box, Layers, Grid,
+  Rocket, Target, Eye, Lock, Unlock, Key, KeyRound, Package, PackageCheck, PackageOpen,
+  Box, Boxes, Layers, Grid, Grid3X3, List, LayoutGrid,
+  Puzzle, Dice1, Dice5, Hash, AtSign, Percent, Sigma, Infinity,
+  Cog, Filter, Funnel, Recycle, Trash, Trash2, Tag, Tags, Ticket,
+  Pin, PinOff, Paperclip, PaperclipIcon, Link, Link2, Share, Share2, ExternalLink,
+  Download, Upload, RefreshCw, RotateCw, RotateCcw, Maximize, Minimize, Expand,
+  Plus, Minus, Equal, Divide, Multiply,
 };
 
 // Common emojis grouped by category for the picker

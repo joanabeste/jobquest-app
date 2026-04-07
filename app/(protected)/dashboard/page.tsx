@@ -10,6 +10,7 @@ import { generateSlug, formatDateShort } from '@/lib/utils';
 import { useContentList } from '@/hooks/useContentList';
 import { useToast } from '@/components/ui/Toast';
 import { StatCardSkeleton, ListItemSkeleton } from '@/components/ui/Skeleton';
+import ShareModal from '@/components/ShareModal';
 import {
   Plus,
   Edit2,
@@ -24,8 +25,7 @@ import {
   SortAsc,
   CheckSquare,
   ClipboardList,
-  Link2,
-  Check,
+  QrCode,
   AlertTriangle,
 } from 'lucide-react';
 
@@ -428,22 +428,20 @@ function DeleteConfirmModal({
   );
 }
 
-// ── Copy link button ──────────────────────────────────────────────────────────
-function CopyLinkButton({ path }: { path: string }) {
-  const [copied, setCopied] = useState(false);
-  function copy() {
-    if (typeof window !== 'undefined') {
-      navigator.clipboard.writeText(`${window.location.origin}${path}`).catch(() => {});
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  }
+// ── Share button (opens ShareModal with link + QR code) ──────────────────────
+function ShareButton({ path, title }: { path: string; title: string }) {
+  const { company } = useAuth();
+  const [open, setOpen] = useState(false);
+  const url = typeof window !== 'undefined' ? `${window.location.origin}${path}` : path;
   return (
-    <button onClick={copy}
-      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
-      title="Link kopieren">
-      {copied ? <Check size={14} className="text-green-600" /> : <Link2 size={14} />}
-    </button>
+    <>
+      <button onClick={() => setOpen(true)}
+        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+        title="Teilen & QR-Code">
+        <QrCode size={14} />
+      </button>
+      {open && <ShareModal url={url} title={title} logoUrl={company?.logo} onClose={() => setOpen(false)} />}
+    </>
   );
 }
 
@@ -530,7 +528,7 @@ function QuestList({
                     <Eye size={14} />
                     <span className="hidden sm:block">Vorschau</span>
                   </Link>
-                  <CopyLinkButton path={`/jobquest/${quest.slug}`} />
+                  <ShareButton path={`/jobquest/${quest.slug}`} title={quest.title} />
                 </>
               )}
               <Link href={`/jobquest/${quest.id}/stats`}
@@ -645,7 +643,7 @@ function FormList({
                     <Eye size={14} />
                     <span className="hidden sm:block">Vorschau</span>
                   </Link>
-                  <CopyLinkButton path={`/formular/${form.slug}`} />
+                  <ShareButton path={`/formular/${form.slug}`} title={form.title} />
                 </>
               )}
               {canCreate && (
@@ -754,7 +752,7 @@ function CheckList({
                     <Eye size={14} />
                     <span className="hidden sm:block">Vorschau</span>
                   </Link>
-                  <CopyLinkButton path={`/berufscheck/${check.slug}`} />
+                  <ShareButton path={`/berufscheck/${check.slug}`} title={check.title} />
                 </>
               )}
               <Link href={`/berufscheck-leads/${check.id}`}

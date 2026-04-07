@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ArrowRight, Trophy, FileDown, Check, X, ChevronRight, Image as ImageIcon } from 'lucide-react';
+import { ArrowRight, Trophy, FileDown, Check, X, ChevronRight } from 'lucide-react';
 import { BlockNode } from '@/lib/funnel-types';
 import { applyVars } from '@/lib/funnel-variables';
 import { Company, Dimension } from '@/lib/types';
@@ -292,13 +292,8 @@ export function BlockRenderer({
       const bulletPoints = (p.bulletPoints as string[]) || [];
       return (
         <div>
-          {imageUrl ? (
+          {imageUrl && (
             <img src={imageUrl} alt="" className="w-full max-h-72 object-cover" />
-          ) : (
-            <div className="w-full h-48 bg-slate-100 flex flex-col items-center justify-center gap-2 border-b border-slate-200">
-              <ImageIcon size={28} className="text-slate-300" />
-              <p className="text-xs text-slate-400 font-medium">Bild fehlt — wähle eines aus der Mediathek</p>
-            </div>
           )}
           <div className="px-6 pt-8 pb-6 bg-white text-center">
             <h1 className="fp-heading leading-tight mb-4" dangerouslySetInnerHTML={{ __html: sh(inlineHtml(si(p.title))) }} />
