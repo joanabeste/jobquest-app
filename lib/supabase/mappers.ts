@@ -11,6 +11,7 @@ export function companyFromDb(row: any): Company {
   return {
     id: row.id,
     name: row.name,
+    slug: row.slug ?? undefined,
     description: row.description ?? undefined,
     industry: row.industry,
     location: row.location,
@@ -23,6 +24,9 @@ export function companyFromDb(row: any): Company {
     createdAt: row.created_at,
     corporateDesign: row.corporate_design ?? undefined,
     successPage: row.success_page ?? undefined,
+    showcase: row.showcase_config && Object.keys(row.showcase_config).length > 0
+      ? row.showcase_config
+      : undefined,
     plan: {
       maxJobQuests: row.max_job_quests ?? 1,
       maxBerufschecks: row.max_berufschecks ?? 0,
@@ -53,6 +57,9 @@ export function companyToDb(c: Company): Record<string, unknown> {
       max_berufschecks: c.plan.maxBerufschecks,
       max_formulare: c.plan.maxFormulare,
     } : {}),
+    // Showcase columns — also conditional in case DB migration hasn't run yet
+    ...(c.slug !== undefined ? { slug: c.slug || null } : {}),
+    ...(c.showcase !== undefined ? { showcase_config: c.showcase } : {}),
   };
 }
 
@@ -95,6 +102,7 @@ export function questFromDb(row: any): JobQuest {
     status: row.status,
     modules: row.modules ?? [],
     leadConfig: row.lead_config ?? undefined,
+    cardImage: row.card_image ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     publishedAt: row.published_at ?? undefined,
@@ -113,6 +121,7 @@ export function questToDb(q: JobQuest): Record<string, unknown> {
     created_at: q.createdAt,
     updated_at: q.updatedAt,
     published_at: q.publishedAt ?? null,
+    ...(q.cardImage !== undefined ? { card_image: q.cardImage || null } : {}),
   };
 }
 
@@ -184,6 +193,7 @@ export function careerCheckFromDb(row: any): CareerCheck {
     status: row.status,
     blocks: row.blocks ?? [],
     dimensions: row.dimensions ?? [],
+    cardImage: row.card_image ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     publishedAt: row.published_at ?? undefined,
@@ -202,6 +212,7 @@ export function careerCheckToDb(c: CareerCheck): Record<string, unknown> {
     created_at: c.createdAt,
     updated_at: c.updatedAt,
     published_at: c.publishedAt ?? null,
+    ...(c.cardImage !== undefined ? { card_image: c.cardImage || null } : {}),
   };
 }
 

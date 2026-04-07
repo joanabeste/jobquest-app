@@ -82,6 +82,15 @@ export const companyStorage = {
     return data ? companyFromDb(data) : undefined;
   },
 
+  getBySlug: async (slug: string): Promise<Company | undefined> => {
+    const { data } = await createClient()
+      .from('companies')
+      .select('*')
+      .eq('slug', slug)
+      .single();
+    return data ? companyFromDb(data) : undefined;
+  },
+
   getByEmail: async (email: string): Promise<Company | undefined> => {
     const { data } = await createClient()
       .from('companies')

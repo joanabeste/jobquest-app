@@ -20,10 +20,13 @@ create table public.companies (
   contact_name    text not null,
   contact_email   text not null,
   corporate_design jsonb default '{}'::jsonb,
+  slug             text unique,
+  showcase_config  jsonb default '{}'::jsonb,
   created_at      timestamptz not null default now()
 );
 
 create unique index companies_contact_email_idx on public.companies (contact_email);
+create unique index if not exists companies_slug_idx on public.companies (slug);
 
 -- ============================================================
 -- 2. WORKSPACE MEMBERS
@@ -58,6 +61,7 @@ create table public.job_quests (
                 check (status in ('draft', 'published')),
   modules       jsonb not null default '[]'::jsonb,
   lead_config   jsonb,
+  card_image    text,
   created_at    timestamptz not null default now(),
   updated_at    timestamptz not null default now(),
   published_at  timestamptz
@@ -112,6 +116,7 @@ create table public.career_checks (
                 check (status in ('draft', 'published')),
   blocks        jsonb not null default '[]'::jsonb,
   dimensions    jsonb not null default '[]'::jsonb,
+  card_image    text,
   created_at    timestamptz not null default now(),
   updated_at    timestamptz not null default now(),
   published_at  timestamptz

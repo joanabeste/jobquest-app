@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   LayoutDashboard, Users, LogOut, ChevronDown,
-  Building2, KeyRound, ChevronRight, LineChart,
+  Building2, KeyRound, ChevronRight, LineChart, Globe,
 } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 
@@ -34,6 +34,7 @@ export default function Topbar() {
 
   const navItems = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/uebersicht', label: 'Übersicht', icon: Globe },
     { href: '/statistiken', label: 'Statistiken', icon: LineChart },
     { href: '/leads', label: 'Kontakte', icon: Users },
   ];

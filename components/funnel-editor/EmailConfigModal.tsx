@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { X, Mail, Bell, Paperclip, ChevronDown, ChevronUp, Upload, FileText } from 'lucide-react';
+import { X, Mail, Bell, Paperclip, ChevronDown, ChevronUp, Upload, FileText, Send, CheckCircle2, AlertCircle } from 'lucide-react';
 import type { EmailConfig, EmailAttachment } from '@/lib/funnel-types';
 import { VarInput } from './VarInput';
 import RichTextEditor from './RichTextEditor';
@@ -51,6 +51,44 @@ export default function EmailConfigModal({ initial, onSave, onClose, availableVa
   const [uploading,   setUploading]   = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  type TestState = { status: 'idle' | 'sending' | 'ok' | 'error'; message?: string; detail?: string };
+  const [confirmTest, setConfirmTest] = useState<TestState>({ status: 'idle' });
+  const [notifTest,   setNotifTest]   = useState<TestState>({ status: 'idle' });
+
+  async function sendTest(kind: 'confirmation' | 'notification') {
+    const setState = kind === 'confirmation' ? setConfirmTest : setNotifTest;
+    setState({ status: 'sending' });
+    try {
+      const res = await fetch('/api/test-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          kind,
+          config: {
+            ...cfg,
+            confirmationAttachment: cfg.confirmationAttachment?.url ? cfg.confirmationAttachment : undefined,
+          },
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) {
+        setState({
+          status: 'error',
+          message: data?.message || `Fehler ${res.status}: Test-E-Mail konnte nicht gesendet werden.`,
+          detail: data?.detail,
+        });
+        return;
+      }
+      setState({ status: 'ok', message: data.message || 'Test-E-Mail gesendet.' });
+    } catch (e) {
+      setState({
+        status: 'error',
+        message: 'Netzwerkfehler beim Senden der Test-E-Mail.',
+        detail: e instanceof Error ? e.message : String(e),
+      });
+    }
+  }
 
   function patch(partial: Partial<EmailConfig>) {
     setCfg((prev) => ({ ...prev, ...partial }));
@@ -164,6 +202,11 @@ export default function EmailConfigModal({ initial, onSave, onClose, availableVa
                     onClear={() => patch({ confirmationAttachment: undefined })}
                   />
                 </Field>
+                <TestEmailRow
+                  label="Test-E-Mail an dich selbst senden"
+                  state={confirmTest}
+                  onSend={() => sendTest('confirmation')}
+                />
               </div>
             )}
           </Section>
@@ -214,6 +257,11 @@ export default function EmailConfigModal({ initial, onSave, onClose, availableVa
                     />
                   )}
                 </Field>
+                <TestEmailRow
+                  label={`Test-E-Mail an ${cfg.notificationRecipient || 'Empfänger'} senden`}
+                  state={notifTest}
+                  onSend={() => sendTest('notification')}
+                />
               </div>
             )}
           </Section>
@@ -277,6 +325,44 @@ function AttachmentField({
         <Paperclip size={11} />
         Maximal 10 MB. PDF, Word, Excel, Bilder und ZIP werden unterstützt.
       </p>
+    </div>
+  );
+}
+
+// ─── Test-E-Mail Zeile ────────────────────────────────────────────────────────
+function TestEmailRow({
+  label, state, onSend,
+}: {
+  label: string;
+  state: { status: 'idle' | 'sending' | 'ok' | 'error'; message?: string; detail?: string };
+  onSend: () => void;
+}) {
+  return (
+    <div className="space-y-1.5 pt-1 border-t border-slate-100">
+      <button
+        type="button"
+        onClick={onSend}
+        disabled={state.status === 'sending'}
+        className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-violet-50 text-violet-700 hover:bg-violet-100 disabled:opacity-50 transition-colors"
+      >
+        <Send size={12} className={state.status === 'sending' ? 'animate-pulse' : ''} />
+        {state.status === 'sending' ? 'Sende…' : label}
+      </button>
+      {state.status === 'ok' && (
+        <div className="flex items-start gap-1.5 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-2.5 py-1.5">
+          <CheckCircle2 size={13} className="flex-shrink-0 mt-0.5" />
+          <span>{state.message}</span>
+        </div>
+      )}
+      {state.status === 'error' && (
+        <div className="flex items-start gap-1.5 text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-2.5 py-1.5">
+          <AlertCircle size={13} className="flex-shrink-0 mt-0.5" />
+          <div className="min-w-0">
+            <div className="font-medium">{state.message}</div>
+            {state.detail && <div className="text-red-500 mt-0.5 break-words">{state.detail}</div>}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -16,21 +16,28 @@ interface Kpis {
   starts: number;
   completions: number;
   abandonRate: number;
-  conversionRate: number;
   avgDurationSec: number | null;
 }
 
 function computeKpis(events: AnalyticsEvent[]): Kpis {
-  const views = events.filter((e) => e.type === 'view').length;
+  // Aufrufe = unique sessions (a session can produce multiple 'view' heartbeats)
+  const viewSessions = new Set<string>();
+  for (const e of events) if (e.type === 'view') viewSessions.add(e.sessionId);
+  const views = viewSessions.size;
   const starts = events.filter((e) => e.type === 'start').length;
   const completions = events.filter((e) => e.type === 'complete').length;
   const abandonRate = starts > 0 ? Math.round(((starts - completions) / starts) * 100) : 0;
-  const conversionRate = views > 0 ? Math.round((completions / views) * 100) : 0;
-  const withDuration = events.filter((e) => e.type === 'complete' && e.duration);
-  const avgDurationSec = withDuration.length
-    ? withDuration.reduce((s, e) => s + (e.duration || 0), 0) / withDuration.length
+  // Average of longest dwell time per session.
+  const maxBySession = new Map<string, number>();
+  for (const e of events) {
+    if (!e.duration || !e.sessionId) continue;
+    const cur = maxBySession.get(e.sessionId) ?? 0;
+    if (e.duration > cur) maxBySession.set(e.sessionId, e.duration);
+  }
+  const avgDurationSec = maxBySession.size
+    ? Array.from(maxBySession.values()).reduce((s, v) => s + v, 0) / maxBySession.size
     : null;
-  return { views, starts, completions, abandonRate, conversionRate, avgDurationSec };
+  return { views, starts, completions, abandonRate, avgDurationSec };
 }
 
 function formatDuration(sec: number | null): string {
@@ -155,7 +162,7 @@ export default function StatistikenPage() {
           { label: 'Aufrufe', value: kpis.views, icon: Eye, color: 'blue' },
           { label: 'Starts', value: kpis.starts, icon: TrendingUp, color: 'violet' },
           { label: 'Abschlüsse', value: kpis.completions, icon: BarChart2, color: 'green' },
-          { label: 'Conversion', value: `${kpis.conversionRate}%`, icon: Users, color: 'rose' },
+          { label: 'Kontakte', value: filteredLeads.length, icon: Users, color: 'rose' },
           { label: 'Ø Dauer', value: formatDuration(kpis.avgDurationSec), icon: Clock, color: 'amber' },
         ].map(({ label, value, icon: Icon, color }) => (
           <div key={label} className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
@@ -230,7 +237,6 @@ export default function StatistikenPage() {
                   <th className="text-right px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Aufrufe</th>
                   <th className="text-right px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide hidden md:table-cell">Starts</th>
                   <th className="text-right px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Abschlüsse</th>
-                  <th className="text-right px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide hidden md:table-cell">Conv.</th>
                   <th className="text-right px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Kontakte</th>
                   <th className="px-3 py-3"></th>
                 </tr>
@@ -251,7 +257,6 @@ export default function StatistikenPage() {
                     <td className="px-3 py-3 text-right tabular-nums">{k.views}</td>
                     <td className="px-3 py-3 text-right tabular-nums hidden md:table-cell">{k.starts}</td>
                     <td className="px-3 py-3 text-right tabular-nums">{k.completions}</td>
-                    <td className="px-3 py-3 text-right tabular-nums hidden md:table-cell">{k.conversionRate}%</td>
                     <td className="px-3 py-3 text-right tabular-nums">{leadCount}</td>
                     <td className="px-3 py-3 text-right">
                       <Link href={`/jobquest/${quest.id}/stats`}

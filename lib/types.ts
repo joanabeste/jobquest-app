@@ -205,9 +205,30 @@ export const DEFAULT_PLAN: CompanyPlan = {
   maxFormulare: 0,
 };
 
+export interface ShowcaseItem {
+  id: string;                                // own id (uuid) – stable across reorders
+  type: 'jobquest' | 'berufscheck';
+  contentId: string;                         // id of the JobQuest or CareerCheck
+}
+
+export interface ShowcaseConfig {
+  enabled: boolean;
+  headline?: string;
+  subtext?: string;
+  items: ShowcaseItem[];
+}
+
+export const DEFAULT_SHOWCASE: ShowcaseConfig = {
+  enabled: false,
+  headline: '',
+  subtext: '',
+  items: [],
+};
+
 export interface Company {
   id: string;
   name: string;
+  slug?: string;
   description?: string;
   industry?: string;
   location?: string;
@@ -220,6 +241,7 @@ export interface Company {
   createdAt: string;
   corporateDesign?: CorporateDesign;
   successPage?: SuccessPageConfig;
+  showcase?: ShowcaseConfig;
   plan?: CompanyPlan;
 }
 
@@ -251,6 +273,7 @@ export interface JobQuest {
   status: 'draft' | 'published';
   modules: QuestModule[];
   leadConfig?: LeadFormConfig;
+  cardImage?: string;
   createdAt: string;
   updatedAt: string;
   publishedAt?: string;
@@ -428,6 +451,7 @@ export interface CareerCheck {
   status: 'draft' | 'published';
   blocks: BerufsCheckBlock[];
   dimensions: Dimension[];
+  cardImage?: string;
   createdAt: string;
   updatedAt: string;
   publishedAt?: string;

@@ -60,8 +60,20 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
       startedRef.current = true;
       analyticsStorage.save({
         id: crypto.randomUUID(), jobQuestId: contentDbId, type: 'start',
-        sessionId: sessionIdRef.current, timestamp: new Date().toISOString(),
+        sessionId: sessionIdRef.current,
+        duration: Math.round((Date.now() - startTimeRef.current) / 1000),
+        timestamp: new Date().toISOString(),
       }).catch((err) => console.error('[FunnelPlayer] track start failed', err));
+    }
+    // Heartbeat: save a duration-bearing 'view' event on each page navigation
+    // so Verweildauer is measurable even when users don't complete the quest.
+    if (pageIndex > 0) {
+      analyticsStorage.save({
+        id: crypto.randomUUID(), jobQuestId: contentDbId, type: 'view',
+        sessionId: sessionIdRef.current,
+        duration: Math.round((Date.now() - startTimeRef.current) / 1000),
+        timestamp: new Date().toISOString(),
+      }).catch((err) => console.error('[FunnelPlayer] track heartbeat failed', err));
     }
   }, [pageIndex, isQuest, contentDbId]);
   useEffect(() => {

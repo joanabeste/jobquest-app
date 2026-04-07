@@ -61,15 +61,24 @@ export default function StatsPage() {
   const filteredEvents = events.filter((e) => new Date(e.timestamp) >= filterDate);
   const filteredLeads = leads.filter((l) => new Date(l.submittedAt) >= filterDate);
 
-  const views = filteredEvents.filter((e) => e.type === 'view').length;
+  const views = (() => {
+    const sessions = new Set<string>();
+    for (const e of filteredEvents) if (e.type === 'view') sessions.add(e.sessionId);
+    return sessions.size;
+  })();
   const starts = filteredEvents.filter((e) => e.type === 'start').length;
   const completions = filteredEvents.filter((e) => e.type === 'complete').length;
   const abandonRate = starts > 0 ? Math.round(((starts - completions) / starts) * 100) : 0;
-  const conversionRate = views > 0 ? Math.round((completions / views) * 100) : 0;
   const avgDuration = (() => {
-    const withDuration = filteredEvents.filter((e) => e.type === 'complete' && e.duration);
-    if (!withDuration.length) return null;
-    const avg = withDuration.reduce((sum, e) => sum + (e.duration || 0), 0) / withDuration.length;
+    // Average of the longest dwell time per session (across all event types).
+    const maxBySession = new Map<string, number>();
+    for (const e of filteredEvents) {
+      if (!e.duration || !e.sessionId) continue;
+      const cur = maxBySession.get(e.sessionId) ?? 0;
+      if (e.duration > cur) maxBySession.set(e.sessionId, e.duration);
+    }
+    if (maxBySession.size === 0) return null;
+    const avg = Array.from(maxBySession.values()).reduce((s, v) => s + v, 0) / maxBySession.size;
     const mins = Math.floor(avg / 60);
     const secs = Math.round(avg % 60);
     return `${mins}:${secs.toString().padStart(2, '0')} Min`;
@@ -144,7 +153,7 @@ export default function StatsPage() {
             { label: 'Starts', value: starts, icon: TrendingUp, color: 'violet' },
             { label: 'Abschlüsse', value: completions, icon: BarChart2, color: 'green' },
             { label: 'Abbruchrate', value: `${abandonRate}%`, icon: Calendar, color: 'amber' },
-            { label: 'Conversion', value: `${conversionRate}%`, icon: Users, color: 'rose' },
+            { label: 'Kontakte', value: filteredLeads.length, icon: Users, color: 'rose' },
           ].map(({ label, value, icon: Icon, color }) => (
             <div key={label} className="card p-4">
               <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-2 ${
