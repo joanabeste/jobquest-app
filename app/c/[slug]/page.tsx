@@ -20,8 +20,12 @@ interface ResolvedItem {
 export default function ShowcasePage() {
   const { slug } = useParams<{ slug: string }>();
   const [company, setCompany] = useState<Company | null>(null);
-  const [items, setItems] = useState<ResolvedItem[]>([]);
+  const [itemsState, setItemsState] = useState<
+    { loading: true } | { loading: false; items: ResolvedItem[] }
+  >({ loading: true });
   const [notFound, setNotFound] = useState(false);
+  const itemsLoading = itemsState.loading;
+  const items = itemsState.loading ? [] : itemsState.items;
 
   useEffect(() => {
     let cancelled = false;
@@ -60,7 +64,7 @@ export default function ShowcasePage() {
           }
         }
       }
-      setItems(resolved);
+      setItemsState({ loading: false, items: resolved });
     }
     load();
     return () => { cancelled = true; };
@@ -125,7 +129,7 @@ export default function ShowcasePage() {
   const headline = sc.headline || `Willkommen bei ${company.name}`;
 
   return (
-    <div className="min-h-screen bg-slate-50" style={cssVars}>
+    <div className="min-h-screen flex flex-col bg-slate-50" style={cssVars}>
       {design.css && <style>{design.css}</style>}
 
       {/* Header */}
@@ -148,6 +152,7 @@ export default function ShowcasePage() {
         </div>
       </header>
 
+      <main className="flex-1">
       {/* Hero */}
       <section className="max-w-5xl mx-auto px-4 md:px-6 pt-10 pb-6 text-center">
         <h2 className="text-3xl md:text-4xl font-bold text-slate-900">{headline}</h2>
@@ -157,7 +162,12 @@ export default function ShowcasePage() {
       </section>
 
       {/* Sections */}
-      {items.length === 0 ? (
+      {itemsLoading ? (
+        <>
+          <ShowcaseSectionSkeleton />
+          <ShowcaseSectionSkeleton />
+        </>
+      ) : items.length === 0 ? (
         <section className="max-w-5xl mx-auto px-4 md:px-6 pb-16">
           <div className="text-center py-16 text-slate-400 text-sm">
             Aktuell sind keine Inhalte verfügbar.
@@ -184,6 +194,8 @@ export default function ShowcasePage() {
         </>
       )}
 
+      </main>
+
       {/* Footer */}
       <footer className="border-t border-slate-200 bg-white">
         <div className="max-w-5xl mx-auto px-4 md:px-6 py-6 text-center text-xs text-slate-400">
@@ -197,6 +209,29 @@ export default function ShowcasePage() {
         </div>
       </footer>
     </div>
+  );
+}
+
+function ShowcaseSectionSkeleton() {
+  return (
+    <section className="max-w-5xl mx-auto px-4 md:px-6 pb-12">
+      <div className="mb-6 space-y-2">
+        <div className="h-3 w-20 rounded bg-slate-200 animate-pulse" />
+        <div className="h-7 w-56 rounded bg-slate-200 animate-pulse" />
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
+            <div className="aspect-[16/10] bg-slate-100 animate-pulse" />
+            <div className="p-5 space-y-3">
+              <div className="h-3 w-16 rounded bg-slate-200 animate-pulse" />
+              <div className="h-5 w-3/4 rounded bg-slate-200 animate-pulse" />
+              <div className="h-4 w-1/3 rounded bg-slate-100 animate-pulse mt-4" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
 
