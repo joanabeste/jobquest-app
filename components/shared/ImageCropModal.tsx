@@ -104,6 +104,7 @@ export default function ImageCropModal({
             alt=""
             onLoad={onLoad}
             draggable={false}
+            crossOrigin="anonymous"
             className="w-full block pointer-events-none"
           />
           <div className="absolute inset-0 pointer-events-none">

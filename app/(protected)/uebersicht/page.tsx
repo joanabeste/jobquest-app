@@ -13,6 +13,7 @@ import {
   Trash2, Plus, CheckCircle, Upload, Copy, Check,
 } from 'lucide-react';
 import ImageCropModal from '@/components/shared/ImageCropModal';
+import MediaLibrary from '@/components/shared/MediaLibrary';
 
 interface CardEdit {
   itemId: string;
@@ -34,6 +35,7 @@ export default function UebersichtPage() {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [cropEdit, setCropEdit] = useState<CardEdit | null>(null);
+  const [libraryFor, setLibraryFor] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [slugStatus, setSlugStatus] = useState<'idle' | 'checking' | 'available' | 'taken' | 'invalid'>('idle');
 
@@ -114,17 +116,7 @@ export default function UebersichtPage() {
   }
 
   function pickImageFor(item: ShowcaseItem) {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = () => {
-      const file = input.files?.[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => setCropEdit({ itemId: item.id, src: reader.result as string });
-      reader.readAsDataURL(file);
-    };
-    input.click();
+    setLibraryFor(item.id);
   }
 
   function applyCrop(base64: string) {
@@ -207,6 +199,14 @@ export default function UebersichtPage() {
           onCancel={() => setCropEdit(null)}
         />
       )}
+      <MediaLibrary
+        open={!!libraryFor}
+        onClose={() => setLibraryFor(null)}
+        onSelect={(url) => {
+          if (libraryFor) setCropEdit({ itemId: libraryFor, src: url });
+          setLibraryFor(null);
+        }}
+      />
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">

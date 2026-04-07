@@ -4,8 +4,9 @@ import { useState, FormEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { INDUSTRY_OPTIONS, CorporateDesign, DEFAULT_CORPORATE_DESIGN, SuccessPageConfig, DEFAULT_SUCCESS_PAGE, SuccessJob, SuccessLink } from '@/lib/types';
-import { Building2, Save, CheckCircle, Palette, Type, Globe, Upload, SlidersHorizontal, Link2, Trophy, Plus, X, ExternalLink, Sparkles } from 'lucide-react';
+import { Building2, Save, CheckCircle, Palette, Type, Globe, Upload, SlidersHorizontal, Link2, Trophy, Plus, X, ExternalLink, Sparkles, Image as ImageIcon } from 'lucide-react';
 import ImageCropModal from '@/components/shared/ImageCropModal';
+import MediaLibrary from '@/components/shared/MediaLibrary';
 import ImportFromWebsiteModal, { ExtractedProfile } from '@/components/company/ImportFromWebsiteModal';
 import { FONT_OPTIONS, fontFamilyFor } from '@/lib/fonts';
 
@@ -19,6 +20,7 @@ export default function SettingsCompanyPage() {
   const [saving, setSaving] = useState(false);
   const [cropState, setCropState] = useState<{ src: string; target: 'logo' | 'favicon' } | null>(null);
   const [importOpen, setImportOpen] = useState(false);
+  const [libraryFor, setLibraryFor] = useState<'logo' | 'favicon' | 'manage' | null>(null);
 
   function handleImportApply(data: ExtractedProfile) {
     setForm((prev) => ({
@@ -98,23 +100,9 @@ export default function SettingsCompanyPage() {
     setForm((prev) => ({ ...prev, [field]: value }));
   }
 
-  function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => setCropState({ src: reader.result as string, target: 'logo' });
-    reader.readAsDataURL(file);
-    e.target.value = '';
-  }
-
-  function handleFaviconChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => setCropState({ src: reader.result as string, target: 'favicon' });
-    reader.readAsDataURL(file);
-    e.target.value = '';
-  }
+  // Logo & Favicon werden jetzt komplett über die Mediathek verwaltet:
+  // Auswahl im Picker → Crop-Modal → Speichern. Direkter File-Input entfällt,
+  // damit jedes Bild garantiert in der Mediathek landet.
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -148,6 +136,18 @@ export default function SettingsCompanyPage() {
           onApply={handleImportApply}
         />
       )}
+      <MediaLibrary
+        open={libraryFor !== null}
+        mode={libraryFor === 'manage' ? 'manage' : 'pick'}
+        title={libraryFor === 'manage' ? 'Mediathek' : libraryFor === 'favicon' ? 'Favicon aus Mediathek' : 'Logo aus Mediathek'}
+        onClose={() => setLibraryFor(null)}
+        onSelect={(url) => {
+          if (libraryFor === 'logo' || libraryFor === 'favicon') {
+            setCropState({ src: url, target: libraryFor });
+          }
+          setLibraryFor(null);
+        }}
+      />
       {cropState && (
         <ImageCropModal
           src={cropState.src}
@@ -169,10 +169,18 @@ export default function SettingsCompanyPage() {
             {form.name.charAt(0) || 'J'}
           </div>
         )}
-        <div>
+        <div className="flex-1">
           <h1 className="text-2xl font-bold text-slate-900">{form.name || 'Firmenprofil'}</h1>
           <p className="text-slate-500 text-sm mt-0.5">Firmenprofil &amp; Corporate Design verwalten</p>
         </div>
+        <button
+          type="button"
+          onClick={() => setLibraryFor('manage')}
+          className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-xl bg-violet-50 text-violet-700 hover:bg-violet-100 transition"
+        >
+          <ImageIcon size={15} />
+          Mediathek öffnen
+        </button>
       </div>
 
       <form onSubmit={handleSubmit}>
@@ -235,8 +243,11 @@ export default function SettingsCompanyPage() {
                 {form.logo && (
                   <img src={form.logo} alt="Logo" className="h-10 w-auto max-w-[120px] rounded-lg object-contain border border-slate-200 p-0.5" />
                 )}
-                <input type="file" accept="image/*" onChange={handleLogoChange}
-                  className="block text-sm text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer" />
+                <button type="button" onClick={() => setLibraryFor('logo')}
+                  className="btn-secondary text-sm flex items-center gap-2">
+                  <ImageIcon size={14} />
+                  {form.logo ? 'Anderes Logo wählen' : 'Logo aus Mediathek'}
+                </button>
                 {form.logo && (
                   <button type="button" onClick={() => handleChange('logo', '')}
                     className="text-xs text-red-500 hover:text-red-700">
@@ -418,16 +429,14 @@ export default function SettingsCompanyPage() {
                   <div className="w-10 h-10 rounded border border-dashed border-slate-300 bg-slate-50 flex items-center justify-center text-slate-300 text-lg flex-shrink-0">?</div>
                 )}
                 <div className="flex flex-col gap-2">
-                  <label className="btn-secondary cursor-pointer text-sm flex items-center gap-2 w-fit">
-                    <Upload size={14} />
-                    {design.faviconUrl ? 'Anderes Bild wählen' : 'Favicon hochladen'}
-                    <input
-                      type="file"
-                      accept="image/png,image/svg+xml,image/jpeg,image/webp"
-                      className="hidden"
-                      onChange={handleFaviconChange}
-                    />
-                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setLibraryFor('favicon')}
+                    className="btn-secondary text-sm flex items-center gap-2 w-fit"
+                  >
+                    <ImageIcon size={14} />
+                    {design.faviconUrl ? 'Anderes Bild wählen' : 'Favicon aus Mediathek'}
+                  </button>
                   {design.faviconUrl && (
                     <button type="button" onClick={() => setDesign((d) => ({ ...d, faviconUrl: undefined }))}
                       className="text-xs text-red-500 hover:text-red-700 text-left">
