@@ -6,10 +6,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { questStorage, leadStorage, analyticsStorage, careerCheckStorage, careerCheckLeadStorage, formPageStorage, formSubmissionStorage } from '@/lib/storage';
 import { JobQuest, Lead, AnalyticsEvent, CareerCheck, CareerCheckLead, FormPage, FormSubmission } from '@/lib/types';
 import {
-  BarChart2, Eye, TrendingUp, Users, Clock, Filter, ChevronRight, LineChart,
+  BarChart2, Eye, TrendingUp, Users, Clock, ChevronRight, LineChart,
 } from 'lucide-react';
-
-type DateFilter = '7' | '30' | 'all';
+import { DateRangeFilter, computeRange, defaultCustomFrom, defaultCustomTo, type DateFilter } from '@/components/stats/DateRangeFilter';
 
 interface Kpis {
   views: number;
@@ -59,6 +58,8 @@ export default function StatistikenPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [filter, setFilter] = useState<DateFilter>('30');
+  const [customFrom, setCustomFrom] = useState<string>(defaultCustomFrom);
+  const [customTo, setCustomTo] = useState<string>(defaultCustomTo);
 
   useEffect(() => {
     if (!company) return;
@@ -92,29 +93,35 @@ export default function StatistikenPage() {
     return () => { cancelled = true; };
   }, [company]);
 
-  const filterDate = useMemo(() => {
-    const d = new Date();
-    if (filter === '7') d.setDate(d.getDate() - 7);
-    else if (filter === '30') d.setDate(d.getDate() - 30);
-    else d.setFullYear(2000);
-    return d;
-  }, [filter]);
+  const [fromDate, toDate] = useMemo<[Date, Date]>(
+    () => computeRange(filter, customFrom, customTo),
+    [filter, customFrom, customTo],
+  );
+
+  const inRange = (iso: string) => {
+    const d = new Date(iso).getTime();
+    return d >= fromDate.getTime() && d <= toDate.getTime();
+  };
 
   const filteredEvents = useMemo(
-    () => events.filter((e) => new Date(e.timestamp) >= filterDate),
-    [events, filterDate],
+    () => events.filter((e) => inRange(e.timestamp)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [events, fromDate, toDate],
   );
   const filteredLeads = useMemo(
-    () => leads.filter((l) => new Date(l.submittedAt) >= filterDate),
-    [leads, filterDate],
+    () => leads.filter((l) => inRange(l.submittedAt)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [leads, fromDate, toDate],
   );
   const filteredCheckLeads = useMemo(
-    () => checkLeads.filter((l) => new Date(l.submittedAt) >= filterDate),
-    [checkLeads, filterDate],
+    () => checkLeads.filter((l) => inRange(l.submittedAt)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [checkLeads, fromDate, toDate],
   );
   const filteredFormSubs = useMemo(
-    () => formSubs.filter((s) => new Date(s.submittedAt) >= filterDate),
-    [formSubs, filterDate],
+    () => formSubs.filter((s) => inRange(s.submittedAt)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [formSubs, fromDate, toDate],
   );
 
   const kpis = useMemo(() => computeKpis(filteredEvents), [filteredEvents]);
@@ -181,26 +188,14 @@ export default function StatistikenPage() {
           <h1 className="text-2xl font-bold text-slate-900">Statistiken</h1>
           <p className="text-slate-500 text-sm mt-0.5">Aufrufe, Starts und Abschlüsse über deine Inhalte</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Filter size={15} className="text-slate-400" />
-          {[
-            { label: '7 Tage', value: '7' as const },
-            { label: '30 Tage', value: '30' as const },
-            { label: 'Gesamt', value: 'all' as const },
-          ].map(({ label, value }) => (
-            <button
-              key={value}
-              onClick={() => setFilter(value)}
-              className={`px-3 py-1.5 text-sm rounded-lg border transition-all ${
-                filter === value
-                  ? 'bg-violet-600 text-white border-violet-600'
-                  : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+        <DateRangeFilter
+          filter={filter}
+          onFilterChange={setFilter}
+          customFrom={customFrom}
+          customTo={customTo}
+          onCustomFromChange={setCustomFrom}
+          onCustomToChange={setCustomTo}
+        />
       </div>
 
       {/* KPI Cards */}

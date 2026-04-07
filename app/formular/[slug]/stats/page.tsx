@@ -10,10 +10,9 @@ import { FormPage, FormSubmission, AnalyticsEvent } from '@/lib/types';
 import { formatDateShort } from '@/lib/utils';
 import {
   BarChart2, Users, Eye, TrendingUp, Clock,
-  ArrowLeft, Globe, Calendar, Filter, LogOut,
+  ArrowLeft, Globe, Calendar, LogOut,
 } from 'lucide-react';
-
-type DateFilter = '7' | '30' | 'all';
+import { DateRangeFilter, computeRange, defaultCustomFrom, defaultCustomTo, type DateFilter } from '@/components/stats/DateRangeFilter';
 
 export default function FormStatsPage() {
   const { slug: id } = useParams<{ slug: string }>();
@@ -23,6 +22,8 @@ export default function FormStatsPage() {
   const [submissions, setSubmissions] = useState<FormSubmission[]>([]);
   const [events, setEvents] = useState<AnalyticsEvent[]>([]);
   const [filter, setFilter] = useState<DateFilter>('30');
+  const [customFrom, setCustomFrom] = useState<string>(defaultCustomFrom);
+  const [customTo, setCustomTo] = useState<string>(defaultCustomTo);
   const [notAuthorized, setNotAuthorized] = useState(false);
 
   useEffect(() => {
@@ -57,17 +58,13 @@ export default function FormStatsPage() {
     load();
   }, [id, router]);
 
-  function getFilterDate(): Date {
-    const d = new Date();
-    if (filter === '7') d.setDate(d.getDate() - 7);
-    else if (filter === '30') d.setDate(d.getDate() - 30);
-    else d.setFullYear(2000);
-    return d;
-  }
-
-  const filterDate = getFilterDate();
-  const filteredEvents = events.filter((e) => new Date(e.timestamp) >= filterDate);
-  const filteredSubs = submissions.filter((s) => new Date(s.submittedAt) >= filterDate);
+  const [fromDate, toDate] = computeRange(filter, customFrom, customTo);
+  const inRange = (iso: string) => {
+    const d = new Date(iso).getTime();
+    return d >= fromDate.getTime() && d <= toDate.getTime();
+  };
+  const filteredEvents = events.filter((e) => inRange(e.timestamp));
+  const filteredSubs = submissions.filter((s) => inRange(s.submittedAt));
 
   const views = (() => {
     const sessions = new Set<string>();
@@ -160,27 +157,15 @@ export default function FormStatsPage() {
       </div>
 
       <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
-        <div className="flex items-center gap-2">
-          <Filter size={15} className="text-slate-400" />
-          <span className="text-sm text-slate-600 mr-1">Zeitraum:</span>
-          {[
-            { label: '7 Tage', value: '7' },
-            { label: '30 Tage', value: '30' },
-            { label: 'Gesamt', value: 'all' },
-          ].map(({ label, value }) => (
-            <button
-              key={value}
-              onClick={() => setFilter(value as DateFilter)}
-              className={`px-3 py-1.5 text-sm rounded-lg border transition-all ${
-                filter === value
-                  ? 'bg-violet-600 text-white border-violet-600'
-                  : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+        <DateRangeFilter
+          filter={filter}
+          onFilterChange={setFilter}
+          customFrom={customFrom}
+          customTo={customTo}
+          onCustomFromChange={setCustomFrom}
+          onCustomToChange={setCustomTo}
+          showLabel
+        />
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           {[
