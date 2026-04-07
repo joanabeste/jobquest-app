@@ -7,17 +7,7 @@ import { INDUSTRY_OPTIONS, CorporateDesign, DEFAULT_CORPORATE_DESIGN, SuccessPag
 import { Building2, Save, CheckCircle, Palette, Type, Globe, Upload, SlidersHorizontal, Link2, Trophy, Plus, X, ExternalLink, Sparkles } from 'lucide-react';
 import ImageCropModal from '@/components/shared/ImageCropModal';
 import ImportFromWebsiteModal, { ExtractedProfile } from '@/components/company/ImportFromWebsiteModal';
-
-const FONT_OPTIONS = [
-  { label: 'Standard (System)', value: 'system', preview: 'system-ui, sans-serif' },
-  { label: 'Inter', value: 'Inter', preview: "'Inter', sans-serif" },
-  { label: 'Roboto', value: 'Roboto', preview: "'Roboto', sans-serif" },
-  { label: 'Montserrat', value: 'Montserrat', preview: "'Montserrat', sans-serif" },
-  { label: 'Poppins', value: 'Poppins', preview: "'Poppins', sans-serif" },
-  { label: 'Nunito', value: 'Nunito', preview: "'Nunito', sans-serif" },
-  { label: 'Open Sans', value: 'Open Sans', preview: "'Open Sans', sans-serif" },
-  { label: 'Playfair Display', value: 'Playfair Display', preview: "'Playfair Display', serif" },
-];
+import { FONT_OPTIONS, fontFamilyFor } from '@/lib/fonts';
 
 type Tab = 'company' | 'design' | 'success';
 
@@ -101,18 +91,6 @@ export default function SettingsCompanyPage() {
     bodyTextTransform: cd.bodyTextTransform ?? 'none',
     faviconUrl: cd.faviconUrl,
   });
-
-  useEffect(() => {
-    FONT_OPTIONS.filter((f) => f.value !== 'system').forEach((f) => {
-      const id = `gfont-${f.value.replace(/ /g, '-')}`;
-      if (document.getElementById(id)) return;
-      const link = document.createElement('link');
-      link.id = id;
-      link.rel = 'stylesheet';
-      link.href = `https://fonts.googleapis.com/css2?family=${f.value.replace(/ /g, '+')}:wght@400;500;600;700&display=swap`;
-      document.head.appendChild(link);
-    });
-  }, []);
 
   function handleChange(field: string, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -611,19 +589,34 @@ function FontPicker({ label, fontName, customFontName, customFontData, primaryCo
   return (
     <div>
       <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">{label}</p>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        {FONT_OPTIONS.map((font) => {
-          const isActive = fontName === font.value && !isCustomActive;
-          return (
-            <button key={font.value} type="button" onClick={() => onSelectFont(font.value)}
-              className={`p-2.5 rounded-xl border-2 text-left transition-all ${isActive ? '' : 'border-slate-200 hover:border-slate-300 bg-white'}`}
-              style={isActive ? { borderColor: primaryColor, backgroundColor: primaryColor + '12' } : {}}>
-              <p className="text-lg font-bold text-slate-900 leading-none mb-1" style={{ fontFamily: font.preview }}>Aa</p>
-              <p className="text-xs text-slate-500 truncate">{font.label}</p>
-              {isActive && <span className="text-xs font-semibold mt-0.5 block" style={{ color: primaryColor }}>✓</span>}
-            </button>
-          );
-        })}
+      <div className="flex items-center gap-3">
+        <select
+          value={isCustomActive ? '' : fontName}
+          onChange={(e) => onSelectFont(e.target.value)}
+          disabled={isCustomActive}
+          className="input-field flex-1"
+          style={{ fontFamily: isCustomActive ? undefined : fontFamilyFor(fontName), borderColor: isCustomActive ? undefined : primaryColor + '40' }}
+        >
+          {(['sans', 'serif', 'display'] as const).map((cat) => {
+            const opts = FONT_OPTIONS.filter((f) => f.category === cat);
+            const groupLabel = cat === 'sans' ? 'Sans-Serif' : cat === 'serif' ? 'Serif' : 'Display';
+            return (
+              <optgroup key={cat} label={groupLabel}>
+                {opts.map((font) => (
+                  <option key={font.value} value={font.value} style={{ fontFamily: font.cssFamily }}>
+                    {font.label}
+                  </option>
+                ))}
+              </optgroup>
+            );
+          })}
+        </select>
+        <div
+          className="flex-shrink-0 w-16 h-10 rounded-lg border-2 flex items-center justify-center bg-white text-xl font-bold text-slate-900"
+          style={{ fontFamily: isCustomActive ? `'${customFontName}', system-ui, sans-serif` : fontFamilyFor(fontName), borderColor: primaryColor + '40' }}
+        >
+          Aa
+        </div>
       </div>
       <div className="mt-3 flex items-center gap-3 flex-wrap">
         <label className="flex items-center gap-2 px-3 py-1.5 rounded-lg border-2 border-dashed border-slate-200 hover:border-slate-300 bg-white cursor-pointer text-xs text-slate-600 transition-all">
@@ -662,12 +655,12 @@ function ColorPicker({ label, desc, value, onChange }: { label: string; desc: st
 }
 
 function DesignPreview({ name, logo, design }: { name: string; logo?: string; design: CorporateDesign }) {
-  const headingFont = design.headingFontData ? `'${design.headingFontName}', system-ui, sans-serif`
-    : design.headingFontName === 'system' ? 'system-ui, -apple-system, sans-serif'
-    : `'${design.headingFontName}', sans-serif`;
-  const bodyFont = design.bodyFontData ? `'${design.bodyFontName}', system-ui, sans-serif`
-    : design.bodyFontName === 'system' ? 'system-ui, -apple-system, sans-serif'
-    : `'${design.bodyFontName}', sans-serif`;
+  const headingFont = design.headingFontData
+    ? `'${design.headingFontName}', system-ui, sans-serif`
+    : fontFamilyFor(design.headingFontName);
+  const bodyFont = design.bodyFontData
+    ? `'${design.bodyFontName}', system-ui, sans-serif`
+    : fontFamilyFor(design.bodyFontName);
   const br = `${design.borderRadius}px`;
   return (
     <div className="card p-6">

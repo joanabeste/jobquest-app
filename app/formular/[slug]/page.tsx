@@ -12,6 +12,7 @@ import {
 } from '@/lib/types';
 import { v4 as uuidv4 } from 'uuid';
 import { ChevronRight, ChevronLeft, Check } from 'lucide-react';
+import { fontFamilyFor } from '@/lib/fonts';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -493,19 +494,11 @@ export default function FormularPage() {
   const bfName = cd.bodyFontName ?? 'system';
   const headingFont = cd.headingFontData
     ? `'${hfName}', system-ui, sans-serif`
-    : hfName === 'system' ? 'system-ui, sans-serif' : `'${hfName}', system-ui, sans-serif`;
+    : hfName === 'system' ? 'system-ui, sans-serif' : fontFamilyFor(hfName);
 
   const formCss = [
-    cd.headingFontData
-      ? `@font-face{font-family:'${hfName}';src:url('${cd.headingFontData}')}`
-      : (!cd.headingFontData && hfName !== 'system'
-        ? `@import url('https://fonts.googleapis.com/css2?family=${encodeURIComponent(hfName)}:wght@400;600;700&display=swap')`
-        : ''),
-    cd.bodyFontData
-      ? `@font-face{font-family:'${bfName}';src:url('${cd.bodyFontData}')}`
-      : (!cd.bodyFontData && bfName !== 'system' && bfName !== hfName
-        ? `@import url('https://fonts.googleapis.com/css2?family=${encodeURIComponent(bfName)}:wght@400;600;700&display=swap')`
-        : ''),
+    cd.headingFontData ? `@font-face{font-family:'${hfName}';src:url('${cd.headingFontData}')}` : '',
+    cd.bodyFontData && bfName !== hfName ? `@font-face{font-family:'${bfName}';src:url('${cd.bodyFontData}')}` : '',
     `h1,h2,h3,h4{font-family:${headingFont};color:${cd.headingColor ?? '#0f172a'}}`,
     `input:focus,textarea:focus,select:focus{border-color:${cd.primaryColor}!important;outline:none}`,
   ].filter(Boolean).join('\n');

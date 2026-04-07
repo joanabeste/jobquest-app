@@ -81,21 +81,6 @@ export default function QuestPlayer({ quest, company }: Props) {
     }
   }, [step, quest.id, sessionId]);
 
-  useEffect(() => {
-    const toLoad = [
-      !design.headingFontData && headingFontName !== 'system' ? headingFontName : null,
-      !design.bodyFontData && bodyFontName !== 'system' && bodyFontName !== headingFontName ? bodyFontName : null,
-    ].filter(Boolean) as string[];
-    const links = toLoad.map((name) => {
-      const link = document.createElement('link');
-      link.rel = 'stylesheet';
-      link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(name)}:wght@400;600;700&display=swap`;
-      document.head.appendChild(link);
-      return link;
-    });
-    return () => { links.forEach((l) => document.head.removeChild(l)); };
-  }, [headingFontName, bodyFontName, design.headingFontData, design.bodyFontData]);
-
   function handleDecisionSelect(decisionModule: DecisionModule, optionId: string) {
     setAnswers((p) => ({ ...p, [decisionModule.id]: optionId }));
     setShowFeedback((p) => ({ ...p, [decisionModule.id]: true }));

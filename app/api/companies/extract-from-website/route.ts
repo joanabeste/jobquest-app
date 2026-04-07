@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import * as cheerio from 'cheerio';
 import { getSession, unauthorized } from '@/lib/api-auth';
 import { INDUSTRY_OPTIONS, ROLE_PERMISSIONS } from '@/lib/types';
+import { FONT_OPTIONS } from '@/lib/fonts';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
-const FONT_WHITELIST = ['system', 'Inter', 'Roboto', 'Montserrat', 'Poppins', 'Nunito', 'Open Sans', 'Playfair Display'];
+const FONT_WHITELIST = FONT_OPTIONS.map((f) => f.value);
 const MAX_HTML_BYTES = 1_000_000;
 const MAX_IMAGE_BYTES = 500_000;
 const FETCH_TIMEOUT_MS = 10_000;

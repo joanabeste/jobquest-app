@@ -1,9 +1,10 @@
-import { useEffect } from 'react';
 import { Company, DEFAULT_CORPORATE_DESIGN } from '@/lib/types';
+import { fontFamilyFor } from '@/lib/fonts';
 
 /**
  * Derives CSS variables and a <style> string from a company's corporate design.
- * Also injects Google Fonts <link> tags for any non-embedded fonts.
+ * Self-hosted Google Fonts are loaded via next/font in the root layout — no
+ * runtime CDN requests needed.
  * Safe to call from any 'use client' component.
  */
 export function useCorporateDesign(company: Company) {
@@ -17,10 +18,10 @@ export function useCorporateDesign(company: Company) {
 
   const headingFont = design.headingFontData
     ? `'${hfName}',system-ui,sans-serif`
-    : hfName === 'system' ? 'inherit' : `'${hfName}',system-ui,sans-serif`;
+    : hfName === 'system' ? 'inherit' : fontFamilyFor(hfName);
   const bodyFont = design.bodyFontData
     ? `'${bfName}',system-ui,sans-serif`
-    : bfName === 'system' ? 'inherit' : `'${bfName}',system-ui,sans-serif`;
+    : bfName === 'system' ? 'inherit' : fontFamilyFor(bfName);
 
   const hSize      = design.headingFontSize      ?? 22;
   const hWeight    = design.headingFontWeight    ?? 700;
@@ -45,22 +46,6 @@ export function useCorporateDesign(company: Company) {
     `.fp-check{accent-color:${primary}}`,
     `input:focus,textarea:focus,select:focus{border-color:${primary}!important;outline:none}`,
   ].filter(Boolean).join('\n');
-
-  useEffect(() => {
-    const toLoad = [
-      !design.headingFontData && hfName !== 'system' ? hfName : null,
-      !design.bodyFontData && bfName !== 'system' && bfName !== hfName ? bfName : null,
-    ].filter(Boolean) as string[];
-
-    const links = toLoad.map((name) => {
-      const link = document.createElement('link');
-      link.rel  = 'stylesheet';
-      link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(name)}:wght@400;600;700&display=swap`;
-      document.head.appendChild(link);
-      return link;
-    });
-    return () => links.forEach((l) => document.head.removeChild(l));
-  }, [hfName, bfName, design.headingFontData, design.bodyFontData]);
 
   const headingColor = design.headingColor ?? DEFAULT_CORPORATE_DESIGN.headingColor;
   const textColor    = design.textColor    ?? DEFAULT_CORPORATE_DESIGN.textColor;

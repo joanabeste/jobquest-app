@@ -7,6 +7,7 @@ import { careerCheckStorage, companyStorage } from '@/lib/storage';
 import { funnelStorage } from '@/lib/funnel-storage';
 import { FunnelDoc } from '@/lib/funnel-types';
 import FunnelPlayer from '@/components/funnel-editor/FunnelPlayer';
+import { fontFamilyFor } from '@/lib/fonts';
 import {
   CareerCheck, Company, BerufsCheckBlock, Dimension,
   IntroBlock, VornameBlock, SelbsteinschaetzungBlock, FrageBlock, ErgebnisfrageBlock,
@@ -98,10 +99,10 @@ export default function BerufsCheckPlayer() {
   const bfName = design.bodyFontName ?? 'system';
   const headingFont = design.headingFontData
     ? `'${hfName}', system-ui, sans-serif`
-    : hfName === 'system' ? 'system-ui, sans-serif' : `'${hfName}', system-ui, sans-serif`;
+    : hfName === 'system' ? 'system-ui, sans-serif' : fontFamilyFor(hfName);
   const bodyFont = design.bodyFontData
     ? `'${bfName}', system-ui, sans-serif`
-    : bfName === 'system' ? 'system-ui, sans-serif' : `'${bfName}', system-ui, sans-serif`;
+    : bfName === 'system' ? 'system-ui, sans-serif' : fontFamilyFor(bfName);
 
   const blocks = check.blocks;
   const currentBlock = blocks[step] ?? null;
@@ -146,16 +147,8 @@ export default function BerufsCheckPlayer() {
 
   // CSS injection for corporate design (including fonts)
   const css = [
-    design.headingFontData
-      ? `@font-face{font-family:'${hfName}';src:url('${design.headingFontData}')}`
-      : (!design.headingFontData && hfName !== 'system'
-        ? `@import url('https://fonts.googleapis.com/css2?family=${encodeURIComponent(hfName)}:wght@400;600;700&display=swap')`
-        : ''),
-    design.bodyFontData && bfName !== hfName
-      ? `@font-face{font-family:'${bfName}';src:url('${design.bodyFontData}')}`
-      : (!design.bodyFontData && bfName !== 'system' && bfName !== hfName
-        ? `@import url('https://fonts.googleapis.com/css2?family=${encodeURIComponent(bfName)}:wght@400;600;700&display=swap')`
-        : ''),
+    design.headingFontData ? `@font-face{font-family:'${hfName}';src:url('${design.headingFontData}')}` : '',
+    design.bodyFontData && bfName !== hfName ? `@font-face{font-family:'${bfName}';src:url('${design.bodyFontData}')}` : '',
     `.bc-player{font-family:${bodyFont};color:${design.textColor ?? '#1e293b'}}`,
     `.bc-btn-primary{background:${primary};color:#fff;border-radius:${br}}`,
     `.bc-btn-primary:hover{opacity:0.9}`,
