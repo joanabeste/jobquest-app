@@ -10,7 +10,7 @@ import { useState, useRef, useMemo, useEffect } from 'react';
 import { FunnelDoc, LayoutNode, BlockNode } from '@/lib/funnel-types';
 import { Company, Dimension } from '@/lib/types';
 import { flatBlocks, isSubmitPage, computeScores } from '@/lib/funnel-utils';
-import { careerCheckStorage } from '@/lib/storage';
+import { careerCheckStorage, analyticsStorage } from '@/lib/storage';
 import { useCorporateDesign } from '@/lib/use-corporate-design';
 import { useFavicon } from '@/lib/use-favicon';
 import { ChevronLeft, ChevronRight, MapPin, CheckCircle, Send } from 'lucide-react';
@@ -23,6 +23,13 @@ interface Props { doc: FunnelDoc; company: Company; contentDbId?: string; }
 export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
   const [pageIndex, setPageIndex]   = useState(0);
   const [history, setHistory]       = useState<number[]>([]);
+  const sessionIdRef = useRef<string>('');
+  const startTimeRef = useRef<number>(Date.now());
+  const startedRef = useRef(false);
+  const completedRef = useRef(false);
+  if (!sessionIdRef.current && typeof crypto !== 'undefined') {
+    sessionIdRef.current = crypto.randomUUID();
+  }
   const [answers, setAnswers]       = useState<Record<string, unknown>>({});
   const [firstName, setFirstName]   = useState('');
   const [capturedVars, setCapturedVars] = useState<Record<string, string>>({});
@@ -37,6 +44,36 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
 
   // Reset dialog + footer input when page changes (must be before any conditional returns)
   useEffect(() => { setDialogVisible(0); setFooterInputValue(''); }, [pageIndex]);
+
+  // ── Analytics tracking (quest content only) ─────────────────────────────────
+  const isQuest = doc.contentType === 'quest';
+  useEffect(() => {
+    if (!isQuest || !contentDbId) return;
+    analyticsStorage.save({
+      id: crypto.randomUUID(), jobQuestId: contentDbId, type: 'view',
+      sessionId: sessionIdRef.current, timestamp: new Date().toISOString(),
+    }).catch((err) => console.error('[FunnelPlayer] track view failed', err));
+  }, [isQuest, contentDbId]);
+  useEffect(() => {
+    if (!isQuest || !contentDbId) return;
+    if (pageIndex > 0 && !startedRef.current) {
+      startedRef.current = true;
+      analyticsStorage.save({
+        id: crypto.randomUUID(), jobQuestId: contentDbId, type: 'start',
+        sessionId: sessionIdRef.current, timestamp: new Date().toISOString(),
+      }).catch((err) => console.error('[FunnelPlayer] track start failed', err));
+    }
+  }, [pageIndex, isQuest, contentDbId]);
+  useEffect(() => {
+    if (!isQuest || !contentDbId || !completed || completedRef.current) return;
+    completedRef.current = true;
+    analyticsStorage.save({
+      id: crypto.randomUUID(), jobQuestId: contentDbId, type: 'complete',
+      sessionId: sessionIdRef.current,
+      duration: Math.round((Date.now() - startTimeRef.current) / 1000),
+      timestamp: new Date().toISOString(),
+    }).catch((err) => console.error('[FunnelPlayer] track complete failed', err));
+  }, [completed, isQuest, contentDbId]);
 
   const [careerCheck, setCareerCheck] = useState<import('@/lib/types').CareerCheck | null>(null);
   useEffect(() => {
