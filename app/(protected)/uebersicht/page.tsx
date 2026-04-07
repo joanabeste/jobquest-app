@@ -5,20 +5,13 @@ import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { questStorage, careerCheckStorage } from '@/lib/storage';
 import {
-  JobQuest, CareerCheck, ShowcaseConfig, ShowcaseItem, DEFAULT_SHOWCASE,
+  JobQuest, CareerCheck, ShowcaseConfig, DEFAULT_SHOWCASE,
 } from '@/lib/types';
 import { slugify } from '@/lib/utils';
 import {
-  Globe, Save, ExternalLink, ImagePlus, ChevronUp, ChevronDown,
-  Trash2, Plus, CheckCircle, Upload, Copy, Check,
+  Globe, Save, ExternalLink, ChevronUp, ChevronDown,
+  Trash2, Plus, CheckCircle, Copy, Check,
 } from 'lucide-react';
-import ImageCropModal from '@/components/shared/ImageCropModal';
-import MediaLibrary from '@/components/shared/MediaLibrary';
-
-interface CardEdit {
-  itemId: string;
-  src: string;
-}
 
 export default function UebersichtPage() {
   const { company, updateCompany } = useAuth();
@@ -28,14 +21,10 @@ export default function UebersichtPage() {
 
   const [config, setConfig] = useState<ShowcaseConfig>(DEFAULT_SHOWCASE);
   const [slug, setSlug] = useState('');
-  const [questCardImages, setQuestCardImages] = useState<Record<string, string | undefined>>({});
-  const [checkCardImages, setCheckCardImages] = useState<Record<string, string | undefined>>({});
 
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [cropEdit, setCropEdit] = useState<CardEdit | null>(null);
-  const [libraryFor, setLibraryFor] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [slugStatus, setSlugStatus] = useState<'idle' | 'checking' | 'available' | 'taken' | 'invalid'>('idle');
 
@@ -52,12 +41,6 @@ export default function UebersichtPage() {
       if (cancelled) return;
       setQuests(qs);
       setChecks(cs);
-      const qm: Record<string, string | undefined> = {};
-      qs.forEach((q) => { qm[q.id] = q.cardImage; });
-      setQuestCardImages(qm);
-      const cm: Record<string, string | undefined> = {};
-      cs.forEach((c) => { cm[c.id] = c.cardImage; });
-      setCheckCardImages(cm);
     }).finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [company]);
@@ -115,44 +98,11 @@ export default function UebersichtPage() {
     });
   }
 
-  function pickImageFor(item: ShowcaseItem) {
-    setLibraryFor(item.id);
-  }
-
-  function applyCrop(base64: string) {
-    if (!cropEdit) return;
-    const item = config.items.find((it) => it.id === cropEdit.itemId);
-    if (!item) { setCropEdit(null); return; }
-    if (item.type === 'jobquest') {
-      setQuestCardImages((m) => ({ ...m, [item.contentId]: base64 }));
-    } else {
-      setCheckCardImages((m) => ({ ...m, [item.contentId]: base64 }));
-    }
-    setCropEdit(null);
-  }
-
-  function clearImageFor(item: ShowcaseItem) {
-    if (item.type === 'jobquest') {
-      setQuestCardImages((m) => ({ ...m, [item.contentId]: undefined }));
-    } else {
-      setCheckCardImages((m) => ({ ...m, [item.contentId]: undefined }));
-    }
-  }
-
   async function handleSave() {
     if (!company) return;
     setSaving(true);
     setError(null);
     try {
-      // Persist any changed card images on the underlying quest/check rows
-      const questUpdates = quests
-        .filter((q) => questCardImages[q.id] !== q.cardImage)
-        .map((q) => questStorage.save({ ...q, cardImage: questCardImages[q.id] ?? undefined }));
-      const checkUpdates = checks
-        .filter((c) => checkCardImages[c.id] !== c.cardImage)
-        .map((c) => careerCheckStorage.save({ ...c, cardImage: checkCardImages[c.id] ?? undefined }));
-      await Promise.all([...questUpdates, ...checkUpdates]);
-
       // Save company showcase config + slug. Server validates uniqueness
       // and returns a 409 if the slug is already taken.
       const normalized = slug ? slugify(slug) : '';
@@ -161,9 +111,6 @@ export default function UebersichtPage() {
         slug: normalized || undefined,
         showcase: config,
       });
-      // Mirror local quest objects so subsequent saves don't re-PUT
-      setQuests((prev) => prev.map((q) => ({ ...q, cardImage: questCardImages[q.id] ?? undefined })));
-      setChecks((prev) => prev.map((c) => ({ ...c, cardImage: checkCardImages[c.id] ?? undefined })));
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
     } catch (e) {
@@ -191,23 +138,6 @@ export default function UebersichtPage() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 md:px-6 py-8">
-      {cropEdit && (
-        <ImageCropModal
-          src={cropEdit.src}
-          title="Karten-Bild zuschneiden"
-          onConfirm={applyCrop}
-          onCancel={() => setCropEdit(null)}
-        />
-      )}
-      <MediaLibrary
-        open={!!libraryFor}
-        onClose={() => setLibraryFor(null)}
-        onSelect={(url) => {
-          if (libraryFor) setCropEdit({ itemId: libraryFor, src: url });
-          setLibraryFor(null);
-        }}
-      />
-
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
@@ -367,27 +297,9 @@ export default function UebersichtPage() {
           <ul className="space-y-2">
             {config.items.map((item, idx) => {
               const meta = itemMeta.get(`${item.type}:${item.contentId}`);
-              const cardImage = item.type === 'jobquest'
-                ? questCardImages[item.contentId]
-                : checkCardImages[item.contentId];
               return (
                 <li key={item.id}
                   className="flex items-center gap-3 p-3 border border-slate-200 rounded-xl">
-                  <button type="button" onClick={() => pickImageFor(item)}
-                    title={cardImage ? 'Bild ersetzen' : 'Bild hinzufügen'}
-                    className="group relative w-16 h-16 rounded-lg bg-slate-50 border-2 border-dashed border-slate-200 hover:border-violet-400 hover:bg-violet-50 overflow-hidden flex items-center justify-center flex-shrink-0 transition-colors">
-                    {cardImage ? (
-                      <>
-
-                        <img src={cardImage} alt="" className="w-full h-full object-cover" />
-                        <span className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <Upload size={16} className="text-white" />
-                        </span>
-                      </>
-                    ) : (
-                      <ImagePlus size={20} className="text-slate-400 group-hover:text-violet-600 transition-colors" />
-                    )}
-                  </button>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-slate-900 truncate">
                       {meta?.title ?? '— gelöscht —'}
@@ -398,17 +310,6 @@ export default function UebersichtPage() {
                     </p>
                   </div>
                   <div className="flex items-center gap-1">
-                    <button type="button" onClick={() => pickImageFor(item)}
-                      className="flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:border-violet-400 hover:text-violet-600 hover:bg-violet-50 transition-colors">
-                      <Upload size={12} />
-                      {cardImage ? 'Ersetzen' : 'Bild hochladen'}
-                    </button>
-                    {cardImage && (
-                      <button type="button" onClick={() => clearImageFor(item)}
-                        className="p-1.5 text-slate-300 hover:text-red-500 transition-colors" title="Bild entfernen">
-                        <Trash2 size={13} />
-                      </button>
-                    )}
                     <button type="button" onClick={() => moveItem(item.id, -1)} disabled={idx === 0}
                       className="p-1.5 text-slate-400 hover:text-slate-700 disabled:opacity-30">
                       <ChevronUp size={14} />

@@ -134,7 +134,7 @@ export function questToDb(q: JobQuest): Record<string, unknown> {
     created_at: q.createdAt,
     updated_at: q.updatedAt,
     published_at: q.publishedAt ?? null,
-    ...(q.cardImage !== undefined ? { card_image: q.cardImage || null } : {}),
+    card_image: q.cardImage || null,
   };
 }
 
@@ -229,7 +229,7 @@ export function careerCheckToDb(c: CareerCheck): Record<string, unknown> {
     created_at: c.createdAt,
     updated_at: c.updatedAt,
     published_at: c.publishedAt ?? null,
-    ...(c.cardImage !== undefined ? { card_image: c.cardImage || null } : {}),
+    card_image: c.cardImage || null,
   };
 }
 
