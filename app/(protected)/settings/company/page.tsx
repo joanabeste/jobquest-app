@@ -173,14 +173,6 @@ export default function SettingsCompanyPage() {
           <h1 className="text-2xl font-bold text-slate-900">{form.name || 'Firmenprofil'}</h1>
           <p className="text-slate-500 text-sm mt-0.5">Firmenprofil &amp; Corporate Design verwalten</p>
         </div>
-        <button
-          type="button"
-          onClick={() => setLibraryFor('manage')}
-          className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-xl bg-violet-50 text-violet-700 hover:bg-violet-100 transition"
-        >
-          <ImageIcon size={15} />
-          Mediathek öffnen
-        </button>
       </div>
 
       <form onSubmit={handleSubmit}>
