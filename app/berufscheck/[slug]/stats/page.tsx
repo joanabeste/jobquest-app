@@ -4,11 +4,13 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { careerCheckStorage, careerCheckLeadStorage, analyticsStorage } from '@/lib/storage';
+import { funnelStorage } from '@/lib/funnel-storage';
+import { FunnelDoc } from '@/lib/funnel-types';
 import { CareerCheck, CareerCheckLead, AnalyticsEvent } from '@/lib/types';
 import { formatDateShort } from '@/lib/utils';
 import {
   BarChart2, Users, Eye, TrendingUp, Clock,
-  ArrowLeft, Globe, Calendar, Filter,
+  ArrowLeft, Globe, Calendar, Filter, LogOut,
 } from 'lucide-react';
 
 type DateFilter = '7' | '30' | 'all';
@@ -17,6 +19,7 @@ export default function CheckStatsPage() {
   const { slug: id } = useParams<{ slug: string }>();
   const router = useRouter();
   const [check, setCheck] = useState<CareerCheck | null>(null);
+  const [funnelDoc, setFunnelDoc] = useState<FunnelDoc | null>(null);
   const [leads, setLeads] = useState<CareerCheckLead[]>([]);
   const [events, setEvents] = useState<AnalyticsEvent[]>([]);
   const [filter, setFilter] = useState<DateFilter>('30');
@@ -42,8 +45,14 @@ export default function CheckStatsPage() {
         return;
       }
       setCheck(found);
-      setLeads(await careerCheckLeadStorage.getByCheck(id));
-      setEvents(await analyticsStorage.getByCheck(id));
+      const [ls, evs, fd] = await Promise.all([
+        careerCheckLeadStorage.getByCheck(id),
+        analyticsStorage.getByCheck(id),
+        funnelStorage.getByContentIdAuth(id).catch(() => null),
+      ]);
+      setLeads(ls);
+      setEvents(evs);
+      setFunnelDoc(fd ?? null);
     }
     load();
   }, [id, router]);
@@ -80,6 +89,45 @@ export default function CheckStatsPage() {
     const mins = Math.floor(avg / 60);
     const secs = Math.round(avg % 60);
     return `${mins}:${secs.toString().padStart(2, '0')} Min`;
+  })();
+
+  // ─── Per-Page-Auswertung (über FunnelDoc-Pages) ─────────────────────────
+  // Aufrufe = unterschiedliche Sessions mit page_view auf diese Page.
+  // Absprungrate = Sessions, deren letzter page_view diese Page war und die
+  //                kein 'complete' ausgelöst haben.
+  const pageStats = (() => {
+    type Row = { pageId: string; views: number; exits: number; exitRate: number };
+    if (!funnelDoc) return [] as Row[];
+
+    const bySession = new Map<string, { lastPage?: string; lastTs: number; pages: Set<string>; completed: boolean }>();
+    for (const e of filteredEvents) {
+      let s = bySession.get(e.sessionId);
+      if (!s) {
+        s = { lastPage: undefined, lastTs: 0, pages: new Set(), completed: false };
+        bySession.set(e.sessionId, s);
+      }
+      if (e.type === 'complete') s.completed = true;
+      if (e.type === 'page_view' && e.moduleId) {
+        s.pages.add(e.moduleId);
+        const ts = new Date(e.timestamp).getTime();
+        if (ts >= s.lastTs) { s.lastTs = ts; s.lastPage = e.moduleId; }
+      }
+    }
+
+    const views = new Map<string, number>();
+    const exits = new Map<string, number>();
+    for (const s of bySession.values()) {
+      for (const p of s.pages) views.set(p, (views.get(p) ?? 0) + 1);
+      if (!s.completed && s.lastPage) {
+        exits.set(s.lastPage, (exits.get(s.lastPage) ?? 0) + 1);
+      }
+    }
+
+    return funnelDoc.pages.map((p) => {
+      const v = views.get(p.id) ?? 0;
+      const x = exits.get(p.id) ?? 0;
+      return { pageId: p.id, views: v, exits: x, exitRate: v > 0 ? Math.round((x / v) * 100) : 0 };
+    });
   })();
 
   if (notAuthorized) {
@@ -198,6 +246,69 @@ export default function CheckStatsPage() {
             </div>
           )}
         </div>
+
+        {funnelDoc && funnelDoc.pages.length > 0 && (
+          <div className="card overflow-hidden">
+            <div className="p-5 border-b border-slate-100">
+              <h2 className="font-semibold text-slate-900">Seiten-Auswertung</h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Aufrufe und Absprungrate je Seite – so siehst du, wo Besucher abspringen.
+              </p>
+            </div>
+            {pageStats.every((p) => p.views === 0) ? (
+              <div className="p-10 text-center text-slate-400 text-sm">
+                Noch keine Seiten-Aufrufe im gewählten Zeitraum.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-100 bg-slate-50">
+                      <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide w-10">#</th>
+                      <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Seite</th>
+                      <th className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Aufrufe</th>
+                      <th className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                        <span className="inline-flex items-center gap-1"><LogOut size={12} /> Absprünge</span>
+                      </th>
+                      <th className="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide w-[40%]">Absprungrate</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {funnelDoc.pages.map((p, idx) => {
+                      const stat = pageStats[idx];
+                      const rate = stat.exitRate;
+                      const barColor = rate >= 60 ? 'bg-rose-500' : rate >= 30 ? 'bg-amber-400' : 'bg-emerald-500';
+                      return (
+                        <tr key={p.id} className="hover:bg-slate-50 transition-colors">
+                          <td className="px-5 py-3 text-slate-400 text-xs">{idx + 1}</td>
+                          <td className="px-5 py-3">
+                            <p className="font-medium text-slate-900 truncate">{p.name || `Seite ${idx + 1}`}</p>
+                          </td>
+                          <td className="px-5 py-3 text-right font-semibold text-slate-700">{stat.views}</td>
+                          <td className="px-5 py-3 text-right text-slate-600">{stat.exits}</td>
+                          <td className="px-5 py-3">
+                            <div className="flex items-center gap-2">
+                              <div className="flex-1 bg-slate-100 rounded-full h-2">
+                                <div
+                                  className={`h-2 rounded-full ${barColor} transition-all duration-700`}
+                                  style={{ width: `${Math.min(rate, 100)}%` }}
+                                />
+                              </div>
+                              <span className="text-xs font-semibold text-slate-700 w-10 text-right">{rate}%</span>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+                <p className="px-5 py-3 text-xs text-slate-400 border-t border-slate-100">
+                  Absprungrate = Sessions, die auf dieser Seite verlassen haben, ohne den Berufscheck abzuschließen.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="card p-5">
           <h2 className="font-semibold text-slate-900 mb-3">Berufscheck-Informationen</h2>

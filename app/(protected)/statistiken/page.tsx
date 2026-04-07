@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { questStorage, leadStorage, analyticsStorage } from '@/lib/storage';
-import { JobQuest, Lead, AnalyticsEvent } from '@/lib/types';
+import { questStorage, leadStorage, analyticsStorage, careerCheckStorage, careerCheckLeadStorage } from '@/lib/storage';
+import { JobQuest, Lead, AnalyticsEvent, CareerCheck, CareerCheckLead } from '@/lib/types';
 import {
   BarChart2, Eye, TrendingUp, Users, Clock, Filter, ChevronRight, LineChart,
 } from 'lucide-react';
@@ -50,7 +50,9 @@ function formatDuration(sec: number | null): string {
 export default function StatistikenPage() {
   const { company } = useAuth();
   const [quests, setQuests] = useState<JobQuest[]>([]);
+  const [checks, setChecks] = useState<CareerCheck[]>([]);
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [checkLeads, setCheckLeads] = useState<CareerCheckLead[]>([]);
   const [events, setEvents] = useState<AnalyticsEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -63,13 +65,17 @@ export default function StatistikenPage() {
     setLoadError(false);
     Promise.all([
       questStorage.getByCompany(company.id),
+      careerCheckStorage.getByCompany(company.id),
       leadStorage.getAll(),
+      careerCheckLeadStorage.getAll(),
       analyticsStorage.getAll(),
     ])
-      .then(([qs, ls, evs]) => {
+      .then(([qs, cs, ls, cls, evs]) => {
         if (cancelled) return;
         setQuests(qs);
+        setChecks(cs);
         setLeads(ls);
+        setCheckLeads(cls);
         setEvents(evs);
       })
       .catch((err) => {
@@ -96,8 +102,13 @@ export default function StatistikenPage() {
     () => leads.filter((l) => new Date(l.submittedAt) >= filterDate),
     [leads, filterDate],
   );
+  const filteredCheckLeads = useMemo(
+    () => checkLeads.filter((l) => new Date(l.submittedAt) >= filterDate),
+    [checkLeads, filterDate],
+  );
 
   const kpis = useMemo(() => computeKpis(filteredEvents), [filteredEvents]);
+  const totalLeadCount = filteredLeads.length + filteredCheckLeads.length;
 
   // Per-quest rows
   const questRows = useMemo(() => {
@@ -112,12 +123,25 @@ export default function StatistikenPage() {
       .sort((a, b) => b.kpis.views - a.kpis.views);
   }, [quests, filteredEvents, filteredLeads]);
 
+  // Per-check rows
+  const checkRows = useMemo(() => {
+    return checks
+      .map((c) => {
+        const cEvents = filteredEvents.filter((e) => e.careerCheckId === c.id);
+        const cLeads = filteredCheckLeads.filter((l) => l.careerCheckId === c.id);
+        const k = computeKpis(cEvents);
+        return { check: c, kpis: k, leads: cLeads.length };
+      })
+      .filter((r) => r.kpis.views > 0 || r.kpis.starts > 0 || r.leads > 0 || r.check.status === 'published')
+      .sort((a, b) => b.kpis.views - a.kpis.views);
+  }, [checks, filteredEvents, filteredCheckLeads]);
+
   const funnelMax = Math.max(kpis.views, 1);
   const funnelRows = [
     { label: 'Aufrufe', value: kpis.views, color: 'bg-blue-400' },
     { label: 'Starts', value: kpis.starts, color: 'bg-violet-500' },
     { label: 'Abschlüsse', value: kpis.completions, color: 'bg-green-500' },
-    { label: 'Kontakte', value: filteredLeads.length, color: 'bg-amber-400' },
+    { label: 'Kontakte', value: totalLeadCount, color: 'bg-amber-400' },
   ];
 
   return (
@@ -132,7 +156,7 @@ export default function StatistikenPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Statistiken</h1>
-          <p className="text-slate-500 text-sm mt-0.5">Aufrufe, Starts und Abschlüsse über alle JobQuests</p>
+          <p className="text-slate-500 text-sm mt-0.5">Aufrufe, Starts und Abschlüsse über alle JobQuests und Berufschecks</p>
         </div>
         <div className="flex items-center gap-2">
           <Filter size={15} className="text-slate-400" />
@@ -162,7 +186,7 @@ export default function StatistikenPage() {
           { label: 'Aufrufe', value: kpis.views, icon: Eye, color: 'blue' },
           { label: 'Starts', value: kpis.starts, icon: TrendingUp, color: 'violet' },
           { label: 'Abschlüsse', value: kpis.completions, icon: BarChart2, color: 'green' },
-          { label: 'Kontakte', value: filteredLeads.length, icon: Users, color: 'rose' },
+          { label: 'Kontakte', value: totalLeadCount, icon: Users, color: 'rose' },
           { label: 'Ø Dauer', value: formatDuration(kpis.avgDurationSec), icon: Clock, color: 'amber' },
         ].map(({ label, value, icon: Icon, color }) => (
           <div key={label} className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
@@ -212,7 +236,7 @@ export default function StatistikenPage() {
       </div>
 
       {/* Per-quest table */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mb-6">
         <div className="p-5 border-b border-slate-100">
           <h2 className="font-semibold text-slate-900">Pro JobQuest</h2>
           <p className="text-xs text-slate-500 mt-0.5">Sortiert nach Aufrufen im gewählten Zeitraum</p>
@@ -260,6 +284,66 @@ export default function StatistikenPage() {
                     <td className="px-3 py-3 text-right tabular-nums">{leadCount}</td>
                     <td className="px-3 py-3 text-right">
                       <Link href={`/jobquest/${quest.id}/stats`}
+                        className="inline-flex items-center text-slate-400 hover:text-violet-600">
+                        <ChevronRight size={16} />
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Per-check table */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="p-5 border-b border-slate-100">
+          <h2 className="font-semibold text-slate-900">Pro Berufscheck</h2>
+          <p className="text-xs text-slate-500 mt-0.5">Sortiert nach Aufrufen im gewählten Zeitraum</p>
+        </div>
+        {loading ? (
+          <div className="p-10 text-center text-slate-400 text-sm">Laden…</div>
+        ) : checkRows.length === 0 ? (
+          <div className="p-12 text-center">
+            <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-3">
+              <LineChart size={24} className="text-slate-300" />
+            </div>
+            <p className="text-slate-500 text-sm">Noch keine Daten für Berufschecks.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-100 bg-slate-50">
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Berufscheck</th>
+                  <th className="text-left px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide hidden sm:table-cell">Status</th>
+                  <th className="text-right px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Aufrufe</th>
+                  <th className="text-right px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide hidden md:table-cell">Starts</th>
+                  <th className="text-right px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Abschlüsse</th>
+                  <th className="text-right px-3 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Kontakte</th>
+                  <th className="px-3 py-3"></th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {checkRows.map(({ check, kpis: k, leads: leadCount }) => (
+                  <tr key={check.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-5 py-3 font-medium text-slate-900">
+                      <Link href={`/berufscheck/${check.id}/stats`} className="hover:text-violet-600">
+                        {check.title}
+                      </Link>
+                    </td>
+                    <td className="px-3 py-3 hidden sm:table-cell">
+                      <span className={check.status === 'published' ? 'badge-published' : 'badge-draft'}>
+                        {check.status === 'published' ? 'Veröffentlicht' : 'Entwurf'}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3 text-right tabular-nums">{k.views}</td>
+                    <td className="px-3 py-3 text-right tabular-nums hidden md:table-cell">{k.starts}</td>
+                    <td className="px-3 py-3 text-right tabular-nums">{k.completions}</td>
+                    <td className="px-3 py-3 text-right tabular-nums">{leadCount}</td>
+                    <td className="px-3 py-3 text-right">
+                      <Link href={`/berufscheck/${check.id}/stats`}
                         className="inline-flex items-center text-slate-400 hover:text-violet-600">
                         <ChevronRight size={16} />
                       </Link>

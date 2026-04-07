@@ -80,6 +80,17 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
         timestamp: new Date().toISOString(),
       }).catch((err) => console.error('[FunnelPlayer] track heartbeat failed', err));
     }
+    // Per-page tracking: one page_view per visited funnel page so we can
+    // compute view counts and exit rates per page on the stats screen.
+    const visitedPageId = doc.pages[pageIndex]?.id;
+    if (visitedPageId) {
+      analyticsStorage.save({
+        id: crypto.randomUUID(), ...targetIds(), type: 'page_view',
+        sessionId: sessionIdRef.current,
+        moduleId: visitedPageId,
+        timestamp: new Date().toISOString(),
+      }).catch((err) => console.error('[FunnelPlayer] track page_view failed', err));
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageIndex, trackable, contentDbId]);
   useEffect(() => {

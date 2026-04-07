@@ -51,19 +51,25 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(data!.map(analyticsFromDb));
   }
 
-  // Company-wide: all events for all quests of this company
-  const { data: quests, error: questsErr } = await supabase
-    .from('job_quests')
-    .select('id')
-    .eq('company_id', session.company.id);
-  if (questsErr) return NextResponse.json({ error: questsErr.message }, { status: 500 });
-  const ids = (quests ?? []).map((q) => q.id);
-  if (ids.length === 0) return NextResponse.json([]);
+  // Company-wide: all quest + career-check events for this company
+  const [questsRes, checksRes] = await Promise.all([
+    supabase.from('job_quests').select('id').eq('company_id', session.company.id),
+    supabase.from('career_checks').select('id').eq('company_id', session.company.id),
+  ]);
+  if (questsRes.error) return NextResponse.json({ error: questsRes.error.message }, { status: 500 });
+  if (checksRes.error) return NextResponse.json({ error: checksRes.error.message }, { status: 500 });
+  const questIds = (questsRes.data ?? []).map((q) => q.id);
+  const checkIds = (checksRes.data ?? []).map((c) => c.id);
+  if (questIds.length === 0 && checkIds.length === 0) return NextResponse.json([]);
+
+  const orParts: string[] = [];
+  if (questIds.length > 0) orParts.push(`job_quest_id.in.(${questIds.join(',')})`);
+  if (checkIds.length > 0) orParts.push(`career_check_id.in.(${checkIds.join(',')})`);
 
   const { data, error } = await supabase
     .from('analytics_events')
     .select('*')
-    .in('job_quest_id', ids)
+    .or(orParts.join(','))
     .order('timestamp', { ascending: false });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
