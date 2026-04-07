@@ -30,7 +30,7 @@ export default function StatsPage() {
         const res = await fetch('/api/auth/me');
         if (res.ok) {
           const data = await res.json();
-          companyId = data.companyId ?? null;
+          companyId = data.company?.id ?? null;
         }
       } catch { /* ignore */ }
       if (!companyId) {
