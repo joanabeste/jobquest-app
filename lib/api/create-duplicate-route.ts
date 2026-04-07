@@ -11,6 +11,13 @@ const TABLE_TO_CONTENT_TYPE: Record<string, ContentType> = {
   form_pages: 'formulare',
 };
 
+// funnel_docs.content_type values for each content table.
+const TABLE_TO_FUNNEL_DOC_TYPE: Record<string, string> = {
+  job_quests: 'quest',
+  career_checks: 'check',
+  form_pages: 'form',
+};
+
 interface DuplicateRouteOptions<T> {
   table: string;
   fromDb: (row: Record<string, unknown>) => T;
@@ -60,6 +67,28 @@ export function createDuplicateRoute<T>(opts: DuplicateRouteOptions<T>) {
 
     const { data, error } = await supabase.from(opts.table).insert(copy).select().single();
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    // Clone the matching funnel_docs row (the actual editor content lives there).
+    const funnelType = TABLE_TO_FUNNEL_DOC_TYPE[opts.table];
+    if (funnelType) {
+      const { data: doc } = await supabase
+        .from('funnel_docs')
+        .select('pages, email_config')
+        .eq('content_id', id)
+        .eq('content_type', funnelType)
+        .maybeSingle();
+      if (doc) {
+        await supabase.from('funnel_docs').insert({
+          content_id: newId,
+          content_type: funnelType,
+          pages: doc.pages,
+          email_config: doc.email_config,
+          created_at: now,
+          updated_at: now,
+        });
+      }
+    }
+
     return NextResponse.json(opts.fromDb(data! as Record<string, unknown>));
   };
 }
