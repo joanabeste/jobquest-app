@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { X, Sparkles, Upload, Trash2 } from 'lucide-react';
+import { X, Sparkles, Upload, Trash2, Image as ImageIcon } from 'lucide-react';
 import { FunnelPage } from '@/lib/funnel-types';
 import type { MediaAsset } from '@/lib/types';
-import { compressImage } from '@/lib/image-compress';
+import MediaLibrary, { uploadToMediaLibrary } from '@/components/shared/MediaLibrary';
 
 interface Props {
   onGenerate: (pages: FunnelPage[], title: string) => void;
@@ -29,27 +29,29 @@ export default function GenerateQuestModal({ onGenerate, onClose }: Props) {
   const [error, setError] = useState('');
   const [loadingStep, setLoadingStep] = useState(0);
   const [loadingProgress, setLoadingProgress] = useState(0);
+  const [libraryOpen, setLibraryOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function handleImageUpload(file: File) {
     setUploadingImage(true);
     setError('');
     try {
-      const compressed = await compressImage(file);
-      const fd = new FormData();
-      fd.append('file', compressed);
-      const res = await fetch('/api/media', { method: 'POST', body: fd });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.error || 'Upload fehlgeschlagen');
-      }
-      const asset: MediaAsset = await res.json();
+      const asset = await uploadToMediaLibrary(file);
       setImages((prev) => [...prev, asset]);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Upload fehlgeschlagen');
     } finally {
       setUploadingImage(false);
     }
+  }
+
+  function pickFromLibrary(url: string) {
+    // The picker returns a public URL — synthesise a minimal MediaAsset
+    // so the existing rendering / dedupe logic keeps working.
+    setImages((prev) => prev.some((i) => i.url === url)
+      ? prev
+      : [...prev, { id: url, companyId: '', url, filename: url.split('/').pop() ?? 'asset', createdAt: '' }]);
+    setLibraryOpen(false);
   }
 
   useEffect(() => {
@@ -221,16 +223,32 @@ export default function GenerateQuestModal({ onGenerate, onClose }: Props) {
                     e.target.value = '';
                   }}
                 />
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploadingImage}
-                  className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-dashed border-slate-300 text-xs text-slate-600 hover:bg-slate-50 hover:border-violet-400 transition-colors disabled:opacity-60"
-                >
-                  {uploadingImage ? <Sparkles size={13} className="animate-spin" /> : <Upload size={13} />}
-                  {uploadingImage ? 'Wird hochgeladen…' : images.length === 0 ? 'Bild hochladen' : 'Weiteres Bild hochladen'}
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingImage}
+                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-dashed border-slate-300 text-xs text-slate-600 hover:bg-slate-50 hover:border-violet-400 transition-colors disabled:opacity-60"
+                  >
+                    {uploadingImage ? <Sparkles size={13} className="animate-spin" /> : <Upload size={13} />}
+                    {uploadingImage ? 'Wird hochgeladen…' : 'Hochladen'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLibraryOpen(true)}
+                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-dashed border-slate-300 text-xs text-slate-600 hover:bg-slate-50 hover:border-violet-400 transition-colors"
+                  >
+                    <ImageIcon size={13} />
+                    Aus Mediathek
+                  </button>
+                </div>
               </div>
+
+              <MediaLibrary
+                open={libraryOpen}
+                onClose={() => setLibraryOpen(false)}
+                onSelect={pickFromLibrary}
+              />
 
               {error && (
                 <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>
