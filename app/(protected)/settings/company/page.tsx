@@ -160,22 +160,36 @@ export default function SettingsCompanyPage() {
           onCancel={() => setCropState(null)}
         />
       )}
-      <div className="flex items-center gap-4 mb-8 max-w-3xl mx-auto">
-        {form.logo ? (
-          <img src={form.logo} alt="Logo" className="h-14 w-auto max-w-[160px] rounded-2xl object-contain border border-slate-200 p-1 bg-white shadow-sm" />
-        ) : (
-          <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-white font-bold text-xl shadow-sm"
-            style={{ backgroundColor: design.primaryColor }}>
-            {form.name.charAt(0) || 'J'}
+      <form onSubmit={handleSubmit}>
+      <div className="sticky top-0 z-20 -mx-6 px-6 py-4 mb-6 bg-slate-50/85 backdrop-blur border-b border-slate-200/60">
+        <div className="max-w-6xl mx-auto flex items-center gap-4">
+          {form.logo ? (
+            <img src={form.logo} alt="Logo" className="h-12 w-auto max-w-[140px] rounded-xl object-contain border border-slate-200 p-1 bg-white shadow-sm" />
+          ) : (
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-sm"
+              style={{ backgroundColor: design.primaryColor }}>
+              {form.name.charAt(0) || 'J'}
+            </div>
+          )}
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl font-bold text-slate-900 truncate">{form.name || 'Firmenprofil'}</h1>
+            <p className="text-slate-500 text-xs mt-0.5">Firmenprofil &amp; Corporate Design verwalten</p>
           </div>
-        )}
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold text-slate-900">{form.name || 'Firmenprofil'}</h1>
-          <p className="text-slate-500 text-sm mt-0.5">Firmenprofil &amp; Corporate Design verwalten</p>
+          <div className="flex items-center gap-3 flex-shrink-0">
+            {saved && (
+              <span className="hidden sm:flex items-center gap-1.5 text-sm text-green-600 font-medium">
+                <CheckCircle size={16} /> Gespeichert
+              </span>
+            )}
+            <button type="submit" disabled={saving}
+              className="btn-primary disabled:opacity-60"
+              style={{ backgroundColor: design.primaryColor }}>
+              <Save size={16} />
+              {saving ? 'Speichern…' : 'Speichern'}
+            </button>
+          </div>
         </div>
       </div>
-
-      <form onSubmit={handleSubmit}>
         <div className="flex gap-1 p-1 bg-slate-100 rounded-xl mb-6 max-w-3xl mx-auto">
           {tabs.map((tab) => (
             <button key={tab.id} type="button" onClick={() => setActiveTab(tab.id)}
@@ -305,22 +319,6 @@ export default function SettingsCompanyPage() {
                   onUploadFont={(name, data) => setDesign((d) => ({ ...d, headingFontName: name, headingFontCustomName: name, headingFontData: data }))}
                   onClearCustomFont={() => setDesign((d) => ({ ...d, headingFontName: 'system', headingFontCustomName: undefined, headingFontData: undefined }))}
                 />
-                <div
-                  className="px-4 py-5 rounded-xl bg-slate-50 border border-slate-100 truncate"
-                  style={{
-                    fontFamily: design.headingFontData
-                      ? `'${design.headingFontName}', system-ui, sans-serif`
-                      : fontFamilyFor(design.headingFontName),
-                    fontSize: `${design.headingFontSize ?? 22}px`,
-                    fontWeight: design.headingFontWeight ?? 700,
-                    letterSpacing: `${(design.headingLetterSpacing ?? 0) / 1000}em`,
-                    textTransform: design.headingTextTransform ?? 'none',
-                    color: design.headingColor,
-                    lineHeight: 1.2,
-                  }}
-                >
-                  Deine Überschrift in Aktion
-                </div>
                 <TypoControls
                   size={design.headingFontSize ?? 22}
                   sizeMin={14} sizeMax={40}
@@ -347,22 +345,6 @@ export default function SettingsCompanyPage() {
                   onUploadFont={(name, data) => setDesign((d) => ({ ...d, bodyFontName: name, bodyFontCustomName: name, bodyFontData: data }))}
                   onClearCustomFont={() => setDesign((d) => ({ ...d, bodyFontName: 'system', bodyFontCustomName: undefined, bodyFontData: undefined }))}
                 />
-                <div
-                  className="px-4 py-5 rounded-xl bg-slate-50 border border-slate-100"
-                  style={{
-                    fontFamily: design.bodyFontData
-                      ? `'${design.bodyFontName}', system-ui, sans-serif`
-                      : fontFamilyFor(design.bodyFontName),
-                    fontSize: `${design.bodyFontSize ?? 14}px`,
-                    fontWeight: design.bodyFontWeight ?? 400,
-                    letterSpacing: `${(design.bodyLetterSpacing ?? 0) / 1000}em`,
-                    textTransform: design.bodyTextTransform ?? 'none',
-                    color: design.textColor,
-                    lineHeight: 1.55,
-                  }}
-                >
-                  Hier siehst du, wie dein Fließtext in Karten und Funnels aussieht — mit deinen Einstellungen für Größe, Gewicht und Buchstabenabstand.
-                </div>
                 <TypoControls
                   size={design.bodyFontSize ?? 14}
                   sizeMin={12} sizeMax={20}
@@ -552,34 +534,11 @@ export default function SettingsCompanyPage() {
         )}
 
         {saveError && (
-          <div className="mt-4 flex items-start gap-2 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+          <div className="mt-4 max-w-3xl mx-auto flex items-start gap-2 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
             <span className="flex-shrink-0 mt-0.5">⚠️</span>
             <span>{saveError}</span>
           </div>
         )}
-
-        {/* Sticky save bar */}
-        <div className="sticky bottom-4 mt-6 z-10 max-w-3xl mx-auto">
-          <div className="flex items-center justify-between gap-4 px-4 py-3 rounded-2xl bg-white/90 backdrop-blur border border-slate-200 shadow-lg">
-            <p className="text-xs text-slate-500 hidden sm:block">
-              Änderungen am Corporate Design werden sofort auf alle veröffentlichten JobQuests angewendet.
-            </p>
-            <div className="flex items-center gap-3 ml-auto">
-              {saved && (
-                <span className="flex items-center gap-1.5 text-sm text-green-600 font-medium">
-                  <CheckCircle size={16} />
-                  Gespeichert
-                </span>
-              )}
-              <button type="submit" disabled={saving}
-                className="btn-primary disabled:opacity-60"
-                style={{ backgroundColor: design.primaryColor }}>
-                <Save size={16} />
-                {saving ? 'Speichern…' : 'Änderungen speichern'}
-              </button>
-            </div>
-          </div>
-        </div>
       </form>
     </div>
   );
@@ -703,17 +662,17 @@ function TypoControls({
     600: 'Halbfett (600)', 700: 'Fett (700)', 800: 'Extra fett (800)',
   };
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-1">
-      <div>
-        <label className="text-xs font-medium text-slate-500 mb-1.5 block">Größe</label>
-        <div className="flex items-center gap-2">
-          <input type="range" min={sizeMin} max={sizeMax} value={size}
-            onChange={(e) => onSize(Number(e.target.value))}
-            className="flex-1" style={{ accentColor: primaryColor }} />
-          <span className="text-xs text-slate-500 font-mono w-10 text-right flex-shrink-0">{size}px</span>
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-4 pt-1">
+      <div className="min-w-0">
+        <div className="flex items-baseline justify-between mb-1.5">
+          <label className="text-xs font-medium text-slate-500">Größe</label>
+          <span className="text-[11px] text-slate-400 font-mono">{size}px</span>
         </div>
+        <input type="range" min={sizeMin} max={sizeMax} value={size}
+          onChange={(e) => onSize(Number(e.target.value))}
+          className="w-full block" style={{ accentColor: primaryColor }} />
       </div>
-      <div>
+      <div className="min-w-0">
         <label className="text-xs font-medium text-slate-500 mb-1.5 block">Gewicht</label>
         <select value={weight}
           onChange={(e) => onWeight(Number(e.target.value))}
@@ -721,7 +680,7 @@ function TypoControls({
           {weightOptions.map((w) => <option key={w} value={w}>{weightLabels[w] ?? String(w)}</option>)}
         </select>
       </div>
-      <div>
+      <div className="min-w-0">
         <label className="text-xs font-medium text-slate-500 mb-1.5 block">Schreibweise</label>
         <div className="flex rounded-lg border border-slate-200 overflow-hidden text-xs font-medium">
           <button type="button" title="Normalschrift"
@@ -732,14 +691,14 @@ function TypoControls({
             className={`flex-1 py-1.5 transition-colors ${transform === 'uppercase' ? 'bg-slate-800 text-white' : 'text-slate-500 hover:bg-slate-50'}`}>AA</button>
         </div>
       </div>
-      <div>
-        <label className="text-xs font-medium text-slate-500 mb-1.5 block">Buchstabenabstand</label>
-        <div className="flex items-center gap-2">
-          <input type="range" min={-50} max={200} step={5} value={letterSpacing}
-            onChange={(e) => onLetterSpacing(Number(e.target.value))}
-            className="flex-1" style={{ accentColor: primaryColor }} />
-          <span className="text-xs text-slate-500 font-mono w-12 text-right flex-shrink-0">{(letterSpacing / 1000).toFixed(2)}em</span>
+      <div className="min-w-0">
+        <div className="flex items-baseline justify-between mb-1.5">
+          <label className="text-xs font-medium text-slate-500">Buchstabenabstand</label>
+          <span className="text-[11px] text-slate-400 font-mono">{(letterSpacing / 1000).toFixed(2)} em</span>
         </div>
+        <input type="range" min={-50} max={200} step={5} value={letterSpacing}
+          onChange={(e) => onLetterSpacing(Number(e.target.value))}
+          className="w-full block" style={{ accentColor: primaryColor }} />
       </div>
     </div>
   );
@@ -795,54 +754,96 @@ function DesignPreview({ name, logo, design }: { name: string; logo?: string; de
     ? `'${design.bodyFontName}', system-ui, sans-serif`
     : fontFamilyFor(design.bodyFontName);
   const br = `${design.borderRadius}px`;
+  const headingStyle: React.CSSProperties = {
+    fontFamily: headingFont,
+    color: design.headingColor,
+    letterSpacing: `${(design.headingLetterSpacing ?? 0) / 1000}em`,
+    textTransform: design.headingTextTransform ?? 'none',
+    fontWeight: design.headingFontWeight ?? 700,
+  };
+  const bodyStyle: React.CSSProperties = {
+    fontFamily: bodyFont,
+    color: design.textColor,
+    letterSpacing: `${(design.bodyLetterSpacing ?? 0) / 1000}em`,
+    textTransform: design.bodyTextTransform ?? 'none',
+    fontWeight: design.bodyFontWeight ?? 400,
+  };
   return (
-    <div className="card p-6">
-      <h2 className="font-semibold text-slate-900 flex items-center gap-2 mb-4">
-        <Globe size={17} className="text-slate-400" /> Live-Vorschau
-        <span className="text-xs font-normal text-slate-400 ml-1">So sieht deine öffentliche JobQuest aus</span>
-      </h2>
+    <div className="card p-5">
+      <div className="flex items-baseline justify-between mb-3">
+        <h2 className="font-semibold text-slate-900 flex items-center gap-2 text-sm">
+          <Globe size={15} className="text-slate-400" /> Live-Vorschau
+        </h2>
+        <span className="text-[10px] text-slate-400">So sieht deine JobQuest aus</span>
+      </div>
       {design.headingFontData && <style>{`@font-face{font-family:'${design.headingFontName}';src:url('${design.headingFontData}')}`}</style>}
       {design.bodyFontData && <style>{`@font-face{font-family:'${design.bodyFontName}';src:url('${design.bodyFontData}')}`}</style>}
-      <div className="max-w-xs mx-auto rounded-2xl overflow-hidden shadow-lg border border-slate-200" style={{ fontFamily: bodyFont, color: design.textColor, letterSpacing: `${(design.bodyLetterSpacing ?? 0) / 1000}em` }}>
-        <div className="px-4 py-3 flex items-center gap-3" style={{ backgroundColor: design.primaryColor }}>
-          {logo ? <img src={logo} alt={name} className="h-8 w-auto max-w-[100px] rounded-lg object-contain bg-white/20 p-0.5" />
-            : <div className="w-8 h-8 rounded-lg bg-white/25 flex items-center justify-center font-bold text-white text-sm">{name.charAt(0) || 'J'}</div>}
+
+      {/* Phone-frame mock — mirrors components/quest/QuestPlayer.tsx */}
+      <div className="mx-auto rounded-[28px] overflow-hidden shadow-xl border-[6px] border-slate-900 bg-slate-50" style={{ ...bodyStyle, maxWidth: 280 }}>
+        {/* Header (white, like real QuestPlayer) */}
+        <div className="bg-white border-b border-slate-200 px-3 py-2.5 flex items-center gap-2.5">
+          {logo ? (
+            <img src={logo} alt={name} className="h-7 w-auto max-w-[90px] rounded-lg object-contain" />
+          ) : (
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white font-bold text-[11px]"
+              style={{ backgroundColor: design.primaryColor }}>{name.charAt(0) || 'J'}</div>
+          )}
           <div className="flex-1 min-w-0">
-            <p className="text-white font-semibold text-sm truncate">Meine JobQuest</p>
-            <p className="text-white/70 text-xs">{name || 'Dein Unternehmen'}</p>
+            <p className="text-[11px] font-semibold text-slate-900 truncate" style={headingStyle}>Meine JobQuest</p>
+            <p className="text-[9px] text-slate-500 truncate">{name || 'Dein Unternehmen'}</p>
           </div>
-          <span className="text-white/60 text-xs">1 / 5</span>
+          <span className="text-[9px] text-slate-400 flex-shrink-0">1 / 5</span>
         </div>
-        <div className="h-1 bg-slate-200"><div className="h-1 w-1/4" style={{ backgroundColor: design.primaryColor }} /></div>
-        <div className="bg-slate-50 p-4 space-y-3">
-          <div className="bg-white p-4 shadow-sm" style={{ borderRadius: br }}>
-            <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: design.primaryColor }}>🌄 Szene</span>
-            <p className="font-semibold mt-1 text-sm" style={{ fontFamily: headingFont, color: design.headingColor, letterSpacing: `${(design.headingLetterSpacing ?? 0) / 1000}em` }}>Ein Tag im Betrieb</p>
-            <p className="text-xs mt-1 opacity-60">Erlebe einen typischen Arbeitstag bei uns…</p>
+        {/* Progress bar */}
+        <div className="h-1 bg-slate-200">
+          <div className="h-1 w-[20%]" style={{ backgroundColor: design.primaryColor }} />
+        </div>
+        {/* Content */}
+        <div className="p-3 space-y-2.5 min-h-[200px]">
+          <div className="bg-white p-3 shadow-sm border border-slate-100" style={{ borderRadius: br }}>
+            <span className="text-[9px] font-semibold uppercase tracking-wide" style={{ color: design.primaryColor }}>🌄 Szene</span>
+            <p className="mt-1" style={{ ...headingStyle, fontSize: `${Math.min(design.headingFontSize ?? 22, 18) * 0.7}px`, lineHeight: 1.2 }}>Ein Tag im Betrieb</p>
+            <p className="mt-1.5" style={{ ...bodyStyle, fontSize: `${(design.bodyFontSize ?? 14) * 0.72}px`, lineHeight: 1.5, opacity: 0.75 }}>
+              Erlebe einen typischen Arbeitstag bei uns und entdecke, was dich erwartet.
+            </p>
           </div>
-          <div className="bg-white p-3 shadow-sm space-y-2" style={{ borderRadius: br }}>
-            <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: design.primaryColor }}>❓ Quiz</span>
-            <p className="text-sm font-medium" style={{ fontFamily: headingFont, color: design.headingColor, letterSpacing: `${(design.headingLetterSpacing ?? 0) / 1000}em` }}>Was ist dir wichtig?</p>
+          <div className="bg-white p-3 shadow-sm border border-slate-100 space-y-2" style={{ borderRadius: br }}>
+            <span className="text-[9px] font-semibold uppercase tracking-wide" style={{ color: design.primaryColor }}>❓ Quiz</span>
+            <p style={{ ...headingStyle, fontSize: `${Math.min(design.headingFontSize ?? 22, 18) * 0.62}px`, lineHeight: 1.25 }}>Was ist dir wichtig?</p>
             <div className="space-y-1.5">
-              <div className="border-2 px-3 py-2 text-xs font-medium"
-                style={{ borderColor: design.primaryColor, color: design.primaryColor, backgroundColor: design.primaryColor + '12', borderRadius: br }}>Teamarbeit ✓</div>
-              <div className="border-2 border-slate-200 px-3 py-2 text-xs opacity-50" style={{ borderRadius: br }}>Eigenverantwortung</div>
+              <div className="border-2 px-2.5 py-1.5 font-medium"
+                style={{ borderColor: design.primaryColor, color: design.primaryColor, backgroundColor: design.primaryColor + '12', borderRadius: br, fontSize: `${(design.bodyFontSize ?? 14) * 0.72}px` }}>
+                Teamarbeit ✓
+              </div>
+              <div className="border-2 border-slate-200 px-2.5 py-1.5 text-slate-400"
+                style={{ borderRadius: br, fontSize: `${(design.bodyFontSize ?? 14) * 0.72}px` }}>
+                Eigenverantwortung
+              </div>
             </div>
           </div>
         </div>
-        <div className="bg-white border-t border-slate-100 px-4 py-3 flex items-center justify-between">
-          <span className="text-xs opacity-40">← Zurück</span>
-          <button className="flex items-center gap-1.5 px-4 py-2 text-xs text-white font-semibold"
+        {/* Footer */}
+        <div className="bg-white border-t border-slate-200 px-3 py-2.5 flex items-center justify-between">
+          <span className="text-[10px] text-slate-300">← Zurück</span>
+          <button className="px-3 py-1.5 text-[10px] text-white font-semibold shadow-sm"
             style={{ backgroundColor: design.primaryColor, borderRadius: br }}>Weiter →</button>
         </div>
       </div>
-      <div className="flex justify-center gap-6 mt-3 text-xs text-slate-400">
-        <span>Überschrift: <span className="font-medium text-slate-600" style={{ fontFamily: headingFont }}>
-          {design.headingFontData ? design.headingFontCustomName : (FONT_OPTIONS.find((f) => f.value === design.headingFontName)?.label ?? design.headingFontName)}
-        </span></span>
-        <span>Fließtext: <span className="font-medium text-slate-600" style={{ fontFamily: bodyFont }}>
-          {design.bodyFontData ? design.bodyFontCustomName : (FONT_OPTIONS.find((f) => f.value === design.bodyFontName)?.label ?? design.bodyFontName)}
-        </span></span>
+
+      <div className="mt-4 pt-3 border-t border-slate-100 grid grid-cols-2 gap-2 text-[10px] text-slate-400">
+        <div className="min-w-0">
+          <p className="uppercase tracking-wider font-semibold mb-0.5">Überschrift</p>
+          <p className="font-medium text-slate-600 truncate" style={{ fontFamily: headingFont }}>
+            {design.headingFontData ? design.headingFontCustomName : (FONT_OPTIONS.find((f) => f.value === design.headingFontName)?.label ?? design.headingFontName)}
+          </p>
+        </div>
+        <div className="min-w-0">
+          <p className="uppercase tracking-wider font-semibold mb-0.5">Fließtext</p>
+          <p className="font-medium text-slate-600 truncate" style={{ fontFamily: bodyFont }}>
+            {design.bodyFontData ? design.bodyFontCustomName : (FONT_OPTIONS.find((f) => f.value === design.bodyFontName)?.label ?? design.bodyFontName)}
+          </p>
+        </div>
       </div>
     </div>
   );
