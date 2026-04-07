@@ -84,6 +84,30 @@ interface Extracted {
   careerUrl?: string;
   fontCandidates: string[];
   colorCandidates: string[];
+  bodyText?: string;
+  stylesheetUrls: string[];
+  colorCounts: Map<string, number>;
+}
+
+function extractColorsFromCss(css: string, counts: Map<string, number>) {
+  // hex
+  for (const m of css.matchAll(/#([0-9a-f]{6}|[0-9a-f]{3})\b/gi)) {
+    let hex = m[1].toLowerCase();
+    if (hex.length === 3) hex = hex.split('').map((c) => c + c).join('');
+    if (hex === 'ffffff' || hex === '000000') continue;
+    const key = `#${hex}`;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  // rgb / rgba
+  for (const m of css.matchAll(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/gi)) {
+    const r = Math.min(255, parseInt(m[1], 10));
+    const g = Math.min(255, parseInt(m[2], 10));
+    const b = Math.min(255, parseInt(m[3], 10));
+    if (r === 255 && g === 255 && b === 255) continue;
+    if (r === 0 && g === 0 && b === 0) continue;
+    const key = '#' + [r, g, b].map((n) => n.toString(16).padStart(2, '0')).join('');
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
 }
 
 function parseHtml(html: string, baseUrl: URL): Extracted {
@@ -149,32 +173,50 @@ function parseHtml(html: string, baseUrl: URL): Extracted {
     }
   }
 
-  // Colors: hex codes from inline CSS, ranked by frequency
+  // Colors: hex/rgb from inline CSS + inline style attrs + meta theme-color
   const colorCounts = new Map<string, number>();
-  for (const m of inlineCss.matchAll(/#([0-9a-f]{6}|[0-9a-f]{3})\b/gi)) {
-    let hex = m[1].toLowerCase();
-    if (hex.length === 3) hex = hex.split('').map((c) => c + c).join('');
-    if (hex === 'ffffff' || hex === '000000') continue;
-    const key = `#${hex}`;
-    colorCounts.set(key, (colorCounts.get(key) ?? 0) + 1);
-  }
-  const colorCandidates = [...colorCounts.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 8)
-    .map(([c]) => c);
+  extractColorsFromCss(inlineCss, colorCounts);
+  $('[style]').each((_, el) => {
+    extractColorsFromCss($(el).attr('style') ?? '', colorCounts);
+  });
+  const themeColor = $('meta[name="theme-color"]').attr('content');
+  if (themeColor) extractColorsFromCss(themeColor, colorCounts);
+
+  // Stylesheet URLs to fetch later (for more color material)
+  const stylesheetUrls: string[] = [];
+  $('link[rel="stylesheet"][href]').each((_, el) => {
+    const href = abs($(el).attr('href'));
+    if (href) stylesheetUrls.push(href);
+  });
+
+  // Visible body text — headings + paragraphs, used to give the AI enough material
+  $('script, style, noscript, nav, footer, header').remove();
+  const textParts: string[] = [];
+  $('h1, h2, h3, p, li').each((_, el) => {
+    const t = $(el).text().replace(/\s+/g, ' ').trim();
+    if (t.length > 20) textParts.push(t);
+  });
+  const bodyText = textParts.join('\n').slice(0, 8000);
 
   return {
     title,
     description,
     ogImage,
+    bodyText,
     logoCandidates: logoCandidates.slice(0, 5),
     faviconCandidate,
     privacyUrl,
     imprintUrl,
     careerUrl,
     fontCandidates: [...fontCandidates].slice(0, 10),
-    colorCandidates,
+    colorCandidates: [],
+    stylesheetUrls: stylesheetUrls.slice(0, 3),
+    colorCounts,
   };
+}
+
+function rankColors(counts: Map<string, number>): string[] {
+  return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10).map(([c]) => c);
 }
 
 interface AiResult {
@@ -200,15 +242,15 @@ Antworte AUSSCHLIESSLICH mit validem JSON ohne Markdown, kein Text davor oder da
 Schema:
 {
   "name": string | null,
-  "description": string | null,        // 2-3 Sätze, deutsch, was die Firma macht
+  "description": string | null,        // 6-10 Sätze auf Deutsch, ausführlich: was die Firma macht, Werte/Mission, Größe/Standorte, Zielgruppe, Besonderheiten, Ausbildungs- oder Arbeitskultur falls erkennbar. Keine Marketing-Floskeln, sondern konkrete Inhalte aus der Website.
   "industry": string | null,           // EXAKT einer aus: ${INDUSTRY_OPTIONS.join(', ')}
   "location": string | null,           // Stadt, falls erkennbar
   "privacyUrl": string | null,
   "imprintUrl": string | null,
   "careerPageUrl": string | null,
   "design": {
-    "primaryColor": "#rrggbb" | null,  // wähle aus den Farb-Kandidaten die markanteste Markenfarbe
-    "accentColor": "#rrggbb" | null,
+    "primaryColor": "#rrggbb",         // PFLICHT: markanteste Markenfarbe aus den Farb-Kandidaten
+    "accentColor": "#rrggbb",          // PFLICHT: zweite, kontrastierende Farbe aus den Kandidaten
     "headingFontName": string | null,  // EXAKT einer aus: ${FONT_WHITELIST.join(', ')} (system wenn unbekannt)
     "bodyFontName": string | null      // EXAKT einer aus: ${FONT_WHITELIST.join(', ')}
   }
@@ -220,6 +262,7 @@ Wähle Werte ausschließlich aus den gegebenen Kandidaten. Wenn nichts passt, gi
     sourceUrl,
     title: extracted.title,
     metaDescription: extracted.description,
+    bodyText: extracted.bodyText,
     privacyUrlCandidate: extracted.privacyUrl,
     imprintUrlCandidate: extracted.imprintUrl,
     careerPageUrlCandidate: extracted.careerUrl,
@@ -309,6 +352,15 @@ export async function POST(req: NextRequest) {
   const html = fetched.buffer.toString('utf8');
   const extracted = parseHtml(html, url);
 
+  // Enrich with stylesheet colors until we have at least 2 candidates
+  for (const cssUrl of extracted.stylesheetUrls) {
+    if (extracted.colorCounts.size >= 4) break;
+    const cssRes = await fetchWithLimit(cssUrl, MAX_HTML_BYTES);
+    if (!cssRes) continue;
+    extractColorsFromCss(cssRes.buffer.toString('utf8'), extracted.colorCounts);
+  }
+  extracted.colorCandidates = rankColors(extracted.colorCounts);
+
   const ai = await callOpenAi(extracted, url.toString(), apiKey);
   if (!ai) {
     return NextResponse.json({ error: 'KI-Analyse fehlgeschlagen.' }, { status: 502 });
@@ -327,7 +379,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({
     extracted: {
       name: sanitizeText(ai.name, 200),
-      description: sanitizeText(ai.description, 2000),
+      description: sanitizeText(ai.description, 4000),
       industry,
       location: sanitizeText(ai.location, 200),
       privacyUrl: sanitizeUrl(ai.privacyUrl) ?? sanitizeUrl(extracted.privacyUrl),
