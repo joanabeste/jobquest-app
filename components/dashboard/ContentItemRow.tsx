@@ -2,10 +2,11 @@
 
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
-import { Edit2, Eye, BarChart2, Copy, Trash2, Users, MoreHorizontal } from 'lucide-react';
+import { Edit2, Eye, BarChart2, Copy, Trash2, Users, MoreHorizontal, QrCode, ExternalLink } from 'lucide-react';
 import { formatDateShort } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 import type { BaseContentItem, ContentTypeConfig } from '@/lib/dashboard/contentTypes';
-import ShareButton from './ShareButton';
+import ShareModal from '@/components/ShareModal';
 
 interface ContentItemRowProps<T extends BaseContentItem> {
   item: T;
@@ -25,7 +26,10 @@ export default function ContentItemRow<T extends BaseContentItem>({
   const extraMeta = config.itemMeta?.(item) ?? [];
   const isPublished = item.status === 'published';
   const [menuOpen, setMenuOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const { company } = useAuth();
+  const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}${publicHref}` : publicHref;
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -38,30 +42,41 @@ export default function ContentItemRow<T extends BaseContentItem>({
 
   return (
     <div className="card p-4 hover:shadow-md transition-shadow">
+      {shareOpen && (
+        <ShareModal
+          url={shareUrl}
+          title={item.title}
+          logoUrl={company?.corporateDesign?.faviconUrl || company?.logo}
+          onClose={() => setShareOpen(false)}
+        />
+      )}
       <div className="flex flex-col sm:flex-row sm:items-center gap-4">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-1.5">
             <h3 className="font-semibold text-slate-900 truncate">{item.title}</h3>
             {isPublished
               ? <span className="badge-published">Veröffentlicht</span>
               : <span className="badge-draft">Entwurf</span>}
           </div>
-          <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
+          <div className="flex flex-wrap items-center text-xs text-slate-500">
             <span className="flex items-center gap-1">
               <Users size={11} />
               {count} {config.countLabel}
             </span>
-            {extraMeta.map((m) => <span key={m}>{m}</span>)}
-            <span>Aktualisiert {formatDateShort(item.updatedAt)}</span>
+            {extraMeta.map((m) => (
+              <span key={m} className="flex items-center"><span className="mx-2 text-slate-300">·</span>{m}</span>
+            ))}
+            <span className="flex items-center"><span className="mx-2 text-slate-300">·</span>Aktualisiert {formatDateShort(item.updatedAt)}</span>
           </div>
           {isPublished && (
             <Link href={publicHref} target="_blank"
-              className="inline-flex items-center gap-1 mt-1 text-xs text-green-600 hover:text-green-700 hover:underline truncate max-w-full">
-              {publicHref}
+              className="group inline-flex items-center gap-1.5 mt-2 text-xs text-slate-500 hover:text-violet-700 truncate max-w-full">
+              <ExternalLink size={11} className="flex-shrink-0 opacity-60 group-hover:opacity-100" />
+              <span className="font-mono truncate">{publicHref}</span>
             </Link>
           )}
         </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex items-center gap-1.5 flex-shrink-0">
           <Link href={editorHref}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition-colors"
             title="Bearbeiten">
@@ -71,45 +86,52 @@ export default function ContentItemRow<T extends BaseContentItem>({
           <div className="relative" ref={menuRef}>
             <button onClick={() => setMenuOpen((o) => !o)}
               className="flex items-center justify-center p-1.5 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors"
-              title="Weitere Aktionen">
+              title="Weitere Aktionen"
+              aria-label="Weitere Aktionen"
+              aria-haspopup="menu"
+              aria-expanded={menuOpen}>
               <MoreHorizontal size={18} />
             </button>
             {menuOpen && (
-              <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-slate-200 rounded-lg shadow-lg z-10 py-1">
+              <div role="menu" className="absolute right-0 top-full mt-1.5 w-52 bg-white border border-slate-200 rounded-xl shadow-lg z-10 py-1.5 overflow-hidden">
                 {isPublished && (
                   <>
                     <Link href={publicHref} target="_blank" onClick={() => setMenuOpen(false)}
-                      className="flex items-center gap-2 px-3 py-2 text-xs text-slate-700 hover:bg-slate-50">
-                      <Eye size={14} /> Vorschau
+                      className="flex items-center gap-2.5 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                      <Eye size={15} className="text-slate-400" /> Vorschau
                     </Link>
-                    <div onClick={() => setMenuOpen(false)}>
-                      <ShareButton path={publicHref} title={item.title} />
-                    </div>
+                    <button onClick={() => { setMenuOpen(false); setShareOpen(true); }}
+                      className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                      <QrCode size={15} className="text-slate-400" /> Teilen &amp; QR-Code
+                    </button>
                   </>
                 )}
                 {config.statsHref && (
                   <Link href={config.statsHref(item)} onClick={() => setMenuOpen(false)}
-                    className="flex items-center gap-2 px-3 py-2 text-xs text-slate-700 hover:bg-slate-50">
-                    <BarChart2 size={14} /> Statistiken
+                    className="flex items-center gap-2.5 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                    <BarChart2 size={15} className="text-slate-400" /> Statistiken
                   </Link>
                 )}
                 {config.extraAction && (
                   <Link href={config.extraAction.href(item)} onClick={() => setMenuOpen(false)}
-                    className="flex items-center gap-2 px-3 py-2 text-xs text-slate-700 hover:bg-slate-50">
-                    <config.extraAction.icon size={14} /> {config.extraAction.label}
+                    className="flex items-center gap-2.5 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                    <config.extraAction.icon size={15} className="text-slate-400" /> {config.extraAction.label}
                   </Link>
                 )}
                 {canCreate && (
                   <button onClick={() => { setMenuOpen(false); onDuplicate(item); }}
-                    className="flex items-center gap-2 w-full px-3 py-2 text-xs text-slate-700 hover:bg-slate-50">
-                    <Copy size={14} /> Duplizieren
+                    className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                    <Copy size={15} className="text-slate-400" /> Duplizieren
                   </button>
                 )}
                 {canDelete && (
-                  <button onClick={() => { setMenuOpen(false); onAskDelete({ id: item.id, title: item.title }); }}
-                    className="flex items-center gap-2 w-full px-3 py-2 text-xs text-red-600 hover:bg-red-50">
-                    <Trash2 size={14} /> Löschen
-                  </button>
+                  <>
+                    <div className="my-1 border-t border-slate-100" />
+                    <button onClick={() => { setMenuOpen(false); onAskDelete({ id: item.id, title: item.title }); }}
+                      className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50">
+                      <Trash2 size={15} /> Löschen
+                    </button>
+                  </>
                 )}
               </div>
             )}
