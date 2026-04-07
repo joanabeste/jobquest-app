@@ -301,9 +301,10 @@ export interface Lead {
 
 export interface AnalyticsEvent {
   id: string;
-  // Exactly one of jobQuestId / careerCheckId is set per event.
+  // Exactly one of jobQuestId / careerCheckId / formPageId is set per event.
   jobQuestId?: string;
   careerCheckId?: string;
+  formPageId?: string;
   type: 'view' | 'start' | 'complete' | 'page_view';
   sessionId: string;
   moduleId?: string;

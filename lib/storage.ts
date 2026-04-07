@@ -163,6 +163,10 @@ export const analyticsStorage = {
     return apiFetch<AnalyticsEvent[]>(`/api/analytics?checkId=${checkId}`);
   },
 
+  getByForm: async (formId: string): Promise<AnalyticsEvent[]> => {
+    return apiFetch<AnalyticsEvent[]>(`/api/analytics?formId=${formId}`);
+  },
+
   save: async (event: AnalyticsEvent): Promise<void> => {
     const { error } = await createClient()
       .from('analytics_events')

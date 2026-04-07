@@ -138,4 +138,5 @@ export const formConfig: ContentTypeConfig<FormPage> = {
     createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
   }),
   itemMeta: (f) => [`${f.contentBlocks.length} Inhaltsblöcke`, `${f.formSteps.length} Formular-Schritte`],
+  statsHref: (f) => `/formular/${f.id}/stats`,
 };

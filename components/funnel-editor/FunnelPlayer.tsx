@@ -45,12 +45,16 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
   // Reset dialog + footer input when page changes (must be before any conditional returns)
   useEffect(() => { setDialogVisible(0); setFooterInputValue(''); }, [pageIndex]);
 
-  // ── Analytics tracking (quest + career check) ───────────────────────────────
+  // ── Analytics tracking (quest + career check + form page) ───────────────────
   const isQuest = doc.contentType === 'quest';
   const isCheck = doc.contentType === 'check';
-  const trackable = (isQuest || isCheck) && !!contentDbId;
-  const targetIds = (): { jobQuestId?: string; careerCheckId?: string } =>
-    isQuest ? { jobQuestId: contentDbId } : { careerCheckId: contentDbId };
+  const isForm  = doc.contentType === 'form';
+  const trackable = (isQuest || isCheck || isForm) && !!contentDbId;
+  const targetIds = (): { jobQuestId?: string; careerCheckId?: string; formPageId?: string } => {
+    if (isQuest) return { jobQuestId: contentDbId };
+    if (isCheck) return { careerCheckId: contentDbId };
+    return { formPageId: contentDbId };
+  };
   useEffect(() => {
     if (!trackable) return;
     analyticsStorage.save({
