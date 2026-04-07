@@ -269,7 +269,7 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
           <div className="px-4 pt-3 pb-2 flex items-center gap-3">
             {company.logo ? (
                
-              <img src={company.logo} alt={company.name} className="h-7 w-7 rounded-lg object-contain border border-slate-200 flex-shrink-0" />
+              <img src={company.logo} alt={company.name} className="h-7 w-auto max-w-[120px] rounded-lg object-contain flex-shrink-0" />
             ) : (
               <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white font-bold text-sm fp-btn flex-shrink-0">
                 {company.name.charAt(0)}

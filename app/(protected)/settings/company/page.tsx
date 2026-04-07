@@ -134,7 +134,7 @@ export default function SettingsCompanyPage() {
       )}
       <div className="flex items-center gap-4 mb-8">
         {form.logo ? (
-          <img src={form.logo} alt="Logo" className="h-14 w-14 rounded-2xl object-contain border border-slate-200 p-1 bg-white shadow-sm" />
+          <img src={form.logo} alt="Logo" className="h-14 w-auto max-w-[160px] rounded-2xl object-contain border border-slate-200 p-1 bg-white shadow-sm" />
         ) : (
           <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-white font-bold text-xl shadow-sm"
             style={{ backgroundColor: design.primaryColor }}>
@@ -195,7 +195,7 @@ export default function SettingsCompanyPage() {
               <label className="label">Firmenlogo</label>
               <div className="flex items-center gap-3">
                 {form.logo && (
-                  <img src={form.logo} alt="Logo" className="h-10 w-10 rounded-lg object-contain border border-slate-200 p-0.5" />
+                  <img src={form.logo} alt="Logo" className="h-10 w-auto max-w-[120px] rounded-lg object-contain border border-slate-200 p-0.5" />
                 )}
                 <input type="file" accept="image/*" onChange={handleLogoChange}
                   className="block text-sm text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer" />
@@ -628,7 +628,7 @@ function DesignPreview({ name, logo, design }: { name: string; logo?: string; de
       {design.bodyFontData && <style>{`@font-face{font-family:'${design.bodyFontName}';src:url('${design.bodyFontData}')}`}</style>}
       <div className="max-w-xs mx-auto rounded-2xl overflow-hidden shadow-lg border border-slate-200" style={{ fontFamily: bodyFont, color: design.textColor }}>
         <div className="px-4 py-3 flex items-center gap-3" style={{ backgroundColor: design.primaryColor }}>
-          {logo ? <img src={logo} alt={name} className="h-8 w-8 rounded-lg object-contain bg-white/20 p-0.5" />
+          {logo ? <img src={logo} alt={name} className="h-8 w-auto max-w-[100px] rounded-lg object-contain bg-white/20 p-0.5" />
             : <div className="w-8 h-8 rounded-lg bg-white/25 flex items-center justify-center font-bold text-white text-sm">{name.charAt(0) || 'J'}</div>}
           <div className="flex-1 min-w-0">
             <p className="text-white font-semibold text-sm truncate">Meine JobQuest</p>
@@ -677,124 +677,113 @@ function LogoCropModal({ src, onConfirm, onCancel }: {
   onConfirm: (base64: string) => void;
   onCancel: () => void;
 }) {
-  const PREVIEW = 280;
   const imgRef = useRef<HTMLImageElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [natW, setNatW] = useState(0);
   const [natH, setNatH] = useState(0);
-  const [zoom, setZoom] = useState(1);
-  const [minZoom, setMinZoom] = useState(1);
-  const [ox, setOx] = useState(0.5);
-  const [oy, setOy] = useState(0.5);
-  const [dragging, setDragging] = useState(false);
-  const [last, setLast] = useState({ x: 0, y: 0 });
+  // Crop in percent of image
+  const [crop, setCrop] = useState({ left: 0, top: 0, right: 100, bottom: 100 });
+
+  type Handle = 'nw' | 'ne' | 'sw' | 'se' | 'move';
+  const drag = useRef<{ handle: Handle; startX: number; startY: number; start: typeof crop } | null>(null);
+  const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
+  const MIN = 5;
 
   function onLoad() {
     const img = imgRef.current!;
-    const nw = img.naturalWidth;
-    const nh = img.naturalHeight;
-    setNatW(nw);
-    setNatH(nh);
-    // Min zoom = factor needed so the image fully covers the square preview
-    setMinZoom(1);
-    setZoom(1);
+    setNatW(img.naturalWidth);
+    setNatH(img.naturalHeight);
   }
 
-  const aspect = natW && natH ? natW / natH : 1;
-  let dw: number, dh: number;
-  // Cover behavior: at zoom=1 the smaller side equals PREVIEW so the square is fully covered
-  if (aspect >= 1) {
-    // Wide: height = PREVIEW, width = larger
-    dh = PREVIEW * zoom;
-    dw = dh * aspect;
-  } else {
-    // Tall: width = PREVIEW, height = larger
-    dw = PREVIEW * zoom;
-    dh = dw / aspect;
-  }
-  const ovx = Math.max(0, dw - PREVIEW);
-  const ovy = Math.max(0, dh - PREVIEW);
-  const imgL = -(ovx * ox);
-  const imgT = -(ovy * oy);
-
-  function onDown(e: React.MouseEvent) {
-    setDragging(true);
-    setLast({ x: e.clientX, y: e.clientY });
+  function startDrag(handle: Handle, e: React.MouseEvent) {
     e.preventDefault();
+    e.stopPropagation();
+    drag.current = { handle, startX: e.clientX, startY: e.clientY, start: crop };
+    function onMove(me: MouseEvent) {
+      if (!drag.current || !containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const dx = ((me.clientX - drag.current.startX) / rect.width) * 100;
+      const dy = ((me.clientY - drag.current.startY) / rect.height) * 100;
+      const s = drag.current.start;
+      let { left, top, right, bottom } = s;
+      if (drag.current.handle === 'move') {
+        const w = s.right - s.left, h = s.bottom - s.top;
+        left = clamp(s.left + dx, 0, 100 - w);
+        top = clamp(s.top + dy, 0, 100 - h);
+        right = left + w;
+        bottom = top + h;
+      } else {
+        if (drag.current.handle === 'nw' || drag.current.handle === 'sw') left = clamp(s.left + dx, 0, s.right - MIN);
+        if (drag.current.handle === 'ne' || drag.current.handle === 'se') right = clamp(s.right + dx, s.left + MIN, 100);
+        if (drag.current.handle === 'nw' || drag.current.handle === 'ne') top = clamp(s.top + dy, 0, s.bottom - MIN);
+        if (drag.current.handle === 'sw' || drag.current.handle === 'se') bottom = clamp(s.bottom + dy, s.top + MIN, 100);
+      }
+      setCrop({ left, top, right, bottom });
+    }
+    function onUp() {
+      drag.current = null;
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    }
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
   }
-  function onMove(e: React.MouseEvent) {
-    if (!dragging) return;
-    const dx = e.clientX - last.x;
-    const dy = e.clientY - last.y;
-    setLast({ x: e.clientX, y: e.clientY });
-    if (ovx > 0) setOx((v) => Math.max(0, Math.min(1, v - dx / ovx)));
-    if (ovy > 0) setOy((v) => Math.max(0, Math.min(1, v - dy / ovy)));
-  }
-  function onUp() { setDragging(false); }
 
   function handleConfirm() {
     const img = imgRef.current;
-    if (!img || !natW) return;
-    const scaleX = natW / dw;
-    const scaleY = natH / dh;
-    const sx = Math.max(0, (-imgL) * scaleX);
-    const sy = Math.max(0, (-imgT) * scaleY);
-    const sw = Math.min(PREVIEW * scaleX, natW - sx);
-    const sh = Math.min(PREVIEW * scaleY, natH - sy);
+    if (!img || !natW || !natH) return;
+    const sx = (crop.left / 100) * natW;
+    const sy = (crop.top / 100) * natH;
+    const sw = ((crop.right - crop.left) / 100) * natW;
+    const sh = ((crop.bottom - crop.top) / 100) * natH;
     const canvas = document.createElement('canvas');
-    canvas.width = 400;
-    canvas.height = 400;
+    canvas.width = Math.max(1, Math.round(sw));
+    canvas.height = Math.max(1, Math.round(sh));
     const ctx = canvas.getContext('2d')!;
-    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, 400, 400);
+    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
     onConfirm(canvas.toDataURL('image/png'));
   }
 
-  const maxZoom = 4;
+  const hCls = 'absolute w-3 h-3 bg-white border-2 border-violet-600 rounded-sm z-20 -translate-x-1/2 -translate-y-1/2';
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
       onClick={(e) => { if (e.target === e.currentTarget) onCancel(); }}>
-      <div className="bg-white rounded-2xl p-5 w-full max-w-sm shadow-2xl">
+      <div className="bg-white rounded-2xl p-5 w-full max-w-lg shadow-2xl">
         <h3 className="font-semibold text-slate-900 mb-4 text-center text-base">Logo zuschneiden</h3>
 
-        {/* Crop viewport */}
         <div
-          className="relative overflow-hidden mx-auto rounded-xl select-none"
-          style={{ width: PREVIEW, height: PREVIEW, cursor: dragging ? 'grabbing' : 'grab', background: '#e2e8f0' }}
-          onMouseDown={onDown}
-          onMouseMove={onMove}
-          onMouseUp={onUp}
-          onMouseLeave={onUp}
+          ref={containerRef}
+          className="relative overflow-hidden mx-auto rounded-xl select-none bg-slate-100"
+          style={{ touchAction: 'none' }}
         >
-          { }
           <img
             ref={imgRef}
             src={src}
             alt=""
             onLoad={onLoad}
             draggable={false}
-            style={{ position: 'absolute', width: dw, height: dh, left: imgL, top: imgT, pointerEvents: 'none' }}
+            className="w-full block pointer-events-none"
           />
-          {/* Rule-of-thirds grid */}
-          <div className="absolute inset-0 pointer-events-none" style={{
-            backgroundImage: `linear-gradient(rgba(255,255,255,0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.2) 1px, transparent 1px)`,
-            backgroundSize: `${PREVIEW / 3}px ${PREVIEW / 3}px`,
-          }} />
-          <div className="absolute inset-0 rounded-xl ring-2 ring-white pointer-events-none" />
-        </div>
-
-        {/* Zoom */}
-        <div className="mt-4 px-1">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-xs text-slate-400">Zoom</span>
-            <span className="text-xs text-slate-400 font-mono">{zoom.toFixed(1)}×</span>
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute inset-x-0 top-0 bg-black/45" style={{ height: `${crop.top}%` }} />
+            <div className="absolute inset-x-0 bottom-0 bg-black/45" style={{ height: `${100 - crop.bottom}%` }} />
+            <div className="absolute bg-black/45" style={{ top: `${crop.top}%`, bottom: `${100 - crop.bottom}%`, left: 0, width: `${crop.left}%` }} />
+            <div className="absolute bg-black/45" style={{ top: `${crop.top}%`, bottom: `${100 - crop.bottom}%`, right: 0, width: `${100 - crop.right}%` }} />
           </div>
-          <input type="range" min={minZoom} max={maxZoom} step={0.01} value={zoom}
-            onChange={(e) => setZoom(Number(e.target.value))}
-            className="w-full accent-violet-600" />
+          <div
+            className="absolute border-2 border-white"
+            style={{ left: `${crop.left}%`, top: `${crop.top}%`, right: `${100 - crop.right}%`, bottom: `${100 - crop.bottom}%`, cursor: 'move' }}
+            onMouseDown={(e) => startDrag('move', e)}
+          />
+          <div className={`${hCls} cursor-nwse-resize`} style={{ left: `${crop.left}%`, top: `${crop.top}%` }} onMouseDown={(e) => startDrag('nw', e)} />
+          <div className={`${hCls} cursor-nesw-resize`} style={{ left: `${crop.right}%`, top: `${crop.top}%` }} onMouseDown={(e) => startDrag('ne', e)} />
+          <div className={`${hCls} cursor-nesw-resize`} style={{ left: `${crop.left}%`, top: `${crop.bottom}%` }} onMouseDown={(e) => startDrag('sw', e)} />
+          <div className={`${hCls} cursor-nwse-resize`} style={{ left: `${crop.right}%`, top: `${crop.bottom}%` }} onMouseDown={(e) => startDrag('se', e)} />
         </div>
-        <p className="text-[11px] text-slate-400 text-center mt-2">Bild verschieben + Zoom anpassen, dann bestätigen</p>
 
-        {/* Actions */}
+        <p className="text-[11px] text-slate-400 text-center mt-3">Rechteck verschieben oder an den Ecken anpassen</p>
+
         <div className="flex gap-2 mt-4">
           <button onClick={onCancel}
             className="flex-1 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-600 hover:bg-slate-50 font-medium transition-colors">

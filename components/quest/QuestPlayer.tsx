@@ -158,7 +158,7 @@ export default function QuestPlayer({ quest, company }: Props) {
 
       <header className="bg-white border-b border-slate-200 px-4 py-3 flex items-center gap-3 sticky top-0 z-10">
         {company.logo ? (
-          <img src={company.logo} alt={company.name} className="h-8 w-8 rounded-lg object-contain border border-slate-200" />
+          <img src={company.logo} alt={company.name} className="h-8 w-auto max-w-[140px] rounded-lg object-contain" />
         ) : (
           <div className="quest-logo-bg w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm">
             {company.name.charAt(0)}

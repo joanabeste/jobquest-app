@@ -56,7 +56,7 @@ export default function Topbar() {
       <Link href="/dashboard" className="flex items-center gap-2.5 min-w-0">
         {company?.logo ? (
           <img src={company.logo} alt={company.name}
-            className="h-8 w-8 rounded-lg object-contain border border-slate-200 flex-shrink-0" />
+            className="h-8 w-auto max-w-[140px] rounded-lg object-contain flex-shrink-0" />
         ) : (
           <div className="w-8 h-8 rounded-lg bg-violet-600 flex items-center justify-center flex-shrink-0">
             <span className="text-white font-bold text-sm">J</span>

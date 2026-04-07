@@ -905,7 +905,7 @@ export function CompletionScreen({ company, headline, text, primary, buttonText,
       )}
       <div className="mt-8 flex items-center gap-2 text-slate-400 text-xs">
         {company.logo
-          ? <img src={company.logo} alt="" className="h-5 w-5 rounded object-contain" />
+          ? <img src={company.logo} alt="" className="h-5 w-auto max-w-[80px] rounded object-contain" />
           : <div className="w-5 h-5 rounded flex items-center justify-center text-white text-[10px] font-bold" style={{ background: primary }}>{company.name.charAt(0)}</div>}
         <span>{company.name}</span>
       </div>

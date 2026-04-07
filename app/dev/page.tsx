@@ -154,7 +154,7 @@ export default function DevPage() {
                 {/* Logo / avatar */}
                 {company.logo ? (
                   <img src={company.logo} alt={company.name}
-                    className="w-10 h-10 rounded-xl object-contain bg-white/5 p-0.5 flex-shrink-0" />
+                    className="h-10 w-auto max-w-[120px] rounded-xl object-contain bg-white/5 p-0.5 flex-shrink-0" />
                 ) : (
                   <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center flex-shrink-0">
                     <Building2 size={18} className="text-slate-400" />
