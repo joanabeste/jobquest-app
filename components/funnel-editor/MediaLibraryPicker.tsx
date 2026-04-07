@@ -109,7 +109,6 @@ export default function MediaLibraryPicker({ open, onClose, onSelect }: Props) {
                     onClick={() => { onSelect(asset.url); onClose(); }}
                     className="block w-full aspect-square"
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={asset.url} alt={asset.filename} className="w-full h-full object-cover" />
                   </button>
                   <button

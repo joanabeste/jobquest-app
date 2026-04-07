@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { X, Sparkles, Upload, ImageIcon, Trash2 } from 'lucide-react';
+import { X, Sparkles, Upload, Trash2 } from 'lucide-react';
 import { FunnelPage } from '@/lib/funnel-types';
 import type { MediaAsset } from '@/lib/types';
 
@@ -195,7 +195,6 @@ export default function GenerateQuestModal({ onGenerate, onClose }: Props) {
                   <div className="grid grid-cols-3 gap-2 mb-2">
                     {images.map((img) => (
                       <div key={img.id} className="relative rounded-lg overflow-hidden border border-slate-200 aspect-square group">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={img.url} alt={img.filename} className="w-full h-full object-cover" />
                         <button
                           type="button"

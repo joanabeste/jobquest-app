@@ -29,7 +29,6 @@ export function ImageUploadField({ label, value, onChange }: { label: string; va
     <Field label={label}>
       {value && (
         <div className="relative w-full h-24 rounded-xl overflow-hidden border border-slate-200 mb-1.5">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={value} alt="" className="w-full h-full object-cover" />
           <button onClick={() => onChange('')}
             className="absolute top-1.5 right-1.5 p-1 bg-white rounded-lg shadow text-slate-500 hover:text-red-500 transition-colors">
