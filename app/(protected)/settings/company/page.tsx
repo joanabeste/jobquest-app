@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, FormEvent, useEffect } from 'react';
+import { useState, FormEvent, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { INDUSTRY_OPTIONS, CorporateDesign, DEFAULT_CORPORATE_DESIGN, SuccessPageConfig, DEFAULT_SUCCESS_PAGE, SuccessJob, SuccessLink } from '@/lib/types';
@@ -287,9 +287,12 @@ export default function SettingsCompanyPage() {
         {activeTab === 'design' && (
           <div className="space-y-4">
             <div className="card p-6">
-              <h2 className="font-semibold text-slate-900 flex items-center gap-2 mb-5">
-                <Type size={17} className="text-slate-400" /> Schriftarten
-              </h2>
+              <div className="flex items-baseline justify-between mb-5">
+                <h2 className="font-semibold text-slate-900 flex items-center gap-2">
+                  <Type size={17} className="text-slate-400" /> Schriftarten
+                </h2>
+                <p className="text-xs text-slate-400">Wie Texte in Funnels und auf Karten erscheinen</p>
+              </div>
               <div className="space-y-6">
                 <FontPicker
                   label="Überschriften"
@@ -301,51 +304,35 @@ export default function SettingsCompanyPage() {
                   onUploadFont={(name, data) => setDesign((d) => ({ ...d, headingFontName: name, headingFontCustomName: name, headingFontData: data }))}
                   onClearCustomFont={() => setDesign((d) => ({ ...d, headingFontName: 'system', headingFontCustomName: undefined, headingFontData: undefined }))}
                 />
-                <div className="grid grid-cols-3 gap-4 pt-1">
-                  <div>
-                    <label className="text-xs font-medium text-slate-500 mb-1.5 block">Größe</label>
-                    <div className="flex items-center gap-2">
-                      <input type="range" min={14} max={40} value={design.headingFontSize ?? 22}
-                        onChange={(e) => setDesign((d) => ({ ...d, headingFontSize: Number(e.target.value) }))}
-                        className="flex-1" style={{ accentColor: design.primaryColor }} />
-                      <span className="text-xs text-slate-500 font-mono w-10 text-right flex-shrink-0">{design.headingFontSize ?? 22}px</span>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-slate-500 mb-1.5 block">Gewicht</label>
-                    <select value={design.headingFontWeight ?? 700}
-                      onChange={(e) => setDesign((d) => ({ ...d, headingFontWeight: Number(e.target.value) }))}
-                      className="input-field text-xs w-full">
-                      <option value={300}>Leicht (300)</option>
-                      <option value={400}>Normal (400)</option>
-                      <option value={500}>Medium (500)</option>
-                      <option value={600}>Halbfett (600)</option>
-                      <option value={700}>Fett (700)</option>
-                      <option value={800}>Extra fett (800)</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-slate-500 mb-1.5 block">Schreibweise</label>
-                    <div className="flex rounded-lg border border-slate-200 overflow-hidden text-xs font-medium">
-                      {(['none', 'uppercase'] as const).map((val) => (
-                        <button key={val} type="button"
-                          onClick={() => setDesign((d) => ({ ...d, headingTextTransform: val }))}
-                          className={`flex-1 py-1.5 transition-colors ${(design.headingTextTransform ?? 'none') === val ? 'bg-slate-800 text-white' : 'text-slate-500 hover:bg-slate-50'}`}>
-                          {val === 'none' ? 'Aa' : 'AA'}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                <div
+                  className="px-4 py-5 rounded-xl bg-slate-50 border border-slate-100 truncate"
+                  style={{
+                    fontFamily: design.headingFontData
+                      ? `'${design.headingFontName}', system-ui, sans-serif`
+                      : fontFamilyFor(design.headingFontName),
+                    fontSize: `${design.headingFontSize ?? 22}px`,
+                    fontWeight: design.headingFontWeight ?? 700,
+                    letterSpacing: `${(design.headingLetterSpacing ?? 0) / 1000}em`,
+                    textTransform: design.headingTextTransform ?? 'none',
+                    color: design.headingColor,
+                    lineHeight: 1.2,
+                  }}
+                >
+                  Deine Überschrift in Aktion
                 </div>
-                <div>
-                  <label className="text-xs font-medium text-slate-500 mb-1.5 block">Buchstabenabstand</label>
-                  <div className="flex items-center gap-2">
-                    <input type="range" min={-50} max={200} step={5} value={design.headingLetterSpacing ?? 0}
-                      onChange={(e) => setDesign((d) => ({ ...d, headingLetterSpacing: Number(e.target.value) }))}
-                      className="flex-1" style={{ accentColor: design.primaryColor }} />
-                    <span className="text-xs text-slate-500 font-mono w-14 text-right flex-shrink-0">{((design.headingLetterSpacing ?? 0) / 1000).toFixed(3)}em</span>
-                  </div>
-                </div>
+                <TypoControls
+                  size={design.headingFontSize ?? 22}
+                  sizeMin={14} sizeMax={40}
+                  weight={design.headingFontWeight ?? 700}
+                  transform={design.headingTextTransform ?? 'none'}
+                  letterSpacing={design.headingLetterSpacing ?? 0}
+                  primaryColor={design.primaryColor}
+                  weightOptions={[300, 400, 500, 600, 700, 800]}
+                  onSize={(v) => setDesign((d) => ({ ...d, headingFontSize: v }))}
+                  onWeight={(v) => setDesign((d) => ({ ...d, headingFontWeight: v }))}
+                  onTransform={(v) => setDesign((d) => ({ ...d, headingTextTransform: v }))}
+                  onLetterSpacing={(v) => setDesign((d) => ({ ...d, headingLetterSpacing: v }))}
+                />
 
                 <div className="border-t border-slate-100" />
 
@@ -359,50 +346,35 @@ export default function SettingsCompanyPage() {
                   onUploadFont={(name, data) => setDesign((d) => ({ ...d, bodyFontName: name, bodyFontCustomName: name, bodyFontData: data }))}
                   onClearCustomFont={() => setDesign((d) => ({ ...d, bodyFontName: 'system', bodyFontCustomName: undefined, bodyFontData: undefined }))}
                 />
-                <div className="grid grid-cols-3 gap-4 pt-1">
-                  <div>
-                    <label className="text-xs font-medium text-slate-500 mb-1.5 block">Größe</label>
-                    <div className="flex items-center gap-2">
-                      <input type="range" min={12} max={20} value={design.bodyFontSize ?? 14}
-                        onChange={(e) => setDesign((d) => ({ ...d, bodyFontSize: Number(e.target.value) }))}
-                        className="flex-1" style={{ accentColor: design.primaryColor }} />
-                      <span className="text-xs text-slate-500 font-mono w-10 text-right flex-shrink-0">{design.bodyFontSize ?? 14}px</span>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-slate-500 mb-1.5 block">Gewicht</label>
-                    <select value={design.bodyFontWeight ?? 400}
-                      onChange={(e) => setDesign((d) => ({ ...d, bodyFontWeight: Number(e.target.value) }))}
-                      className="input-field text-xs w-full">
-                      <option value={300}>Leicht (300)</option>
-                      <option value={400}>Normal (400)</option>
-                      <option value={500}>Medium (500)</option>
-                      <option value={600}>Halbfett (600)</option>
-                      <option value={700}>Fett (700)</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-slate-500 mb-1.5 block">Schreibweise</label>
-                    <div className="flex rounded-lg border border-slate-200 overflow-hidden text-xs font-medium">
-                      {(['none', 'uppercase'] as const).map((val) => (
-                        <button key={val} type="button"
-                          onClick={() => setDesign((d) => ({ ...d, bodyTextTransform: val }))}
-                          className={`flex-1 py-1.5 transition-colors ${(design.bodyTextTransform ?? 'none') === val ? 'bg-slate-800 text-white' : 'text-slate-500 hover:bg-slate-50'}`}>
-                          {val === 'none' ? 'Aa' : 'AA'}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                <div
+                  className="px-4 py-5 rounded-xl bg-slate-50 border border-slate-100"
+                  style={{
+                    fontFamily: design.bodyFontData
+                      ? `'${design.bodyFontName}', system-ui, sans-serif`
+                      : fontFamilyFor(design.bodyFontName),
+                    fontSize: `${design.bodyFontSize ?? 14}px`,
+                    fontWeight: design.bodyFontWeight ?? 400,
+                    letterSpacing: `${(design.bodyLetterSpacing ?? 0) / 1000}em`,
+                    textTransform: design.bodyTextTransform ?? 'none',
+                    color: design.textColor,
+                    lineHeight: 1.55,
+                  }}
+                >
+                  Hier siehst du, wie dein Fließtext in Karten und Funnels aussieht — mit deinen Einstellungen für Größe, Gewicht und Buchstabenabstand.
                 </div>
-                <div>
-                  <label className="text-xs font-medium text-slate-500 mb-1.5 block">Buchstabenabstand</label>
-                  <div className="flex items-center gap-2">
-                    <input type="range" min={-50} max={200} step={5} value={design.bodyLetterSpacing ?? 0}
-                      onChange={(e) => setDesign((d) => ({ ...d, bodyLetterSpacing: Number(e.target.value) }))}
-                      className="flex-1" style={{ accentColor: design.primaryColor }} />
-                    <span className="text-xs text-slate-500 font-mono w-14 text-right flex-shrink-0">{((design.bodyLetterSpacing ?? 0) / 1000).toFixed(3)}em</span>
-                  </div>
-                </div>
+                <TypoControls
+                  size={design.bodyFontSize ?? 14}
+                  sizeMin={12} sizeMax={20}
+                  weight={design.bodyFontWeight ?? 400}
+                  transform={design.bodyTextTransform ?? 'none'}
+                  letterSpacing={design.bodyLetterSpacing ?? 0}
+                  primaryColor={design.primaryColor}
+                  weightOptions={[300, 400, 500, 600, 700]}
+                  onSize={(v) => setDesign((d) => ({ ...d, bodyFontSize: v }))}
+                  onWeight={(v) => setDesign((d) => ({ ...d, bodyFontWeight: v }))}
+                  onTransform={(v) => setDesign((d) => ({ ...d, bodyTextTransform: v }))}
+                  onLetterSpacing={(v) => setDesign((d) => ({ ...d, bodyLetterSpacing: v }))}
+                />
               </div>
             </div>
 
@@ -667,18 +639,106 @@ function FontPicker({ label, fontName, customFontName, customFontData, primaryCo
   );
 }
 
+function TypoControls({
+  size, sizeMin, sizeMax, weight, transform, letterSpacing, primaryColor, weightOptions,
+  onSize, onWeight, onTransform, onLetterSpacing,
+}: {
+  size: number; sizeMin: number; sizeMax: number;
+  weight: number;
+  transform: 'none' | 'uppercase';
+  letterSpacing: number;
+  primaryColor: string;
+  weightOptions: number[];
+  onSize: (v: number) => void;
+  onWeight: (v: number) => void;
+  onTransform: (v: 'none' | 'uppercase') => void;
+  onLetterSpacing: (v: number) => void;
+}) {
+  const weightLabels: Record<number, string> = {
+    300: 'Leicht (300)', 400: 'Normal (400)', 500: 'Medium (500)',
+    600: 'Halbfett (600)', 700: 'Fett (700)', 800: 'Extra fett (800)',
+  };
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-1">
+      <div>
+        <label className="text-xs font-medium text-slate-500 mb-1.5 block">Größe</label>
+        <div className="flex items-center gap-2">
+          <input type="range" min={sizeMin} max={sizeMax} value={size}
+            onChange={(e) => onSize(Number(e.target.value))}
+            className="flex-1" style={{ accentColor: primaryColor }} />
+          <span className="text-xs text-slate-500 font-mono w-10 text-right flex-shrink-0">{size}px</span>
+        </div>
+      </div>
+      <div>
+        <label className="text-xs font-medium text-slate-500 mb-1.5 block">Gewicht</label>
+        <select value={weight}
+          onChange={(e) => onWeight(Number(e.target.value))}
+          className="input-field text-xs w-full">
+          {weightOptions.map((w) => <option key={w} value={w}>{weightLabels[w] ?? String(w)}</option>)}
+        </select>
+      </div>
+      <div>
+        <label className="text-xs font-medium text-slate-500 mb-1.5 block">Schreibweise</label>
+        <div className="flex rounded-lg border border-slate-200 overflow-hidden text-xs font-medium">
+          <button type="button" title="Normalschrift"
+            onClick={() => onTransform('none')}
+            className={`flex-1 py-1.5 transition-colors ${transform === 'none' ? 'bg-slate-800 text-white' : 'text-slate-500 hover:bg-slate-50'}`}>Aa</button>
+          <button type="button" title="GROSSBUCHSTABEN"
+            onClick={() => onTransform('uppercase')}
+            className={`flex-1 py-1.5 transition-colors ${transform === 'uppercase' ? 'bg-slate-800 text-white' : 'text-slate-500 hover:bg-slate-50'}`}>AA</button>
+        </div>
+      </div>
+      <div>
+        <label className="text-xs font-medium text-slate-500 mb-1.5 block">Buchstabenabstand</label>
+        <div className="flex items-center gap-2">
+          <input type="range" min={-50} max={200} step={5} value={letterSpacing}
+            onChange={(e) => onLetterSpacing(Number(e.target.value))}
+            className="flex-1" style={{ accentColor: primaryColor }} />
+          <span className="text-xs text-slate-500 font-mono w-12 text-right flex-shrink-0">{(letterSpacing / 1000).toFixed(2)}em</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ColorPicker({ label, desc, value, onChange }: { label: string; desc: string; value: string; onChange: (v: string) => void }) {
+  const colorRef = useRef<HTMLInputElement>(null);
+  function handleHexChange(raw: string) {
+    let v = raw.trim();
+    if (v && !v.startsWith('#')) v = '#' + v;
+    if (/^#[0-9A-Fa-f]{0,6}$/.test(v)) onChange(v);
+  }
   return (
     <div>
-      <label className="label">{label}</label>
-      <div className="flex items-center gap-2">
-        <input type="color" value={value} onChange={(e) => onChange(e.target.value)}
-          className="w-10 h-10 rounded-lg border border-slate-200 cursor-pointer p-0.5 bg-white flex-shrink-0" />
-        <input type="text" value={value}
-          onChange={(e) => { const v = e.target.value; if (/^#[0-9A-Fa-f]{0,6}$/.test(v)) onChange(v); }}
-          className="input-field font-mono text-sm" maxLength={7} />
+      <div className="flex items-baseline justify-between mb-1.5">
+        <label className="text-xs font-semibold text-slate-700">{label}</label>
+        <span className="text-[10px] text-slate-400 truncate ml-2">{desc}</span>
       </div>
-      <p className="text-xs text-slate-400 mt-1">{desc}</p>
+      <div className="flex items-stretch rounded-lg border border-slate-200 bg-white overflow-hidden focus-within:ring-2 focus-within:ring-violet-200 focus-within:border-violet-300 transition">
+        <button
+          type="button"
+          onClick={() => colorRef.current?.click()}
+          aria-label={`${label} ändern`}
+          className="w-11 flex-shrink-0 cursor-pointer relative border-r border-slate-200"
+          style={{ backgroundColor: value }}
+        >
+          <input
+            ref={colorRef}
+            type="color"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+          />
+        </button>
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => handleHexChange(e.target.value)}
+          className="flex-1 min-w-0 px-3 font-mono text-sm text-slate-700 outline-none bg-transparent"
+          maxLength={7}
+          spellCheck={false}
+        />
+      </div>
     </div>
   );
 }

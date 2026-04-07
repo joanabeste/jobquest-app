@@ -31,6 +31,65 @@ const SIZES = [
   { label: 'L',  val: '5' },
 ];
 
+// Wrap @key occurrences in styled, non-editable chips for display only.
+// The wrap is purely visual — strip() reverses it before emitting so the
+// stored/sent HTML stays clean plain text (e.g. "@firstName"), and the
+// backend's variable replacement keeps working unchanged.
+const VAR_CHIP_CLASS = 'jq-var-chip';
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+function wrapVarsInHtml(html: string, variables: VariableDef[]): string {
+  if (!html || variables.length === 0) return html;
+  const keys = variables.map((v) => escapeRegex(v.key)).sort((a, b) => b.length - a.length);
+  const re = new RegExp(`@(${keys.join('|')})\\b`, 'g');
+  if (typeof document === 'undefined') return html;
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = html;
+  const walker = document.createTreeWalker(wrapper, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      const parent = node.parentElement;
+      if (parent && parent.classList.contains(VAR_CHIP_CLASS)) return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    },
+  });
+  const targets: Text[] = [];
+  let n: Node | null;
+  // eslint-disable-next-line no-cond-assign
+  while ((n = walker.nextNode())) targets.push(n as Text);
+  for (const text of targets) {
+    const str = text.textContent ?? '';
+    if (!re.test(str)) { re.lastIndex = 0; continue; }
+    re.lastIndex = 0;
+    const frag = document.createDocumentFragment();
+    let last = 0;
+    let m: RegExpExecArray | null;
+    // eslint-disable-next-line no-cond-assign
+    while ((m = re.exec(str))) {
+      if (m.index > last) frag.appendChild(document.createTextNode(str.slice(last, m.index)));
+      const chip = document.createElement('span');
+      chip.className = `${VAR_CHIP_CLASS} inline-block px-1 rounded bg-violet-100 text-violet-700 font-mono text-[0.9em]`;
+      chip.setAttribute('contenteditable', 'false');
+      chip.textContent = m[0];
+      frag.appendChild(chip);
+      last = m.index + m[0].length;
+    }
+    if (last < str.length) frag.appendChild(document.createTextNode(str.slice(last)));
+    text.parentNode?.replaceChild(frag, text);
+  }
+  return wrapper.innerHTML;
+}
+function stripVarChips(html: string): string {
+  if (!html || typeof document === 'undefined') return html;
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = html;
+  wrapper.querySelectorAll(`span.${VAR_CHIP_CLASS}`).forEach((el) => {
+    const text = document.createTextNode(el.textContent ?? '');
+    el.parentNode?.replaceChild(text, el);
+  });
+  return wrapper.innerHTML;
+}
+
 export default function RichTextEditor({ value, onChange, variables = [], minHeight = 80 }: Props) {
   const editorRef    = useRef<HTMLDivElement>(null);
   const skipRef      = useRef(false);
@@ -55,9 +114,11 @@ export default function RichTextEditor({ value, onChange, variables = [], minHei
 
   useEffect(() => {
     if (!editorRef.current || skipRef.current) return;
-    if (editorRef.current.innerHTML !== value) {
-      editorRef.current.innerHTML = value ?? '';
+    const wrapped = wrapVarsInHtml(value ?? '', variables);
+    if (editorRef.current.innerHTML !== wrapped) {
+      editorRef.current.innerHTML = wrapped;
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
 
   function exec(cmd: string, arg?: string) {
@@ -69,7 +130,8 @@ export default function RichTextEditor({ value, onChange, variables = [], minHei
   function emit() {
     if (!editorRef.current) return;
     skipRef.current = true;
-    onChange(editorRef.current.innerHTML);
+    // Strip visual chips so persisted/sent HTML stays plain "@key" text.
+    onChange(stripVarChips(editorRef.current.innerHTML));
     requestAnimationFrame(() => { skipRef.current = false; });
   }
 
