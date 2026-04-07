@@ -45,6 +45,10 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
   // Reset dialog + footer input when page changes (must be before any conditional returns)
   useEffect(() => { setDialogVisible(0); setFooterInputValue(''); }, [pageIndex]);
 
+  // If the currently shown page becomes invisible (because answers changed retroactively
+  // via "back"), or if the very first page has a visibleIf that requires an answer we
+  // don't have yet, we leave the index untouched — the gate is enforced via goNext only.
+
   // ── Analytics tracking (quest + career check + form page) ───────────────────
   const isQuest = doc.contentType === 'quest';
   const isCheck = doc.contentType === 'check';
@@ -130,12 +134,35 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
   function scrollTop() {
     requestAnimationFrame(() => topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
   }
+  /**
+   * Returns true when the page's visibleIf condition is satisfied (or absent).
+   * Used to auto-skip pages whose gating filter doesn't match the current answers.
+   */
+  function isPageVisible(idx: number): boolean {
+    const page = doc.pages[idx];
+    if (!page?.visibleIf) return true;
+    const { sourceBlockId, equals } = page.visibleIf;
+    const ans = answers[sourceBlockId];
+    if (ans === undefined || ans === null) return false;
+    const list = Array.isArray(equals) ? equals : [equals];
+    return list.includes(String(ans));
+  }
+  function findNextVisible(fromIdx: number): number {
+    for (let i = fromIdx; i < doc.pages.length; i++) {
+      if (isPageVisible(i)) return i;
+    }
+    return -1;
+  }
   function goNext(targetPageId?: string) {
     if (targetPageId) {
       const idx = doc.pages.findIndex((p) => p.id === targetPageId);
-      if (idx >= 0) { setHistory((h) => [...h, pageIndex]); setPageIndex(idx); scrollTop(); return; }
+      if (idx >= 0) {
+        const visible = findNextVisible(idx);
+        if (visible >= 0) { setHistory((h) => [...h, pageIndex]); setPageIndex(visible); scrollTop(); return; }
+      }
     }
-    if (pageIndex < doc.pages.length - 1) { setHistory((h) => [...h, pageIndex]); setPageIndex((i) => i + 1); scrollTop(); }
+    const next = findNextVisible(pageIndex + 1);
+    if (next >= 0) { setHistory((h) => [...h, pageIndex]); setPageIndex(next); scrollTop(); }
     else { setCompleted(true); scrollTop(); }
   }
   function goBack() {

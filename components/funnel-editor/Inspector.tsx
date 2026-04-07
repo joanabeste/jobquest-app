@@ -16,6 +16,8 @@ import { DialogEditor } from './inspectors/DialogEditor';
 import { DecisionEditor } from './inspectors/DecisionEditor';
 import { QuizEditor } from './inspectors/QuizEditor';
 import { FrageEditor, ErgebnisfrageEditor } from './inspectors/FrageEditor';
+import { SwipeDeckEditor } from './inspectors/SwipeDeckEditor';
+import { ErgebnisGroupsEditor } from './inspectors/ErgebnisGroupsEditor';
 import { FormStepEditor } from './inspectors/FormStepEditor';
 import { HotspotEditor } from './inspectors/HotspotEditor';
 import { ZuordnungEditor } from './inspectors/ZuordnungEditor';
@@ -156,6 +158,27 @@ function PageSettingsEditor({ currentPage, pages, onUpdate }: { currentPage?: Fu
     onUpdate?.({ nextPageId: selected === sequentialNextId ? undefined : (selected || undefined) });
   }
 
+  // Collect candidate filter blocks on PRECEDING pages.
+  const filterBlocks: Array<{ id: string; label: string; options: Array<{ id: string; text: string }> }> = [];
+  if (pages && pageIdx > 0) {
+    pages.slice(0, pageIdx).forEach((page) => {
+      page.nodes.forEach((node) => {
+        if (node.kind !== 'block') return;
+        if (node.type === 'check_frage' || node.type === 'quest_decision') {
+          const opts = (node.props.options as Array<{ id: string; text: string }>) ?? [];
+          filterBlocks.push({
+            id: node.id,
+            label: (node.props.question as string) || page.name || 'Frage',
+            options: opts,
+          });
+        }
+      });
+    });
+  }
+
+  const visibleIf = currentPage.visibleIf;
+  const sourceBlock = visibleIf ? filterBlocks.find((b) => b.id === visibleIf.sourceBlockId) : null;
+
   return (
     <div className="p-4 space-y-3">
       <div>
@@ -184,6 +207,57 @@ function PageSettingsEditor({ currentPage, pages, onUpdate }: { currentPage?: Fu
           </p>
         )}
       </div>
+
+      {pageIdx > 0 && (
+        <div className="pt-3 border-t border-slate-100">
+          <label className="label">Sichtbar wenn …</label>
+          {filterBlocks.length === 0 ? (
+            <p className="text-[10px] text-slate-400">Keine Filterfragen auf vorherigen Seiten gefunden.</p>
+          ) : (
+            <>
+              <select
+                className="input-field text-sm"
+                value={visibleIf?.sourceBlockId ?? ''}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (!v) onUpdate?.({ visibleIf: undefined });
+                  else onUpdate?.({ visibleIf: { sourceBlockId: v, equals: visibleIf?.equals ?? [] } });
+                }}
+              >
+                <option value="">— Immer sichtbar —</option>
+                {filterBlocks.map((b) => (
+                  <option key={b.id} value={b.id}>{b.label.slice(0, 40)}</option>
+                ))}
+              </select>
+              {visibleIf && sourceBlock && (
+                <div className="mt-2 pl-2 border-l-2 border-violet-200 space-y-1">
+                  <p className="text-[10px] font-semibold text-slate-500">Antwort eine von:</p>
+                  {sourceBlock.options.map((opt) => {
+                    const checked = visibleIf.equals.includes(opt.id);
+                    return (
+                      <label key={opt.id} className="flex items-center gap-2 text-xs cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={(e) => {
+                            const next = e.target.checked
+                              ? [...visibleIf.equals, opt.id]
+                              : visibleIf.equals.filter((v) => v !== opt.id);
+                            onUpdate?.({ visibleIf: { ...visibleIf, equals: next } });
+                          }}
+                          className="accent-violet-600"
+                        />
+                        <span>{opt.text}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+              <p className="text-[10px] text-slate-400 mt-1.5">Wird die Bedingung nicht erfüllt, springt der Player diese Seite automatisch.</p>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -466,6 +540,9 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars }: {
     case 'check_ergebnisfrage':
       return <ErgebnisfrageEditor props={props} onChange={onChange} variables={availableVars} />;
 
+    case 'check_swipe_deck':
+      return <SwipeDeckEditor props={props} onChange={onChange} variables={availableVars} />;
+
     case 'check_selbst':
       return (
         <div className="space-y-3">
@@ -521,12 +598,7 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars }: {
         <div className="space-y-3">
           <Field label="Überschrift"><VarInput value={(props.headline as string) ?? ''} onChange={(v) => onChange({ headline: v })} variables={availableVars} /></Field>
           <Field label="Untertext"><VarTextarea value={(props.subtext as string) ?? ''} onChange={(v) => onChange({ subtext: v })} rows={2} variables={availableVars} /></Field>
-          <Section label="Erweitert" collapsible defaultOpen={false}>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={!!(props.showDimensionBars)} onChange={(e) => onChange({ showDimensionBars: e.target.checked })} className="accent-violet-600" />
-              <span className="text-xs text-slate-700">Dimensions-Balken anzeigen</span>
-            </label>
-          </Section>
+          <ErgebnisGroupsEditor props={props} onChange={onChange} pages={pages} />
         </div>
       );
 

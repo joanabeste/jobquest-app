@@ -8,7 +8,7 @@ export type FunnelBlockType =
   | 'quest_scene' | 'quest_dialog' | 'quest_decision' | 'quest_quiz' | 'quest_info' | 'quest_freetext'
   | 'quest_file' | 'quest_lead' | 'quest_spinner' | 'quest_rating' | 'quest_hotspot' | 'quest_zuordnung'
   // BerufsCheck
-  | 'check_intro' | 'check_vorname' | 'check_frage' | 'check_ergebnisfrage' | 'check_selbst' | 'check_lead' | 'check_ergebnis'
+  | 'check_intro' | 'check_vorname' | 'check_frage' | 'check_ergebnisfrage' | 'check_selbst' | 'check_lead' | 'check_ergebnis' | 'check_swipe_deck'
   // Formular
   | 'form_hero' | 'form_text' | 'form_image' | 'form_step' | 'form_config';
 
@@ -50,11 +50,20 @@ export interface LayoutNode {
 export type FunnelNode = BlockNode | LayoutNode;
 
 // ─── Page & Doc ──────────────────────────────────────────────────────────────
+export interface VisibilityCondition {
+  /** ID of an answered block on a previous page (e.g. a check_frage). */
+  sourceBlockId: string;
+  /** Page is visible only if the answer matches one of these values. */
+  equals: string[];
+}
+
 export interface FunnelPage {
   id: string;
   name: string;
   nodes: FunnelNode[];
   nextPageId?: string;
+  /** Optional gate – if set, the page is auto-skipped when the condition is unmet. */
+  visibleIf?: VisibilityCondition;
 }
 
 // ─── Email Config ─────────────────────────────────────────────────────────────
@@ -92,7 +101,7 @@ export interface FunnelDoc {
 // ─── Lead / Form field definition ────────────────────────────────────────────
 // Note: LeadFieldType is distinct from FormFieldType (lib/types.ts) — lead
 // capture forms support 'tel' and 'checkbox', static forms use 'phone'/'radio'.
-export type LeadFieldType = 'text' | 'email' | 'tel' | 'textarea' | 'checkbox' | 'select';
+export type LeadFieldType = 'text' | 'email' | 'tel' | 'textarea' | 'checkbox' | 'checkbox_group' | 'select';
 
 export interface LeadFieldDef {
   id: string;
@@ -158,8 +167,22 @@ export function getDefaultProps(type: FunnelBlockType): Record<string, unknown> 
     case 'quest_lead':          return contactLeadDefault();
     case 'quest_hotspot':       return { imageUrl: '', hotspots: [{ id: uid(), x: 50, y: 50, label: 'Entdecke mich', description: '', icon: '' }], requireAll: true, doneText: 'Weiter erkunden' };
     case 'quest_zuordnung':     return { question: 'Ordne die Begriffe den richtigen Erklärungen zu:', pairs: [{ id: uid(), left: 'Begriff 1', right: 'Erklärung A' }, { id: uid(), left: 'Begriff 2', right: 'Erklärung B' }, { id: uid(), left: 'Begriff 3', right: 'Erklärung C' }], shuffleRight: true, showFeedback: true, feedbackText: 'Gut gemacht!' };
-    case 'check_frage':         return { frageType: 'single_choice', question: 'Frage?', options: [{ id: uid(), text: 'Option A', scores: {} }] };
+    case 'check_frage':         return { frageType: 'single_choice', question: 'Frage?', options: [{ id: uid(), text: 'Option A', scores: {} }], allowSkip: false };
     case 'check_ergebnisfrage': return { question: 'Ergebnisfrage?', options: [{ id: uid(), text: 'Option A', scores: {} }] };
+    case 'check_swipe_deck':    return {
+      question: 'Wie gefällt dir das?',
+      allowSkip: true,
+      cards: [
+        {
+          id: uid(),
+          text: 'Du sollst eine Maschine reparieren.',
+          imageUrl: '',
+          optionPositive: { label: 'Klingt gut', emoji: '👍', scores: {} },
+          optionNeutral:  { label: 'Geht so',    emoji: '😐', scores: {} },
+          optionNegative: { label: 'Eher nicht', emoji: '👎', scores: {} },
+        },
+      ],
+    };
     case 'check_lead':          return contactLeadDefault();
     case 'form_config':         return contactLeadDefault();
     // All other block types have no nested items with IDs — safe to return static values.
@@ -190,11 +213,12 @@ export const DEFAULT_BLOCK_PROPS: Record<FunnelBlockType, Record<string, unknown
   quest_lead:          { headline: 'Interessiert?', subtext: 'Hinterlasse deine Kontaktdaten – wir melden uns bei dir.', buttonText: 'Jetzt bewerben', privacyText: 'Ich stimme zu, dass @companyName meine Daten speichert und mich kontaktiert.', thankYouHeadline: 'Vielen Dank!', thankYouText: 'Wir melden uns bei dir.', thankYouButtonText: '', thankYouButtonUrl: '', fields: [] },
   check_intro:         { headline: 'Bist du geeignet?', subtext: 'Mache jetzt den Check.', imageUrl: '', buttonText: 'Jetzt starten' },
   check_vorname:       { question: 'Wie heißt du?', placeholder: 'Dein Vorname', buttonText: 'Weiter' },
-  check_frage:         { frageType: 'single_choice', question: 'Frage?', options: [] },
+  check_frage:         { frageType: 'single_choice', question: 'Frage?', options: [], allowSkip: false },
   check_ergebnisfrage: { question: 'Ergebnisfrage?', options: [] },
   check_selbst:        { question: 'Wie schätzt du dich ein?', sliderMin: 0, sliderMax: 10, sliderStep: 1, sliderLabelMin: 'Gar nicht', sliderLabelMax: 'Sehr' },
+  check_swipe_deck:    { question: 'Swipe dich durch die Szenarien', allowSkip: true, cards: [] },
   check_lead:          { headline: 'Interessiert?', subtext: 'Hinterlasse deine Kontaktdaten – wir melden uns bei dir.', buttonText: 'Jetzt bewerben', privacyText: 'Ich stimme zu, dass @companyName meine Daten speichert und mich kontaktiert.', thankYouHeadline: 'Vielen Dank!', thankYouText: 'Wir melden uns bei dir.', thankYouButtonText: '', thankYouButtonUrl: '', fields: [] },
-  check_ergebnis:      { headline: 'Dein Ergebnis, @firstName!', subtext: 'Basierend auf deinen Antworten.', showDimensionBars: true },
+  check_ergebnis:      { headline: 'Dein Ergebnis, @firstName!', subtext: 'Basierend auf deinen Antworten.', layout: 'simple', showDimensionBars: true, groups: [] },
   form_hero:           { headline: 'Jetzt anfragen', subtext: 'Wir melden uns bei dir.', imageUrl: '', ctaText: 'Jetzt anfragen' },
   form_text:           { headline: '', content: 'Ihr Text hier…' },
   form_image:          { imageUrl: '', caption: '' },
@@ -236,6 +260,7 @@ export const BLOCK_CATALOG: Record<FunnelContentType, BlockTypeConfig[]> = {
     { type: 'check_frage',         label: 'Frage',              description: 'Einzel- oder Slider-Frage',    category: 'Eingabe',   defaultProps: DEFAULT_BLOCK_PROPS.check_frage },
     { type: 'check_ergebnisfrage', label: 'Ergebnisfrage',      description: 'Frage mit Dimensions-Score',   category: 'Eingabe',   defaultProps: DEFAULT_BLOCK_PROPS.check_ergebnisfrage },
     { type: 'check_selbst',        label: 'Selbsteinschätzung', description: 'Slider-Einschätzung',          category: 'Eingabe',   defaultProps: DEFAULT_BLOCK_PROPS.check_selbst },
+    { type: 'check_swipe_deck',    label: 'Swipe-Karten',       description: 'Tinder-Style Szenario-Stack',  category: 'Eingabe',   defaultProps: DEFAULT_BLOCK_PROPS.check_swipe_deck },
     { type: 'check_ergebnis',      label: 'Ergebnis',           description: 'Ergebnisanzeige',              category: 'Abschluss', defaultProps: DEFAULT_BLOCK_PROPS.check_ergebnis },
     { type: 'check_lead',          label: 'Kontaktformular',    description: 'Lead-Erfassung',               category: 'Abschluss', defaultProps: DEFAULT_BLOCK_PROPS.check_lead },
     ...BASIC_CONTENT,
@@ -254,6 +279,6 @@ export const BLOCK_LABELS: Record<FunnelBlockType, string> = {
   heading: 'Überschrift', paragraph: 'Text', button: 'Button', image: 'Bild', spacer: 'Abstand', video: 'Video',
   quest_scene: 'Szene', quest_dialog: 'Dialog', quest_decision: 'Entscheidung', quest_quiz: 'Quiz', quest_info: 'Info', quest_freetext: 'Freitext',
   quest_file: 'Datei', quest_lead: 'Kontaktformular', quest_spinner: 'Ladescreen', quest_rating: 'Bewertung', quest_hotspot: 'Hotspot', quest_zuordnung: 'Zuordnung',
-  check_intro: 'Intro', check_vorname: 'Name', check_frage: 'Frage', check_ergebnisfrage: 'Ergebnisfrage', check_selbst: 'Selbsteinschätzung', check_lead: 'Kontaktformular', check_ergebnis: 'Ergebnis',
+  check_intro: 'Intro', check_vorname: 'Name', check_frage: 'Frage', check_ergebnisfrage: 'Ergebnisfrage', check_selbst: 'Selbsteinschätzung', check_swipe_deck: 'Swipe-Karten', check_lead: 'Kontaktformular', check_ergebnis: 'Ergebnis',
   form_hero: 'Hero', form_text: 'Textabschnitt', form_image: 'Bild', form_step: 'Formular-Schritt', form_config: 'Einstellungen',
 };

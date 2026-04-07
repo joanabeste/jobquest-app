@@ -16,6 +16,8 @@ import {
 } from '@/lib/funnel-ops';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCorporateDesign } from '@/lib/use-corporate-design';
+import { careerCheckStorage } from '@/lib/storage';
+import type { Dimension } from '@/lib/types';
 import { CIContext } from '@/lib/ci-context';
 import { FunnelEditorContext } from './FunnelEditorContext';
 import PageSidebar from './PageSidebar';
@@ -84,6 +86,19 @@ function FunnelEditorInner({
   const [activePageId, setActivePageId] = useState(doc.pages[0]?.id ?? '');
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
+  const [dimensions, setDimensions] = useState<Dimension[]>([]);
+
+  // Load CareerCheck dimensions so check editors (FrageEditor, SwipeDeckEditor,
+  // ErgebnisGroupsEditor) can map scores to the actual dimension list.
+  useEffect(() => {
+    if (contentType !== 'check') { setDimensions([]); return; }
+    let cancelled = false;
+    careerCheckStorage.getById(initialDoc.contentId).then((c) => {
+      if (cancelled) return;
+      setDimensions(c?.dimensions ?? []);
+    }).catch(() => { if (!cancelled) setDimensions([]); });
+    return () => { cancelled = true; };
+  }, [contentType, initialDoc.contentId]);
   const [insertTarget, setInsertTarget] = useState<InsertTarget | null>(null);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [publishing, setPublishing] = useState(false);
@@ -457,7 +472,7 @@ function FunnelEditorInner({
             />
 
             {/* Center – Canvas */}
-            <FunnelEditorContext.Provider value={{ selectedFieldId, setSelectedFieldId, availableVars }}>
+            <FunnelEditorContext.Provider value={{ selectedFieldId, setSelectedFieldId, availableVars, dimensions }}>
             <Canvas
               page={activePage ?? null}
               contentType={contentType}

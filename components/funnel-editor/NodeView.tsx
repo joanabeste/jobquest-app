@@ -6,7 +6,7 @@ import {
   Play, MessageSquare, GitBranch, HelpCircle, Info, FileText,
   User, Sliders, List, CheckSquare, Phone, Trophy,
   Layout, Zap, FileDown, Send, Star, Timer, MapPin, ArrowLeftRight,
-  Copy, Trash2,
+  Copy, Trash2, Layers,
 } from 'lucide-react';
 import { BlockNode, FunnelBlockType, LayoutNode, FunnelNode, BLOCK_LABELS, FunnelStyle } from '@/lib/funnel-types';
 import BlockPreview from './blocks/BlockPreview';
@@ -35,6 +35,7 @@ const BLOCK_META: Record<FunnelBlockType, { icon: React.ElementType; color: stri
   check_frage:         { icon: HelpCircle,    color: 'text-amber-600',   bg: 'bg-amber-50' },
   check_ergebnisfrage: { icon: CheckSquare,   color: 'text-emerald-600', bg: 'bg-emerald-50' },
   check_selbst:        { icon: Sliders,       color: 'text-indigo-600',  bg: 'bg-indigo-50' },
+  check_swipe_deck:    { icon: Layers,        color: 'text-pink-600',    bg: 'bg-pink-50' },
   check_lead:          { icon: Phone,         color: 'text-rose-600',    bg: 'bg-rose-50' },
   check_ergebnis:      { icon: Trophy,        color: 'text-amber-600',   bg: 'bg-amber-50' },
   form_hero:           { icon: Layout,        color: 'text-violet-600',  bg: 'bg-violet-50' },

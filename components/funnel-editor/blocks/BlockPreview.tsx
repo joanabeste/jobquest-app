@@ -766,6 +766,27 @@ export default function BlockPreview({ node, onUpdate }: {
         </div>
       );
 
+    case 'check_swipe_deck': {
+      const cards = (p.cards as Array<{ id: string; text: string }>) ?? [];
+      const cur = cards[0];
+      return (
+        <div className="mx-4 my-3 p-5 bg-white border border-slate-200 rounded-xl shadow-sm">
+          <p className="text-xs text-slate-400 mb-2 text-center">Swipe-Karten · {cards.length} Karten</p>
+          <div className="relative h-32 mb-3">
+            <div className="absolute inset-0 bg-slate-50 border border-slate-200 rounded-lg" style={{ transform: 'scale(0.94) translateY(6px)', opacity: 0.6 }} />
+            <div className="absolute inset-0 bg-white border-2 rounded-lg flex items-center justify-center text-center px-4 shadow-md" style={{ borderColor: primary + '40' }}>
+              <p className="text-sm font-medium text-slate-700">{cur?.text || 'Erste Karte hinzufügen'}</p>
+            </div>
+          </div>
+          <div className="flex items-center justify-center gap-3">
+            <span className="w-9 h-9 rounded-full border-2 border-rose-200 flex items-center justify-center text-rose-500 text-xs">👎</span>
+            <span className="w-8 h-8 rounded-full border-2 border-slate-200 flex items-center justify-center text-slate-500 text-xs">😐</span>
+            <span className="w-9 h-9 rounded-full border-2 border-emerald-200 flex items-center justify-center text-emerald-500 text-xs">👍</span>
+          </div>
+        </div>
+      );
+    }
+
     case 'check_lead': {
       const fields = (p.fields as { id: string; label: string; placeholder?: string }[]) || [];
       const rows = fields.length > 0 ? fields : [{ id: 'fallback', label: 'E-Mail', placeholder: 'E-Mail-Adresse' }];

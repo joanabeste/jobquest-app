@@ -108,7 +108,7 @@ export function LeadFieldEditor({ field, allFields, onChange, onBack }: {
         </Field>
       )}
 
-      {field.type === 'select' && (
+      {(field.type === 'select' || field.type === 'checkbox_group') && (
         <Field label="Optionen">
           <textarea
             value={(field.options ?? []).join('\n')}

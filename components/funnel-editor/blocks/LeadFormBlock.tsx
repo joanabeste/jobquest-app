@@ -80,6 +80,39 @@ export default function LeadFormBlock({ props: p, company, br, primary, leadForm
                 rows={3} className={`${inputCls} resize-none`} style={{ borderRadius: br }} />
             );
           }
+          if (f.type === 'checkbox_group') {
+            const opts = (f.options ?? []).filter(Boolean);
+            const selectedSet = new Set((vals[f.id] ?? '').split('|').filter(Boolean));
+            return (
+              <div key={f.id}>
+                {f.label && (
+                  <p className="text-xs font-semibold text-slate-600 mb-1.5">
+                    {f.label.replace(/<[^>]*>/g, '')}{f.required ? ' *' : ''}
+                  </p>
+                )}
+                <div className="grid grid-cols-1 gap-1.5">
+                  {opts.map((o, i) => {
+                    const checked = selectedSet.has(o);
+                    return (
+                      <label key={i} className="flex items-center gap-2 cursor-pointer text-sm text-slate-700">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={(e) => {
+                            const next = new Set(selectedSet);
+                            if (e.target.checked) next.add(o); else next.delete(o);
+                            setVal(f.id, Array.from(next).join('|'));
+                          }}
+                          className="fp-check"
+                        />
+                        <span>{o}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          }
           if (f.type === 'select') {
             const opts = (f.options ?? []).filter(Boolean);
             return (

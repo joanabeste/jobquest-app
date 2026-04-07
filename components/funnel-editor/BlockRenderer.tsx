@@ -1,16 +1,19 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ArrowRight, Trophy, FileDown, Check, X, ChevronRight } from 'lucide-react';
+import { ArrowRight, FileDown, Check, X, ChevronRight } from 'lucide-react';
 import { BlockNode } from '@/lib/funnel-types';
 import { applyVars } from '@/lib/funnel-variables';
 import { Company, Dimension } from '@/lib/types';
 import { DECISION_ICONS, isIconName } from '@/lib/decision-icons';
+import { SKIP_ANSWER } from '@/lib/funnel-utils';
 import { s, n, b, sh, inlineHtml } from './blocks/helpers';
 import DialogBlock, { type DialogLine } from './blocks/DialogBlock';
 import HotspotBlock from './blocks/HotspotBlock';
 import ZuordnungBlock, { type ZuordnungPair } from './blocks/ZuordnungBlock';
 import LeadFormBlock, { LeadForm } from './blocks/LeadFormBlock';
+import SwipeDeckBlock from './blocks/SwipeDeckBlock';
+import ErgebnisBlock, { type ErgebnisGroup } from './blocks/ErgebnisBlock';
 
 export type { DialogLine } from './blocks/DialogBlock';
 export type { LeadForm } from './blocks/LeadFormBlock';
@@ -711,6 +714,7 @@ export function BlockRenderer({
         );
       }
 
+      const allowSkip = !!p.allowSkip && node.type === 'check_frage';
       return (
         <div className="fp-card bg-white shadow-sm mx-4 my-3 p-6">
           <h2 className="fp-heading text-xl font-bold mb-4" dangerouslySetInnerHTML={{ __html: sh(inlineHtml(s(p.question))) }} />
@@ -728,9 +732,30 @@ export function BlockRenderer({
               );
             })}
           </div>
+          {allowSkip && !selected && (
+            <button
+              onClick={() => { onAnswer(node.id, SKIP_ANSWER); setTimeout(onNext, 200); }}
+              className="mt-4 w-full text-center text-xs text-slate-400 hover:text-slate-600 transition-colors py-2"
+            >
+              Weiß nicht / überspringen
+            </button>
+          )}
         </div>
       );
     }
+
+    case 'check_swipe_deck':
+      return (
+        <SwipeDeckBlock
+          nodeId={node.id}
+          props={p}
+          answers={answers}
+          onAnswer={onAnswer}
+          onNext={onNext}
+          primary={primary}
+          br={br}
+        />
+      );
 
     case 'check_selbst':
       return (
@@ -747,44 +772,20 @@ export function BlockRenderer({
         : <LeadFormBlock props={p} company={company} br={br} primary={primary} leadForm={leadForm} setLeadForm={setLeadForm} onSubmit={(form) => onLeadSubmit(form)} />;
 
     case 'check_ergebnis': {
-      const scoreVals = Object.values(scores);
-      const maxScore  = Math.max(...scoreVals, 1);
-      const headline  = applyVars(s(p.headline, 'Dein Ergebnis!'), { ...varsMap, firstName: firstName || 'dir' });
+      const headline = applyVars(s(p.headline, 'Dein Ergebnis!'), { ...varsMap, firstName: firstName || 'dir' });
       return (
-        <div className="fp-card bg-white shadow-sm mx-4 my-3 p-6">
-          <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: `${primary}20` }}>
-            <Trophy size={28} style={{ color: primary }} />
-          </div>
-          <h2 className="fp-heading text-2xl font-bold mb-2 text-center" dangerouslySetInnerHTML={{ __html: sh(inlineHtml(headline)) }} />
-          {b(p.subtext) && <div className="text-slate-500 text-sm mb-5 text-center rte" dangerouslySetInnerHTML={{ __html: sh(s(p.subtext)) }} />}
-          {b(p.showDimensionBars) && dimensions.length > 0 && (
-            <div className="space-y-4 mt-4">
-              {dimensions.map((dim) => {
-                const score    = scores[dim.id] ?? 0;
-                const pct      = Math.min(100, Math.round((score / maxScore) * 100));
-                const barColor = dim.color || primary;
-                return (
-                  <div key={dim.id}>
-                    <div className="flex justify-between mb-1.5">
-                      <span className="text-sm font-medium text-slate-700">{dim.name}</span>
-                      <span className="text-sm font-bold" style={{ color: barColor }}>{score} Punkte</span>
-                    </div>
-                    <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
-                      <div className="h-full rounded-full transition-all duration-700 ease-out"
-                        style={{ width: `${pct}%`, background: barColor }} />
-                    </div>
-                    {dim.description && <p className="text-xs text-slate-400 mt-1">{dim.description}</p>}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-          {b(p.showDimensionBars) && dimensions.length === 0 && scoreVals.length > 0 && (
-            <p className="text-sm text-slate-500 text-center mt-3">
-              Du hast {scoreVals.reduce((a, v) => a + v, 0)} Punkte erreicht.
-            </p>
-          )}
-        </div>
+        <ErgebnisBlock
+          headline={headline}
+          subtext={s(p.subtext)}
+          layout={(p.layout as 'simple' | 'groups') || 'simple'}
+          showDimensionBars={p.showDimensionBars !== false}
+          groups={(p.groups as ErgebnisGroup[] | undefined) ?? []}
+          dimensions={dimensions}
+          scores={scores}
+          answers={answers}
+          primary={primary}
+          br={br}
+        />
       );
     }
 

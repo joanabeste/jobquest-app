@@ -182,8 +182,7 @@ export default function SettingsCompanyPage() {
               </span>
             )}
             <button type="submit" disabled={saving}
-              className="btn-primary disabled:opacity-60"
-              style={{ backgroundColor: design.primaryColor }}>
+              className="btn-primary disabled:opacity-60">
               <Save size={16} />
               {saving ? 'Speichern…' : 'Speichern'}
             </button>
