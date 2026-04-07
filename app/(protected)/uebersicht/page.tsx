@@ -10,7 +10,7 @@ import {
 import { slugify } from '@/lib/utils';
 import {
   Globe, Save, ExternalLink, ImagePlus, ChevronUp, ChevronDown,
-  Trash2, Plus, CheckCircle, Upload,
+  Trash2, Plus, CheckCircle, Upload, Copy, Check,
 } from 'lucide-react';
 import ImageCropModal from '@/components/shared/ImageCropModal';
 
@@ -34,6 +34,7 @@ export default function UebersichtPage() {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [cropEdit, setCropEdit] = useState<CardEdit | null>(null);
+  const [copied, setCopied] = useState(false);
 
   // Load company data + content
   useEffect(() => {
@@ -140,10 +141,16 @@ export default function UebersichtPage() {
         .map((c) => careerCheckStorage.save({ ...c, cardImage: checkCardImages[c.id] ?? undefined }));
       await Promise.all([...questUpdates, ...checkUpdates]);
 
-      // Save company showcase config + slug
+      // Save company showcase config + slug. Always append a 4-char random
+      // suffix to avoid collisions across companies (server-side will retry
+      // with a fresh suffix on a unique-violation as a safety net).
+      let normalized = slug ? slugify(slug) : '';
+      if (normalized && !/-[a-z0-9]{4}$/.test(normalized)) {
+        normalized = `${normalized}-${Math.random().toString(36).slice(2, 6)}`;
+      }
       await updateCompany({
         ...company,
-        slug: slug ? slugify(slug) : undefined,
+        slug: normalized || undefined,
         showcase: config,
       });
       // Mirror local quest objects so subsequent saves don't re-PUT
@@ -158,9 +165,19 @@ export default function UebersichtPage() {
     }
   }
 
-  const publicUrl = slug
-    ? (typeof window !== 'undefined' ? `${window.location.origin}/c/${slugify(slug)}` : `/c/${slugify(slug)}`)
+  // Public URL reflects the *saved* slug on the company, not the input field —
+  // so it always matches what visitors actually see.
+  const publicUrl = company?.slug
+    ? (typeof window !== 'undefined' ? `${window.location.origin}/c/${company.slug}` : `/c/${company.slug}`)
     : null;
+  const isLive = !!(company?.showcase?.enabled && publicUrl);
+
+  function handleCopy() {
+    if (!publicUrl) return;
+    navigator.clipboard.writeText(publicUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
 
   if (!company) return null;
 
@@ -182,7 +199,7 @@ export default function UebersichtPage() {
           <p className="text-slate-500 text-sm mt-0.5">Eine öffentliche Seite mit allen JobQuests und Berufschecks deiner Wahl.</p>
         </div>
         <div className="flex items-center gap-2">
-          {publicUrl && config.enabled && (
+          {isLive && publicUrl && (
             <Link href={publicUrl} target="_blank"
               className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition-colors">
               <ExternalLink size={14} /> Vorschau
@@ -198,6 +215,32 @@ export default function UebersichtPage() {
 
       {error && (
         <div className="mb-6 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700">{error}</div>
+      )}
+
+      {/* Live banner */}
+      {isLive && publicUrl && (
+        <div className="mb-6 bg-emerald-50 border border-emerald-200 rounded-2xl p-5 shadow-sm">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+            </span>
+            <span className="text-sm font-semibold text-emerald-900">Übersichtsseite ist live</span>
+          </div>
+          <div className="flex items-center gap-2 bg-white rounded-xl border border-emerald-200 px-3 py-2">
+            <Globe size={14} className="text-emerald-600 flex-shrink-0" />
+            <p className="text-sm font-mono text-slate-700 flex-1 truncate select-all">{publicUrl}</p>
+            <button onClick={handleCopy}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-colors flex-shrink-0">
+              {copied ? <Check size={12} /> : <Copy size={12} />}
+              {copied ? 'Kopiert' : 'Link kopieren'}
+            </button>
+            <Link href={publicUrl} target="_blank"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-100 hover:bg-emerald-200 rounded-lg transition-colors flex-shrink-0">
+              <ExternalLink size={12} /> Öffnen
+            </Link>
+          </div>
+        </div>
       )}
 
       {/* General settings */}
@@ -221,7 +264,9 @@ export default function UebersichtPage() {
                 placeholder="meine-firma"
                 className="input-field text-sm flex-1" />
             </div>
-            <p className="text-[11px] text-slate-400 mt-1">Wird automatisch normalisiert ({slug ? slugify(slug) : '–'}).</p>
+            <p className="text-[11px] text-slate-400 mt-1">
+              Wird automatisch normalisiert. Beim Speichern hängen wir einen kurzen Zufallscode an, damit der Link einzigartig bleibt.
+            </p>
           </div>
 
           <div>

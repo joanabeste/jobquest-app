@@ -24,13 +24,25 @@ export async function PUT(req: NextRequest) {
   const dbData = companyToDb({ ...company, id: session.company.id });
   const { id: _id, ...updateData } = dbData;
 
-  const { data, error } = await supabase
-    .from('companies')
-    .update(updateData)
-    .eq('id', session.company.id)
-    .select()
-    .single();
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(companyFromDb(data!));
+  // If a slug is being set, retry with a fresh suffix on unique-violation
+  // so two companies can never collide on the public showcase URL.
+  let attempts = 0;
+  let lastError: { code?: string; message: string } | null = null;
+  while (attempts < 4) {
+    const { data, error } = await supabase
+      .from('companies')
+      .update(updateData)
+      .eq('id', session.company.id)
+      .select()
+      .single();
+    if (!error) return NextResponse.json(companyFromDb(data!));
+    lastError = error;
+    if (error.code !== '23505' || updateData.slug == null) break;
+    // Replace or append a random 4-char suffix
+    const base = String(updateData.slug).replace(/-[a-z0-9]{4}$/, '');
+    const suffix = Math.random().toString(36).slice(2, 6);
+    updateData.slug = `${base}-${suffix}`;
+    attempts += 1;
+  }
+  return NextResponse.json({ error: lastError?.message ?? 'update failed' }, { status: 500 });
 }
