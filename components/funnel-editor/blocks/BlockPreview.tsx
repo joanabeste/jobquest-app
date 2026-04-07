@@ -788,17 +788,44 @@ export default function BlockPreview({ node, onUpdate }: {
     }
 
     case 'check_lead': {
-      const fields = (p.fields as { id: string; label: string; placeholder?: string }[]) || [];
-      const rows = fields.length > 0 ? fields : [{ id: 'fallback', label: 'E-Mail', placeholder: 'E-Mail-Adresse' }];
+      const fields = (p.fields as { id: string; type?: string; label: string; placeholder?: string; options?: string[] }[]) || [];
+      const rows = fields.length > 0 ? fields : [{ id: 'fallback', type: 'email', label: 'E-Mail', placeholder: 'E-Mail-Adresse' }];
+      const stripHtml = (s: string) => s.replace(/<[^>]*>/g, '');
       return (
         <div className="px-5 py-5 bg-rose-50 border-t-2 border-rose-100">
           <RichEd v={(p.headline as string) ?? ''} up={up?.('headline')} ph="Kontakt" cl="fp-heading mb-3 block" />
           <div className="space-y-2">
-            {rows.map((f) => (
-              <div key={f.id} className="h-10 bg-white border border-rose-200 rounded-lg flex items-center px-3">
-                <span className="text-sm text-slate-400">{f.placeholder || f.label}</span>
-              </div>
-            ))}
+            {rows.map((f) => {
+              if (f.type === 'checkbox') {
+                return (
+                  <label key={f.id} className="flex items-start gap-2 cursor-default">
+                    <span className="mt-0.5 w-3.5 h-3.5 rounded border border-rose-300 bg-white flex-shrink-0" />
+                    <span className="text-[11px] text-slate-500 leading-snug">{stripHtml(f.label)}</span>
+                  </label>
+                );
+              }
+              if (f.type === 'checkbox_group') {
+                const opts = (f.options ?? []).filter(Boolean);
+                return (
+                  <div key={f.id}>
+                    <p className="text-xs font-semibold text-slate-600 mb-1">{stripHtml(f.label)}</p>
+                    <div className="space-y-1">
+                      {opts.map((o, i) => (
+                        <label key={i} className="flex items-center gap-2 cursor-default">
+                          <span className="w-3.5 h-3.5 rounded border border-rose-300 bg-white flex-shrink-0" />
+                          <span className="text-xs text-slate-600">{o}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                );
+              }
+              return (
+                <div key={f.id} className="h-10 bg-white border border-rose-200 rounded-lg flex items-center px-3">
+                  <span className="text-sm text-slate-400">{f.placeholder || stripHtml(f.label)}</span>
+                </div>
+              );
+            })}
           </div>
         </div>
       );
