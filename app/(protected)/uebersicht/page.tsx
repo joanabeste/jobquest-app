@@ -35,6 +35,7 @@ export default function UebersichtPage() {
   const [error, setError] = useState<string | null>(null);
   const [cropEdit, setCropEdit] = useState<CardEdit | null>(null);
   const [copied, setCopied] = useState(false);
+  const [slugStatus, setSlugStatus] = useState<'idle' | 'checking' | 'available' | 'taken' | 'invalid'>('idle');
 
   // Load company data + content
   useEffect(() => {
@@ -58,6 +59,25 @@ export default function UebersichtPage() {
     }).finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [company]);
+
+  // Debounced live slug-availability check.
+  useEffect(() => {
+    const normalized = slugify(slug);
+    if (!normalized) { setSlugStatus('idle'); return; }
+    if (normalized === company?.slug) { setSlugStatus('available'); return; }
+    if (normalized.length < 3) { setSlugStatus('invalid'); return; }
+    setSlugStatus('checking');
+    const handle = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/companies/slug-available?slug=${encodeURIComponent(normalized)}`);
+        const json = await res.json();
+        setSlugStatus(json.available ? 'available' : 'taken');
+      } catch {
+        setSlugStatus('idle');
+      }
+    }, 350);
+    return () => clearTimeout(handle);
+  }, [slug, company?.slug]);
 
   const itemMeta = useMemo(() => {
     const map = new Map<string, { title: string; published: boolean }>();
@@ -141,13 +161,9 @@ export default function UebersichtPage() {
         .map((c) => careerCheckStorage.save({ ...c, cardImage: checkCardImages[c.id] ?? undefined }));
       await Promise.all([...questUpdates, ...checkUpdates]);
 
-      // Save company showcase config + slug. Always append a 4-char random
-      // suffix to avoid collisions across companies (server-side will retry
-      // with a fresh suffix on a unique-violation as a safety net).
-      let normalized = slug ? slugify(slug) : '';
-      if (normalized && !/-[a-z0-9]{4}$/.test(normalized)) {
-        normalized = `${normalized}-${Math.random().toString(36).slice(2, 6)}`;
-      }
+      // Save company showcase config + slug. Server validates uniqueness
+      // and returns a 409 if the slug is already taken.
+      const normalized = slug ? slugify(slug) : '';
       await updateCompany({
         ...company,
         slug: normalized || undefined,
@@ -205,7 +221,7 @@ export default function UebersichtPage() {
               <ExternalLink size={14} /> Vorschau
             </Link>
           )}
-          <button onClick={handleSave} disabled={saving}
+          <button onClick={handleSave} disabled={saving || slugStatus === 'taken' || slugStatus === 'invalid' || slugStatus === 'checking'}
             className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-violet-600 hover:bg-violet-700 disabled:opacity-50 rounded-xl transition-colors">
             {saved ? <CheckCircle size={14} /> : <Save size={14} />}
             {saved ? 'Gespeichert' : saving ? 'Speichert…' : 'Speichern'}
@@ -262,10 +278,17 @@ export default function UebersichtPage() {
               <span className="text-xs text-slate-400">/c/</span>
               <input value={slug} onChange={(e) => setSlug(e.target.value)}
                 placeholder="meine-firma"
-                className="input-field text-sm flex-1" />
+                className={`input-field text-sm flex-1 ${
+                  slugStatus === 'taken' || slugStatus === 'invalid' ? 'border-red-300' :
+                  slugStatus === 'available' ? 'border-emerald-300' : ''
+                }`} />
+              {slugStatus === 'checking' && <span className="text-[11px] text-slate-400">prüfe…</span>}
+              {slugStatus === 'available' && <span className="text-[11px] text-emerald-600 flex items-center gap-1"><Check size={11} /> verfügbar</span>}
+              {slugStatus === 'taken' && <span className="text-[11px] text-red-600">vergeben</span>}
+              {slugStatus === 'invalid' && <span className="text-[11px] text-red-600">zu kurz</span>}
             </div>
             <p className="text-[11px] text-slate-400 mt-1">
-              Wird automatisch normalisiert. Beim Speichern hängen wir einen kurzen Zufallscode an, damit der Link einzigartig bleibt.
+              Mindestens 3 Zeichen. Wird automatisch normalisiert ({slug ? slugify(slug) || '–' : '–'}).
             </p>
           </div>
 
