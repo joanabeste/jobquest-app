@@ -6,8 +6,9 @@ import { useToast } from '@/components/ui/Toast';
 import { questStorage, leadStorage, careerCheckStorage, careerCheckLeadStorage, formPageStorage, formSubmissionStorage } from '@/lib/storage';
 import { Dimension, FormField } from '@/lib/types';
 import { formatDateTime } from '@/lib/utils';
-import { Users, Download, Search, Mail, Phone, X, Filter, MailCheck, MailX, Trash2, AlertTriangle } from 'lucide-react';
+import { Users, Download, Search, Mail, Phone, X, Filter, MailCheck, MailX, Trash2 } from 'lucide-react';
 import { StatCardSkeleton, TableRowSkeleton } from '@/components/ui/Skeleton';
+import ConfirmModal from '@/components/shared/ConfirmModal';
 
 type Source = 'jobquest' | 'berufscheck' | 'formular';
 type SourceFilter = 'all' | Source;
@@ -428,35 +429,17 @@ export default function LeadsPage() {
 
       {/* Delete confirmation */}
       {deleteConfirmLead && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
-            <div className="flex items-start gap-4 mb-5">
-              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
-                <AlertTriangle size={20} className="text-red-600" />
-              </div>
-              <div>
-                <h2 className="text-base font-semibold text-slate-900 mb-1">Kontakt löschen?</h2>
-                <p className="text-sm text-slate-600">
-                  <span className="font-medium">{deleteConfirmLead.firstName} {deleteConfirmLead.lastName}</span> wird unwiderruflich gelöscht und kann nicht wiederhergestellt werden.
-                </p>
-              </div>
-            </div>
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setDeleteConfirmLead(null)}
-                className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
-              >
-                Abbrechen
-              </button>
-              <button
-                onClick={() => { deleteLead(deleteConfirmLead); setDeleteConfirmLead(null); }}
-                className="px-4 py-2 text-sm font-medium text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors"
-              >
-                Endgültig löschen
-              </button>
-            </div>
-          </div>
-        </div>
+        <ConfirmModal
+          title="Kontakt löschen?"
+          description={
+            <>
+              <span className="font-medium">{deleteConfirmLead.firstName} {deleteConfirmLead.lastName}</span> wird unwiderruflich gelöscht und kann nicht wiederhergestellt werden.
+            </>
+          }
+          onConfirm={() => { deleteLead(deleteConfirmLead); setDeleteConfirmLead(null); }}
+          onCancel={() => setDeleteConfirmLead(null)}
+          zIndexClass="z-[60]"
+        />
       )}
     </div>
   );
