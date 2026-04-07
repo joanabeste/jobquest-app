@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useFunnelHistory } from '@/hooks/useFunnelHistory';
 import Link from 'next/link';
-import { ArrowLeft, Save, Globe, Eye, Undo2, Redo2, Check, Sparkles, Copy, GitBranch, LayoutTemplate, Mail } from 'lucide-react';
+import { ArrowLeft, Save, Globe, Eye, Undo2, Redo2, Check, Sparkles, GitBranch, LayoutTemplate, Mail, QrCode } from 'lucide-react';
+import ShareModal from '@/components/ShareModal';
 import { FunnelDoc, FunnelContentType, FunnelPage, InsertTarget, FunnelNode, FunnelStyle, BlockNode, EmailConfig } from '@/lib/funnel-types';
 import { getAvailableVariables, EMAIL_VARIABLES } from '@/lib/funnel-variables';
 import { funnelStorage } from '@/lib/funnel-storage';
@@ -88,7 +89,7 @@ function FunnelEditorInner({
   const [publishing, setPublishing] = useState(false);
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [showEmailConfig, setShowEmailConfig] = useState(false);
-  const [copiedLink, setCopiedLink] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [view, setView] = useState<'canvas' | 'flow'>('canvas');
 
   // Local draft for the title input — only commits on blur or Enter
@@ -387,16 +388,10 @@ function FunnelEditorInner({
               <Eye size={13} /> Vorschau
             </Link>
             <button
-              onClick={() => {
-                if (typeof window !== 'undefined') {
-                  navigator.clipboard.writeText(`${window.location.origin}${previewHref}`).catch(() => {});
-                  setCopiedLink(true);
-                  setTimeout(() => setCopiedLink(false), 2000);
-                }
-              }}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors flex-shrink-0"
-              title="Link kopieren">
-              {copiedLink ? <Check size={13} className="text-emerald-600" /> : <Copy size={13} />}
+              onClick={() => setShowShareModal(true)}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors flex-shrink-0"
+              title="Teilen & QR-Code">
+              <QrCode size={13} /> Teilen
             </button>
             <div className="w-px h-5 bg-slate-200 flex-shrink-0" />
           </>
@@ -512,6 +507,14 @@ function FunnelEditorInner({
         onSave={handleSaveEmailConfig}
         onClose={() => setShowEmailConfig(false)}
         availableVars={EMAIL_VARIABLES}
+      />
+    )}
+    {showShareModal && typeof window !== 'undefined' && (
+      <ShareModal
+        url={`${window.location.origin}${previewHref}`}
+        title={title}
+        logoUrl={company?.logo}
+        onClose={() => setShowShareModal(false)}
       />
     )}
     </>
