@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ArrowRight, Trophy, FileDown, Check, X, ChevronRight } from 'lucide-react';
+import { ArrowRight, Trophy, FileDown, Check, X, ChevronRight, Image as ImageIcon } from 'lucide-react';
 import { BlockNode } from '@/lib/funnel-types';
 import { applyVars } from '@/lib/funnel-variables';
 import { Company, Dimension } from '@/lib/types';
@@ -295,7 +295,10 @@ export function BlockRenderer({
           {imageUrl ? (
             <img src={imageUrl} alt="" className="w-full max-h-72 object-cover" />
           ) : (
-            <div className="h-3" style={{ background: primary }} />
+            <div className="w-full h-48 bg-slate-100 flex flex-col items-center justify-center gap-2 border-b border-slate-200">
+              <ImageIcon size={28} className="text-slate-300" />
+              <p className="text-xs text-slate-400 font-medium">Bild fehlt — wähle eines aus der Mediathek</p>
+            </div>
           )}
           <div className="px-6 pt-8 pb-6 bg-white text-center">
             <h1 className="fp-heading leading-tight mb-4" dangerouslySetInnerHTML={{ __html: sh(inlineHtml(si(p.title))) }} />
@@ -349,10 +352,12 @@ export function BlockRenderer({
     }
 
     case 'quest_decision': {
-      const opts        = (p.options as { id: string; text: string; reaction?: string; targetPageId?: string; emoji?: string }[]) || [];
+      const opts        = (p.options as { id: string; text: string; reaction?: string; targetPageId?: string; emoji?: string; isWrong?: boolean }[]) || [];
       const selected    = answers[node.id] as string | undefined;
       const selectedOpt = opts.find((o) => o.id === selected);
       const hasEmojis   = opts.some((o) => o.emoji);
+      const isWrong     = !!selectedOpt?.isWrong;
+      const accentColor = isWrong ? '#dc2626' : primary;
 
       return (
         <div className="mx-4 my-3">
@@ -363,21 +368,22 @@ export function BlockRenderer({
               {opts.map((o) => {
                 const isSelected = selected === o.id;
                 const IconComp   = isIconName(o.emoji) ? DECISION_ICONS[o.emoji] : null;
+                const optAccent  = isSelected && o.isWrong ? '#dc2626' : primary;
                 return (
                   <button
                     key={o.id}
                     onClick={() => { if (!selected) onAnswer(node.id, o.id); }}
                     disabled={!!selected}
                     className="fp-card bg-white shadow-sm p-4 flex flex-col items-center gap-2.5 text-center transition-all duration-200 hover:shadow-md active:scale-95"
-                    style={isSelected ? { borderColor: primary, background: `${primary}10`, transform: 'scale(0.97)' } : {}}>
+                    style={isSelected ? { borderColor: optAccent, background: `${optAccent}10`, transform: 'scale(0.97)' } : {}}>
                     {IconComp
-                      ? <IconComp size={32} style={{ color: primary }} />
+                      ? <IconComp size={32} style={{ color: optAccent }} />
                       : <span className="text-4xl leading-none">{o.emoji}</span>
                     }
                     <span className="text-xs font-medium text-slate-700 leading-tight">{o.text}</span>
                     {isSelected && (
-                      <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: primary }}>
-                        <Check size={11} className="text-white" />
+                      <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: optAccent }}>
+                        {o.isWrong ? <X size={11} className="text-white" /> : <Check size={11} className="text-white" />}
                       </div>
                     )}
                   </button>
@@ -388,11 +394,12 @@ export function BlockRenderer({
             <div className="fp-card bg-white shadow-sm p-2 space-y-1.5">
               {opts.map((o) => {
                 const isSelected = selected === o.id;
+                const optAccent  = isSelected && o.isWrong ? '#dc2626' : primary;
                 return (
                   <button key={o.id} onClick={() => { if (!selected) onAnswer(node.id, o.id); }}
                     disabled={!!selected}
                     className="w-full text-left fp-opt flex items-center gap-2 px-4 py-3 text-sm"
-                    style={isSelected ? { borderColor: primary, background: `${primary}18` } : {}}>
+                    style={isSelected ? { borderColor: optAccent, background: `${optAccent}18` } : {}}>
                     <ChevronRight size={14} className="flex-shrink-0 text-slate-400" />
                     {o.text}
                   </button>
@@ -402,12 +409,17 @@ export function BlockRenderer({
           )}
 
           {selectedOpt?.reaction && (
-            <div className="mt-4 bg-white rounded-xl shadow-sm overflow-hidden" style={{ borderLeft: `4px solid ${primary}` }}>
+            <div className={`mt-4 rounded-xl shadow-sm overflow-hidden ${isWrong ? 'bg-red-50' : 'bg-white'}`} style={{ borderLeft: `4px solid ${accentColor}` }}>
               <div className="px-4 py-4 flex items-start gap-3">
-                <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5" style={{ background: `${primary}20` }}>
-                  <Check size={14} style={{ color: primary }} />
+                <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5" style={{ background: `${accentColor}20` }}>
+                  {isWrong ? <X size={14} style={{ color: accentColor }} /> : <Check size={14} style={{ color: accentColor }} />}
                 </div>
-                <p className="text-sm leading-relaxed text-slate-700">{selectedOpt.reaction}</p>
+                <div className="flex-1">
+                  {isWrong && (
+                    <p className="text-xs font-semibold text-red-700 mb-1">Keine gute Wahl</p>
+                  )}
+                  <p className={`text-sm leading-relaxed ${isWrong ? 'text-red-800' : 'text-slate-700'}`}>{selectedOpt.reaction}</p>
+                </div>
               </div>
             </div>
           )}

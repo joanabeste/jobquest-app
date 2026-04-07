@@ -46,7 +46,11 @@ export default function EditorPage() {
 
   async function handleTitleChange(title: string) {
     if (!quest) return;
-    const updated = { ...quest, title, slug: slugify(title), updatedAt: new Date().toISOString() };
+    // Preserve the existing random suffix to keep the slug unique across quests with the same title
+    const existingSuffix = quest.slug.match(/-([a-z0-9]{6})$/)?.[1];
+    const newBase = slugify(title) || 'quest';
+    const newSlug = existingSuffix ? `${newBase}-${existingSuffix}` : `${newBase}-${Math.random().toString(36).slice(2, 8)}`;
+    const updated = { ...quest, title, slug: newSlug, updatedAt: new Date().toISOString() };
     await questStorage.save(updated);
     setQuest(updated);
   }

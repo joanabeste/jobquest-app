@@ -48,7 +48,10 @@ export default function FormularEditorPage() {
 
   async function handleTitleChange(title: string) {
     if (!formPage) return;
-    const updated = { ...formPage, title, slug: slugify(title), updatedAt: new Date().toISOString() };
+    const existingSuffix = formPage.slug.match(/-([a-z0-9]{6})$/)?.[1];
+    const newBase = slugify(title) || 'form';
+    const newSlug = existingSuffix ? `${newBase}-${existingSuffix}` : `${newBase}-${Math.random().toString(36).slice(2, 8)}`;
+    const updated = { ...formPage, title, slug: newSlug, updatedAt: new Date().toISOString() };
     try {
       await formPageStorage.save(updated);
       setFormPage(updated);

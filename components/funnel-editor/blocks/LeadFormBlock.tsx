@@ -21,6 +21,7 @@ export default function LeadFormBlock({ props: p, company, br, primary, leadForm
     { id: 'default_nachname',    type: 'text',     label: 'Nachname',       placeholder: 'Nachname',        required: false, variable: 'nachname'    },
     { id: 'default_email',       type: 'email',    label: 'E-Mail',         placeholder: 'E-Mail-Adresse',  required: true,  variable: 'email'       },
     { id: 'default_telefon',     type: 'tel',      label: 'Telefon',        placeholder: 'Telefonnummer',   required: false, variable: 'telefon'     },
+    { id: 'default_praktikum',   type: 'checkbox', label: 'Ich kann mir vorstellen, in diesem Bereich ein Praktikum zu machen.', required: false, variable: 'praktikum' },
     { id: 'default_datenschutz', type: 'checkbox', label: 'Ich stimme zu, dass <a href="@datenschutzUrl" target="_blank" rel="noopener noreferrer">@companyName</a> meine Daten zum Zweck der Kontaktaufnahme speichert und verarbeitet. <a href="@impressumUrl" target="_blank" rel="noopener noreferrer">Impressum</a>', required: true, variable: 'datenschutz' },
   ];
   const useFields = true;

@@ -80,6 +80,8 @@ quest_scene
   → Szeneneinstieg: kurze, bildhafte Beschreibung einer Situation.
   → title: prägnant (max 8 Wörter). description: 2-3 Sätze, lebhaft und immersiv.
   → bulletPoints: Pflicht für Seite 3 (Aufgaben des Tages, 4–6 Einträge). Optional auf anderen Szenen-Seiten.
+  → SEITE 0 (Startbildschirm): title MUSS die exakte Berufsbezeichnung enthalten (z.B. "Pflegefachkraft (m/w/d)").
+    Falls Bilder mitgeschickt wurden: Setze imageUrl auf eine der echten URLs (das beste/repräsentativste Bild).
 
 quest_spinner
   Props: { text: "Dein Arbeitstag beginnt…", doneText: "Los geht's!" }
@@ -103,11 +105,15 @@ quest_dialog
     → followUpText: Reaktion der Kollegin darauf (z.B. "Schön dich kennenzulernen, @vorname!").
 
 quest_decision
-  Props: { question: string, options: [{ id: "UUID", text: string, emoji: string, reaction: string, nextPageIndex?: number }] }
+  Props: { question: string, options: [{ id: "UUID", text: string, emoji: string, reaction: string, isWrong?: boolean, nextPageIndex?: number }] }
   → question: Konkrete Situation mit Handlungsdruck — kein abstraktes "Was würdest du tun?", sondern
     eine lebendige Beschreibung: "Ein Alarm piept. Du siehst, dass Patient 4 unruhig wird. Was tust du?"
-  → 2 Optionen bei Branching, sonst 2–3. Keine "richtige" Option — beide Wege sind valide.
-  → reaction: Kurze, empathische Konsequenz (1-2 Sätze) — zeigt unmittelbare Folge, nicht Bewertung.
+  → 2 Optionen bei Branching, sonst 2–3.
+  → isWrong: optional. Setze auf TRUE, wenn die Wahl objektiv unsinnig oder gefährlich wäre
+    (z.B. "Den Notfall ignorieren und Pause machen"). Bei Branching-Decisions immer FALSE lassen
+    (beide Pfade müssen valide sein). Bei linearen Decisions ist mindestens 1 unsinnige Option erlaubt.
+  → reaction: Kurze, empathische Konsequenz (1-2 Sätze). Bei isWrong=true die Reaction erklären, WARUM
+    es keine gute Idee war (z.B. "Ein Notfall darf nie ignoriert werden — Patient:innen verlassen sich auf dich.").
   → emoji: NUR Icon-Namen aus dieser Liste (kein Emoji-Zeichen wie 🚨 oder 👍):
     Briefcase, Star, Heart, Zap, Target, Users, Clock, Globe, Shield, Lightbulb,
     Rocket, TrendingUp, Award, CheckCircle, XCircle, ThumbsUp, ThumbsDown,
@@ -188,10 +194,11 @@ quest_rating (👍 – vorletzte Seite)
   Props: { question: "Wie gut kannst du dir vorstellen, als [Berufsbezeichnung] zu arbeiten?", emoji: "👍", count: 5 }
 
 quest_lead (IMMER letzte Seite)
-  Props: { headline: string, subtext: string, buttonText: "Jetzt bewerben", privacyText: "Ich stimme zu, dass meine Daten gespeichert und ich kontaktiert werde.", fields: [] }
-  → headline: motivierend, bezieht sich auf die erlebte Story.
-  → subtext: 1-2 Sätze, warum sich eine Bewerbung lohnt.
-  → fields: [] – Felder werden automatisch ergänzt, hier immer leeres Array lassen.
+  Props: { headline: string, subtext: string, buttonText: "Weitere Infos anfordern", privacyText: "", fields: [] }
+  → WICHTIG: Es geht NICHT um eine Bewerbung, sondern um WEITERE INFORMATIONEN zum Ausbildungsberuf.
+  → headline: lädt zur Info-Anfrage ein, z.B. "Lust auf mehr?" oder "Du willst noch mehr erfahren?".
+  → subtext: 1-2 Sätze, warum sich Infos lohnen (Praktikum, Schnuppertag, Ausbildungsplatz-Details).
+  → fields: [] – Felder (inkl. Praktikum-Checkbox + DSGVO mit Impressum) werden automatisch ergänzt.
 
 ═══════════════════════════════════════════════════════
   QUALITÄTSANFORDERUNGEN
@@ -272,19 +279,24 @@ Pages können optional nextPageIndex (0-basiert) enthalten, damit der "Weiter"-K
 Seiten ohne Branching-Sprung lassen nextPageIndex einfach weg.`;
 
 const DEFAULT_LEAD_FIELDS = [
-  { type: 'text',  label: 'Vorname',  placeholder: 'Vorname',                 required: true  },
-  { type: 'text',  label: 'Nachname', placeholder: 'Nachname',                required: false },
-  { type: 'email', label: 'E-Mail',   placeholder: 'E-Mail-Adresse',          required: true  },
-  { type: 'tel',   label: 'Telefon',  placeholder: 'Telefonnummer', required: false },
+  { type: 'text',     label: 'Vorname',  placeholder: 'Vorname',          required: true,  variable: 'vorname'    },
+  { type: 'text',     label: 'Nachname', placeholder: 'Nachname',         required: false, variable: 'nachname'   },
+  { type: 'email',    label: 'E-Mail',   placeholder: 'E-Mail-Adresse',   required: true,  variable: 'email'      },
+  { type: 'tel',      label: 'Telefon',  placeholder: 'Telefonnummer',    required: false, variable: 'telefon'    },
+  { type: 'checkbox', label: 'Ich kann mir vorstellen, in diesem Bereich ein Praktikum zu machen.', required: false, variable: 'praktikum' },
+  { type: 'checkbox', label: 'Ich stimme zu, dass <a href="@datenschutzUrl" target="_blank">@companyName</a> meine Daten gemäß <a href="@datenschutzUrl" target="_blank">Datenschutzerklärung</a> verarbeitet. <a href="@impressumUrl" target="_blank">Impressum</a>', required: true, variable: 'datenschutz' },
 ];
 
 export async function POST(req: NextRequest) {
   const session = await getSession();
   if (!session) return unauthorized();
 
-  let beruf: string | undefined, notes: string | undefined;
+  let beruf: string | undefined, notes: string | undefined, imageUrls: string[] = [];
   try {
-    ({ beruf, notes } = await req.json() as { beruf?: string; notes?: string });
+    const body = await req.json() as { beruf?: string; notes?: string; imageUrls?: string[] };
+    beruf = body.beruf;
+    notes = body.notes;
+    imageUrls = Array.isArray(body.imageUrls) ? body.imageUrls.filter((u) => typeof u === 'string') : [];
   } catch {
     return NextResponse.json({ error: 'Ungültige Anfrage' }, { status: 400 });
   }
@@ -298,7 +310,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'API-Schlüssel (OPENAI_API_KEY) nicht konfiguriert' }, { status: 500 });
   }
 
-  const userMessage = `Erstelle eine JobQuest für den Beruf: ${beruf.trim()}${notes?.trim() ? `\n\nZusätzliche Hinweise: ${notes.trim()}` : ''}`;
+  let userMessageText = `Erstelle eine JobQuest für den Beruf: ${beruf.trim()}${notes?.trim() ? `\n\nZusätzliche Hinweise: ${notes.trim()}` : ''}`;
+
+  if (imageUrls.length > 0) {
+    userMessageText += `\n\nDir wurden ${imageUrls.length} Bilder vom Unternehmen mitgeschickt. Verteile diese Bilder sinnvoll auf die quest_scene-Blöcke (besonders Page 0!), quest_hotspot-Blöcke und quest_dialog-Lines. Verwende EXAKT folgende URLs (keine erfinden):\n${imageUrls.map((u, i) => `${i + 1}. ${u}`).join('\n')}`;
+  }
+
+  // Multimodal user message: text + optional images
+  const userContent: Array<Record<string, unknown>> = [{ type: 'text', text: userMessageText }];
+  for (const url of imageUrls) {
+    userContent.push({ type: 'image_url', image_url: { url } });
+  }
 
   const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
@@ -312,7 +334,7 @@ export async function POST(req: NextRequest) {
       response_format: { type: 'json_object' },
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: userMessage },
+        { role: 'user', content: imageUrls.length > 0 ? userContent : userMessageText },
       ],
     }),
   });
@@ -340,6 +362,16 @@ export async function POST(req: NextRequest) {
   const pageIds = parsed.pages.map(() => crypto.randomUUID());
 
   // Second pass: build FunnelPage[] and resolve nextPageIndex → real UUIDs
+  // Whitelist of allowed image URLs (only the ones the user uploaded)
+  const allowedImageUrls = new Set(imageUrls);
+  function sanitizeImageUrl(url: unknown, fallbackIndex: number): string {
+    if (typeof url !== 'string' || !url) return '';
+    if (allowedImageUrls.has(url)) return url;
+    // Model invented a URL — fall back to one of the real images by index
+    return imageUrls[fallbackIndex % imageUrls.length] ?? '';
+  }
+  let imageBlockCounter = 0;
+
   const pages = parsed.pages.map((page, pIdx) => {
     const pageNextId = typeof page.nextPageIndex === 'number' && pageIds[page.nextPageIndex]
       ? pageIds[page.nextPageIndex]
@@ -351,6 +383,25 @@ export async function POST(req: NextRequest) {
       ...(pageNextId ? { nextPageId: pageNextId } : {}),
       nodes: page.blocks.map((block) => {
         let props = block.props;
+
+        // Sanitize imageUrl on scene/hotspot blocks
+        if ((block.type === 'quest_scene' || block.type === 'quest_hotspot') && imageUrls.length > 0) {
+          props = {
+            ...props,
+            imageUrl: sanitizeImageUrl(props.imageUrl, imageBlockCounter++),
+          };
+        }
+
+        // Sanitize imageUrl on dialog lines
+        if (block.type === 'quest_dialog' && Array.isArray(props.lines) && imageUrls.length > 0) {
+          props = {
+            ...props,
+            lines: (props.lines as Array<Record<string, unknown>>).map((line) => ({
+              ...line,
+              imageUrl: line.imageUrl ? sanitizeImageUrl(line.imageUrl, imageBlockCounter++) : '',
+            })),
+          };
+        }
 
         // Resolve nextPageIndex in quest_decision options → targetPageId
         if (block.type === 'quest_decision' && Array.isArray(props.options)) {

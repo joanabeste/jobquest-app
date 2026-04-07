@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useMemo } from 'react';
 import { X, Plus, MapPin, Smile } from 'lucide-react';
-import { Field } from './shared';
+import { Field, ImageUploadField } from './shared';
 import type { VariableDef } from '@/lib/funnel-variables';
 import { DECISION_ICONS, isIconName, isEmoji } from '@/lib/decision-icons';
 import { IconEmojiPicker } from './IconEmojiPicker';
@@ -90,25 +90,9 @@ export function HotspotEditor({ props, onChange }: {
     window.addEventListener('mouseup', onMouseUp);
   }, [hotspots, onChange]);
 
-  function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => onChange({ imageUrl: reader.result as string });
-    reader.readAsDataURL(file);
-  }
-
   return (
     <div className="space-y-4">
-      {/* Image upload */}
-      <Field label="Bild">
-        <input
-          type="file"
-          accept="image/*"
-          onChange={handleUpload}
-          className="block text-[10px] text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[10px] file:font-medium file:bg-slate-100 file:text-slate-600 hover:file:bg-slate-200 cursor-pointer"
-        />
-      </Field>
+      <ImageUploadField label="Bild" value={imageUrl} onChange={(url) => onChange({ imageUrl: url })} />
 
       {/* Image with hotspot placement */}
       {imageUrl ? (

@@ -67,7 +67,26 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
     else { setCompleted(true); scrollTop(); }
   }
   function goBack() {
-    if (pageIndex > 0) { setPageIndex((i) => i - 1); scrollTop(); }
+    if (pageIndex === 0) return;
+    // Reset answer of the first interactive block on the target page
+    const targetPage = doc.pages[pageIndex - 1];
+    const targetBlocks = flatBlocks(targetPage.nodes);
+    const interactiveTypes = ['quest_decision', 'quest_quiz', 'quest_rating', 'quest_zuordnung', 'quest_dialog'];
+    const interactiveBlock = targetBlocks.find((b) => interactiveTypes.includes(b.type));
+    if (interactiveBlock) {
+      setAnswers((prev) => {
+        const next = { ...prev };
+        delete next[interactiveBlock.id];
+        delete next[`${interactiveBlock.id}_checked`]; // Quiz reveal
+        delete next[`${interactiveBlock.id}_confirmed`]; // Zuordnung
+        return next;
+      });
+      if (interactiveBlock.type === 'quest_dialog') {
+        setDialogVisible(0);
+      }
+    }
+    setPageIndex((i) => i - 1);
+    scrollTop();
   }
   function setAnswer(nodeId: string, value: unknown) {
     setAnswers((prev) => ({ ...prev, [nodeId]: value }));

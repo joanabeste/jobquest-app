@@ -156,6 +156,16 @@ export interface SuccessLink {
   url: string;
 }
 
+export interface MediaAsset {
+  id: string;
+  companyId: string;
+  url: string;
+  filename: string;
+  sizeBytes?: number;
+  mimeType?: string;
+  createdAt: string;
+}
+
 export interface SuccessPageConfig {
   headline: string;
   text: string;
@@ -517,10 +527,10 @@ export interface FormConfig {
 }
 
 export const DEFAULT_FORM_CONFIG: FormConfig = {
-  headline: 'Interessiert?',
-  submitButtonText: 'Jetzt bewerben',
+  headline: 'Mehr Informationen erhalten',
+  submitButtonText: 'Weitere Ausbildungsinformationen',
   thankYouHeadline: 'Vielen Dank!',
-  thankYouText: 'Wir werden uns in Kürze bei dir melden.',
+  thankYouText: 'Wir senden dir die Informationen in Kürze zu.',
   privacyText: 'Ich stimme zu, dass @companyName meine Daten gemäß Datenschutzerklärung verarbeitet.',
 };
 

@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { X, ChevronDown, ChevronUp } from 'lucide-react';
+import { X, ChevronDown, ChevronUp, ImageIcon, Upload } from 'lucide-react';
+import MediaLibraryPicker from '../MediaLibraryPicker';
 
 export function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -23,18 +24,12 @@ export function NumberInput({ label, value, onChange }: { label: string; value: 
 }
 
 export function ImageUploadField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
-  function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => onChange(reader.result as string);
-    reader.readAsDataURL(file);
-  }
+  const [pickerOpen, setPickerOpen] = useState(false);
   return (
     <Field label={label}>
       {value && (
         <div className="relative w-full h-24 rounded-xl overflow-hidden border border-slate-200 mb-1.5">
-          { }
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={value} alt="" className="w-full h-full object-cover" />
           <button onClick={() => onChange('')}
             className="absolute top-1.5 right-1.5 p-1 bg-white rounded-lg shadow text-slate-500 hover:text-red-500 transition-colors">
@@ -42,8 +37,19 @@ export function ImageUploadField({ label, value, onChange }: { label: string; va
           </button>
         </div>
       )}
-      <input type="file" accept="image/*" onChange={handleUpload}
-        className="block text-[10px] text-slate-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[10px] file:font-medium file:bg-slate-100 file:text-slate-600 hover:file:bg-slate-200 cursor-pointer" />
+      <button
+        type="button"
+        onClick={() => setPickerOpen(true)}
+        className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-dashed border-slate-300 text-xs text-slate-600 hover:bg-slate-50 hover:border-violet-400 transition-colors"
+      >
+        {value ? <Upload size={12} /> : <ImageIcon size={12} />}
+        {value ? 'Bild ändern' : 'Bild aus Mediathek wählen'}
+      </button>
+      <MediaLibraryPicker
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        onSelect={(url) => onChange(url)}
+      />
     </Field>
   );
 }

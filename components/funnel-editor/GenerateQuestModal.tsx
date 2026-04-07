@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { X, Sparkles } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { X, Sparkles, Upload, ImageIcon, Trash2 } from 'lucide-react';
 import { FunnelPage } from '@/lib/funnel-types';
+import type { MediaAsset } from '@/lib/types';
 
 interface Props {
   onGenerate: (pages: FunnelPage[], title: string) => void;
@@ -21,10 +22,33 @@ const LOADING_STEPS = [
 export default function GenerateQuestModal({ onGenerate, onClose }: Props) {
   const [beruf, setBeruf] = useState('');
   const [notes, setNotes] = useState('');
+  const [images, setImages] = useState<MediaAsset[]>([]);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [loadingStep, setLoadingStep] = useState(0);
   const [loadingProgress, setLoadingProgress] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  async function handleImageUpload(file: File) {
+    setUploadingImage(true);
+    setError('');
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch('/api/media', { method: 'POST', body: fd });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || 'Upload fehlgeschlagen');
+      }
+      const asset: MediaAsset = await res.json();
+      setImages((prev) => [...prev, asset]);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Upload fehlgeschlagen');
+    } finally {
+      setUploadingImage(false);
+    }
+  }
 
   useEffect(() => {
     if (!loading) return;
@@ -58,7 +82,11 @@ export default function GenerateQuestModal({ onGenerate, onClose }: Props) {
       const res = await fetch('/api/generate-quest', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ beruf: beruf.trim(), notes: notes.trim() }),
+        body: JSON.stringify({
+          beruf: beruf.trim(),
+          notes: notes.trim(),
+          imageUrls: images.map((img) => img.url),
+        }),
       });
       const data = await res.json() as { pages?: FunnelPage[]; error?: string };
       if (!res.ok) throw new Error(data.error ?? 'Unbekannter Fehler');
@@ -155,6 +183,52 @@ export default function GenerateQuestModal({ onGenerate, onClose }: Props) {
                   rows={3}
                   className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:border-violet-400 focus:outline-none resize-none transition-colors"
                 />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1.5">
+                  Bilder vom Unternehmen <span className="text-slate-300">(optional)</span>
+                </label>
+                <p className="text-[11px] text-slate-400 mb-2">Die KI analysiert die Bilder und baut sie passend in die JobQuest ein.</p>
+
+                {images.length > 0 && (
+                  <div className="grid grid-cols-3 gap-2 mb-2">
+                    {images.map((img) => (
+                      <div key={img.id} className="relative rounded-lg overflow-hidden border border-slate-200 aspect-square group">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={img.url} alt={img.filename} className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => setImages((prev) => prev.filter((i) => i.id !== img.id))}
+                          className="absolute top-1 right-1 p-1 rounded bg-white/90 text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <Trash2 size={11} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) handleImageUpload(f);
+                    e.target.value = '';
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingImage}
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-dashed border-slate-300 text-xs text-slate-600 hover:bg-slate-50 hover:border-violet-400 transition-colors disabled:opacity-60"
+                >
+                  {uploadingImage ? <Sparkles size={13} className="animate-spin" /> : <Upload size={13} />}
+                  {uploadingImage ? 'Wird hochgeladen…' : images.length === 0 ? 'Bild hochladen' : 'Weiteres Bild hochladen'}
+                </button>
               </div>
 
               {error && (

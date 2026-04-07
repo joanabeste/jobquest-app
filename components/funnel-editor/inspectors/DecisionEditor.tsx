@@ -9,7 +9,7 @@ import type { VariableDef } from '@/lib/funnel-variables';
 import { DECISION_ICONS, isIconName, isEmoji } from '@/lib/decision-icons';
 import { IconEmojiPicker } from './IconEmojiPicker';
 
-type DecisionOption = { id: string; text: string; reaction: string; emoji?: string; targetPageId?: string };
+type DecisionOption = { id: string; text: string; reaction: string; emoji?: string; targetPageId?: string; isWrong?: boolean };
 
 export function DecisionEditor({ props, onChange, pages, variables = [] }: {
   props: Record<string, unknown>;
@@ -70,6 +70,15 @@ export function DecisionEditor({ props, onChange, pages, variables = [] }: {
 
                 <VarInput value={o.reaction} onChange={(v) => updateOpt(i, { reaction: v })}
                   className="w-full mini-input" placeholder="Reaktion nach Auswahl" variables={variables} />
+                <label className="flex items-center gap-1.5 text-[10px] text-slate-500 cursor-pointer pt-0.5">
+                  <input
+                    type="checkbox"
+                    checked={!!o.isWrong}
+                    onChange={(e) => updateOpt(i, { isWrong: e.target.checked || undefined })}
+                    className="w-3 h-3 accent-red-500"
+                  />
+                  Diese Entscheidung ist nicht sinnvoll (zeigt rote Reaktion)
+                </label>
                 {pages && pages.length > 1 && (
                   <div className="flex items-center gap-1.5 pt-0.5">
                     <span className="text-[10px] text-slate-400 flex-shrink-0">→ Weiter zu</span>

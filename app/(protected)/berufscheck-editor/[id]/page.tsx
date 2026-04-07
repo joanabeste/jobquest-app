@@ -46,7 +46,10 @@ export default function BerufsCheckEditorPage() {
 
   async function handleTitleChange(title: string) {
     if (!check) return;
-    const updated = { ...check, title, slug: slugify(title), updatedAt: new Date().toISOString() };
+    const existingSuffix = check.slug.match(/-([a-z0-9]{6})$/)?.[1];
+    const newBase = slugify(title) || 'check';
+    const newSlug = existingSuffix ? `${newBase}-${existingSuffix}` : `${newBase}-${Math.random().toString(36).slice(2, 8)}`;
+    const updated = { ...check, title, slug: newSlug, updatedAt: new Date().toISOString() };
     await careerCheckStorage.save(updated);
     setCheck(updated);
   }
