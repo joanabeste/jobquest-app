@@ -25,7 +25,7 @@ export default function SettingsCompanyPage() {
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [cropSrc, setCropSrc] = useState<string | null>(null);
+  const [cropState, setCropState] = useState<{ src: string; target: 'logo' | 'favicon' } | null>(null);
 
   useEffect(() => {
     if (!can('edit_company')) {
@@ -94,7 +94,16 @@ export default function SettingsCompanyPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => setCropSrc(reader.result as string);
+    reader.onload = () => setCropState({ src: reader.result as string, target: 'logo' });
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  }
+
+  function handleFaviconChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setCropState({ src: reader.result as string, target: 'favicon' });
     reader.readAsDataURL(file);
     e.target.value = '';
   }
@@ -125,11 +134,16 @@ export default function SettingsCompanyPage() {
 
   return (
     <div className="max-w-3xl mx-auto px-6 py-8">
-      {cropSrc && (
+      {cropState && (
         <LogoCropModal
-          src={cropSrc}
-          onConfirm={(base64) => { handleChange('logo', base64); setCropSrc(null); }}
-          onCancel={() => setCropSrc(null)}
+          src={cropState.src}
+          title={cropState.target === 'favicon' ? 'Favicon zuschneiden' : 'Logo zuschneiden'}
+          onConfirm={(base64) => {
+            if (cropState.target === 'logo') handleChange('logo', base64);
+            else setDesign((d) => ({ ...d, faviconUrl: base64 }));
+            setCropState(null);
+          }}
+          onCancel={() => setCropState(null)}
         />
       )}
       <div className="flex items-center gap-4 mb-8">
@@ -367,16 +381,9 @@ export default function SettingsCompanyPage() {
                     {design.faviconUrl ? 'Anderes Bild wählen' : 'Favicon hochladen'}
                     <input
                       type="file"
-                      accept="image/png,image/x-icon,image/svg+xml,image/jpeg,image/webp"
+                      accept="image/png,image/svg+xml,image/jpeg,image/webp"
                       className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        const reader = new FileReader();
-                        reader.onload = () => setDesign((d) => ({ ...d, faviconUrl: reader.result as string }));
-                        reader.readAsDataURL(file);
-                        e.target.value = '';
-                      }}
+                      onChange={handleFaviconChange}
                     />
                   </label>
                   {design.faviconUrl && (
@@ -672,10 +679,11 @@ function DesignPreview({ name, logo, design }: { name: string; logo?: string; de
 }
 
 // ─── Logo crop modal ──────────────────────────────────────────────────────────
-function LogoCropModal({ src, onConfirm, onCancel }: {
+function LogoCropModal({ src, onConfirm, onCancel, title = 'Logo zuschneiden' }: {
   src: string;
   onConfirm: (base64: string) => void;
   onCancel: () => void;
+  title?: string;
 }) {
   const imgRef = useRef<HTMLImageElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -750,7 +758,7 @@ function LogoCropModal({ src, onConfirm, onCancel }: {
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
       onClick={(e) => { if (e.target === e.currentTarget) onCancel(); }}>
       <div className="bg-white rounded-2xl p-5 w-full max-w-lg shadow-2xl">
-        <h3 className="font-semibold text-slate-900 mb-4 text-center text-base">Logo zuschneiden</h3>
+        <h3 className="font-semibold text-slate-900 mb-4 text-center text-base">{title}</h3>
 
         <div
           ref={containerRef}

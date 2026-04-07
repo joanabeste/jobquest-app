@@ -440,7 +440,7 @@ function ShareButton({ path, title }: { path: string; title: string }) {
         title="Teilen & QR-Code">
         <QrCode size={14} />
       </button>
-      {open && <ShareModal url={url} title={title} logoUrl={company?.logo} onClose={() => setOpen(false)} />}
+      {open && <ShareModal url={url} title={title} logoUrl={company?.corporateDesign?.faviconUrl || company?.logo} onClose={() => setOpen(false)} />}
     </>
   );
 }

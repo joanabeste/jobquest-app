@@ -513,7 +513,7 @@ function FunnelEditorInner({
       <ShareModal
         url={`${window.location.origin}${previewHref}`}
         title={title}
-        logoUrl={company?.logo}
+        logoUrl={company?.corporateDesign?.faviconUrl || company?.logo}
         onClose={() => setShowShareModal(false)}
       />
     )}
