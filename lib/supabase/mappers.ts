@@ -179,6 +179,7 @@ export function analyticsFromDb(row: DbRow): AnalyticsEvent {
     jobQuestId: str(row, 'job_quest_id'),
     type: str(row, 'type') as AnalyticsEvent['type'],
     sessionId: str(row, 'session_id'),
+    moduleId: row.module_id == null ? undefined : str(row, 'module_id'),
     duration: row.duration == null ? undefined : num(row, 'duration'),
     timestamp: str(row, 'timestamp'),
   };
@@ -190,6 +191,7 @@ export function analyticsToDb(e: AnalyticsEvent): Record<string, unknown> {
     job_quest_id: e.jobQuestId,
     type: e.type,
     session_id: e.sessionId,
+    module_id: e.moduleId ?? null,
     duration: e.duration ?? null,
     timestamp: e.timestamp,
   };

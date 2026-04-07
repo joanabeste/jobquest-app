@@ -95,14 +95,16 @@ create index leads_company_id_idx on public.leads (company_id);
 create table public.analytics_events (
   id            uuid primary key default uuid_generate_v4(),
   job_quest_id  uuid not null references public.job_quests(id) on delete cascade,
-  type          text not null check (type in ('view', 'start', 'complete')),
+  type          text not null check (type in ('view', 'start', 'complete', 'page_view')),
   session_id    text not null,
+  module_id     text,
   duration      integer,
   timestamp     timestamptz not null default now()
 );
 
 create index analytics_events_job_quest_id_idx on public.analytics_events (job_quest_id);
 create index analytics_events_session_id_idx on public.analytics_events (session_id);
+create index analytics_events_module_id_idx on public.analytics_events (job_quest_id, module_id);
 
 -- ============================================================
 -- 6. CAREER CHECKS

@@ -81,6 +81,21 @@ export default function QuestPlayer({ quest, company }: Props) {
     }
   }, [step, quest.id, sessionId]);
 
+  // Track per-module page views (only content steps, not the lead form step).
+  useEffect(() => {
+    if (step >= sequence.length) return;
+    const mod = sequence[step];
+    if (!mod) return;
+    analyticsStorage.save({
+      id: crypto.randomUUID(),
+      jobQuestId: quest.id,
+      type: 'page_view',
+      sessionId,
+      moduleId: mod.id,
+      timestamp: new Date().toISOString(),
+    });
+  }, [step, sequence, quest.id, sessionId]);
+
   function handleDecisionSelect(decisionModule: DecisionModule, optionId: string) {
     setAnswers((p) => ({ ...p, [decisionModule.id]: optionId }));
     setShowFeedback((p) => ({ ...p, [decisionModule.id]: true }));

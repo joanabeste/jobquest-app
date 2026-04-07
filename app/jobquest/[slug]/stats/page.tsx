@@ -6,9 +6,10 @@ import Link from 'next/link';
 import { questStorage, leadStorage, analyticsStorage } from "@/lib/storage";
 import { JobQuest, Lead, AnalyticsEvent } from '@/lib/types';
 import { formatDateShort, exportLeadsAsCSV } from "@/lib/utils";
+import { MODULE_LABELS, MODULE_ICONS } from '@/lib/types';
 import {
   BarChart2, Users, Eye, TrendingUp, Clock, Download,
-  ArrowLeft, Globe, Calendar, Filter,
+  ArrowLeft, Globe, Calendar, Filter, LogOut,
 } from 'lucide-react';
 
 type DateFilter = '7' | '30' | 'all';
@@ -83,6 +84,52 @@ export default function StatsPage() {
     const secs = Math.round(avg % 60);
     return `${mins}:${secs.toString().padStart(2, '0')} Min`;
   })();
+
+  // ─── Per-Modul-Auswertung ────────────────────────────────────────────────
+  // Aufrufe je Modul = Anzahl unterschiedlicher Sessions mit page_view auf dieses Modul.
+  // Absprungrate = Anteil dieser Sessions, deren *letzter* page_view dieses Modul war
+  //                und die kein 'complete' ausgelöst haben.
+  const pageStats = (() => {
+    type Row = { moduleId: string; views: number; exits: number; exitRate: number };
+    if (!quest) return [] as Row[];
+
+    // Pro Session: chronologische page_views + completed-Flag
+    const bySession = new Map<string, { lastModule?: string; lastTs: number; modules: Set<string>; completed: boolean }>();
+    for (const e of filteredEvents) {
+      let s = bySession.get(e.sessionId);
+      if (!s) {
+        s = { lastModule: undefined, lastTs: 0, modules: new Set(), completed: false };
+        bySession.set(e.sessionId, s);
+      }
+      if (e.type === 'complete') s.completed = true;
+      if (e.type === 'page_view' && e.moduleId) {
+        s.modules.add(e.moduleId);
+        const ts = new Date(e.timestamp).getTime();
+        if (ts >= s.lastTs) { s.lastTs = ts; s.lastModule = e.moduleId; }
+      }
+    }
+
+    const views = new Map<string, number>();
+    const exits = new Map<string, number>();
+    for (const s of bySession.values()) {
+      for (const m of s.modules) views.set(m, (views.get(m) ?? 0) + 1);
+      if (!s.completed && s.lastModule) {
+        exits.set(s.lastModule, (exits.get(s.lastModule) ?? 0) + 1);
+      }
+    }
+
+    // In Quest-Reihenfolge ausgeben (nur Top-Level-Module – Branch-Module sind dynamisch).
+    return quest.modules.map((m) => {
+      const v = views.get(m.id) ?? 0;
+      const x = exits.get(m.id) ?? 0;
+      return { moduleId: m.id, views: v, exits: x, exitRate: v > 0 ? Math.round((x / v) * 100) : 0 };
+    });
+  })();
+  const moduleTitle = (m: { id: string; type: string }): string => {
+    const mod = m as unknown as Record<string, unknown>;
+    const t = (mod.title as string) || (mod.question as string) || (mod.caption as string) || (mod.filename as string);
+    return t || MODULE_LABELS[(m.type as keyof typeof MODULE_LABELS)] || 'Modul';
+  };
 
   if (notAuthorized) {
     return (
@@ -201,6 +248,75 @@ export default function StatsPage() {
             <div className="mt-4 pt-4 border-t border-slate-100 flex items-center gap-2">
               <Clock size={14} className="text-slate-400" />
               <span className="text-sm text-slate-600">Ø Verweildauer: <strong>{avgDuration}</strong></span>
+            </div>
+          )}
+        </div>
+
+        {/* Per-Page Auswertung */}
+        <div className="card overflow-hidden">
+          <div className="p-5 border-b border-slate-100">
+            <h2 className="font-semibold text-slate-900">Seiten-Auswertung</h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Aufrufe und Absprungrate je Modul – so siehst du, wo Besucher abspringen.
+            </p>
+          </div>
+          {pageStats.every((p) => p.views === 0) ? (
+            <div className="p-10 text-center text-slate-400 text-sm">
+              Noch keine Seiten-Aufrufe im gewählten Zeitraum.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-100 bg-slate-50">
+                    <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide w-10">#</th>
+                    <th className="text-left px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Modul</th>
+                    <th className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">Aufrufe</th>
+                    <th className="text-right px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                      <span className="inline-flex items-center gap-1"><LogOut size={12} /> Absprünge</span>
+                    </th>
+                    <th className="px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide w-[40%]">Absprungrate</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {quest.modules.map((m, idx) => {
+                    const stat = pageStats[idx];
+                    const rate = stat.exitRate;
+                    const barColor = rate >= 60 ? 'bg-rose-500' : rate >= 30 ? 'bg-amber-400' : 'bg-emerald-500';
+                    return (
+                      <tr key={m.id} className="hover:bg-slate-50 transition-colors">
+                        <td className="px-5 py-3 text-slate-400 text-xs">{idx + 1}</td>
+                        <td className="px-5 py-3">
+                          <div className="flex items-center gap-2">
+                            <span className="text-base">{MODULE_ICONS[m.type]}</span>
+                            <div className="min-w-0">
+                              <p className="font-medium text-slate-900 truncate">{moduleTitle(m)}</p>
+                              <p className="text-xs text-slate-400">{MODULE_LABELS[m.type]}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-5 py-3 text-right font-semibold text-slate-700">{stat.views}</td>
+                        <td className="px-5 py-3 text-right text-slate-600">{stat.exits}</td>
+                        <td className="px-5 py-3">
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 bg-slate-100 rounded-full h-2">
+                              <div
+                                className={`h-2 rounded-full ${barColor} transition-all duration-700`}
+                                style={{ width: `${Math.min(rate, 100)}%` }}
+                              />
+                            </div>
+                            <span className="text-xs font-semibold text-slate-700 w-10 text-right">{rate}%</span>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              <p className="px-5 py-3 text-xs text-slate-400 border-t border-slate-100">
+                Absprungrate = Sessions, die auf dieser Seite verlassen haben, ohne die Quest abzuschließen.
+                Verzweigte Module aus Entscheidungen werden hier nicht einzeln aufgeführt.
+              </p>
             </div>
           )}
         </div>

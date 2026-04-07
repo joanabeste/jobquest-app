@@ -302,8 +302,9 @@ export interface Lead {
 export interface AnalyticsEvent {
   id: string;
   jobQuestId: string;
-  type: 'view' | 'start' | 'complete';
+  type: 'view' | 'start' | 'complete' | 'page_view';
   sessionId: string;
+  moduleId?: string;
   duration?: number;
   timestamp: string;
 }
