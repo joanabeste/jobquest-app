@@ -215,6 +215,10 @@ export interface ShowcaseConfig {
   enabled: boolean;
   headline?: string;
   subtext?: string;
+  questsHeadline?: string;
+  questsSubtext?: string;
+  checksHeadline?: string;
+  checksSubtext?: string;
   items: ShowcaseItem[];
 }
 

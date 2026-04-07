@@ -66,6 +66,9 @@ export default function ShowcasePage() {
     return () => { cancelled = true; };
   }, [slug]);
 
+  const questItems = useMemo(() => items.filter((it) => it.type === 'jobquest'), [items]);
+  const checkItems = useMemo(() => items.filter((it) => it.type === 'berufscheck'), [items]);
+
   // Hook expects a non-null Company; pass an empty stub when not loaded yet.
   const design = useCorporateDesign(company ?? ({ corporateDesign: undefined } as Company));
   useFavicon(company?.corporateDesign?.faviconUrl);
@@ -153,45 +156,33 @@ export default function ShowcasePage() {
         )}
       </section>
 
-      {/* Cards */}
-      <section className="max-w-5xl mx-auto px-4 md:px-6 pb-16">
-        {items.length === 0 ? (
+      {/* Sections */}
+      {items.length === 0 ? (
+        <section className="max-w-5xl mx-auto px-4 md:px-6 pb-16">
           <div className="text-center py-16 text-slate-400 text-sm">
             Aktuell sind keine Inhalte verfügbar.
           </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {items.map((it) => (
-              <Link key={it.id} href={it.href}
-                className="group bg-white border border-slate-200 hover:border-violet-400 hover:shadow-lg transition-all overflow-hidden flex flex-col"
-                style={{ borderRadius: 'var(--showcase-radius)' }}>
-                <div className="aspect-[16/10] bg-slate-100 overflow-hidden flex items-center justify-center">
-                  {it.cardImage ? (
-
-                    <img src={it.cardImage} alt={it.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                  ) : (
-                    <div className="flex flex-col items-center gap-2 text-slate-300">
-                      <ImageIcon size={32} />
-                      <span className="text-[10px] uppercase tracking-wide">{it.type}</span>
-                    </div>
-                  )}
-                </div>
-                <div className="p-5 flex-1 flex flex-col">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
-                    {it.type === 'jobquest' ? 'JobQuest' : 'Berufscheck'}
-                  </p>
-                  <h3 className="text-lg font-bold text-slate-900 leading-snug">{it.title}</h3>
-                  <div className="mt-auto pt-4 flex items-center gap-1.5 text-sm font-semibold"
-                    style={{ color: 'var(--showcase-primary)' }}>
-                    Jetzt starten <ArrowRight size={14} />
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        )}
-      </section>
+        </section>
+      ) : (
+        <>
+          {questItems.length > 0 && (
+            <ShowcaseSection
+              kind="jobquest"
+              items={questItems}
+              headline={sc.questsHeadline || 'JobQuests'}
+              subtext={sc.questsSubtext}
+            />
+          )}
+          {checkItems.length > 0 && (
+            <ShowcaseSection
+              kind="berufscheck"
+              items={checkItems}
+              headline={sc.checksHeadline || 'Berufschecks'}
+              subtext={sc.checksSubtext}
+            />
+          )}
+        </>
+      )}
 
       {/* Footer */}
       <footer className="border-t border-slate-200 bg-white">
@@ -206,5 +197,58 @@ export default function ShowcasePage() {
         </div>
       </footer>
     </div>
+  );
+}
+
+function ShowcaseSection({
+  kind, items, headline, subtext,
+}: {
+  kind: 'jobquest' | 'berufscheck';
+  items: ResolvedItem[];
+  headline: string;
+  subtext?: string;
+}) {
+  const label = kind === 'jobquest' ? 'JobQuest' : 'Berufscheck';
+  return (
+    <section className="max-w-5xl mx-auto px-4 md:px-6 pb-12">
+      <div className="mb-6">
+        <p className="text-[11px] font-semibold uppercase tracking-wider mb-1"
+          style={{ color: 'var(--showcase-primary)' }}>
+          {kind === 'jobquest' ? 'JobQuests' : 'Berufschecks'}
+        </p>
+        <h2 className="text-2xl md:text-3xl font-bold text-slate-900">{headline}</h2>
+        {subtext && <p className="text-slate-500 text-sm mt-2 max-w-2xl">{subtext}</p>}
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        {items.map((it) => (
+          <Link key={it.id} href={it.href}
+            className="group bg-white border border-slate-200 hover:border-violet-400 hover:shadow-lg transition-all overflow-hidden flex flex-col"
+            style={{ borderRadius: 'var(--showcase-radius)' }}>
+            <div className="aspect-[16/10] bg-slate-100 overflow-hidden flex items-center justify-center">
+              {it.cardImage ? (
+
+                <img src={it.cardImage} alt={it.title}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+              ) : (
+                <div className="flex flex-col items-center gap-2 text-slate-300">
+                  <ImageIcon size={32} />
+                  <span className="text-[10px] uppercase tracking-wide">{label}</span>
+                </div>
+              )}
+            </div>
+            <div className="p-5 flex-1 flex flex-col">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
+                {label}
+              </p>
+              <h3 className="text-lg font-bold text-slate-900 leading-snug">{it.title}</h3>
+              <div className="mt-auto pt-4 flex items-center gap-1.5 text-sm font-semibold"
+                style={{ color: 'var(--showcase-primary)' }}>
+                Jetzt starten <ArrowRight size={14} />
+              </div>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </section>
   );
 }

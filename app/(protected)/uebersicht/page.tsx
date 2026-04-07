@@ -310,6 +310,50 @@ export default function UebersichtPage() {
         </div>
       </div>
 
+      {/* Per-section texts */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 mb-6">
+        <h2 className="font-semibold text-slate-900 mb-1">Sektionstexte</h2>
+        <p className="text-xs text-slate-400 mb-4">JobQuests und Berufschecks erscheinen in getrennten Bereichen mit eigenen Texten.</p>
+        <div className="grid sm:grid-cols-2 gap-5">
+          <div className="space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-wider text-violet-600">JobQuests</p>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Überschrift</label>
+              <input value={config.questsHeadline ?? ''}
+                onChange={(e) => setConfig((c) => ({ ...c, questsHeadline: e.target.value }))}
+                placeholder="JobQuests"
+                className="input-field text-sm w-full" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Untertext</label>
+              <textarea value={config.questsSubtext ?? ''}
+                onChange={(e) => setConfig((c) => ({ ...c, questsSubtext: e.target.value }))}
+                rows={2}
+                placeholder="Spielerisch unsere Berufe erleben."
+                className="input-field text-sm w-full" />
+            </div>
+          </div>
+          <div className="space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-wider text-violet-600">Berufschecks</p>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Überschrift</label>
+              <input value={config.checksHeadline ?? ''}
+                onChange={(e) => setConfig((c) => ({ ...c, checksHeadline: e.target.value }))}
+                placeholder="Berufschecks"
+                className="input-field text-sm w-full" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Untertext</label>
+              <textarea value={config.checksSubtext ?? ''}
+                onChange={(e) => setConfig((c) => ({ ...c, checksSubtext: e.target.value }))}
+                rows={2}
+                placeholder="Finde heraus, welcher Beruf zu dir passt."
+                className="input-field text-sm w-full" />
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Items */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 mb-6">
         <h2 className="font-semibold text-slate-900 mb-4">Inhalte auf der Übersicht</h2>
@@ -318,7 +362,8 @@ export default function UebersichtPage() {
           <p className="text-sm text-slate-400">Laden…</p>
         ) : config.items.length === 0 ? (
           <p className="text-sm text-slate-400 py-6 text-center">Noch keine Inhalte ausgewählt – füge unten welche hinzu.</p>
-        ) : (
+        ) : null}
+        {!loading && config.items.length > 0 && (
           <ul className="space-y-2">
             {config.items.map((item, idx) => {
               const meta = itemMeta.get(`${item.type}:${item.contentId}`);
@@ -382,32 +427,32 @@ export default function UebersichtPage() {
             })}
           </ul>
         )}
-      </div>
 
-      {/* Add picker */}
-      {!loading && (availableQuests.length > 0 || availableChecks.length > 0) && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-          <h2 className="font-semibold text-slate-900 mb-3 text-sm">Hinzufügen</h2>
-          <div className="grid sm:grid-cols-2 gap-2">
-            {availableQuests.map((q) => (
-              <button key={q.id} type="button" onClick={() => addItem('jobquest', q.id)}
-                className="flex items-center gap-2 p-2 text-left border border-slate-200 rounded-lg hover:border-violet-400 hover:bg-violet-50 transition-colors">
-                <Plus size={14} className="text-violet-600 flex-shrink-0" />
-                <span className="text-sm text-slate-700 truncate flex-1">{q.title}</span>
-                <span className="text-[10px] text-slate-400">JobQuest</span>
-              </button>
-            ))}
-            {availableChecks.map((c) => (
-              <button key={c.id} type="button" onClick={() => addItem('berufscheck', c.id)}
-                className="flex items-center gap-2 p-2 text-left border border-slate-200 rounded-lg hover:border-violet-400 hover:bg-violet-50 transition-colors">
-                <Plus size={14} className="text-violet-600 flex-shrink-0" />
-                <span className="text-sm text-slate-700 truncate flex-1">{c.title}</span>
-                <span className="text-[10px] text-slate-400">Berufscheck</span>
-              </button>
-            ))}
+        {/* Add picker — inline under the items list */}
+        {!loading && (availableQuests.length > 0 || availableChecks.length > 0) && (
+          <div className={config.items.length > 0 ? 'mt-5 pt-5 border-t border-slate-100' : ''}>
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">Hinzufügen</p>
+            <div className="grid sm:grid-cols-2 gap-2">
+              {availableQuests.map((q) => (
+                <button key={q.id} type="button" onClick={() => addItem('jobquest', q.id)}
+                  className="flex items-center gap-2 p-2 text-left border border-slate-200 rounded-lg hover:border-violet-400 hover:bg-violet-50 transition-colors">
+                  <Plus size={14} className="text-violet-600 flex-shrink-0" />
+                  <span className="text-sm text-slate-700 truncate flex-1">{q.title}</span>
+                  <span className="text-[10px] text-slate-400">JobQuest</span>
+                </button>
+              ))}
+              {availableChecks.map((c) => (
+                <button key={c.id} type="button" onClick={() => addItem('berufscheck', c.id)}
+                  className="flex items-center gap-2 p-2 text-left border border-slate-200 rounded-lg hover:border-violet-400 hover:bg-violet-50 transition-colors">
+                  <Plus size={14} className="text-violet-600 flex-shrink-0" />
+                  <span className="text-sm text-slate-700 truncate flex-1">{c.title}</span>
+                  <span className="text-[10px] text-slate-400">Berufscheck</span>
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
