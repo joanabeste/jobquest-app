@@ -140,6 +140,10 @@ export const leadStorage = {
 // ─── Analytics Storage ──────────────────────────────────────────────────────
 
 export const analyticsStorage = {
+  getAll: async (): Promise<AnalyticsEvent[]> => {
+    return apiFetch<AnalyticsEvent[]>('/api/analytics');
+  },
+
   getByQuest: async (questId: string): Promise<AnalyticsEvent[]> => {
     return apiFetch<AnalyticsEvent[]>(`/api/analytics?questId=${questId}`);
   },

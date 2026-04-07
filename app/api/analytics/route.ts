@@ -8,23 +8,41 @@ export async function GET(req: NextRequest) {
   if (!session) return unauthorized();
 
   const questId = req.nextUrl.searchParams.get('questId');
-  if (!questId) return NextResponse.json({ error: 'questId required' }, { status: 400 });
-
   const supabase = createAdminClient();
 
-  // Verify quest belongs to company
-  const { data: quest } = await supabase
+  if (questId) {
+    // Verify quest belongs to company
+    const { data: quest } = await supabase
+      .from('job_quests')
+      .select('id')
+      .eq('id', questId)
+      .eq('company_id', session.company.id)
+      .single();
+    if (!quest) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+    const { data, error } = await supabase
+      .from('analytics_events')
+      .select('*')
+      .eq('job_quest_id', questId)
+      .order('timestamp', { ascending: false });
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(data!.map(analyticsFromDb));
+  }
+
+  // Company-wide: all events for all quests of this company
+  const { data: quests, error: questsErr } = await supabase
     .from('job_quests')
     .select('id')
-    .eq('id', questId)
-    .eq('company_id', session.company.id)
-    .single();
-  if (!quest) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    .eq('company_id', session.company.id);
+  if (questsErr) return NextResponse.json({ error: questsErr.message }, { status: 500 });
+  const ids = (quests ?? []).map((q) => q.id);
+  if (ids.length === 0) return NextResponse.json([]);
 
   const { data, error } = await supabase
     .from('analytics_events')
     .select('*')
-    .eq('job_quest_id', questId)
+    .in('job_quest_id', ids)
     .order('timestamp', { ascending: false });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
