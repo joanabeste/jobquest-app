@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z, type ZodType } from 'zod';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { sendLeadEmails } from '@/lib/mailer';
 import type { EmailConfig } from '@/lib/funnel-types';
@@ -11,35 +12,60 @@ interface LeadBase {
   phone?: string;
 }
 
-interface SubmitLeadBody<T> {
-  lead: T;
-  contentId: string;
-  companyName: string;
-  karriereseiteUrl?: string;
-}
+// Restrict `table` to a closed union so a caller cannot accidentally (or
+// maliciously, via a future code change) point this at an unrelated table.
+type LeadTable = 'leads' | 'career_check_leads';
+
+const SubmitLeadEnvelopeSchema = z.object({
+  contentId: z.string().min(1).max(200),
+  companyName: z.string().min(1).max(200),
+  karriereseiteUrl: z.string().url().max(2000).optional(),
+});
 
 /**
- * Shared handler for lead submission routes.
- * Saves the lead to the given table, then fires emails from the funnel_docs config.
+ * Shared handler for public lead-submission routes.
+ *
+ * Validation strategy:
+ *  - Envelope (contentId / companyName / karriereseiteUrl) is validated here.
+ *  - The `lead` payload is validated by a caller-supplied Zod schema so that
+ *    each lead variant can enforce its own field set. Unknown fields are
+ *    stripped, never passed through to the DB mapper.
+ *
+ * Errors are returned as generic messages — Supabase errors are logged
+ * server-side only.
  */
 export function createSubmitLeadHandler<T extends LeadBase>(
-  table: string,
+  table: LeadTable,
+  leadSchema: ZodType<T>,
   toDb: (lead: T) => Record<string, unknown>,
   logPrefix: string,
 ) {
   return async function POST(req: NextRequest) {
-    let body: SubmitLeadBody<T>;
+    let raw: unknown;
     try {
-      body = await req.json();
+      raw = await req.json();
     } catch {
-      return NextResponse.json({ error: 'Ungültige Anfrage' }, { status: 400 });
+      return NextResponse.json({ error: 'invalid_json' }, { status: 400 });
     }
-    const { lead, contentId, companyName, karriereseiteUrl } = body;
+
+    const envelope = SubmitLeadEnvelopeSchema.safeParse(raw);
+    if (!envelope.success) {
+      return NextResponse.json({ error: 'validation_error' }, { status: 400 });
+    }
+    const leadParsed = leadSchema.safeParse((raw as { lead?: unknown })?.lead);
+    if (!leadParsed.success) {
+      return NextResponse.json({ error: 'validation_error' }, { status: 400 });
+    }
+    const lead = leadParsed.data;
+    const { contentId, companyName, karriereseiteUrl } = envelope.data;
 
     const admin = createAdminClient();
 
     const { error } = await admin.from(table).insert(toDb(lead));
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) {
+      console.error(`[${logPrefix}] insert failed:`, error.message);
+      return NextResponse.json({ error: 'submit_failed' }, { status: 500 });
+    }
 
     let emailStatus: 'sent' | 'skipped' | 'error' = 'skipped';
     let emailError: string | undefined;

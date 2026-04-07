@@ -1,5 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { getSession, unauthorized } from '@/lib/api-auth';
+
+// Hard caps to limit prompt-injection blast-radius and OpenAI cost.
+// Image URLs must be HTTPS and bounded in count; the model will only ever
+// see allowlisted URLs because the body filters them too.
+const GenerateQuestSchema = z.object({
+  beruf: z.string().min(1).max(200),
+  notes: z.string().max(2000).optional(),
+  imageUrls: z
+    .array(z.string().url().startsWith('https://').max(2000))
+    .max(10)
+    .optional()
+    .default([]),
+});
 
 const SYSTEM_PROMPT = `Du bist ein kreativer Storyteller und Experte für interaktive Recruiting-Erlebnisse. Deine Aufgabe: Erstelle eine packende, authentische JobQuest – eine interaktive Story, die Bewerber in einen echten Arbeitstag des Berufs eintauchen lässt.
 
@@ -291,19 +305,19 @@ export async function POST(req: NextRequest) {
   const session = await getSession();
   if (!session) return unauthorized();
 
-  let beruf: string | undefined, notes: string | undefined, imageUrls: string[] = [];
+  let raw: unknown;
   try {
-    const body = await req.json() as { beruf?: string; notes?: string; imageUrls?: string[] };
-    beruf = body.beruf;
-    notes = body.notes;
-    imageUrls = Array.isArray(body.imageUrls) ? body.imageUrls.filter((u) => typeof u === 'string') : [];
+    raw = await req.json();
   } catch {
-    return NextResponse.json({ error: 'Ungültige Anfrage' }, { status: 400 });
+    return NextResponse.json({ error: 'invalid_json' }, { status: 400 });
   }
-
-  if (!beruf?.trim()) {
-    return NextResponse.json({ error: 'Beruf ist erforderlich' }, { status: 400 });
+  const parsedBody = GenerateQuestSchema.safeParse(raw);
+  if (!parsedBody.success) {
+    return NextResponse.json({ error: 'validation_error' }, { status: 400 });
   }
+  const beruf = parsedBody.data.beruf;
+  const notes = parsedBody.data.notes;
+  const imageUrls = parsedBody.data.imageUrls;
 
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
@@ -348,7 +362,8 @@ export async function POST(req: NextRequest) {
 
   if (!openaiRes.ok) {
     const errText = await openaiRes.text();
-    return NextResponse.json({ error: `OpenAI API Fehler: ${errText}` }, { status: 500 });
+    console.error('[generate-quest] OpenAI error:', openaiRes.status, errText);
+    return NextResponse.json({ error: 'KI-Anfrage fehlgeschlagen.' }, { status: 502 });
   }
 
   const aiData = await openaiRes.json() as { choices?: Array<{ message: { content: string } }> };
@@ -362,7 +377,8 @@ export async function POST(req: NextRequest) {
   try {
     parsed = JSON.parse(rawText);
   } catch {
-    return NextResponse.json({ error: 'KI-Antwort konnte nicht verarbeitet werden', raw: rawText }, { status: 500 });
+    console.error('[generate-quest] JSON parse failed, raw length=', rawText.length);
+    return NextResponse.json({ error: 'KI-Antwort ungültig.' }, { status: 502 });
   }
 
   // First pass: assign stable IDs to every page

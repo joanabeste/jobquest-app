@@ -3,6 +3,7 @@ import * as cheerio from 'cheerio';
 import { getSession, unauthorized } from '@/lib/api-auth';
 import { INDUSTRY_OPTIONS, ROLE_PERMISSIONS } from '@/lib/types';
 import { FONT_OPTIONS } from '@/lib/fonts';
+import { safeFetch, isSafePublicUrl } from '@/lib/safe-fetch';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -13,61 +14,21 @@ const MAX_IMAGE_BYTES = 500_000;
 const FETCH_TIMEOUT_MS = 10_000;
 const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml', 'image/webp', 'image/x-icon', 'image/vnd.microsoft.icon'];
 
-function isPrivateHost(host: string): boolean {
-  const h = host.toLowerCase();
-  if (h === 'localhost' || h.endsWith('.localhost')) return true;
-  if (/^127\./.test(h)) return true;
-  if (/^10\./.test(h)) return true;
-  if (/^192\.168\./.test(h)) return true;
-  if (/^169\.254\./.test(h)) return true;
-  if (/^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(h)) return true;
-  if (h === '0.0.0.0' || h === '::1') return true;
-  return false;
-}
+// Hostname/IP validation + redirect-safe fetching live in lib/safe-fetch.ts.
+// All outbound requests in this route go through `safeFetch` so DNS-rebinding,
+// redirect-chain SSRF, and IPv6/CGNAT bypasses are blocked uniformly.
 
-function validateUrl(raw: string): URL | null {
-  try {
-    const u = new URL(raw);
-    if (u.protocol !== 'http:' && u.protocol !== 'https:') return null;
-    if (isPrivateHost(u.hostname)) return null;
-    return u;
-  } catch {
-    return null;
-  }
-}
-
-async function fetchWithLimit(url: string, maxBytes: number): Promise<{ buffer: Buffer; contentType: string } | null> {
-  try {
-    const res = await fetch(url, {
-      headers: { 'User-Agent': 'JobQuestBot/1.0 (+https://jobquest.app)' },
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-      redirect: 'follow',
-    });
-    if (!res.ok || !res.body) return null;
-    const contentType = res.headers.get('content-type') ?? '';
-    const reader = res.body.getReader();
-    const chunks: Uint8Array[] = [];
-    let received = 0;
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      received += value.length;
-      if (received > maxBytes) {
-        reader.cancel();
-        return null;
-      }
-      chunks.push(value);
-    }
-    return { buffer: Buffer.concat(chunks), contentType };
-  } catch {
-    return null;
-  }
+async function fetchWithLimit(
+  url: string,
+  maxBytes: number,
+): Promise<{ buffer: Buffer; contentType: string } | null> {
+  const res = await safeFetch(url, { maxBytes, timeoutMs: FETCH_TIMEOUT_MS });
+  if (!res) return null;
+  return { buffer: res.buffer, contentType: res.contentType };
 }
 
 async function fetchAsDataUrl(url: string): Promise<string | undefined> {
-  const parsed = validateUrl(url);
-  if (!parsed) return undefined;
-  const result = await fetchWithLimit(parsed.toString(), MAX_IMAGE_BYTES);
+  const result = await fetchWithLimit(url, MAX_IMAGE_BYTES);
   if (!result) return undefined;
   const mime = result.contentType.split(';')[0].trim().toLowerCase();
   if (!ALLOWED_IMAGE_TYPES.includes(mime)) return undefined;
@@ -308,8 +269,13 @@ function sanitizeFont(value: unknown): string | undefined {
 
 function sanitizeUrl(value: unknown): string | undefined {
   if (typeof value !== 'string') return undefined;
-  const u = validateUrl(value);
-  return u ? u.toString() : undefined;
+  try {
+    const u = new URL(value);
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') return undefined;
+    return u.toString();
+  } catch {
+    return undefined;
+  }
 }
 
 function sanitizeText(value: unknown, max = 1000): string | undefined {
@@ -332,7 +298,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Ungültige Anfrage' }, { status: 400 });
   }
 
-  const url = validateUrl(body.url ?? '');
+  const url = await isSafePublicUrl(body.url ?? '');
   if (!url) {
     return NextResponse.json({ error: 'Ungültige URL. Bitte gib eine vollständige öffentliche https-URL an.' }, { status: 400 });
   }

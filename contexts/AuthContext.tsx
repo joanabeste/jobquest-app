@@ -21,41 +21,24 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-const SESSION_CACHE_KEY = 'jobquest.session.cache';
-
-interface SessionCache {
-  company: Company;
-  member: WorkspaceMember;
-  isImpersonating: boolean;
-}
-
-function readSessionCache(): SessionCache | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    const raw = window.localStorage.getItem(SESSION_CACHE_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw) as SessionCache;
-  } catch {
-    return null;
-  }
-}
-
-function writeSessionCache(cache: SessionCache) {
+// NOTE: We deliberately do NOT persist `company` / `member` in localStorage.
+// The Supabase auth cookie is the source of truth; the in-memory state below
+// is hydrated from `/api/auth/me` on mount. Caching role/company client-side
+// invites XSS-driven privilege escalation and stale-permission bugs. Any
+// authorization decision must still be re-checked server-side via RLS.
+//
+// One-time legacy cleanup: drop any pre-existing cache from older builds.
+const LEGACY_SESSION_CACHE_KEY = 'jobquest.session.cache';
+function purgeLegacyCache() {
   if (typeof window === 'undefined') return;
-  try { window.localStorage.setItem(SESSION_CACHE_KEY, JSON.stringify(cache)); } catch { /* quota */ }
-}
-
-function clearSessionCache() {
-  if (typeof window === 'undefined') return;
-  try { window.localStorage.removeItem(SESSION_CACHE_KEY); } catch { /* ignore */ }
+  try { window.localStorage.removeItem(LEGACY_SESSION_CACHE_KEY); } catch { /* ignore */ }
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const initial = typeof window !== 'undefined' ? readSessionCache() : null;
-  const [company, setCompany] = useState<Company | null>(initial?.company ?? null);
-  const [currentMember, setCurrentMember] = useState<WorkspaceMember | null>(initial?.member ?? null);
-  const [isLoading, setIsLoading] = useState(!initial);
-  const [isImpersonating, setIsImpersonating] = useState(initial?.isImpersonating ?? false);
+  const [company, setCompany] = useState<Company | null>(null);
+  const [currentMember, setCurrentMember] = useState<WorkspaceMember | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isImpersonating, setIsImpersonating] = useState(false);
 
   const refreshSession = useCallback(async () => {
     try {
@@ -66,7 +49,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setCurrentMember(data.member);
           setCompany(data.company);
           setIsImpersonating(data.isImpersonating ?? false);
-          writeSessionCache({ company: data.company, member: data.member, isImpersonating: data.isImpersonating ?? false });
           return;
         }
       }
@@ -74,10 +56,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setCompany(null);
     setCurrentMember(null);
     setIsImpersonating(false);
-    clearSessionCache();
   }, []);
 
   useEffect(() => {
+    purgeLegacyCache();
     refreshSession().finally(() => setIsLoading(false));
   }, [refreshSession]);
 
@@ -92,7 +74,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!res.ok) return data?.error ?? 'Anmeldung fehlgeschlagen.';
       setCurrentMember(data.member);
       setCompany(data.company);
-      writeSessionCache({ company: data.company, member: data.member, isImpersonating: false });
       return null;
     } catch (err) {
       console.error('[auth] login error', err);
@@ -109,7 +90,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setCompany(null);
       setCurrentMember(null);
       setIsImpersonating(false);
-      clearSessionCache();
     }
   }, []);
 
@@ -120,10 +100,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       body: JSON.stringify(updated),
     });
     setCompany(data);
-    if (currentMember) {
-      writeSessionCache({ company: data, member: currentMember, isImpersonating });
-    }
-  }, [currentMember, isImpersonating]);
+  }, []);
 
   const register = useCallback(async (data: Omit<Company, 'id' | 'createdAt'> & { password: string }): Promise<{ pending: boolean }> => {
     const result = await apiFetch<{ pending: boolean }>('/api/auth/register', {
@@ -139,7 +116,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await apiFetch('/api/companies/me/delete', { method: 'POST' });
     setCompany(null);
     setCurrentMember(null);
-    clearSessionCache();
   }, [company]);
 
   const checkCan = useCallback((permission: Permission): boolean =>

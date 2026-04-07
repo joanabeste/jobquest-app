@@ -1,36 +1,51 @@
-import type { Company, JobQuest, Lead, AnalyticsEvent, CareerCheck, CareerCheckLead, FormPage, FormSubmission, WorkspaceMember } from '../types';
-import type { FunnelDoc } from '../funnel-types';
+import type {
+  Company,
+  JobQuest,
+  Lead,
+  AnalyticsEvent,
+  CareerCheck,
+  CareerCheckLead,
+  FormPage,
+  FormSubmission,
+  WorkspaceMember,
+  WorkspaceRole,
+  CorporateDesign,
+} from '../types';
+import type { FunnelDoc, EmailConfig } from '../funnel-types';
+import { type DbRow, str, optStr, num, json, optBool, bool } from './row-helpers';
 
-// fromDb functions intentionally use `any` — the Supabase clients are untyped
-// to avoid RLS 'never' issues, so row shapes cannot be statically verified here.
- 
+// All `*FromDb` mappers take `DbRow` (a typed alias for `Record<string,
+// unknown>`) and read fields through helpers in `row-helpers.ts`. There is
+// no longer any `any` in this file — schema drift now fails loudly at the
+// boundary instead of silently producing `undefined`.
 
 // ─── Company ────────────────────────────────────────────────────────────────
 
-export function companyFromDb(row: any): Company {
+export function companyFromDb(row: DbRow): Company {
+  const showcaseCfg = json<Record<string, unknown> | undefined>(row, 'showcase_config');
   return {
-    id: row.id,
-    name: row.name,
-    slug: row.slug ?? undefined,
-    description: row.description ?? undefined,
-    industry: row.industry,
-    location: row.location,
-    logo: row.logo ?? undefined,
-    privacyUrl: row.privacy_url ?? undefined,
-    imprintUrl: row.imprint_url ?? undefined,
-    careerPageUrl: row.career_page_url ?? undefined,
-    contactName: row.contact_name,
-    contactEmail: row.contact_email,
-    createdAt: row.created_at,
-    corporateDesign: row.corporate_design ?? undefined,
-    successPage: row.success_page ?? undefined,
-    showcase: row.showcase_config && Object.keys(row.showcase_config).length > 0
-      ? row.showcase_config
+    id: str(row, 'id'),
+    name: str(row, 'name'),
+    slug: optStr(row, 'slug'),
+    description: optStr(row, 'description'),
+    industry: str(row, 'industry'),
+    location: str(row, 'location'),
+    logo: optStr(row, 'logo'),
+    privacyUrl: optStr(row, 'privacy_url'),
+    imprintUrl: optStr(row, 'imprint_url'),
+    careerPageUrl: optStr(row, 'career_page_url'),
+    contactName: str(row, 'contact_name'),
+    contactEmail: str(row, 'contact_email'),
+    createdAt: str(row, 'created_at'),
+    corporateDesign: json<CorporateDesign | undefined>(row, 'corporate_design'),
+    successPage: json(row, 'success_page'),
+    showcase: showcaseCfg && Object.keys(showcaseCfg).length > 0
+      ? (showcaseCfg as unknown as Company['showcase'])
       : undefined,
     plan: {
-      maxJobQuests: row.max_job_quests ?? 1,
-      maxBerufschecks: row.max_berufschecks ?? 0,
-      maxFormulare: row.max_formulare ?? 0,
+      maxJobQuests: num(row, 'max_job_quests', 1),
+      maxBerufschecks: num(row, 'max_berufschecks', 0),
+      maxFormulare: num(row, 'max_formulare', 0),
     },
   };
 }
@@ -51,13 +66,11 @@ export function companyToDb(c: Company): Record<string, unknown> {
     corporate_design: c.corporateDesign ?? {},
     success_page: c.successPage ?? null,
     created_at: c.createdAt,
-    // Plan columns — only include if plan is explicitly set (avoids errors if DB migration hasn't run yet)
     ...(c.plan ? {
       max_job_quests: c.plan.maxJobQuests,
       max_berufschecks: c.plan.maxBerufschecks,
       max_formulare: c.plan.maxFormulare,
     } : {}),
-    // Showcase columns — also conditional in case DB migration hasn't run yet
     ...(c.slug !== undefined ? { slug: c.slug || null } : {}),
     ...(c.showcase !== undefined ? { showcase_config: c.showcase } : {}),
   };
@@ -65,16 +78,16 @@ export function companyToDb(c: Company): Record<string, unknown> {
 
 // ─── WorkspaceMember ────────────────────────────────────────────────────────
 
-export function memberFromDb(row: any): WorkspaceMember {
+export function memberFromDb(row: DbRow): WorkspaceMember {
   return {
-    id: row.id,
-    companyId: row.company_id,
-    name: row.name,
-    email: row.email,
-    role: row.role,
-    invitedBy: row.invited_by ?? undefined,
-    status: row.status,
-    createdAt: row.created_at,
+    id: str(row, 'id'),
+    companyId: str(row, 'company_id'),
+    name: str(row, 'name'),
+    email: str(row, 'email'),
+    role: str(row, 'role') as WorkspaceRole,
+    invitedBy: optStr(row, 'invited_by'),
+    status: str(row, 'status') as WorkspaceMember['status'],
+    createdAt: str(row, 'created_at'),
   };
 }
 
@@ -93,19 +106,19 @@ export function memberToDb(m: WorkspaceMember): Record<string, unknown> {
 
 // ─── JobQuest ───────────────────────────────────────────────────────────────
 
-export function questFromDb(row: any): JobQuest {
+export function questFromDb(row: DbRow): JobQuest {
   return {
-    id: row.id,
-    companyId: row.company_id,
-    title: row.title,
-    slug: row.slug,
-    status: row.status,
-    modules: row.modules ?? [],
-    leadConfig: row.lead_config ?? undefined,
-    cardImage: row.card_image ?? undefined,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-    publishedAt: row.published_at ?? undefined,
+    id: str(row, 'id'),
+    companyId: str(row, 'company_id'),
+    title: str(row, 'title'),
+    slug: str(row, 'slug'),
+    status: str(row, 'status') as JobQuest['status'],
+    modules: json<JobQuest['modules']>(row, 'modules', [] as JobQuest['modules']),
+    leadConfig: json<JobQuest['leadConfig']>(row, 'lead_config'),
+    cardImage: optStr(row, 'card_image'),
+    createdAt: str(row, 'created_at'),
+    updatedAt: str(row, 'updated_at'),
+    publishedAt: optStr(row, 'published_at'),
   };
 }
 
@@ -127,19 +140,19 @@ export function questToDb(q: JobQuest): Record<string, unknown> {
 
 // ─── Lead ───────────────────────────────────────────────────────────────────
 
-export function leadFromDb(row: any): Lead {
+export function leadFromDb(row: DbRow): Lead {
   return {
-    id: row.id,
-    jobQuestId: row.job_quest_id,
-    companyId: row.company_id,
-    firstName: row.first_name,
-    lastName: row.last_name,
-    email: row.email,
-    phone: row.phone ?? undefined,
-    gdprConsent: row.gdpr_consent,
-    submittedAt: row.submitted_at,
-    customFields: row.custom_fields ?? undefined,
-    emailSent: row.email_sent ?? undefined,
+    id: str(row, 'id'),
+    jobQuestId: str(row, 'job_quest_id'),
+    companyId: str(row, 'company_id'),
+    firstName: str(row, 'first_name'),
+    lastName: str(row, 'last_name'),
+    email: str(row, 'email'),
+    phone: optStr(row, 'phone'),
+    gdprConsent: bool(row, 'gdpr_consent'),
+    submittedAt: str(row, 'submitted_at'),
+    customFields: json<Lead['customFields']>(row, 'custom_fields'),
+    emailSent: optBool(row, 'email_sent'),
   };
 }
 
@@ -160,14 +173,14 @@ export function leadToDb(l: Lead): Record<string, unknown> {
 
 // ─── AnalyticsEvent ─────────────────────────────────────────────────────────
 
-export function analyticsFromDb(row: any): AnalyticsEvent {
+export function analyticsFromDb(row: DbRow): AnalyticsEvent {
   return {
-    id: row.id,
-    jobQuestId: row.job_quest_id,
-    type: row.type,
-    sessionId: row.session_id,
-    duration: row.duration ?? undefined,
-    timestamp: row.timestamp,
+    id: str(row, 'id'),
+    jobQuestId: str(row, 'job_quest_id'),
+    type: str(row, 'type') as AnalyticsEvent['type'],
+    sessionId: str(row, 'session_id'),
+    duration: row.duration == null ? undefined : num(row, 'duration'),
+    timestamp: str(row, 'timestamp'),
   };
 }
 
@@ -184,19 +197,19 @@ export function analyticsToDb(e: AnalyticsEvent): Record<string, unknown> {
 
 // ─── CareerCheck ────────────────────────────────────────────────────────────
 
-export function careerCheckFromDb(row: any): CareerCheck {
+export function careerCheckFromDb(row: DbRow): CareerCheck {
   return {
-    id: row.id,
-    companyId: row.company_id,
-    title: row.title,
-    slug: row.slug,
-    status: row.status,
-    blocks: row.blocks ?? [],
-    dimensions: row.dimensions ?? [],
-    cardImage: row.card_image ?? undefined,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-    publishedAt: row.published_at ?? undefined,
+    id: str(row, 'id'),
+    companyId: str(row, 'company_id'),
+    title: str(row, 'title'),
+    slug: str(row, 'slug'),
+    status: str(row, 'status') as CareerCheck['status'],
+    blocks: json<CareerCheck['blocks']>(row, 'blocks', [] as CareerCheck['blocks']),
+    dimensions: json<CareerCheck['dimensions']>(row, 'dimensions', [] as CareerCheck['dimensions']),
+    cardImage: optStr(row, 'card_image'),
+    createdAt: str(row, 'created_at'),
+    updatedAt: str(row, 'updated_at'),
+    publishedAt: optStr(row, 'published_at'),
   };
 }
 
@@ -218,18 +231,18 @@ export function careerCheckToDb(c: CareerCheck): Record<string, unknown> {
 
 // ─── CareerCheckLead ────────────────────────────────────────────────────────
 
-export function careerCheckLeadFromDb(row: any): CareerCheckLead {
+export function careerCheckLeadFromDb(row: DbRow): CareerCheckLead {
   return {
-    id: row.id,
-    careerCheckId: row.career_check_id,
-    companyId: row.company_id,
-    firstName: row.first_name,
-    lastName: row.last_name,
-    email: row.email,
-    phone: row.phone ?? undefined,
-    gdprConsent: row.gdpr_consent,
-    scores: row.scores ?? {},
-    submittedAt: row.submitted_at,
+    id: str(row, 'id'),
+    careerCheckId: str(row, 'career_check_id'),
+    companyId: str(row, 'company_id'),
+    firstName: str(row, 'first_name'),
+    lastName: str(row, 'last_name'),
+    email: str(row, 'email'),
+    phone: optStr(row, 'phone'),
+    gdprConsent: bool(row, 'gdpr_consent'),
+    scores: json<CareerCheckLead['scores']>(row, 'scores', {} as CareerCheckLead['scores']),
+    submittedAt: str(row, 'submitted_at'),
   };
 }
 
@@ -250,19 +263,19 @@ export function careerCheckLeadToDb(l: CareerCheckLead): Record<string, unknown>
 
 // ─── FormPage ───────────────────────────────────────────────────────────────
 
-export function formPageFromDb(row: any): FormPage {
+export function formPageFromDb(row: DbRow): FormPage {
   return {
-    id: row.id,
-    companyId: row.company_id,
-    title: row.title,
-    slug: row.slug,
-    status: row.status,
-    contentBlocks: row.content_blocks ?? [],
-    formSteps: row.form_steps ?? [],
-    formConfig: row.form_config ?? {},
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-    publishedAt: row.published_at ?? undefined,
+    id: str(row, 'id'),
+    companyId: str(row, 'company_id'),
+    title: str(row, 'title'),
+    slug: str(row, 'slug'),
+    status: str(row, 'status') as FormPage['status'],
+    contentBlocks: json<FormPage['contentBlocks']>(row, 'content_blocks', [] as FormPage['contentBlocks']),
+    formSteps: json<FormPage['formSteps']>(row, 'form_steps', [] as FormPage['formSteps']),
+    formConfig: json<FormPage['formConfig']>(row, 'form_config', {} as FormPage['formConfig']),
+    createdAt: str(row, 'created_at'),
+    updatedAt: str(row, 'updated_at'),
+    publishedAt: optStr(row, 'published_at'),
   };
 }
 
@@ -284,14 +297,14 @@ export function formPageToDb(f: FormPage): Record<string, unknown> {
 
 // ─── FormSubmission ─────────────────────────────────────────────────────────
 
-export function formSubmissionFromDb(row: any): FormSubmission {
+export function formSubmissionFromDb(row: DbRow): FormSubmission {
   return {
-    id: row.id,
-    formPageId: row.form_page_id,
-    companyId: row.company_id,
-    answers: row.answers ?? {},
-    gdprConsent: row.gdpr_consent,
-    submittedAt: row.submitted_at,
+    id: str(row, 'id'),
+    formPageId: str(row, 'form_page_id'),
+    companyId: str(row, 'company_id'),
+    answers: json<FormSubmission['answers']>(row, 'answers', {} as FormSubmission['answers']),
+    gdprConsent: bool(row, 'gdpr_consent'),
+    submittedAt: str(row, 'submitted_at'),
   };
 }
 
@@ -308,15 +321,15 @@ export function formSubmissionToDb(s: FormSubmission): Record<string, unknown> {
 
 // ─── FunnelDoc ──────────────────────────────────────────────────────────────
 
-export function funnelDocFromDb(row: any): FunnelDoc {
+export function funnelDocFromDb(row: DbRow): FunnelDoc {
   return {
-    id: row.id,
-    contentId: row.content_id,
-    contentType: row.content_type,
-    pages: row.pages ?? [],
-    emailConfig: row.email_config ?? undefined,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
+    id: str(row, 'id'),
+    contentId: str(row, 'content_id'),
+    contentType: str(row, 'content_type') as FunnelDoc['contentType'],
+    pages: json<FunnelDoc['pages']>(row, 'pages', [] as FunnelDoc['pages']),
+    emailConfig: json<EmailConfig | undefined>(row, 'email_config'),
+    createdAt: str(row, 'created_at'),
+    updatedAt: str(row, 'updated_at'),
   };
 }
 

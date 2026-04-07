@@ -22,6 +22,12 @@ jest.mock('@/lib/supabase/admin', () => ({
   createAdminClient: jest.fn(),
 }));
 
+// Quota check is exercised by /api/quests POST via the createContentRoute
+// helper. Tests don't care about quota arithmetic; always allow.
+jest.mock('@/lib/quota', () => ({
+  checkQuota: jest.fn().mockResolvedValue({ allowed: true, current: 0, max: 100 }),
+}));
+
 const mockGetSession = getSession as jest.Mock;
 const mockCreateAdminClient = createAdminClient as jest.Mock;
 
@@ -96,7 +102,7 @@ describe('GET /api/quests', () => {
     const res = await GET();
     expect(res.status).toBe(500);
     const body = await res.json();
-    expect(body.error).toBe('DB error');
+    expect(body.error).toBe('list_failed');
   });
 });
 
@@ -134,15 +140,16 @@ describe('POST /api/quests', () => {
     const res = await POST(req);
     expect(res.status).toBe(500);
     const body = await res.json();
-    expect(body.error).toBe('Insert failed');
+    expect(body.error).toBe('create_failed');
   });
 
-  test('returns 404 when insert succeeds but data is null', async () => {
+  test('returns 500 when insert succeeds but data is null', async () => {
     mockGetSession.mockResolvedValue(fakeSession);
     mockCreateAdminClient.mockReturnValue({ from: () => makeChain({ data: null, error: null }) });
 
     const req = makePostReq({ id: 'q1', title: 'T', slug: 's', status: 'draft', modules: [], companyId: 'c1', createdAt: '', updatedAt: '' });
     const res = await POST(req);
-    expect(res.status).toBe(404);
+    expect(res.status).toBe(500);
+    expect((await res.json()).error).toBe('create_failed');
   });
 });

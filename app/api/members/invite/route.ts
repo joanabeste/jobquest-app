@@ -1,10 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getSession, unauthorized } from '@/lib/api-auth';
 import { memberFromDb } from '@/lib/supabase/mappers';
 import { can } from '@/lib/types';
 import { sendInviteEmail } from '@/lib/mailer';
-import { parseBody } from '@/lib/api/helpers';
+
+// Same allowlist as POST /api/members and PUT /api/members/[id] —
+// `platform_admin` is intentionally excluded to prevent privilege escalation.
+const InviteMemberSchema = z.object({
+  name: z.string().min(1).max(200),
+  email: z.string().email().max(320),
+  role: z.enum(['admin', 'editor', 'viewer']),
+});
 
 export async function POST(req: NextRequest) {
   const session = await getSession();
@@ -14,12 +22,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  const parsed = await parseBody<{ name: string; email: string; role: string }>(req);
-  if (!parsed.ok) return parsed.response;
-  const { name, email, role } = parsed.data;
-  if (!name || !email || !role) {
-    return NextResponse.json({ error: 'Name, E-Mail und Rolle sind Pflichtfelder.' }, { status: 400 });
+  let raw: unknown;
+  try {
+    raw = await req.json();
+  } catch {
+    return NextResponse.json({ error: 'invalid_json' }, { status: 400 });
   }
+  const parsed = InviteMemberSchema.safeParse(raw);
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'validation_error' }, { status: 400 });
+  }
+  const { name, email, role } = parsed.data;
 
   const admin = createAdminClient();
 
@@ -75,7 +88,7 @@ export async function POST(req: NextRequest) {
 
   if (!linkData?.properties?.action_link) {
     console.error(`[invite] generateLink failed:`, linkErr);
-    return NextResponse.json({ error: `Einladung fehlgeschlagen: ${linkErr?.message ?? 'Link konnte nicht erstellt werden.'}` }, { status: 500 });
+    return NextResponse.json({ error: 'Einladung fehlgeschlagen.' }, { status: 500 });
   }
 
   // Fix redirect_to in the link (Supabase often ignores the redirectTo option)
@@ -106,7 +119,7 @@ export async function POST(req: NextRequest) {
 
   if (error) {
     console.error('[invite] member upsert', error);
-    return NextResponse.json({ error: `Einladung fehlgeschlagen: ${error.message}` }, { status: 500 });
+    return NextResponse.json({ error: 'Einladung fehlgeschlagen.' }, { status: 500 });
   }
 
   // ── Step 4: Send invite email via our own SMTP ──

@@ -1,49 +1,74 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import { z } from 'zod';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { companyToDb } from '@/lib/supabase/mappers';
+import { withRoute } from '@/lib/api/with-route';
 import type { Company } from '@/lib/types';
 
-export async function POST(req: NextRequest) {
-  try {
-    const body = await req.json();
-    const { name, industry, location, logo, contactName, password, privacyUrl, imprintUrl, corporateDesign } = body;
-    const contactEmail: string = (body.contactEmail as string)?.toLowerCase()?.trim();
+const RegisterSchema = z.object({
+  name: z.string().min(1).max(200),
+  contactEmail: z.string().email().max(320),
+  password: z.string().min(8).max(200),
+  contactName: z.string().max(200).optional().default(''),
+  industry: z.string().max(100).optional().default(''),
+  location: z.string().max(200).optional().default(''),
+  logo: z.string().max(2_000_000).optional(), // data URL
+  privacyUrl: z.string().url().max(2000).optional(),
+  imprintUrl: z.string().url().max(2000).optional(),
+  // CorporateDesign shape is broad; validate at the boundary (presence + type),
+  // not field-by-field. Stored as-is for now.
+  corporateDesign: z.record(z.string(), z.unknown()).optional(),
+  wunschJobQuests: z.coerce.number().int().min(0).max(10_000).optional(),
+  wunschBerufschecks: z.coerce.number().int().min(0).max(10_000).optional(),
+  wunschFormulare: z.coerce.number().int().min(0).max(10_000).optional(),
+  wunschNotes: z.string().max(2000).optional(),
+});
 
-    if (!name || !contactEmail || !password) {
-      return NextResponse.json({ error: 'Required fields missing' }, { status: 400 });
-    }
-
+export const POST = withRoute({
+  body: RegisterSchema,
+  handler: async ({ body }) => {
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
       console.error('[register] Missing Supabase env vars');
-      return NextResponse.json({ error: 'Server misconfigured: missing Supabase credentials' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Serverkonfiguration unvollständig.', code: 'env_missing' },
+        { status: 500 },
+      );
     }
 
+    const contactEmail = body.contactEmail.toLowerCase().trim();
     const admin = createAdminClient();
 
-    // Check if email already exists in companies
     const { data: existing } = await admin
       .from('companies')
       .select('id')
       .eq('contact_email', contactEmail)
       .single();
     if (existing) {
-      return NextResponse.json({ error: 'Email already registered' }, { status: 409 });
+      return NextResponse.json(
+        { error: 'E-Mail bereits registriert.', code: 'email_taken' },
+        { status: 409 },
+      );
     }
 
-    // Create user in Supabase Auth
     const { data: authData, error: authError } = await admin.auth.admin.createUser({
       email: contactEmail,
-      password,
+      password: body.password,
       email_confirm: true,
     });
     if (authError || !authData.user) {
       const msg = authError?.message ?? 'Auth user creation failed';
       console.error('[register] auth createUser', msg);
-      // Supabase returns this when the email is already in auth.users
       if (msg.toLowerCase().includes('already') || msg.toLowerCase().includes('exists')) {
-        return NextResponse.json({ error: 'Email already registered' }, { status: 409 });
+        return NextResponse.json(
+          { error: 'E-Mail bereits registriert.', code: 'email_taken' },
+          { status: 409 },
+        );
       }
-      return NextResponse.json({ error: msg }, { status: 500 });
+      // Generic message — never echo upstream Supabase error to the client.
+      return NextResponse.json(
+        { error: 'Registrierung fehlgeschlagen.', code: 'register_failed' },
+        { status: 500 },
+      );
     }
 
     const userId = authData.user.id;
@@ -52,16 +77,19 @@ export async function POST(req: NextRequest) {
 
     const company: Company = {
       id: companyId,
-      name,
-      industry: industry || '',
-      location: location || '',
-      logo,
-      privacyUrl,
-      imprintUrl,
-      contactName: contactName || '',
+      name: body.name,
+      industry: body.industry || '',
+      location: body.location || '',
+      logo: body.logo,
+      privacyUrl: body.privacyUrl,
+      imprintUrl: body.imprintUrl,
+      contactName: body.contactName || '',
       contactEmail,
       createdAt: now,
-      corporateDesign,
+      // Cast intentional: CorporateDesign is a structured type owned by the
+      // client. Validation at this boundary only enforces "object", and we
+      // store it verbatim. Tightening the schema is tracked in PR7.
+      corporateDesign: body.corporateDesign as Company['corporateDesign'],
     };
 
     const { error: companyError } = await admin
@@ -70,7 +98,10 @@ export async function POST(req: NextRequest) {
     if (companyError) {
       await admin.auth.admin.deleteUser(userId);
       console.error('[register] company insert', companyError);
-      return NextResponse.json({ error: `company_insert: ${companyError.message}` }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Registrierung fehlgeschlagen.', code: 'register_failed' },
+        { status: 500 },
+      );
     }
 
     const { error: memberError } = await admin
@@ -78,7 +109,7 @@ export async function POST(req: NextRequest) {
       .insert({
         id: userId,
         company_id: companyId,
-        name: contactName || name,
+        name: body.contactName || body.name,
         email: contactEmail,
         role: 'admin',
         status: 'pending',
@@ -88,19 +119,21 @@ export async function POST(req: NextRequest) {
       await admin.auth.admin.deleteUser(userId);
       await admin.from('companies').delete().eq('id', companyId);
       console.error('[register] member insert', memberError);
-      return NextResponse.json({ error: `member_insert: ${memberError.message}` }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Registrierung fehlgeschlagen.', code: 'register_failed' },
+        { status: 500 },
+      );
     }
 
-    // Save quota request if any wishes specified
-    const wunschJobQuests = Number(body.wunschJobQuests) || 0;
-    const wunschBerufschecks = Number(body.wunschBerufschecks) || 0;
-    const wunschFormulare = Number(body.wunschFormulare) || 0;
+    const wunschJobQuests = body.wunschJobQuests ?? 0;
+    const wunschBerufschecks = body.wunschBerufschecks ?? 0;
+    const wunschFormulare = body.wunschFormulare ?? 0;
     if (wunschJobQuests || wunschBerufschecks || wunschFormulare) {
       await admin.from('quota_requests').insert({
         id: crypto.randomUUID(),
         company_id: companyId,
-        company_name: name,
-        contact_name: contactName || name,
+        company_name: body.name,
+        contact_name: body.contactName || body.name,
         contact_email: contactEmail,
         requested_job_quests: wunschJobQuests,
         requested_berufschecks: wunschBerufschecks,
@@ -110,11 +143,6 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Don't sign in — account must be approved in Hub first
     return NextResponse.json({ pending: true });
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error('[register] unhandled exception:', msg);
-    return NextResponse.json({ error: `Serverfehler: ${msg}` }, { status: 500 });
-  }
-}
+  },
+});

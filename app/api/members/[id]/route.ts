@@ -1,16 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getSession, unauthorized } from '@/lib/api-auth';
 import { memberFromDb } from '@/lib/supabase/mappers';
 import { can } from '@/lib/types';
 import type { WorkspaceRole } from '@/lib/types';
-import { parseBody } from '@/lib/api/helpers';
+
+// Strict allowlist of roles that may be assigned via this endpoint.
+// `platform_admin` is intentionally NOT in the list — it must never be
+// granted from a workspace-scoped API, otherwise any workspace admin could
+// escalate to platform admin by sending `{ role: 'platform_admin' }`.
+const AssignableRoleSchema = z.enum(['admin', 'editor', 'viewer']);
+
+const MemberStatusSchema = z.enum(['active', 'pending', 'disabled']);
+
+const UpdateMemberSchema = z.object({
+  name: z.string().min(1).max(200).optional(),
+  email: z.string().email().max(320).optional(),
+  role: AssignableRoleSchema.optional(),
+  status: MemberStatusSchema.optional(),
+  password: z.string().min(8).max(200).optional(),
+});
+
+// UUID format from Supabase auth.users.id; rejects garbage path params.
+const IdSchema = z.string().uuid();
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
   if (!session) return unauthorized();
 
-  const { id } = await params;
+  const { id: rawId } = await params;
+  const idParse = IdSchema.safeParse(rawId);
+  if (!idParse.success) {
+    return NextResponse.json({ error: 'invalid_id' }, { status: 400 });
+  }
+  const id = idParse.data;
   const supabase = createAdminClient();
   const { data } = await supabase
     .from('workspace_members')
@@ -27,10 +51,25 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const session = await getSession();
   if (!session) return unauthorized();
 
-  const { id } = await params;
-  const parsed = await parseBody<Record<string, unknown>>(req);
-  if (!parsed.ok) return parsed.response;
+  const { id: rawId } = await params;
+  const idParse = IdSchema.safeParse(rawId);
+  if (!idParse.success) {
+    return NextResponse.json({ error: 'invalid_id' }, { status: 400 });
+  }
+  const id = idParse.data;
+
+  let raw: unknown;
+  try {
+    raw = await req.json();
+  } catch {
+    return NextResponse.json({ error: 'invalid_json' }, { status: 400 });
+  }
+  const parsed = UpdateMemberSchema.safeParse(raw);
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'validation_error' }, { status: 400 });
+  }
   const updates = parsed.data;
+
   const isSelf = id === session.member.id;
   const requesterRole = session.member.role as WorkspaceRole;
 
@@ -39,7 +78,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  // Role changes require manage_members, and nobody may change their own role
+  // Role changes require manage_members, and nobody may change their own role.
+  // The schema already restricts assignable roles to a non-platform-admin
+  // allowlist, so privilege escalation via `role: 'platform_admin'` is blocked
+  // at validation time.
   if (updates.role !== undefined) {
     if (!can(requesterRole, 'manage_members')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -53,7 +95,13 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
   // Password changes go through Supabase Auth, not the DB
   if (updates.password !== undefined) {
-    await supabase.auth.admin.updateUserById(id, { password: updates.password as string });
+    await supabase.auth.admin.updateUserById(id, { password: updates.password });
+  }
+
+  // Email changes must propagate to Supabase Auth as well, otherwise
+  // workspace_members.email and auth.users.email diverge silently.
+  if (updates.email !== undefined) {
+    await supabase.auth.admin.updateUserById(id, { email: updates.email });
   }
 
   const updateData: Record<string, unknown> = {};
@@ -70,7 +118,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     .select()
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error('[members PUT] update failed', error);
+    return NextResponse.json({ error: 'update_failed' }, { status: 500 });
+  }
   if (!data) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   return NextResponse.json(memberFromDb(data));
 }
@@ -79,7 +130,12 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   const session = await getSession();
   if (!session) return unauthorized();
 
-  const { id } = await params;
+  const { id: rawId } = await params;
+  const idParse = IdSchema.safeParse(rawId);
+  if (!idParse.success) {
+    return NextResponse.json({ error: 'invalid_id' }, { status: 400 });
+  }
+  const id = idParse.data;
   const requesterRole = session.member.role as WorkspaceRole;
 
   // Only users with manage_members can delete members

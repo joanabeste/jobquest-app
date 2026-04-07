@@ -1,55 +1,54 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import { z } from 'zod';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { memberFromDb, companyFromDb } from '@/lib/supabase/mappers';
+import { withRoute } from '@/lib/api/with-route';
 
-export async function POST(req: NextRequest) {
-  // Check required env vars first — missing vars cause cryptic 500s
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!supabaseUrl || !supabaseAnon || !serviceRoleKey) {
-    console.error('[login] Missing environment variables', {
-      hasUrl: !!supabaseUrl,
-      hasAnon: !!supabaseAnon,
-      hasServiceRole: !!serviceRoleKey,
-    });
-    return NextResponse.json(
-      { error: 'Serverkonfiguration unvollständig. Bitte Support kontaktieren.', code: 'env_missing' },
-      { status: 500 },
-    );
-  }
+const LoginSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(1),
+});
 
-  try {
-    const { email, password } = await req.json();
-    if (!email || !password) {
-      return NextResponse.json({ error: 'E-Mail und Passwort erforderlich', code: 'missing_fields' }, { status: 400 });
+// Generic message for any credential / member-state failure to prevent
+// account enumeration via response-content or response-time differences.
+const GENERIC_AUTH_ERROR = {
+  error: 'E-Mail oder Passwort ist falsch.',
+  code: 'invalid_credentials',
+} as const;
+
+export const POST = withRoute({
+  body: LoginSchema,
+  handler: async ({ body }) => {
+    const { email, password } = body;
+
+    // Env-var sanity check stays — misconfig is operator error, not user-facing.
+    if (
+      !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+      !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+      !process.env.SUPABASE_SERVICE_ROLE_KEY
+    ) {
+      console.error('[login] Missing environment variables');
+      return NextResponse.json(
+        { error: 'Serverkonfiguration unvollständig.', code: 'env_missing' },
+        { status: 500 },
+      );
     }
 
     const supabase = await createServerSupabaseClient();
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
     if (error || !data.user) {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'NOT_SET';
       console.error('[login] signInWithPassword failed', {
         email,
         errorMessage: error?.message,
         errorCode: error?.code,
         errorStatus: error?.status,
-        supabaseProject: supabaseUrl.replace('https://', '').split('.')[0],
       });
-
-      // Distinguish between wrong credentials and other errors
-      const isAuthError = error?.status === 400 || error?.message?.toLowerCase().includes('invalid');
-      return NextResponse.json(
-        {
-          error: isAuthError
-            ? 'E-Mail oder Passwort ist falsch.'
-            : `Anmeldung fehlgeschlagen: ${error?.message ?? 'Unbekannter Fehler'}`,
-          code: isAuthError ? 'invalid_credentials' : 'auth_error',
-        },
-        { status: 401 },
-      );
+      return NextResponse.json(GENERIC_AUTH_ERROR, { status: 401 });
     }
 
     const admin = createAdminClient();
@@ -60,18 +59,25 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (!memberRow) {
-      console.error('[login] Member not found in DB', { userId: data.user.id, email, memberError: memberError?.message });
+      console.error('[login] Member not found', {
+        userId: data.user.id,
+        memberError: memberError?.message,
+      });
       await supabase.auth.signOut();
-      return NextResponse.json(
-        { error: 'Kein Workspace-Account gefunden. Bitte wende dich an deinen Administrator.', code: 'member_not_found' },
-        { status: 404 },
-      );
+      // Generic error — do NOT reveal "account exists but no member row".
+      return NextResponse.json(GENERIC_AUTH_ERROR, { status: 401 });
     }
 
     if (memberRow.status === 'pending') {
       await supabase.auth.signOut();
+      // Distinct, non-enumerating message: it's safe because the user already
+      // proved they own the credentials at this point.
       return NextResponse.json(
-        { error: 'Dein Konto wird noch geprüft. Du erhältst eine Benachrichtigung, sobald es freigeschaltet ist.', code: 'account_pending' },
+        {
+          error:
+            'Dein Konto wird noch geprüft. Du erhältst eine Benachrichtigung, sobald es freigeschaltet ist.',
+          code: 'account_pending',
+        },
         { status: 403 },
       );
     }
@@ -83,19 +89,17 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (!companyRow) {
-      console.error('[login] Company not found', { companyId: memberRow.company_id, companyError: companyError?.message });
-      return NextResponse.json(
-        { error: 'Kein Unternehmen gefunden. Bitte wende dich an den Support.', code: 'company_not_found' },
-        { status: 404 },
-      );
+      console.error('[login] Company not found', {
+        companyId: memberRow.company_id,
+        companyError: companyError?.message,
+      });
+      await supabase.auth.signOut();
+      return NextResponse.json(GENERIC_AUTH_ERROR, { status: 401 });
     }
 
     return NextResponse.json({
       member: memberFromDb(memberRow),
       company: companyFromDb(companyRow),
     });
-  } catch (err: unknown) {
-    console.error('[login] Unexpected error', err);
-    return NextResponse.json({ error: 'Interner Serverfehler', code: 'server_error' }, { status: 500 });
-  }
-}
+  },
+});

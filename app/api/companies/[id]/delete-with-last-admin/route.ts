@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getSession, unauthorized } from '@/lib/api-auth';
 import { deleteCompanyCascade } from '@/lib/api/company-delete';
 import { can } from '@/lib/types';
 import type { WorkspaceRole } from '@/lib/types';
+
+const IdSchema = z.string().uuid();
 
 /**
  * POST /api/companies/[id]/delete-with-last-admin
@@ -15,7 +18,12 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
   const session = await getSession();
   if (!session) return unauthorized();
 
-  const { id: companyId } = await params;
+  const { id: rawId } = await params;
+  const idParse = IdSchema.safeParse(rawId);
+  if (!idParse.success) {
+    return NextResponse.json({ error: 'invalid_id' }, { status: 400 });
+  }
+  const companyId = idParse.data;
   const requesterRole = session.member.role as WorkspaceRole;
 
   // Must be admin of this company or platform_admin
@@ -40,7 +48,10 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
   }
 
   const result = await deleteCompanyCascade(companyId);
-  if (result.error) return NextResponse.json({ error: result.error }, { status: 500 });
+  if (result.error) {
+    console.error('[delete-with-last-admin] cascade failed', result.error);
+    return NextResponse.json({ error: 'delete_failed' }, { status: 500 });
+  }
 
   // Sign out the current user (they just deleted their own company)
   const supabase = await createServerSupabaseClient();

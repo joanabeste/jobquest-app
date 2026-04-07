@@ -1,49 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase/admin';
-import { getSession, unauthorized } from '@/lib/api-auth';
+import { createContentRoute } from '@/lib/api/create-content-route';
 import { questFromDb, questToDb } from '@/lib/supabase/mappers';
-import { checkQuota } from '@/lib/quota';
-import { DEFAULT_PLAN } from '@/lib/types';
 import type { JobQuest } from '@/lib/types';
 
-export async function GET() {
-  const session = await getSession();
-  if (!session) return unauthorized();
-
-  const supabase = createAdminClient();
-  const { data, error } = await supabase
-    .from('job_quests')
-    .select('*')
-    .eq('company_id', session.company.id)
-    .order('updated_at', { ascending: false });
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json((data ?? []).map(questFromDb));
-}
-
-export async function POST(req: NextRequest) {
-  const session = await getSession();
-  if (!session) return unauthorized();
-
-  const quota = await checkQuota(session.company.id, 'jobquests', session.company.plan ?? DEFAULT_PLAN);
-  if (!quota.allowed) {
-    return NextResponse.json({ error: `Kontingent erreicht: ${quota.current} von ${quota.max} JobQuests verwendet.` }, { status: 403 });
-  }
-
-  let quest: JobQuest;
-  try {
-    quest = await req.json();
-  } catch {
-    return NextResponse.json({ error: 'Ungültige Anfrage' }, { status: 400 });
-  }
-  const supabase = createAdminClient();
-  const { data, error } = await supabase
-    .from('job_quests')
-    .insert(questToDb({ ...quest, companyId: session.company.id }))
-    .select()
-    .single();
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  if (!data) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  return NextResponse.json(questFromDb(data));
-}
+export const { GET, POST } = createContentRoute<JobQuest>({
+  table: 'job_quests',
+  quotaKind: 'jobquests',
+  quotaLabel: 'JobQuests',
+  fromDb: questFromDb,
+  toDb: questToDb,
+});

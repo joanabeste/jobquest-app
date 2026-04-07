@@ -1,13 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
+const ForgotPasswordSchema = z.object({
+  email: z.string().email().max(320),
+});
+
 export async function POST(req: NextRequest) {
   try {
-    const { email } = await req.json();
-    if (!email) {
-      return NextResponse.json({ error: 'Email required' }, { status: 400 });
+    let raw: unknown;
+    try {
+      raw = await req.json();
+    } catch {
+      // Even on bad input, return generic ok to prevent enumeration via
+      // distinguishing 400 vs 200.
+      return NextResponse.json({ ok: true });
     }
+    const parsed = ForgotPasswordSchema.safeParse(raw);
+    if (!parsed.success) {
+      return NextResponse.json({ ok: true });
+    }
+    const { email } = parsed.data;
 
     // Use the browser's origin so the link always points to the correct domain,
     // whether running locally or on the live server.

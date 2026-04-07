@@ -131,7 +131,7 @@ describe('createCrudRoute — PUT', () => {
 
     const res = await PUT(makeReq({ id: 'item-1', companyId: 'c1', name: 'X' }), routeCtx('item-1'));
     expect(res.status).toBe(500);
-    expect((await res.json()).error).toBe('Constraint violation');
+    expect((await res.json()).error).toBe('update_failed');
   });
 
   test('returns 404 when update returns no data', async () => {
@@ -167,6 +167,6 @@ describe('createCrudRoute — DELETE', () => {
 
     const res = await DELETE({} as NextRequest, routeCtx('item-1'));
     expect(res.status).toBe(500);
-    expect((await res.json()).error).toBe('Delete failed');
+    expect((await res.json()).error).toBe('delete_failed');
   });
 });
