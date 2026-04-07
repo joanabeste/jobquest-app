@@ -5,9 +5,9 @@ import { defaultLeadFields } from '@/lib/lead-field-defaults';
 
 // ─── Input schema ─────────────────────────────────────────────────────────────
 const GenerateCheckSchema = z.object({
-  berufe: z.array(z.string().min(1).max(120)).min(1).max(30),
-  studiengaenge: z.array(z.string().min(1).max(120)).max(20).optional().default([]),
-  notes: z.string().max(2000).optional(),
+  berufe: z.array(z.string().min(1).max(200)).min(1).max(40),
+  studiengaenge: z.array(z.string().min(1).max(200)).max(30).optional().default([]),
+  notes: z.string().max(8000).optional(),
   cardCount: z.number().int().min(6).max(20).optional().default(12),
 });
 
@@ -185,7 +185,11 @@ export async function POST(req: NextRequest) {
   }
   const parsedBody = GenerateCheckSchema.safeParse(raw);
   if (!parsedBody.success) {
-    return NextResponse.json({ error: 'validation_error' }, { status: 400 });
+    const issue = parsedBody.error.issues[0];
+    const path = issue?.path.join('.') || 'input';
+    return NextResponse.json({
+      error: `Eingabe ungültig (${path}): ${issue?.message ?? 'unbekannter Validierungsfehler'}`,
+    }, { status: 400 });
   }
   const { berufe, studiengaenge, notes, cardCount } = parsedBody.data;
 
