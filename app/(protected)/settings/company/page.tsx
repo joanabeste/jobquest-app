@@ -802,15 +802,13 @@ function DesignPreview({ name, logo, design }: { name: string; logo?: string; de
         {/* Content */}
         <div className="p-3 space-y-2.5 min-h-[200px]">
           <div className="bg-white p-3 shadow-sm border border-slate-100" style={{ borderRadius: br }}>
-            <span className="text-[9px] font-semibold uppercase tracking-wide" style={{ color: design.primaryColor }}>🌄 Szene</span>
-            <p className="mt-1" style={{ ...headingStyle, fontSize: `${Math.min(design.headingFontSize ?? 22, 18) * 0.7}px`, lineHeight: 1.2 }}>Ein Tag im Betrieb</p>
-            <p className="mt-1.5" style={{ ...bodyStyle, fontSize: `${(design.bodyFontSize ?? 14) * 0.72}px`, lineHeight: 1.5, opacity: 0.75 }}>
-              Erlebe einen typischen Arbeitstag bei uns und entdecke, was dich erwartet.
+            <p style={{ ...headingStyle, fontSize: `${(design.headingFontSize ?? 22) * 0.7}px`, lineHeight: 1.2 }}>Ein Tag im Betrieb</p>
+            <p className="mt-1.5" style={{ ...bodyStyle, fontSize: `${(design.bodyFontSize ?? 14) * 0.78}px`, lineHeight: 1.5, opacity: 0.8 }}>
+              Erlebe einen typischen Arbeitstag bei uns und entdecke, was dich in der Ausbildung erwartet.
             </p>
           </div>
           <div className="bg-white p-3 shadow-sm border border-slate-100 space-y-2" style={{ borderRadius: br }}>
-            <span className="text-[9px] font-semibold uppercase tracking-wide" style={{ color: design.primaryColor }}>❓ Quiz</span>
-            <p style={{ ...headingStyle, fontSize: `${Math.min(design.headingFontSize ?? 22, 18) * 0.62}px`, lineHeight: 1.25 }}>Was ist dir wichtig?</p>
+            <p style={{ ...headingStyle, fontSize: `${(design.headingFontSize ?? 22) * 0.62}px`, lineHeight: 1.25 }}>Was ist dir wichtig?</p>
             <div className="space-y-1.5">
               <div className="border-2 px-2.5 py-1.5 font-medium"
                 style={{ borderColor: design.primaryColor, color: design.primaryColor, backgroundColor: design.primaryColor + '12', borderRadius: br, fontSize: `${(design.bodyFontSize ?? 14) * 0.72}px` }}>
