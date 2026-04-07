@@ -9,8 +9,8 @@ import {
 } from '@/lib/types';
 import { slugify } from '@/lib/utils';
 import {
-  Globe, Save, ExternalLink, Image as ImageIcon, ChevronUp, ChevronDown,
-  Trash2, Plus, CheckCircle,
+  Globe, Save, ExternalLink, ImagePlus, ChevronUp, ChevronDown,
+  Trash2, Plus, CheckCircle, Upload,
 } from 'lucide-react';
 import ImageCropModal from '@/components/shared/ImageCropModal';
 
@@ -260,14 +260,21 @@ export default function UebersichtPage() {
               return (
                 <li key={item.id}
                   className="flex items-center gap-3 p-3 border border-slate-200 rounded-xl">
-                  <div className="w-16 h-16 rounded-lg bg-slate-100 overflow-hidden flex items-center justify-center flex-shrink-0">
+                  <button type="button" onClick={() => pickImageFor(item)}
+                    title={cardImage ? 'Bild ersetzen' : 'Bild hinzufügen'}
+                    className="group relative w-16 h-16 rounded-lg bg-slate-50 border-2 border-dashed border-slate-200 hover:border-violet-400 hover:bg-violet-50 overflow-hidden flex items-center justify-center flex-shrink-0 transition-colors">
                     {cardImage ? (
+                      <>
 
-                      <img src={cardImage} alt="" className="w-full h-full object-cover" />
+                        <img src={cardImage} alt="" className="w-full h-full object-cover" />
+                        <span className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <Upload size={16} className="text-white" />
+                        </span>
+                      </>
                     ) : (
-                      <ImageIcon size={20} className="text-slate-300" />
+                      <ImagePlus size={20} className="text-slate-400 group-hover:text-violet-600 transition-colors" />
                     )}
-                  </div>
+                  </button>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-slate-900 truncate">
                       {meta?.title ?? '— gelöscht —'}
@@ -279,13 +286,14 @@ export default function UebersichtPage() {
                   </div>
                   <div className="flex items-center gap-1">
                     <button type="button" onClick={() => pickImageFor(item)}
-                      className="text-xs px-2 py-1 text-slate-600 hover:text-violet-600">
-                      Bild
+                      className="flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:border-violet-400 hover:text-violet-600 hover:bg-violet-50 transition-colors">
+                      <Upload size={12} />
+                      {cardImage ? 'Ersetzen' : 'Bild hochladen'}
                     </button>
                     {cardImage && (
                       <button type="button" onClick={() => clearImageFor(item)}
-                        className="text-xs text-slate-300 hover:text-red-500" title="Bild entfernen">
-                        ✕
+                        className="p-1.5 text-slate-300 hover:text-red-500 transition-colors" title="Bild entfernen">
+                        <Trash2 size={13} />
                       </button>
                     )}
                     <button type="button" onClick={() => moveItem(item.id, -1)} disabled={idx === 0}
