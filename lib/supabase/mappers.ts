@@ -176,7 +176,8 @@ export function leadToDb(l: Lead): Record<string, unknown> {
 export function analyticsFromDb(row: DbRow): AnalyticsEvent {
   return {
     id: str(row, 'id'),
-    jobQuestId: str(row, 'job_quest_id'),
+    jobQuestId: row.job_quest_id == null ? undefined : str(row, 'job_quest_id'),
+    careerCheckId: row.career_check_id == null ? undefined : str(row, 'career_check_id'),
     type: str(row, 'type') as AnalyticsEvent['type'],
     sessionId: str(row, 'session_id'),
     moduleId: row.module_id == null ? undefined : str(row, 'module_id'),
@@ -188,7 +189,8 @@ export function analyticsFromDb(row: DbRow): AnalyticsEvent {
 export function analyticsToDb(e: AnalyticsEvent): Record<string, unknown> {
   return {
     id: e.id,
-    job_quest_id: e.jobQuestId,
+    job_quest_id: e.jobQuestId ?? null,
+    career_check_id: e.careerCheckId ?? null,
     type: e.type,
     session_id: e.sessionId,
     module_id: e.moduleId ?? null,

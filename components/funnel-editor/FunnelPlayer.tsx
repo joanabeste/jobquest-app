@@ -45,47 +45,54 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
   // Reset dialog + footer input when page changes (must be before any conditional returns)
   useEffect(() => { setDialogVisible(0); setFooterInputValue(''); }, [pageIndex]);
 
-  // ── Analytics tracking (quest content only) ─────────────────────────────────
+  // ── Analytics tracking (quest + career check) ───────────────────────────────
   const isQuest = doc.contentType === 'quest';
+  const isCheck = doc.contentType === 'check';
+  const trackable = (isQuest || isCheck) && !!contentDbId;
+  const targetIds = (): { jobQuestId?: string; careerCheckId?: string } =>
+    isQuest ? { jobQuestId: contentDbId } : { careerCheckId: contentDbId };
   useEffect(() => {
-    if (!isQuest || !contentDbId) return;
+    if (!trackable) return;
     analyticsStorage.save({
-      id: crypto.randomUUID(), jobQuestId: contentDbId, type: 'view',
+      id: crypto.randomUUID(), ...targetIds(), type: 'view',
       sessionId: sessionIdRef.current, timestamp: new Date().toISOString(),
     }).catch((err) => console.error('[FunnelPlayer] track view failed', err));
-  }, [isQuest, contentDbId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trackable, contentDbId]);
   useEffect(() => {
-    if (!isQuest || !contentDbId) return;
+    if (!trackable) return;
     if (pageIndex > 0 && !startedRef.current) {
       startedRef.current = true;
       analyticsStorage.save({
-        id: crypto.randomUUID(), jobQuestId: contentDbId, type: 'start',
+        id: crypto.randomUUID(), ...targetIds(), type: 'start',
         sessionId: sessionIdRef.current,
         duration: Math.round((Date.now() - startTimeRef.current) / 1000),
         timestamp: new Date().toISOString(),
       }).catch((err) => console.error('[FunnelPlayer] track start failed', err));
     }
     // Heartbeat: save a duration-bearing 'view' event on each page navigation
-    // so Verweildauer is measurable even when users don't complete the quest.
+    // so Verweildauer is measurable even when users don't complete the funnel.
     if (pageIndex > 0) {
       analyticsStorage.save({
-        id: crypto.randomUUID(), jobQuestId: contentDbId, type: 'view',
+        id: crypto.randomUUID(), ...targetIds(), type: 'view',
         sessionId: sessionIdRef.current,
         duration: Math.round((Date.now() - startTimeRef.current) / 1000),
         timestamp: new Date().toISOString(),
       }).catch((err) => console.error('[FunnelPlayer] track heartbeat failed', err));
     }
-  }, [pageIndex, isQuest, contentDbId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pageIndex, trackable, contentDbId]);
   useEffect(() => {
-    if (!isQuest || !contentDbId || !completed || completedRef.current) return;
+    if (!trackable || !completed || completedRef.current) return;
     completedRef.current = true;
     analyticsStorage.save({
-      id: crypto.randomUUID(), jobQuestId: contentDbId, type: 'complete',
+      id: crypto.randomUUID(), ...targetIds(), type: 'complete',
       sessionId: sessionIdRef.current,
       duration: Math.round((Date.now() - startTimeRef.current) / 1000),
       timestamp: new Date().toISOString(),
     }).catch((err) => console.error('[FunnelPlayer] track complete failed', err));
-  }, [completed, isQuest, contentDbId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [completed, trackable, contentDbId]);
 
   const [careerCheck, setCareerCheck] = useState<import('@/lib/types').CareerCheck | null>(null);
   useEffect(() => {

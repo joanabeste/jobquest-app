@@ -8,6 +8,7 @@ export async function GET(req: NextRequest) {
   if (!session) return unauthorized();
 
   const questId = req.nextUrl.searchParams.get('questId');
+  const checkId = req.nextUrl.searchParams.get('checkId');
   const supabase = createAdminClient();
 
   if (questId) {
@@ -24,6 +25,26 @@ export async function GET(req: NextRequest) {
       .from('analytics_events')
       .select('*')
       .eq('job_quest_id', questId)
+      .order('timestamp', { ascending: false });
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(data!.map(analyticsFromDb));
+  }
+
+  if (checkId) {
+    // Verify check belongs to company
+    const { data: check } = await supabase
+      .from('career_checks')
+      .select('id')
+      .eq('id', checkId)
+      .eq('company_id', session.company.id)
+      .single();
+    if (!check) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+    const { data, error } = await supabase
+      .from('analytics_events')
+      .select('*')
+      .eq('career_check_id', checkId)
       .order('timestamp', { ascending: false });
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });

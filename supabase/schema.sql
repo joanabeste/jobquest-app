@@ -93,16 +93,22 @@ create index leads_company_id_idx on public.leads (company_id);
 -- 5. ANALYTICS EVENTS
 -- ============================================================
 create table public.analytics_events (
-  id            uuid primary key default uuid_generate_v4(),
-  job_quest_id  uuid not null references public.job_quests(id) on delete cascade,
-  type          text not null check (type in ('view', 'start', 'complete', 'page_view')),
-  session_id    text not null,
-  module_id     text,
-  duration      integer,
-  timestamp     timestamptz not null default now()
+  id              uuid primary key default uuid_generate_v4(),
+  job_quest_id    uuid references public.job_quests(id) on delete cascade,
+  career_check_id uuid, -- FK added below, after career_checks table is defined
+  type            text not null check (type in ('view', 'start', 'complete', 'page_view')),
+  session_id      text not null,
+  module_id       text,
+  duration        integer,
+  timestamp       timestamptz not null default now(),
+  constraint analytics_events_target_check check (
+    (job_quest_id is not null and career_check_id is null)
+    or (job_quest_id is null and career_check_id is not null)
+  )
 );
 
 create index analytics_events_job_quest_id_idx on public.analytics_events (job_quest_id);
+create index analytics_events_career_check_id_idx on public.analytics_events (career_check_id);
 create index analytics_events_session_id_idx on public.analytics_events (session_id);
 create index analytics_events_module_id_idx on public.analytics_events (job_quest_id, module_id);
 
@@ -126,6 +132,11 @@ create table public.career_checks (
 
 create unique index career_checks_slug_idx on public.career_checks (slug);
 create index career_checks_company_id_idx on public.career_checks (company_id);
+
+-- Wire analytics_events.career_check_id FK now that career_checks exists.
+alter table public.analytics_events
+  add constraint analytics_events_career_check_id_fkey
+  foreign key (career_check_id) references public.career_checks(id) on delete cascade;
 
 -- ============================================================
 -- 7. CAREER CHECK LEADS
@@ -321,11 +332,14 @@ create policy "Members: delete own leads"
 -- Analytics
 create policy "Members: read own analytics"
   on public.analytics_events for select using (
-    exists (
+    (job_quest_id is not null and exists (
       select 1 from public.job_quests
-      where id = analytics_events.job_quest_id
-      and company_id = public.get_my_company_id()
-    )
+      where job_quests.id = analytics_events.job_quest_id
+        and job_quests.company_id = public.get_my_company_id()))
+    or (career_check_id is not null and exists (
+      select 1 from public.career_checks
+      where career_checks.id = analytics_events.career_check_id
+        and career_checks.company_id = public.get_my_company_id()))
   );
 
 -- Career Checks

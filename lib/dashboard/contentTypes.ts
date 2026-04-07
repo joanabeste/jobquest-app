@@ -106,6 +106,7 @@ export const checkConfig: ContentTypeConfig<CareerCheck> = {
     createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
   }),
   itemMeta: (c) => [`${c.dimensions.length} Dimensionen`, `${c.blocks.length} Blöcke`],
+  statsHref: (c) => `/berufscheck/${c.id}/stats`,
   extraAction: {
     href: (c) => `/berufscheck-leads/${c.id}`,
     title: 'Kontakte ansehen',
