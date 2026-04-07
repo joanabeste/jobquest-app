@@ -4,6 +4,9 @@ import { getSession, unauthorized } from '@/lib/api-auth';
 import { INDUSTRY_OPTIONS, ROLE_PERMISSIONS } from '@/lib/types';
 import { FONT_OPTIONS } from '@/lib/fonts';
 import { safeFetch, isSafePublicUrl } from '@/lib/safe-fetch';
+import { createAdminClient } from '@/lib/supabase/admin';
+
+const MEDIA_BUCKET = 'quest-media';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -33,6 +36,58 @@ async function fetchAsDataUrl(url: string): Promise<string | undefined> {
   const mime = result.contentType.split(';')[0].trim().toLowerCase();
   if (!ALLOWED_IMAGE_TYPES.includes(mime)) return undefined;
   return `data:${mime};base64,${result.buffer.toString('base64')}`;
+}
+
+/**
+ * Download an image from the source website and persist it as a media asset
+ * for the current company. Returns the public URL on success, or undefined
+ * if the URL is unreachable / not an allowed image / storage failed.
+ *
+ * Doing this server-side means imported logos / favicons end up in the same
+ * media library as user uploads, instead of being inlined as base64 strings.
+ */
+async function fetchAndStoreImage(
+  sourceUrl: string,
+  companyId: string,
+  kind: 'logo' | 'favicon',
+): Promise<string | undefined> {
+  const result = await fetchWithLimit(sourceUrl, MAX_IMAGE_BYTES);
+  if (!result) return undefined;
+  const mime = result.contentType.split(';')[0].trim().toLowerCase();
+  if (!ALLOWED_IMAGE_TYPES.includes(mime)) return undefined;
+
+  const supabase = createAdminClient();
+
+  // Bucket may not exist yet on fresh environments — same defensive pattern
+  // used by the regular media upload route.
+  const { data: buckets } = await supabase.storage.listBuckets();
+  if (!buckets?.find((b) => b.name === MEDIA_BUCKET)) {
+    const { error: bucketErr } = await supabase.storage.createBucket(MEDIA_BUCKET, { public: true });
+    if (bucketErr && !bucketErr.message.includes('already exists')) return undefined;
+  }
+
+  const ext = mime === 'image/svg+xml' ? 'svg'
+    : mime === 'image/x-icon' || mime === 'image/vnd.microsoft.icon' ? 'ico'
+    : mime.split('/')[1] ?? 'png';
+  const filename = `${kind}.${ext}`;
+  const path = `${companyId}/${crypto.randomUUID()}-${filename}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from(MEDIA_BUCKET)
+    .upload(path, result.buffer, { contentType: mime, upsert: false });
+  if (uploadError) return undefined;
+
+  const { data: urlData } = supabase.storage.from(MEDIA_BUCKET).getPublicUrl(path);
+
+  await supabase.from('media_assets').insert({
+    company_id: companyId,
+    url: urlData.publicUrl,
+    filename,
+    size_bytes: result.buffer.byteLength,
+    mime_type: mime,
+  });
+
+  return urlData.publicUrl;
 }
 
 interface Extracted {
@@ -333,13 +388,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'KI-Analyse fehlgeschlagen.' }, { status: 502 });
   }
 
-  // Download logo + favicon as data URLs (try first valid candidate)
-  let logoDataUrl: string | undefined;
+  // Download logo + favicon and persist them as media assets so they show up
+  // in the global library and can be re-used. Falls back to inline data URLs
+  // only if storage upload fails (defensive — keeps the import working).
+  let logoUrl: string | undefined;
   for (const candidate of extracted.logoCandidates) {
-    logoDataUrl = await fetchAsDataUrl(candidate);
-    if (logoDataUrl) break;
+    logoUrl = await fetchAndStoreImage(candidate, session.company.id, 'logo');
+    if (logoUrl) break;
+    if (!logoUrl) {
+      const fallback = await fetchAsDataUrl(candidate);
+      if (fallback) { logoUrl = fallback; break; }
+    }
   }
-  const faviconDataUrl = extracted.faviconCandidate ? await fetchAsDataUrl(extracted.faviconCandidate) : undefined;
+  let faviconUrl: string | undefined;
+  if (extracted.faviconCandidate) {
+    faviconUrl = await fetchAndStoreImage(extracted.faviconCandidate, session.company.id, 'favicon');
+    if (!faviconUrl) faviconUrl = await fetchAsDataUrl(extracted.faviconCandidate);
+  }
 
   const industry = typeof ai.industry === 'string' && INDUSTRY_OPTIONS.includes(ai.industry) ? ai.industry : undefined;
 
@@ -352,13 +417,13 @@ export async function POST(req: NextRequest) {
       privacyUrl: sanitizeUrl(ai.privacyUrl) ?? sanitizeUrl(extracted.privacyUrl),
       imprintUrl: sanitizeUrl(ai.imprintUrl) ?? sanitizeUrl(extracted.imprintUrl),
       careerPageUrl: sanitizeUrl(ai.careerPageUrl) ?? sanitizeUrl(extracted.careerUrl),
-      logo: logoDataUrl,
+      logo: logoUrl,
       design: {
         primaryColor: sanitizeHexColor(ai.design?.primaryColor),
         accentColor: sanitizeHexColor(ai.design?.accentColor),
         headingFontName: sanitizeFont(ai.design?.headingFontName),
         bodyFontName: sanitizeFont(ai.design?.bodyFontName),
-        faviconUrl: faviconDataUrl,
+        faviconUrl,
       },
     },
   });
