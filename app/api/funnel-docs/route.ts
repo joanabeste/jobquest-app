@@ -9,7 +9,8 @@ import { ownsContent, type FunnelContentType } from './_shared';
 // `contentType` is the most security-relevant field — it routes the
 // ownership check via `ownsContent`. Any value outside the closed set must
 // be rejected before the DB call. Pages/emailConfig are editor JSON.
-const FunnelContentTypeSchema = z.enum(['quest', 'career_check', 'form_page']);
+// Values must match the FunnelContentType union and CONTENT_TABLE keys.
+const FunnelContentTypeSchema = z.enum(['quest', 'check', 'form']);
 
 const FunnelDocSchema = z.object({
   id: z.string().uuid().optional(),
@@ -56,7 +57,11 @@ export async function PUT(req: NextRequest) {
   }
   const parsed = FunnelDocSchema.safeParse(raw);
   if (!parsed.success) {
-    return NextResponse.json({ error: 'validation_error' }, { status: 400 });
+    const issue = parsed.error.issues[0];
+    const path = issue?.path.join('.') || 'input';
+    return NextResponse.json({
+      error: `validation_error (${path}): ${issue?.message ?? 'unknown'}`,
+    }, { status: 400 });
   }
   const doc = parsed.data as unknown as FunnelDoc;
 
