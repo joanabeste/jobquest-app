@@ -22,6 +22,7 @@ interface Props { doc: FunnelDoc; company: Company; contentDbId?: string; }
 // ─── Main player ──────────────────────────────────────────────────────────────
 export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
   const [pageIndex, setPageIndex]   = useState(0);
+  const [history, setHistory]       = useState<number[]>([]);
   const [answers, setAnswers]       = useState<Record<string, unknown>>({});
   const [firstName, setFirstName]   = useState('');
   const [capturedVars, setCapturedVars] = useState<Record<string, string>>({});
@@ -61,15 +62,16 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
   function goNext(targetPageId?: string) {
     if (targetPageId) {
       const idx = doc.pages.findIndex((p) => p.id === targetPageId);
-      if (idx >= 0) { setPageIndex(idx); scrollTop(); return; }
+      if (idx >= 0) { setHistory((h) => [...h, pageIndex]); setPageIndex(idx); scrollTop(); return; }
     }
-    if (pageIndex < doc.pages.length - 1) { setPageIndex((i) => i + 1); scrollTop(); }
+    if (pageIndex < doc.pages.length - 1) { setHistory((h) => [...h, pageIndex]); setPageIndex((i) => i + 1); scrollTop(); }
     else { setCompleted(true); scrollTop(); }
   }
   function goBack() {
-    if (pageIndex === 0) return;
+    const prevIdx = history[history.length - 1] ?? (pageIndex > 0 ? pageIndex - 1 : -1);
+    if (prevIdx < 0) return;
     // Reset answer of the first interactive block on the target page
-    const targetPage = doc.pages[pageIndex - 1];
+    const targetPage = doc.pages[prevIdx];
     const targetBlocks = flatBlocks(targetPage.nodes);
     const interactiveTypes = ['quest_decision', 'quest_quiz', 'quest_rating', 'quest_zuordnung', 'quest_dialog'];
     const interactiveBlock = targetBlocks.find((b) => interactiveTypes.includes(b.type));
@@ -85,7 +87,8 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
         setDialogVisible(0);
       }
     }
-    setPageIndex((i) => i - 1);
+    setHistory((h) => h.slice(0, -1));
+    setPageIndex(prevIdx);
     scrollTop();
   }
   function setAnswer(nodeId: string, value: unknown) {
