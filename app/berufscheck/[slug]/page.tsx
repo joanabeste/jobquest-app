@@ -149,7 +149,7 @@ export default function BerufsCheckPlayer() {
   const css = [
     design.headingFontData ? `@font-face{font-family:'${hfName}';src:url('${design.headingFontData}')}` : '',
     design.bodyFontData && bfName !== hfName ? `@font-face{font-family:'${bfName}';src:url('${design.bodyFontData}')}` : '',
-    `.bc-player{font-family:${bodyFont};color:${design.textColor ?? '#1e293b'}}`,
+    `.bc-player{font-family:${bodyFont};color:${design.textColor ?? '#1e293b'};letter-spacing:${(design.bodyLetterSpacing ?? 0) / 1000}em}`,
     `.bc-btn-primary{background:${primary};color:#fff;border-radius:${br}}`,
     `.bc-btn-primary:hover{opacity:0.9}`,
     `.bc-btn-secondary{background:transparent;color:${primary};border:2px solid ${primary};border-radius:${br}}`,
@@ -157,7 +157,7 @@ export default function BerufsCheckPlayer() {
     `.bc-option{border-radius:${br};border:2px solid #e2e8f0}`,
     `.bc-option:hover{border-color:${primary}}`,
     `.bc-option.selected{border-color:${primary};background:${primary}15}`,
-    `.bc-heading{color:${design.headingColor ?? '#0f172a'};font-family:${headingFont}}`,
+    `.bc-heading{color:${design.headingColor ?? '#0f172a'};font-family:${headingFont};letter-spacing:${(design.headingLetterSpacing ?? 0) / 1000}em}`,
     `.bc-progress{background:${primary}}`,
   ].filter(Boolean).join('\n');
 

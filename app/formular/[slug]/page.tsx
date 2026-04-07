@@ -499,7 +499,8 @@ export default function FormularPage() {
   const formCss = [
     cd.headingFontData ? `@font-face{font-family:'${hfName}';src:url('${cd.headingFontData}')}` : '',
     cd.bodyFontData && bfName !== hfName ? `@font-face{font-family:'${bfName}';src:url('${cd.bodyFontData}')}` : '',
-    `h1,h2,h3,h4{font-family:${headingFont};color:${cd.headingColor ?? '#0f172a'}}`,
+    `h1,h2,h3,h4{font-family:${headingFont};color:${cd.headingColor ?? '#0f172a'};letter-spacing:${(cd.headingLetterSpacing ?? 0) / 1000}em}`,
+    `body{letter-spacing:${(cd.bodyLetterSpacing ?? 0) / 1000}em}`,
     `input:focus,textarea:focus,select:focus{border-color:${cd.primaryColor}!important;outline:none}`,
   ].filter(Boolean).join('\n');
 

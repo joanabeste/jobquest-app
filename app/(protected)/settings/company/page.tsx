@@ -83,12 +83,14 @@ export default function SettingsCompanyPage() {
     headingFontSize: cd.headingFontSize ?? DEFAULT_CORPORATE_DESIGN.headingFontSize,
     headingFontWeight: cd.headingFontWeight ?? DEFAULT_CORPORATE_DESIGN.headingFontWeight,
     headingTextTransform: cd.headingTextTransform ?? 'none',
+    headingLetterSpacing: cd.headingLetterSpacing ?? 0,
     bodyFontName: cd.bodyFontName ?? DEFAULT_CORPORATE_DESIGN.bodyFontName,
     bodyFontCustomName: cd.bodyFontCustomName,
     bodyFontData: cd.bodyFontData,
     bodyFontSize: cd.bodyFontSize ?? DEFAULT_CORPORATE_DESIGN.bodyFontSize,
     bodyFontWeight: cd.bodyFontWeight ?? DEFAULT_CORPORATE_DESIGN.bodyFontWeight,
     bodyTextTransform: cd.bodyTextTransform ?? 'none',
+    bodyLetterSpacing: cd.bodyLetterSpacing ?? 0,
     faviconUrl: cd.faviconUrl,
   });
 
@@ -324,6 +326,15 @@ export default function SettingsCompanyPage() {
                     </div>
                   </div>
                 </div>
+                <div>
+                  <label className="text-xs font-medium text-slate-500 mb-1.5 block">Buchstabenabstand</label>
+                  <div className="flex items-center gap-2">
+                    <input type="range" min={-50} max={200} step={5} value={design.headingLetterSpacing ?? 0}
+                      onChange={(e) => setDesign((d) => ({ ...d, headingLetterSpacing: Number(e.target.value) }))}
+                      className="flex-1" style={{ accentColor: design.primaryColor }} />
+                    <span className="text-xs text-slate-500 font-mono w-14 text-right flex-shrink-0">{((design.headingLetterSpacing ?? 0) / 1000).toFixed(3)}em</span>
+                  </div>
+                </div>
 
                 <div className="border-t border-slate-100" />
 
@@ -370,6 +381,15 @@ export default function SettingsCompanyPage() {
                         </button>
                       ))}
                     </div>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-slate-500 mb-1.5 block">Buchstabenabstand</label>
+                  <div className="flex items-center gap-2">
+                    <input type="range" min={-50} max={200} step={5} value={design.bodyLetterSpacing ?? 0}
+                      onChange={(e) => setDesign((d) => ({ ...d, bodyLetterSpacing: Number(e.target.value) }))}
+                      className="flex-1" style={{ accentColor: design.primaryColor }} />
+                    <span className="text-xs text-slate-500 font-mono w-14 text-right flex-shrink-0">{((design.bodyLetterSpacing ?? 0) / 1000).toFixed(3)}em</span>
                   </div>
                 </div>
               </div>
@@ -597,9 +617,9 @@ function FontPicker({ label, fontName, customFontName, customFontData, primaryCo
           className="input-field flex-1"
           style={{ fontFamily: isCustomActive ? undefined : fontFamilyFor(fontName), borderColor: isCustomActive ? undefined : primaryColor + '40' }}
         >
-          {(['sans', 'serif', 'display'] as const).map((cat) => {
+          {(['sans', 'condensed', 'serif', 'display'] as const).map((cat) => {
             const opts = FONT_OPTIONS.filter((f) => f.category === cat);
-            const groupLabel = cat === 'sans' ? 'Sans-Serif' : cat === 'serif' ? 'Serif' : 'Display';
+            const groupLabel = cat === 'sans' ? 'Sans-Serif' : cat === 'condensed' ? 'Schmal / Condensed' : cat === 'serif' ? 'Serif' : 'Display';
             return (
               <optgroup key={cat} label={groupLabel}>
                 {opts.map((font) => (
@@ -670,7 +690,7 @@ function DesignPreview({ name, logo, design }: { name: string; logo?: string; de
       </h2>
       {design.headingFontData && <style>{`@font-face{font-family:'${design.headingFontName}';src:url('${design.headingFontData}')}`}</style>}
       {design.bodyFontData && <style>{`@font-face{font-family:'${design.bodyFontName}';src:url('${design.bodyFontData}')}`}</style>}
-      <div className="max-w-xs mx-auto rounded-2xl overflow-hidden shadow-lg border border-slate-200" style={{ fontFamily: bodyFont, color: design.textColor }}>
+      <div className="max-w-xs mx-auto rounded-2xl overflow-hidden shadow-lg border border-slate-200" style={{ fontFamily: bodyFont, color: design.textColor, letterSpacing: `${(design.bodyLetterSpacing ?? 0) / 1000}em` }}>
         <div className="px-4 py-3 flex items-center gap-3" style={{ backgroundColor: design.primaryColor }}>
           {logo ? <img src={logo} alt={name} className="h-8 w-auto max-w-[100px] rounded-lg object-contain bg-white/20 p-0.5" />
             : <div className="w-8 h-8 rounded-lg bg-white/25 flex items-center justify-center font-bold text-white text-sm">{name.charAt(0) || 'J'}</div>}
@@ -684,12 +704,12 @@ function DesignPreview({ name, logo, design }: { name: string; logo?: string; de
         <div className="bg-slate-50 p-4 space-y-3">
           <div className="bg-white p-4 shadow-sm" style={{ borderRadius: br }}>
             <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: design.primaryColor }}>🌄 Szene</span>
-            <p className="font-semibold mt-1 text-sm" style={{ fontFamily: headingFont, color: design.headingColor }}>Ein Tag im Betrieb</p>
+            <p className="font-semibold mt-1 text-sm" style={{ fontFamily: headingFont, color: design.headingColor, letterSpacing: `${(design.headingLetterSpacing ?? 0) / 1000}em` }}>Ein Tag im Betrieb</p>
             <p className="text-xs mt-1 opacity-60">Erlebe einen typischen Arbeitstag bei uns…</p>
           </div>
           <div className="bg-white p-3 shadow-sm space-y-2" style={{ borderRadius: br }}>
             <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: design.primaryColor }}>❓ Quiz</span>
-            <p className="text-sm font-medium" style={{ fontFamily: headingFont, color: design.headingColor }}>Was ist dir wichtig?</p>
+            <p className="text-sm font-medium" style={{ fontFamily: headingFont, color: design.headingColor, letterSpacing: `${(design.headingLetterSpacing ?? 0) / 1000}em` }}>Was ist dir wichtig?</p>
             <div className="space-y-1.5">
               <div className="border-2 px-3 py-2 text-xs font-medium"
                 style={{ borderColor: design.primaryColor, color: design.primaryColor, backgroundColor: design.primaryColor + '12', borderRadius: br }}>Teamarbeit ✓</div>

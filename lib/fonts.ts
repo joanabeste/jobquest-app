@@ -3,6 +3,7 @@ import {
   Oswald, Source_Sans_3, PT_Sans, Merriweather, Playfair_Display, Lora,
   Roboto_Slab, Work_Sans, Quicksand, Fira_Sans, Mulish, Karla, Rubik,
   DM_Sans, Manrope, Bitter, Cabin,
+  Roboto_Condensed, Barlow_Condensed, PT_Sans_Narrow, Fira_Sans_Condensed,
 } from 'next/font/google';
 
 // All Google Fonts loaded via next/font/google are automatically downloaded
@@ -35,11 +36,16 @@ const dmSans = DM_Sans({ weight: ['400', '500', '600', '700'], display: 'swap', 
 const manrope = Manrope({ weight: ['400', '500', '600', '700'], display: 'swap', variable: '--font-manrope', subsets: ['latin'] });
 const bitter = Bitter({ weight: ['400', '500', '600', '700'], display: 'swap', variable: '--font-bitter', subsets: ['latin'] });
 const cabin = Cabin({ weight: ['400', '500', '600', '700'], display: 'swap', variable: '--font-cabin', subsets: ['latin'] });
+const robotoCondensed = Roboto_Condensed({ weight: ['400', '500', '700'], display: 'swap', variable: '--font-roboto-condensed', subsets: ['latin'] });
+const barlowCondensed = Barlow_Condensed({ weight: ['400', '500', '600', '700'], display: 'swap', variable: '--font-barlow-condensed', subsets: ['latin'] });
+const ptSansNarrow = PT_Sans_Narrow({ weight: ['400', '700'], display: 'swap', variable: '--font-pt-sans-narrow', subsets: ['latin'] });
+const firaSansCondensed = Fira_Sans_Condensed({ weight: ['400', '500', '600', '700'], display: 'swap', variable: '--font-fira-sans-condensed', subsets: ['latin'] });
 
 export const ALL_FONTS = [
   inter, roboto, openSans, montserrat, poppins, lato, nunito, raleway, oswald,
   sourceSans, ptSans, merriweather, playfair, lora, robotoSlab, workSans,
   quicksand, firaSans, mulish, karla, rubik, dmSans, manrope, bitter, cabin,
+  robotoCondensed, barlowCondensed, ptSansNarrow, firaSansCondensed,
 ];
 
 // Single className string with every CSS variable — apply to <body>.
@@ -53,7 +59,7 @@ export interface FontOption {
   /** CSS font-family value to use in style props. */
   cssFamily: string;
   /** Category for grouping in the dropdown. */
-  category: 'sans' | 'serif' | 'display';
+  category: 'sans' | 'serif' | 'display' | 'condensed';
 }
 
 export const FONT_OPTIONS: FontOption[] = [
@@ -83,6 +89,10 @@ export const FONT_OPTIONS: FontOption[] = [
   { value: 'Lora',             label: 'Lora',               cssFamily: `${lora.style.fontFamily}, serif`, category: 'serif' },
   { value: 'Roboto Slab',      label: 'Roboto Slab',        cssFamily: `${robotoSlab.style.fontFamily}, serif`, category: 'serif' },
   { value: 'Bitter',           label: 'Bitter',             cssFamily: `${bitter.style.fontFamily}, serif`, category: 'serif' },
+  { value: 'Roboto Condensed',     label: 'Roboto Condensed',     cssFamily: `${robotoCondensed.style.fontFamily}, sans-serif`, category: 'condensed' },
+  { value: 'Barlow Condensed',     label: 'Barlow Condensed',     cssFamily: `${barlowCondensed.style.fontFamily}, sans-serif`, category: 'condensed' },
+  { value: 'PT Sans Narrow',       label: 'PT Sans Narrow',       cssFamily: `${ptSansNarrow.style.fontFamily}, sans-serif`, category: 'condensed' },
+  { value: 'Fira Sans Condensed',  label: 'Fira Sans Condensed',  cssFamily: `${firaSansCondensed.style.fontFamily}, sans-serif`, category: 'condensed' },
 ];
 
 export function fontFamilyFor(value: string | undefined, fallback = 'system-ui, sans-serif'): string {

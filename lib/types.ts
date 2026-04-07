@@ -122,12 +122,14 @@ export interface CorporateDesign {
   headingFontSize?: number;        // Schriftgröße Überschriften in px (default: 22)
   headingFontWeight?: number;      // Schriftgewicht Überschriften (300–800, default: 700)
   headingTextTransform?: 'none' | 'uppercase'; // Großschreibung Überschriften (default: none)
+  headingLetterSpacing?: number;   // Buchstabenabstand Überschriften in em*1000 (-50 bis 200, default: 0)
   bodyFontName: string;            // Schriftart für Fließtext (Google Font oder "system")
   bodyFontCustomName?: string;     // Anzeigename der hochgeladenen Fließtext-Schrift
   bodyFontData?: string;           // Base64-DataURL der hochgeladenen Fließtext-Schrift
   bodyFontSize?: number;           // Schriftgröße Fließtext in px (default: 14)
   bodyFontWeight?: number;         // Schriftgewicht Fließtext (300–700, default: 400)
   bodyTextTransform?: 'none' | 'uppercase'; // Großschreibung Fließtext (default: none)
+  bodyLetterSpacing?: number;      // Buchstabenabstand Fließtext in em*1000 (-50 bis 200, default: 0)
 }
 
 export const DEFAULT_CORPORATE_DESIGN: CorporateDesign = {
