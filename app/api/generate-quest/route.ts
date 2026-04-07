@@ -310,7 +310,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'API-Schlüssel (OPENAI_API_KEY) nicht konfiguriert' }, { status: 500 });
   }
 
-  let userMessageText = `Erstelle eine JobQuest für den Beruf: ${beruf.trim()}${notes?.trim() ? `\n\nZusätzliche Hinweise: ${notes.trim()}` : ''}`;
+  // Build company context block from settings
+  const companyContext: string[] = [];
+  companyContext.push(`Unternehmen: ${session.company.name}`);
+  if (session.company.industry) companyContext.push(`Branche: ${session.company.industry}`);
+  if (session.company.location) companyContext.push(`Standort: ${session.company.location}`);
+  if (session.company.description?.trim()) companyContext.push(`Über uns: ${session.company.description.trim()}`);
+
+  let userMessageText = `${companyContext.join('\n')}\n\nErstelle eine JobQuest für den Beruf: ${beruf.trim()}${notes?.trim() ? `\n\nZusätzliche Hinweise: ${notes.trim()}` : ''}`;
 
   if (imageUrls.length > 0) {
     userMessageText += `\n\nDir wurden ${imageUrls.length} Bilder vom Unternehmen mitgeschickt. Verteile diese Bilder sinnvoll auf die quest_scene-Blöcke (besonders Page 0!), quest_hotspot-Blöcke und quest_dialog-Lines. Verwende EXAKT folgende URLs (keine erfinden):\n${imageUrls.map((u, i) => `${i + 1}. ${u}`).join('\n')}`;

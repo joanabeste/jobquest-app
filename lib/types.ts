@@ -208,6 +208,7 @@ export const DEFAULT_PLAN: CompanyPlan = {
 export interface Company {
   id: string;
   name: string;
+  description?: string;
   industry?: string;
   location?: string;
   logo?: string;

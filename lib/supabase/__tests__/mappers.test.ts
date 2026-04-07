@@ -18,6 +18,7 @@ describe('companyFromDb / companyToDb', () => {
   const company = {
     id: 'c1',
     name: 'Acme GmbH',
+    description: 'Wir sind ein Software-Unternehmen.',
     industry: 'IT & Technologie',
     location: 'Berlin',
     logo: 'https://example.com/logo.png',
@@ -33,6 +34,7 @@ describe('companyFromDb / companyToDb', () => {
   const dbRow = {
     id: 'c1',
     name: 'Acme GmbH',
+    description: 'Wir sind ein Software-Unternehmen.',
     industry: 'IT & Technologie',
     location: 'Berlin',
     logo: 'https://example.com/logo.png',

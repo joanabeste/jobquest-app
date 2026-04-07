@@ -11,6 +11,7 @@ export function companyFromDb(row: any): Company {
   return {
     id: row.id,
     name: row.name,
+    description: row.description ?? undefined,
     industry: row.industry,
     location: row.location,
     logo: row.logo ?? undefined,
@@ -34,6 +35,7 @@ export function companyToDb(c: Company): Record<string, unknown> {
   return {
     id: c.id,
     name: c.name,
+    description: c.description ?? null,
     industry: c.industry,
     location: c.location,
     logo: c.logo ?? null,

@@ -44,6 +44,7 @@ export default function SettingsCompanyPage() {
 
   const [form, setForm] = useState({
     name: company?.name || '',
+    description: company?.description || '',
     industry: company?.industry || '',
     location: company?.location || '',
     logo: company?.logo || '',
@@ -104,7 +105,7 @@ export default function SettingsCompanyPage() {
     setSaving(true);
     setSaveError(null);
     try {
-      await updateCompany({ ...company, name: form.name, industry: form.industry, location: form.location, logo: form.logo || undefined, privacyUrl: form.privacyUrl, imprintUrl: form.imprintUrl, careerPageUrl: form.careerPageUrl || undefined, corporateDesign: design, successPage });
+      await updateCompany({ ...company, name: form.name, description: form.description || undefined, industry: form.industry, location: form.location, logo: form.logo || undefined, privacyUrl: form.privacyUrl, imprintUrl: form.imprintUrl, careerPageUrl: form.careerPageUrl || undefined, corporateDesign: design, successPage });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
@@ -166,6 +167,14 @@ export default function SettingsCompanyPage() {
               <label className="label">Firmenname *</label>
               <input type="text" className="input-field" value={form.name}
                 onChange={(e) => handleChange('name', e.target.value)} required />
+            </div>
+            <div>
+              <label className="label">Unternehmensbeschreibung</label>
+              <textarea className="input-field resize-none" rows={4}
+                placeholder="Was macht euer Unternehmen besonders? Werte, Mission, Größe, Ausbildungskultur… Diese Beschreibung wird von der KI bei der JobQuest-Generierung verwendet."
+                value={form.description}
+                onChange={(e) => handleChange('description', e.target.value)} />
+              <p className="text-xs text-slate-400 mt-1">Wird bei KI-generierten JobQuests berücksichtigt.</p>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
