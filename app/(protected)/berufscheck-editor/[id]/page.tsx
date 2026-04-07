@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { careerCheckStorage } from '@/lib/storage';
-import { CareerCheck } from '@/lib/types';
+import { CareerCheck, Dimension } from '@/lib/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { slugify } from '@/lib/utils';
 
@@ -54,6 +54,18 @@ export default function BerufsCheckEditorPage() {
     setCheck(updated);
   }
 
+  async function handleAIGenerated(dimensions: Dimension[], title?: string) {
+    if (!check) return;
+    const updated: CareerCheck = {
+      ...check,
+      dimensions,
+      title: title || check.title,
+      updatedAt: new Date().toISOString(),
+    };
+    await careerCheckStorage.save(updated);
+    setCheck(updated);
+  }
+
   async function handlePublish() {
     if (!check) return;
     const newStatus = check.status === 'published' ? 'draft' : 'published';
@@ -77,6 +89,7 @@ export default function BerufsCheckEditorPage() {
       status={check.status}
       onPublish={handlePublish}
       onBack={() => router.push('/dashboard')}
+      onAIGeneratedDimensions={handleAIGenerated}
     />
   );
 }

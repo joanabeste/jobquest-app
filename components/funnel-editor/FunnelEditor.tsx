@@ -24,6 +24,7 @@ import PageSidebar from './PageSidebar';
 import Canvas from './Canvas';
 import Inspector from './Inspector';
 import GenerateQuestModal from './GenerateQuestModal';
+import GenerateCheckModal from './GenerateCheckModal';
 import FlowView from './FlowView';
 import EmailConfigModal from './EmailConfigModal';
 
@@ -40,12 +41,15 @@ export interface FunnelEditorProps {
   onBack: () => void;
   /** Extra panel rendered alongside inspector (e.g. dimension manager) */
   extraPanel?: React.ReactNode;
+  /** Berufscheck-only: invoked after AI generation so the wrapper can persist
+   *  the generated dimensions onto the underlying CareerCheck row. */
+  onAIGeneratedDimensions?: (dimensions: Dimension[], title?: string) => Promise<void> | void;
 }
 
 // ─── Main Editor ──────────────────────────────────────────────────────────────
 export default function FunnelEditor({
   contentId, contentType, title, onTitleChange,
-  slug, previewHref, status, onPublish, onBack, extraPanel,
+  slug, previewHref, status, onPublish, onBack, extraPanel, onAIGeneratedDimensions,
 }: FunnelEditorProps) {
   const [initialDoc, setInitialDoc] = useState<FunnelDoc | null>(null);
   const [loading, setLoading] = useState(true);
@@ -71,12 +75,13 @@ export default function FunnelEditor({
     initialDoc={initialDoc}
     contentType={contentType} title={title} onTitleChange={onTitleChange}
     slug={slug} previewHref={previewHref} status={status} onPublish={onPublish} onBack={onBack} extraPanel={extraPanel}
+    onAIGeneratedDimensions={onAIGeneratedDimensions}
   />;
 }
 
 function FunnelEditorInner({
   initialDoc, contentType, title, onTitleChange,
-  slug: _slug, previewHref, status, onPublish, onBack, extraPanel,
+  slug: _slug, previewHref, status, onPublish, onBack, extraPanel, onAIGeneratedDimensions,
 }: Omit<FunnelEditorProps, 'contentId'> & { initialDoc: FunnelDoc }) {
   const { company } = useAuth();
   const ci = useCorporateDesign(company ?? { id: '', name: '', contactName: '', contactEmail: '', createdAt: '' });
@@ -103,6 +108,7 @@ function FunnelEditorInner({
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [publishing, setPublishing] = useState(false);
   const [showGenerateModal, setShowGenerateModal] = useState(false);
+  const [showGenerateCheckModal, setShowGenerateCheckModal] = useState(false);
   const [showEmailConfig, setShowEmailConfig] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [view, setView] = useState<'canvas' | 'flow'>('canvas');
@@ -288,6 +294,22 @@ function FunnelEditorInner({
     if (jobTitle) onTitleChange(jobTitle);
   }
 
+  async function handleGenerateCheck(pages: FunnelPage[], dimensionList: Dimension[], checkTitle: string) {
+    const next = { ...doc, pages };
+    push(next);
+    funnelStorage.save(next);
+    setActivePageId(pages[0]?.id ?? '');
+    setSelectedNodeId(null);
+    setShowGenerateCheckModal(false);
+    // Push generated dimensions onto the parent CareerCheck row + refresh local cache.
+    setDimensions(dimensionList);
+    if (onAIGeneratedDimensions) {
+      try { await onAIGeneratedDimensions(dimensionList, checkTitle); } catch (e) { console.error('[FunnelEditor] persist dimensions failed', e); }
+    } else if (checkTitle) {
+      onTitleChange(checkTitle);
+    }
+  }
+
   // ── selected node ───────────────────────────────────────────────────────────
   const selectedNode: FunnelNode | null = (() => {
     if (!selectedNodeId || !activePage) return null;
@@ -374,11 +396,11 @@ function FunnelEditorInner({
           </button>
         </div>
 
-        {/* AI Generate – quest only */}
-        {contentType === 'quest' && (
+        {/* AI Generate – quest + check */}
+        {(contentType === 'quest' || contentType === 'check') && (
           <>
             <div className="w-px h-5 bg-slate-200 flex-shrink-0" />
-            <button onClick={() => setShowGenerateModal(true)}
+            <button onClick={() => contentType === 'quest' ? setShowGenerateModal(true) : setShowGenerateCheckModal(true)}
               className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-semibold text-violet-600 hover:bg-violet-50 rounded-lg transition-colors flex-shrink-0 border border-violet-200">
               <Sparkles size={12} /> KI
             </button>
@@ -514,6 +536,12 @@ function FunnelEditorInner({
       <GenerateQuestModal
         onGenerate={handleGenerateQuest}
         onClose={() => setShowGenerateModal(false)}
+      />
+    )}
+    {showGenerateCheckModal && (
+      <GenerateCheckModal
+        onGenerate={handleGenerateCheck}
+        onClose={() => setShowGenerateCheckModal(false)}
       />
     )}
     {showEmailConfig && (
