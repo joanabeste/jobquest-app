@@ -407,5 +407,48 @@ export async function POST(req: NextRequest) {
     };
   });
 
-  return NextResponse.json({ pages, dimensions });
+  // Split any page that ended up with more than one interactive question block
+  // (check_selbst, check_frage, check_swipe_deck, check_ergebnisfrage) into one
+  // page per block. The model is told to do this in the prompt but doesn't
+  // always comply, and stacking sliders on a single page makes mobile scrolling
+  // confusing AND breaks scrollIntoView when navigating onward.
+  const QUESTION_TYPES = new Set(['check_selbst', 'check_frage', 'check_ergebnisfrage', 'check_swipe_deck']);
+  type ResolvedPage = (typeof pages)[number];
+  const splitPages: ResolvedPage[] = [];
+  for (const page of pages) {
+    const questionIndices = page.nodes
+      .map((n, i) => ({ n, i }))
+      .filter(({ n }) => n.kind === 'block' && QUESTION_TYPES.has(n.type))
+      .map(({ i }) => i);
+    if (questionIndices.length <= 1) {
+      splitPages.push(page);
+      continue;
+    }
+    // Walk through the nodes and start a new page each time we see a question.
+    // Non-question nodes (heading/paragraph/etc.) stay attached to the page they
+    // were declared in, in front of the next question.
+    let bucket: typeof page.nodes = [];
+    let firstChunk = true;
+    for (const node of page.nodes) {
+      const isQuestion = node.kind === 'block' && QUESTION_TYPES.has(node.type);
+      bucket.push(node);
+      if (isQuestion) {
+        splitPages.push({
+          ...(firstChunk ? page : {}),
+          id: firstChunk ? page.id : crypto.randomUUID(),
+          name: page.name || 'Frage',
+          nodes: bucket,
+        });
+        bucket = [];
+        firstChunk = false;
+      }
+    }
+    if (bucket.length > 0) {
+      // Trailing non-question nodes — attach to the last emitted page.
+      const last = splitPages[splitPages.length - 1];
+      last.nodes = [...last.nodes, ...bucket];
+    }
+  }
+
+  return NextResponse.json({ pages: splitPages, dimensions });
 }
