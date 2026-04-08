@@ -804,6 +804,8 @@ export function BlockRenderer({
           answers={answers}
           primary={primary}
           br={br}
+          onNext={onNext}
+          continueLabel={s(p.continueLabel, 'Weiter')}
         />
       );
     }

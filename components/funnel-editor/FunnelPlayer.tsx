@@ -299,7 +299,18 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
                      && dialogInteractionAnswered;
 
   const isLastPage    = pageIndex === doc.pages.length - 1;
-  const progress      = (pageIndex + 1) / doc.pages.length;
+  // Progress: fraction of completed pages, plus a smooth in-page contribution
+  // when the current page hosts a swipe deck (progresses card by card).
+  const swipeBlock = blocks.find((bl) => bl.type === 'check_swipe_deck');
+  const swipeFraction = (() => {
+    if (!swipeBlock) return 0;
+    const total = ((swipeBlock.props.cards as unknown[]) ?? []).length;
+    if (total === 0) return 0;
+    const ans = answers[swipeBlock.id];
+    const done = Array.isArray(ans) ? Math.min(ans.length, total) : 0;
+    return done / total;
+  })();
+  const progress = (pageIndex + (swipeBlock ? swipeFraction : 1)) / doc.pages.length;
 
   // Dialog input in footer: show when dialog has input, lines are done, and not yet submitted
   const showDialogInput = dialogBlock && hasDialogInput && dialogComplete && !dialogInteractionAnswered;

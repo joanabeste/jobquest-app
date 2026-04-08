@@ -87,6 +87,9 @@ export default function SwipeDeckBlock({ nodeId, props, answers, onAnswer, onNex
     window.setTimeout(() => {
       const next = [...results, { cardId: card.id, choice }];
       setResults(next);
+      // Always sync the answer so the player progress bar can advance card by
+      // card, not just at the end of the deck.
+      onAnswer(nodeId, next);
       setExiting(null);
       setDragDir(0);
       dxRef.current = 0;
@@ -94,7 +97,6 @@ export default function SwipeDeckBlock({ nodeId, props, answers, onAnswer, onNex
       // Reset transform without animation for the new card.
       requestAnimationFrame(() => resetTransform(false));
       if (next.length >= cards.length) {
-        onAnswer(nodeId, next);
         window.setTimeout(onNext, 200);
       }
     }, 240);
@@ -180,14 +182,9 @@ export default function SwipeDeckBlock({ nodeId, props, answers, onAnswer, onNex
       {question && (
         <h2 className="fp-heading text-base font-bold mb-1 text-center">{question}</h2>
       )}
-      <p className="text-[11px] text-slate-400 text-center mb-3">
+      <p className="text-[11px] text-slate-400 text-center mb-4">
         Karte {Math.min(idx + 1, cards.length)} / {cards.length}
       </p>
-
-      {/* Progress */}
-      <div className="h-1 bg-slate-100 rounded-full mb-4 overflow-hidden">
-        <div className="h-full transition-all duration-300" style={{ width: `${(idx / cards.length) * 100}%`, background: primary }} />
-      </div>
 
       {/* Card stack — height bounded but allows the page to still scroll OUTSIDE the card */}
       <div className="relative h-[320px] select-none mb-4">

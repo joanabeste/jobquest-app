@@ -46,12 +46,15 @@ interface Props {
   answers: Record<string, unknown>;
   primary: string;
   br: string;
+  onNext?: () => void;
+  continueLabel?: string;
 }
 
 const ICONS = { video: Video, doc: FileText, apply: Send, link: ExternalLink } as const;
 
 export default function ErgebnisBlock({
   headline, subtext, layout, showDimensionBars, groups, dimensions, scores, answers, primary, br,
+  onNext, continueLabel,
 }: Props) {
   // Filter groups whose visibleIf condition is unmet.
   const visibleGroups = groups.filter((g) => {
@@ -71,6 +74,12 @@ export default function ErgebnisBlock({
       </div>
       <h2 className="fp-heading text-2xl font-bold mb-2 text-center" dangerouslySetInnerHTML={{ __html: sh(inlineHtml(headline)) }} />
       {b(subtext) && <div className="text-slate-500 text-sm mb-5 text-center rte" dangerouslySetInnerHTML={{ __html: sh(subtext) }} />}
+
+      {layout === 'groups' && visibleGroups.length === 0 && groups.length > 0 && (
+        <p className="text-sm text-slate-500 text-center mt-3">
+          Für deine Antworten gibt es leider keine passende Empfehlung.
+        </p>
+      )}
 
       {useGroups ? (
         <>
@@ -110,6 +119,16 @@ export default function ErgebnisBlock({
         showDimensionBars && (
           <SimpleBars dimensions={dimensions} scores={scores} primary={primary} />
         )
+      )}
+
+      {onNext && (
+        <button
+          onClick={() => onNext()}
+          className="fp-btn w-full mt-6 py-3 font-semibold text-sm"
+          style={{ borderRadius: br, background: primary, color: '#fff' }}
+        >
+          {continueLabel || 'Weiter'}
+        </button>
       )}
     </div>
   );
