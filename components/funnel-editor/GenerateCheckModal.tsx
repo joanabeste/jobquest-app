@@ -115,7 +115,7 @@ export default function GenerateCheckModal({ onGenerate, onClose }: Props) {
       if (!res.ok) throw new Error(data.error ?? 'Unbekannter Fehler');
       if (!data.pages?.length || !data.dimensions?.length) throw new Error('KI hat keinen vollständigen Check generiert.');
       setLoadingProgress(100);
-      const title = berufe[0] || 'Berufscheck';
+      const title = 'Berufscheck';
       setTimeout(() => onGenerate(data.pages!, data.dimensions!, title), 400);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Fehler beim Generieren');
