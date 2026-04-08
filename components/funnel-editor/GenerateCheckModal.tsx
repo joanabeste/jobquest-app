@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { X, Sparkles, Plus } from 'lucide-react';
+import { X, Sparkles, Plus, Globe, Loader2 } from 'lucide-react';
 import type { FunnelPage } from '@/lib/funnel-types';
 import type { Dimension } from '@/lib/types';
 
@@ -27,6 +27,10 @@ export default function GenerateCheckModal({ onGenerate, onClose }: Props) {
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [importOpen, setImportOpen] = useState(false);
+  const [importUrl, setImportUrl] = useState('');
+  const [importing, setImporting] = useState(false);
+  const [importInfo, setImportInfo] = useState<string | null>(null);
   const [loadingStep, setLoadingStep] = useState(0);
   const [loadingProgress, setLoadingProgress] = useState(0);
 
@@ -58,6 +62,39 @@ export default function GenerateCheckModal({ onGenerate, onClose }: Props) {
     if (!v) return;
     if (!studiengaenge.includes(v)) setStudiengaenge([...studiengaenge, v]);
     setStudiumInput('');
+  }
+
+  async function handleImportFromWebsite() {
+    if (!importUrl.trim() || importing) return;
+    setImporting(true);
+    setError('');
+    setImportInfo(null);
+    try {
+      const res = await fetch('/api/companies/extract-jobs-from-website', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: importUrl.trim() }),
+      });
+      const data = await res.json() as { berufe?: string[]; studiengaenge?: string[]; pagesCrawled?: number; error?: string };
+      if (!res.ok) throw new Error(data.error ?? 'Import fehlgeschlagen');
+
+      const newBerufe = (data.berufe ?? []).filter((b) => !berufe.includes(b));
+      const newStudium = (data.studiengaenge ?? []).filter((s) => !studiengaenge.includes(s));
+      if (newBerufe.length > 0) setBerufe([...berufe, ...newBerufe]);
+      if (newStudium.length > 0) setStudiengaenge([...studiengaenge, ...newStudium]);
+
+      const totalNew = newBerufe.length + newStudium.length;
+      if (totalNew === 0) {
+        setImportInfo('Keine neuen Berufe oder Studiengänge gefunden.');
+      } else {
+        setImportInfo(`${newBerufe.length} Berufe, ${newStudium.length} Studiengänge übernommen.`);
+        setImportOpen(false);
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Import fehlgeschlagen');
+    } finally {
+      setImporting(false);
+    }
   }
 
   async function handleGenerate() {
@@ -133,6 +170,58 @@ export default function GenerateCheckModal({ onGenerate, onClose }: Props) {
         ) : (
           <>
             <div className="px-6 py-5 space-y-4 max-h-[70vh] overflow-y-auto">
+              {/* Website import */}
+              {!importOpen ? (
+                <button
+                  type="button"
+                  onClick={() => { setImportOpen(true); setImportInfo(null); }}
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-xs font-medium rounded-xl border border-dashed border-violet-300 text-violet-700 bg-violet-50/40 hover:bg-violet-50 transition-colors"
+                >
+                  <Globe size={13} /> Berufe & Studiengänge von Website importieren
+                </button>
+              ) : (
+                <div className="rounded-xl border border-violet-200 bg-violet-50/40 p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-semibold text-violet-700 flex items-center gap-1.5">
+                      <Globe size={12} /> Von Website importieren
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => { setImportOpen(false); setImportUrl(''); setImportInfo(null); }}
+                      className="text-violet-400 hover:text-violet-700"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                  <div className="flex gap-1">
+                    <input
+                      type="url"
+                      value={importUrl}
+                      onChange={(e) => setImportUrl(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleImportFromWebsite(); } }}
+                      placeholder="https://www.firma.de/karriere"
+                      className="flex-1 px-3 py-2 text-xs border border-slate-200 rounded-lg focus:border-violet-400 focus:outline-none"
+                      disabled={importing}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleImportFromWebsite}
+                      disabled={!importUrl.trim() || importing}
+                      className="px-3 rounded-lg bg-violet-600 text-white text-xs font-medium hover:bg-violet-700 disabled:opacity-50 flex items-center gap-1"
+                    >
+                      {importing ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                      {importing ? 'Lädt…' : 'Importieren'}
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-slate-500 leading-relaxed">
+                    Die KI crawlt deine Website (inkl. Karriere-/Ausbildungs-Unterseiten) und füllt die Berufe-Felder unten automatisch.
+                  </p>
+                  {importInfo && (
+                    <p className="text-[11px] text-emerald-700 bg-emerald-50 rounded px-2 py-1">{importInfo}</p>
+                  )}
+                </div>
+              )}
+
               {/* Berufe */}
               <div>
                 <label className="block text-xs font-medium text-slate-500 mb-1.5">

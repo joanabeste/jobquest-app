@@ -258,17 +258,23 @@ export default function LeadsPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+      <div className={`grid grid-cols-2 gap-4 mb-8 ${
+        loading || [jqCount > 0, bcCount > 0, fmCount > 0].filter(Boolean).length >= 3
+          ? 'sm:grid-cols-4'
+          : [jqCount > 0, bcCount > 0, fmCount > 0].filter(Boolean).length === 2
+          ? 'sm:grid-cols-3'
+          : 'sm:grid-cols-2'
+      }`}>
         {loading ? (
           <>
             {Array.from({ length: 4 }).map((_, i) => <StatCardSkeleton key={i} />)}
           </>
-        ) : [
-          { label: 'Kontakte gesamt', value: allLeads.length, color: 'violet' },
-          { label: 'aus JobQuests', value: jqCount, color: 'indigo' },
-          { label: 'aus Berufschecks', value: bcCount, color: 'blue' },
-          { label: 'aus Formularen', value: fmCount, color: 'emerald' },
-        ].map(({ label, value, color }) => (
+        ) : ([
+          { label: 'Kontakte gesamt', value: allLeads.length, color: 'violet', show: true },
+          { label: 'aus JobQuests', value: jqCount, color: 'indigo', show: jqCount > 0 },
+          { label: 'aus Berufschecks', value: bcCount, color: 'blue', show: bcCount > 0 },
+          { label: 'aus Formularen', value: fmCount, color: 'emerald', show: fmCount > 0 },
+        ].filter((s) => s.show)).map(({ label, value, color }) => (
           <div key={label} className="bg-white rounded-2xl border border-slate-200 p-5 flex items-center gap-4 shadow-sm">
             <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
               color === 'violet' ? 'bg-violet-100' :
@@ -334,7 +340,7 @@ export default function LeadsPage() {
             <div className="flex items-center gap-2 overflow-x-auto">
               <Filter size={15} className="text-slate-400 flex-shrink-0" />
               <div className="flex rounded-xl border border-slate-200 overflow-hidden bg-white flex-shrink-0">
-                {([['all', 'Alle'], ['jobquest', 'JobQuest'], ['berufscheck', 'Check'], ['formular', 'Formular']] as [SourceFilter, string][]).map(([val, label]) => (
+                {(([['all', 'Alle', true], ['jobquest', 'JobQuest', jqCount > 0], ['berufscheck', 'Check', bcCount > 0], ['formular', 'Formular', fmCount > 0]] as [SourceFilter, string, boolean][]).filter(([, , show]) => show)).map(([val, label]) => (
                   <button key={val} onClick={() => setSourceFilter(val)}
                     className={`px-2.5 sm:px-3 py-2 text-xs font-medium transition-colors whitespace-nowrap ${
                       sourceFilter === val
