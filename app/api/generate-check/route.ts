@@ -5,8 +5,8 @@ import { defaultLeadFields } from '@/lib/lead-field-defaults';
 
 // ─── Input schema ─────────────────────────────────────────────────────────────
 const GenerateCheckSchema = z.object({
-  berufe: z.array(z.string().min(1).max(200)).min(1).max(40),
-  studiengaenge: z.array(z.string().min(1).max(200)).max(30).optional().default([]),
+  berufe: z.array(z.string().min(1).max(200)).min(1).max(60),
+  studiengaenge: z.array(z.string().min(1).max(200)).max(40).optional().default([]),
   notes: z.string().max(8000).optional(),
   cardCount: z.number().int().min(6).max(20).optional().default(12),
 });
