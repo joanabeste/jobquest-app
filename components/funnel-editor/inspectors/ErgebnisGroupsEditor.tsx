@@ -1,7 +1,7 @@
 'use client';
 
 import { Plus, X } from 'lucide-react';
-import { Field, Section } from './shared';
+import { Field, Section, ImageUploadField } from './shared';
 import { useFunnelEditorCtx } from '../FunnelEditorContext';
 import type { FunnelPage } from '@/lib/funnel-types';
 
@@ -273,11 +273,10 @@ function SuggestionList({ group, onChange }: { group: Group; onChange: (s: Sugge
               rows={2}
               placeholder="Beschreibung (optional)"
             />
-            <input
+            <ImageUploadField
+              label="Bild"
               value={sug.imageUrl ?? ''}
-              onChange={(e) => patch(sug.id, { imageUrl: e.target.value || undefined })}
-              className="input-field text-xs"
-              placeholder="Bild-URL"
+              onChange={(v) => patch(sug.id, { imageUrl: v || undefined })}
             />
 
             <div className="border-t border-slate-100 pt-1.5">

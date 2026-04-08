@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Trophy, Video, FileText, Send, ExternalLink } from 'lucide-react';
+import { Trophy, Video, FileText, Send, ExternalLink, ChevronDown } from 'lucide-react';
 import { Dimension } from '@/lib/types';
 import { sh, b, inlineHtml } from './helpers';
 
@@ -74,32 +74,37 @@ export default function ErgebnisBlock({
 
       {useGroups ? (
         <>
-          {/* Tab bar (mobile) — on md+ both groups render side by side */}
+          {/* Tab bar — same on mobile and desktop */}
           {visibleGroups.length > 1 && (
-            <div className="md:hidden inline-flex p-1 mb-4 bg-slate-100 rounded-xl mx-auto" style={{ display: 'flex' }}>
-              {visibleGroups.map((g, i) => (
-                <button
-                  key={g.id}
-                  onClick={() => setActiveTab(i)}
-                  className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                  style={i === activeTab ? { background: 'white', color: primary, boxShadow: '0 1px 3px rgba(0,0,0,.06)' } : { color: '#64748b' }}
-                >
-                  {g.label}
-                </button>
-              ))}
+            <div className="flex justify-center mb-5">
+              <div className="inline-flex p-1 bg-slate-100 rounded-xl">
+                {visibleGroups.map((g, i) => (
+                  <button
+                    key={g.id}
+                    type="button"
+                    onClick={() => setActiveTab(i)}
+                    className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                    style={i === activeTab
+                      ? { background: 'white', color: primary, boxShadow: '0 1px 3px rgba(0,0,0,.06)' }
+                      : { color: '#64748b', background: 'transparent' }}
+                  >
+                    {g.label}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
-          <div className={visibleGroups.length > 1 ? 'md:grid md:grid-cols-2 md:gap-5' : ''}>
-            {visibleGroups.map((g, i) => (
-              <div key={g.id} className={i === activeTab ? '' : 'hidden md:block'}>
-                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide mb-3" style={{ color: primary }}>
-                  {g.label}
-                </h3>
+          {/* Active tab content only */}
+          {(() => {
+            const g = visibleGroups[Math.min(activeTab, visibleGroups.length - 1)];
+            if (!g) return null;
+            return (
+              <div key={g.id}>
                 <GroupBars group={g} dimensions={dimensions} scores={scores} primary={primary} />
                 <GroupSuggestions group={g} dimensions={dimensions} scores={scores} primary={primary} br={br} />
               </div>
-            ))}
-          </div>
+            );
+          })()}
         </>
       ) : (
         showDimensionBars && (
@@ -180,42 +185,84 @@ function GroupSuggestions({ group, dimensions, scores, primary, br }: { group: E
     return sug.requiresDimensionIds.every((d) => top.has(d));
   });
 
+  // Top-1 starts open, the rest collapsed.
+  const [openId, setOpenId] = useState<string | null>(matching[0]?.id ?? null);
+
   if (matching.length === 0) return null;
 
   return (
-    <div className="space-y-3 mt-3">
-      {matching.map((sug) => (
-        <div key={sug.id} className="border border-slate-200 p-3 hover:border-slate-300 transition-colors" style={{ borderRadius: br }}>
-          <div className="flex gap-3">
-            {sug.imageUrl && (
-              <img src={sug.imageUrl} alt="" className="w-14 h-14 rounded-lg object-cover flex-shrink-0" />
-            )}
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-slate-900">{sug.title}</p>
-              {sug.description && <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{sug.description}</p>}
-              {sug.links && sug.links.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mt-2">
-                  {sug.links.map((l) => {
-                    const Icon = ICONS[l.icon ?? 'link'];
-                    return (
-                      <a
-                        key={l.id}
-                        href={l.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium border hover:bg-slate-50 transition-colors"
-                        style={{ borderRadius: br, borderColor: primary + '40', color: primary }}
-                      >
-                        <Icon size={11} /> {l.label}
-                      </a>
-                    );
-                  })}
+    <div className="space-y-2 mt-4">
+      {matching.map((sug) => {
+        const isOpen = openId === sug.id;
+        return (
+          <div
+            key={sug.id}
+            className="border border-slate-200 bg-white overflow-hidden transition-all"
+            style={{ borderRadius: br, ...(isOpen ? { borderColor: primary + '60' } : {}) }}
+          >
+            <button
+              type="button"
+              onClick={() => setOpenId(isOpen ? null : sug.id)}
+              className="w-full flex items-center gap-3 p-3 text-left hover:bg-slate-50 transition-colors"
+              aria-expanded={isOpen}
+            >
+              {sug.imageUrl ? (
+                <img
+                  src={sug.imageUrl}
+                  alt=""
+                  className="w-14 h-14 rounded-lg object-cover flex-shrink-0"
+                />
+              ) : (
+                <div
+                  className="w-14 h-14 rounded-lg flex-shrink-0 flex items-center justify-center text-base font-bold"
+                  style={{ background: primary + '15', color: primary }}
+                >
+                  {sug.title.charAt(0)}
                 </div>
               )}
-            </div>
+              <p className="flex-1 text-sm font-bold text-slate-900 min-w-0 truncate">{sug.title}</p>
+              <ChevronDown
+                size={18}
+                className="flex-shrink-0 text-slate-400 transition-transform"
+                style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
+              />
+            </button>
+            {isOpen && (
+              <div className="px-3 pb-3 pt-1 border-t border-slate-100">
+                {sug.imageUrl && (
+                  <img
+                    src={sug.imageUrl}
+                    alt=""
+                    className="w-full max-h-48 object-cover rounded-lg mt-2 mb-3"
+                  />
+                )}
+                {sug.description && (
+                  <p className="text-sm text-slate-600 leading-relaxed mb-3">{sug.description}</p>
+                )}
+                {sug.links && sug.links.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {sug.links.map((l) => {
+                      const Icon = ICONS[l.icon ?? 'link'];
+                      return (
+                        <a
+                          key={l.id}
+                          href={l.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border hover:bg-slate-50 transition-colors"
+                          style={{ borderRadius: br, borderColor: primary + '40', color: primary }}
+                        >
+                          <Icon size={12} /> {l.label}
+                        </a>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
