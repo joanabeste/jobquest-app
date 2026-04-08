@@ -368,8 +368,17 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
         ) : (
           /* Default header */
           <div className="px-4 pt-3 pb-2 flex items-center gap-3">
+            {!completed && pageIndex > 0 && doc.contentType === 'check' && (
+              <button
+                onClick={goBack}
+                aria-label="Zurück"
+                className="p-1 -ml-1 text-slate-400 hover:text-slate-700 transition-colors flex-shrink-0"
+              >
+                <ChevronLeft size={18} />
+              </button>
+            )}
             {company.logo ? (
-               
+
               <img src={company.logo} alt={company.name} className="h-7 w-auto max-w-[120px] rounded-lg object-contain flex-shrink-0" />
             ) : (
               <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white font-bold text-sm fp-btn flex-shrink-0">
@@ -400,7 +409,7 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
       )}
 
       {/* ── Content ────────────────────────────────────────────────────────── */}
-      <main className="max-w-lg mx-auto w-full pb-24">
+      <main className={`max-w-lg mx-auto w-full ${doc.contentType === 'check' ? 'pb-6' : 'pb-24'}`}>
         {completed ? (
           <SuccessPage company={company} primary={primary} br={br} />
         ) : (
@@ -425,7 +434,11 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
       </main>
 
       {/* ── Footer navigation ──────────────────────────────────────────────── */}
-      {!completed && !submitPage && !spinnerBlock && (
+      {/* Berufschecks bring their own per-block navigation (intro button,
+          frage/slider auto-advance, swipe deck, lead form), so we hide the
+          global Zurück/Weiter footer for them. The header has a discreet
+          back arrow instead. */}
+      {!completed && !submitPage && !spinnerBlock && doc.contentType !== 'check' && (
         <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-slate-200 px-4 py-4">
           <div className="max-w-lg mx-auto flex gap-3">
             {showDialogInput ? (

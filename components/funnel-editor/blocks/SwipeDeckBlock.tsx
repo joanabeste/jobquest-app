@@ -26,7 +26,7 @@ interface Props {
   br: string;
 }
 
-const THRESHOLD = 80;
+const THRESHOLD = 90;
 
 export default function SwipeDeckBlock({ nodeId, props, answers, onAnswer, onNext, primary, br }: Props) {
   const cards = (props.cards as SwipeCard[]) || [];
@@ -35,31 +35,68 @@ export default function SwipeDeckBlock({ nodeId, props, answers, onAnswer, onNex
 
   const previous = answers[nodeId] as SwipeResult[] | undefined;
   const [results, setResults] = useState<SwipeResult[]>(previous && previous !== (SKIP_ANSWER as unknown) ? previous : []);
-  const [drag, setDrag] = useState<{ x: number; y: number } | null>(null);
+  const [exiting, setExiting] = useState<SwipeChoice | null>(null);
+  // Drag direction state — only updated when crossing a small threshold so that
+  // it doesn't rerender on every pointer move (the actual transform happens
+  // imperatively via cardRef.style).
+  const [dragDir, setDragDir] = useState<0 | 1 | -1>(0);
+
+  // Imperative refs — kept out of React state for 60fps drag.
+  const cardRef = useRef<HTMLDivElement>(null);
   const startRef = useRef<{ x: number; y: number } | null>(null);
-  const [exiting, setExiting] = useState<{ choice: SwipeChoice; dx: number } | null>(null);
+  const dxRef = useRef(0);
+  const rafRef = useRef<number | null>(null);
 
   const idx = results.length;
   const card = cards[idx];
 
+  function applyTransform(dx: number) {
+    const el = cardRef.current;
+    if (!el) return;
+    const rot = Math.max(-15, Math.min(15, dx / 12));
+    const opacity = Math.max(0.5, 1 - Math.abs(dx) / 500);
+    el.style.transform = `translate3d(${dx}px, 0, 0) rotate(${rot}deg)`;
+    el.style.opacity = String(opacity);
+  }
+
+  function resetTransform(animated = true) {
+    const el = cardRef.current;
+    if (!el) return;
+    el.style.transition = animated ? 'transform 250ms cubic-bezier(.2,.7,.3,1), opacity 250ms ease-out' : 'none';
+    el.style.transform = 'translate3d(0,0,0) rotate(0deg)';
+    el.style.opacity = '1';
+    if (animated) {
+      window.setTimeout(() => { if (cardRef.current) cardRef.current.style.transition = 'none'; }, 260);
+    }
+  }
+
   function commit(choice: SwipeChoice) {
     if (!card || exiting) return;
-    const dx = choice === 'pos' ? 600 : choice === 'neg' ? -600 : 0;
-    setExiting({ choice, dx });
-    setTimeout(() => {
+    setExiting(choice);
+    const targetDx = choice === 'pos' ? 600 : choice === 'neg' ? -600 : 0;
+    const el = cardRef.current;
+    if (el) {
+      el.style.transition = 'transform 240ms ease-out, opacity 240ms ease-out';
+      el.style.transform = `translate3d(${targetDx}px, 0, 0) rotate(${Math.sign(targetDx) * 18}deg)`;
+      el.style.opacity = '0';
+    }
+    window.setTimeout(() => {
       const next = [...results, { cardId: card.id, choice }];
       setResults(next);
       setExiting(null);
-      setDrag(null);
+      setDragDir(0);
+      dxRef.current = 0;
       startRef.current = null;
+      // Reset transform without animation for the new card.
+      requestAnimationFrame(() => resetTransform(false));
       if (next.length >= cards.length) {
         onAnswer(nodeId, next);
-        setTimeout(onNext, 250);
+        window.setTimeout(onNext, 200);
       }
-    }, 220);
+    }, 240);
   }
 
-  // Keyboard
+  // Keyboard support
   useEffect(() => {
     function handler(e: KeyboardEvent) {
       if (!card || exiting) return;
@@ -73,40 +110,58 @@ export default function SwipeDeckBlock({ nodeId, props, answers, onAnswer, onNex
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [card, exiting, results.length]);
 
+  // Cleanup pending rAF on unmount
+  useEffect(() => () => {
+    if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+  }, []);
+
   if (!card) {
-    // Should auto-advance via onNext above; render placeholder for safety.
     return <div className="text-center text-slate-400 text-sm py-6">Fertig.</div>;
   }
 
-  function onPointerDown(e: React.PointerEvent) {
+  function onPointerDown(e: React.PointerEvent<HTMLDivElement>) {
     if (exiting) return;
     startRef.current = { x: e.clientX, y: e.clientY };
-    setDrag({ x: 0, y: 0 });
-    (e.target as Element).setPointerCapture?.(e.pointerId);
+    dxRef.current = 0;
+    cardRef.current?.setPointerCapture(e.pointerId);
+    if (cardRef.current) cardRef.current.style.transition = 'none';
   }
-  function onPointerMove(e: React.PointerEvent) {
+  function onPointerMove(e: React.PointerEvent<HTMLDivElement>) {
     if (!startRef.current || exiting) return;
-    setDrag({ x: e.clientX - startRef.current.x, y: e.clientY - startRef.current.y });
+    const dx = e.clientX - startRef.current.x;
+    dxRef.current = dx;
+    // Threshold-based dir state — keeps the JA/NEIN stamp logic without rerendering on every pixel.
+    const dir = dx > 30 ? 1 : dx < -30 ? -1 : 0;
+    setDragDir((cur) => (cur === dir ? cur : dir));
+    // Schedule a single rAF transform update per frame.
+    if (rafRef.current == null) {
+      rafRef.current = requestAnimationFrame(() => {
+        rafRef.current = null;
+        applyTransform(dxRef.current);
+      });
+    }
   }
-  function onPointerUp() {
-    if (!drag || exiting) { startRef.current = null; setDrag(null); return; }
-    if (drag.x > THRESHOLD) commit('pos');
-    else if (drag.x < -THRESHOLD) commit('neg');
-    else { setDrag(null); startRef.current = null; }
+  function onPointerUp(e: React.PointerEvent<HTMLDivElement>) {
+    if (!startRef.current || exiting) return;
+    const dx = dxRef.current;
+    cardRef.current?.releasePointerCapture(e.pointerId);
+    startRef.current = null;
+    if (dx > THRESHOLD) commit('pos');
+    else if (dx < -THRESHOLD) commit('neg');
+    else {
+      // Snap back
+      dxRef.current = 0;
+      setDragDir(0);
+      resetTransform(true);
+    }
   }
-
-  const dx = exiting ? exiting.dx : (drag?.x ?? 0);
-  const rot = Math.max(-15, Math.min(15, dx / 12));
-  const opacity = Math.max(0.4, 1 - Math.abs(dx) / 400);
-  const showPos = dx > 30;
-  const showNeg = dx < -30;
 
   return (
     <div className="fp-card bg-white shadow-sm mx-4 my-3 p-5">
       {question && (
         <h2 className="fp-heading text-base font-bold mb-1 text-center">{question}</h2>
       )}
-      <p className="text-[11px] text-slate-400 text-center mb-4">
+      <p className="text-[11px] text-slate-400 text-center mb-3">
         Karte {Math.min(idx + 1, cards.length)} / {cards.length}
       </p>
 
@@ -115,42 +170,44 @@ export default function SwipeDeckBlock({ nodeId, props, answers, onAnswer, onNex
         <div className="h-full transition-all duration-300" style={{ width: `${(idx / cards.length) * 100}%`, background: primary }} />
       </div>
 
-      {/* Card stack */}
-      <div className="relative h-[280px] select-none mb-4" style={{ touchAction: 'pan-y' }}>
+      {/* Card stack — height bounded but allows the page to still scroll OUTSIDE the card */}
+      <div className="relative h-[320px] select-none mb-4">
         {/* Background card peek */}
         {cards[idx + 1] && (
           <div
-            className="absolute inset-0 bg-slate-50 border border-slate-200"
+            className="absolute inset-0 bg-slate-50 border border-slate-200 pointer-events-none"
             style={{ borderRadius: br, transform: 'scale(0.94) translateY(8px)', opacity: 0.6 }}
           />
         )}
-        {/* Active card */}
+        {/* Active card — touchAction:none locks vertical scroll *only* on the card */}
         <div
+          ref={cardRef}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
           onPointerCancel={onPointerUp}
-          className="absolute inset-0 bg-white border-2 cursor-grab active:cursor-grabbing flex flex-col items-center justify-center text-center p-5 shadow-md"
+          className="absolute inset-0 bg-white border-2 cursor-grab active:cursor-grabbing flex flex-col items-center justify-center text-center p-5 shadow-md select-none"
           style={{
             borderRadius: br,
             borderColor: primary + '40',
-            transform: `translateX(${dx}px) rotate(${rot}deg)`,
-            transition: exiting ? 'transform 220ms ease-out, opacity 220ms ease-out' : drag ? 'none' : 'transform 250ms cubic-bezier(.2,.7,.3,1)',
-            opacity,
+            transform: 'translate3d(0,0,0) rotate(0deg)',
+            opacity: 1,
+            touchAction: 'none',
+            willChange: 'transform',
           }}
         >
-          {showPos && (
-            <span className="absolute top-3 left-3 px-2 py-1 text-[11px] font-bold rounded border-2"
+          {dragDir === 1 && (
+            <span className="absolute top-3 left-3 px-2 py-1 text-[11px] font-bold rounded border-2 pointer-events-none"
               style={{ color: '#16a34a', borderColor: '#16a34a' }}>JA</span>
           )}
-          {showNeg && (
-            <span className="absolute top-3 right-3 px-2 py-1 text-[11px] font-bold rounded border-2"
+          {dragDir === -1 && (
+            <span className="absolute top-3 right-3 px-2 py-1 text-[11px] font-bold rounded border-2 pointer-events-none"
               style={{ color: '#dc2626', borderColor: '#dc2626' }}>NEIN</span>
           )}
           {card.imageUrl && (
-            <img src={card.imageUrl} alt="" className="w-full h-32 object-cover rounded-lg mb-3" />
+            <img src={card.imageUrl} alt="" className="w-full h-32 object-cover rounded-lg mb-3 pointer-events-none" draggable={false} />
           )}
-          <p className="text-base text-slate-800 font-medium leading-snug">{card.text}</p>
+          <p className="text-base text-slate-800 font-medium leading-snug pointer-events-none">{card.text}</p>
         </div>
       </div>
 
@@ -159,21 +216,21 @@ export default function SwipeDeckBlock({ nodeId, props, answers, onAnswer, onNex
         <button
           onClick={() => commit('neg')}
           aria-label={card.optionNegative?.label || 'Eher nicht'}
-          className="w-12 h-12 rounded-full border-2 border-rose-200 text-rose-500 hover:bg-rose-50 flex items-center justify-center transition-colors"
+          className="w-12 h-12 rounded-full border-2 border-rose-200 text-rose-500 hover:bg-rose-50 active:scale-95 flex items-center justify-center transition-all"
         >
           <ThumbsDown size={18} />
         </button>
         <button
           onClick={() => commit('neu')}
           aria-label={card.optionNeutral?.label || 'Geht so'}
-          className="w-11 h-11 rounded-full border-2 border-slate-200 text-slate-500 hover:bg-slate-50 flex items-center justify-center transition-colors"
+          className="w-11 h-11 rounded-full border-2 border-slate-200 text-slate-500 hover:bg-slate-50 active:scale-95 flex items-center justify-center transition-all"
         >
           <Meh size={16} />
         </button>
         <button
           onClick={() => commit('pos')}
           aria-label={card.optionPositive?.label || 'Klingt gut'}
-          className="w-12 h-12 rounded-full border-2 border-emerald-200 text-emerald-500 hover:bg-emerald-50 flex items-center justify-center transition-colors"
+          className="w-12 h-12 rounded-full border-2 border-emerald-200 text-emerald-500 hover:bg-emerald-50 active:scale-95 flex items-center justify-center transition-all"
         >
           <ThumbsUp size={18} />
         </button>
@@ -187,8 +244,6 @@ export default function SwipeDeckBlock({ nodeId, props, answers, onAnswer, onNex
           <SkipForward size={11} /> Weiß nicht / überspringen
         </button>
       )}
-
-      <p className="mt-2 text-[10px] text-slate-300 text-center">Pfeiltasten ← → · Eingabe = neutral{allowSkip ? ' · Leertaste = überspringen' : ''}</p>
     </div>
   );
 }

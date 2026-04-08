@@ -131,16 +131,20 @@ export function StyledBlock({ node, sharedProps }: {
 }
 
 // ─── Shared slider UI (used by check_frage slider + check_selbst) ─────────────
-function SliderBlock({ nodeId, p, answers, onAnswer, primary }: {
+function SliderBlock({ nodeId, p, answers, onAnswer, onNext, primary, br, showNextButton = true }: {
   nodeId: string;
   p: Record<string, unknown>;
   answers: Record<string, unknown>;
   onAnswer: (id: string, val: unknown) => void;
+  onNext?: () => void;
   primary: string;
+  br: string;
+  showNextButton?: boolean;
 }) {
   const min = n(p.sliderMin, 0);
   const max = n(p.sliderMax, 10);
-  const val = answers[nodeId] !== undefined
+  const hasAnswer = answers[nodeId] !== undefined;
+  const val = hasAnswer
     ? n(answers[nodeId], Math.floor((min + max) / 2))
     : Math.floor((min + max) / 2);
   return (
@@ -153,6 +157,15 @@ function SliderBlock({ nodeId, p, answers, onAnswer, primary }: {
         <span className="text-sm font-bold" style={{ color: primary }}>{val}</span>
         <span className="text-xs text-slate-400">{s(p.sliderLabelMax, String(max))}</span>
       </div>
+      {showNextButton && onNext && (
+        <button
+          onClick={() => { if (!hasAnswer) onAnswer(nodeId, val); onNext(); }}
+          className="fp-btn w-full mt-5 py-3 font-semibold text-sm"
+          style={{ borderRadius: br, background: primary, color: '#fff' }}
+        >
+          Weiter
+        </button>
+      )}
     </div>
   );
 }
@@ -693,9 +706,15 @@ export function BlockRenderer({
         <div className="fp-card bg-white shadow-sm mx-4 my-3 p-6">
           <h2 className="fp-heading text-xl font-bold mb-4" dangerouslySetInnerHTML={{ __html: sh(inlineHtml(s(p.question))) }} />
           <input type="text" value={firstName} onChange={(e) => onSetFirstName(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter' && firstName.trim()) onNext(); }}
             placeholder={s(p.placeholder, 'Dein Vorname')}
             className="w-full px-4 py-3 border-2 border-slate-200 text-sm focus:outline-none"
             style={{ borderRadius: br, fontSize: '16px' }} />
+          <button onClick={() => onNext()} disabled={!firstName.trim()}
+            className="fp-btn w-full mt-4 py-3 font-semibold text-sm disabled:opacity-50"
+            style={{ borderRadius: br, background: primary, color: '#fff' }}>
+            {s(p.buttonText, 'Weiter')}
+          </button>
         </div>
       );
 
@@ -709,7 +728,7 @@ export function BlockRenderer({
         return (
           <div className="fp-card bg-white shadow-sm mx-4 my-3 p-6">
             <h2 className="fp-heading text-xl font-bold mb-6" dangerouslySetInnerHTML={{ __html: sh(inlineHtml(s(p.question))) }} />
-            <SliderBlock nodeId={node.id} p={p} answers={answers} onAnswer={onAnswer} primary={primary} />
+            <SliderBlock nodeId={node.id} p={p} answers={answers} onAnswer={onAnswer} onNext={onNext} primary={primary} br={br} />
           </div>
         );
       }
@@ -762,7 +781,7 @@ export function BlockRenderer({
         <div className="fp-card bg-white shadow-sm mx-4 my-3 p-6">
           <h2 className="fp-heading text-xl font-bold mb-2" dangerouslySetInnerHTML={{ __html: sh(inlineHtml(s(p.question))) }} />
           {b(p.description) && <p className="text-sm text-slate-500 mb-5">{s(p.description)}</p>}
-          <SliderBlock nodeId={node.id} p={p} answers={answers} onAnswer={onAnswer} primary={primary} />
+          <SliderBlock nodeId={node.id} p={p} answers={answers} onAnswer={onAnswer} onNext={onNext} primary={primary} br={br} />
         </div>
       );
 
