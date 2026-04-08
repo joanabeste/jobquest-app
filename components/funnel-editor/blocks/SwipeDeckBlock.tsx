@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { ThumbsUp, Meh, ThumbsDown, SkipForward } from 'lucide-react';
+import { ThumbsUp, Meh, ThumbsDown, SkipForward, MoveHorizontal } from 'lucide-react';
 import { SKIP_ANSWER } from '@/lib/funnel-utils';
 
 export interface SwipeCard {
@@ -40,6 +40,9 @@ export default function SwipeDeckBlock({ nodeId, props, answers, onAnswer, onNex
   // it doesn't rerender on every pointer move (the actual transform happens
   // imperatively via cardRef.style).
   const [dragDir, setDragDir] = useState<0 | 1 | -1>(0);
+  // First-time swipe affordance — disappears after the first interaction.
+  const [showHint, setShowHint] = useState(true);
+  function dismissHint() { if (showHint) setShowHint(false); }
 
   // Imperative refs — kept out of React state for 60fps drag.
   const cardRef = useRef<HTMLDivElement>(null);
@@ -72,6 +75,7 @@ export default function SwipeDeckBlock({ nodeId, props, answers, onAnswer, onNex
 
   function commit(choice: SwipeChoice) {
     if (!card || exiting) return;
+    dismissHint();
     setExiting(choice);
     const targetDx = choice === 'pos' ? 600 : choice === 'neg' ? -600 : 0;
     const el = cardRef.current;
@@ -121,6 +125,7 @@ export default function SwipeDeckBlock({ nodeId, props, answers, onAnswer, onNex
 
   function onPointerDown(e: React.PointerEvent<HTMLDivElement>) {
     if (exiting) return;
+    dismissHint();
     startRef.current = { x: e.clientX, y: e.clientY };
     dxRef.current = 0;
     cardRef.current?.setPointerCapture(e.pointerId);
@@ -156,8 +161,22 @@ export default function SwipeDeckBlock({ nodeId, props, answers, onAnswer, onNex
     }
   }
 
+  const hintActive = idx === 0 && showHint && !exiting;
+
   return (
     <div className="fp-card bg-white shadow-sm mx-4 my-3 p-5">
+      <style>{`
+        @keyframes swipeHintWiggle {
+          0%   { transform: translate3d(0,0,0)   rotate(0deg); }
+          25%  { transform: translate3d(-14px,0,0) rotate(-3deg); }
+          55%  { transform: translate3d(14px,0,0)  rotate(3deg); }
+          100% { transform: translate3d(0,0,0)   rotate(0deg); }
+        }
+        @keyframes swipeHintPulse {
+          0%, 100% { opacity: 0.85; }
+          50%      { opacity: 1; }
+        }
+      `}</style>
       {question && (
         <h2 className="fp-heading text-base font-bold mb-1 text-center">{question}</h2>
       )}
@@ -194,6 +213,7 @@ export default function SwipeDeckBlock({ nodeId, props, answers, onAnswer, onNex
             opacity: 1,
             touchAction: 'none',
             willChange: 'transform',
+            ...(hintActive ? { animation: 'swipeHintWiggle 1.8s ease-in-out infinite' } : {}),
           }}
         >
           {dragDir === 1 && (
@@ -208,6 +228,20 @@ export default function SwipeDeckBlock({ nodeId, props, answers, onAnswer, onNex
             <img src={card.imageUrl} alt="" className="w-full h-32 object-cover rounded-lg mb-3 pointer-events-none" draggable={false} />
           )}
           <p className="text-base text-slate-800 font-medium leading-snug pointer-events-none">{card.text}</p>
+          {hintActive && (
+            <div
+              className="absolute bottom-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium pointer-events-none whitespace-nowrap"
+              style={{
+                background: primary + '15',
+                color: primary,
+                border: `1px solid ${primary}40`,
+                animation: 'swipeHintPulse 1.8s ease-in-out infinite',
+              }}
+            >
+              <MoveHorizontal size={12} />
+              Karte wischen oder Button tippen
+            </div>
+          )}
         </div>
       </div>
 

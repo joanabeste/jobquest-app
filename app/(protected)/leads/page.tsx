@@ -29,6 +29,7 @@ interface UnifiedLead {
   dimensions?: Dimension[];
   formAnswers?: Record<string, string>;
   formFieldDefs?: FormField[];
+  customFields?: Record<string, string>;
 }
 
 // Extract best-guess name/email from form answers
@@ -136,6 +137,7 @@ export default function LeadsPage() {
         gdprConsent: l.gdprConsent,
         submittedAt: l.submittedAt,
         emailSent: l.emailSent,
+        customFields: l.customFields,
       });
     });
 
@@ -509,38 +511,58 @@ function LeadDetailModal({ lead, onClose, onDelete, deleting }: {
           <div>
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Kontaktdaten</p>
             <div className="space-y-2.5">
-              <div className="flex items-center gap-3">
-                <Mail size={14} className="text-slate-400 flex-shrink-0" />
-                <a href={`mailto:${lead.email}`} className="text-sm text-violet-600 hover:underline truncate">
-                  {lead.email}
-                </a>
-                {lead.emailSent === true && (
-                  <span className="flex items-center gap-1 text-[10px] font-medium text-emerald-600 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-full flex-shrink-0">
-                    <MailCheck size={10} /> gesendet
-                  </span>
-                )}
-                {lead.emailSent === false && (
-                  <span className="flex items-center gap-1 text-[10px] font-medium text-red-500 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded-full flex-shrink-0">
-                    <MailX size={10} /> fehlgeschlagen
-                  </span>
-                )}
-              </div>
+              {lead.email && (
+                <div className="flex items-center gap-3">
+                  <Mail size={14} className="text-slate-400 flex-shrink-0" />
+                  <a href={`mailto:${lead.email}`} className="text-sm text-violet-600 hover:underline truncate">
+                    {lead.email}
+                  </a>
+                  {lead.emailSent === true && (
+                    <span className="flex items-center gap-1 text-[10px] font-medium text-emerald-600 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-full flex-shrink-0">
+                      <MailCheck size={10} /> gesendet
+                    </span>
+                  )}
+                  {lead.emailSent === false && (
+                    <span className="flex items-center gap-1 text-[10px] font-medium text-red-500 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded-full flex-shrink-0">
+                      <MailX size={10} /> fehlgeschlagen
+                    </span>
+                  )}
+                </div>
+              )}
               {lead.phone && (
                 <div className="flex items-center gap-3">
                   <Phone size={14} className="text-slate-400 flex-shrink-0" />
                   <a href={`tel:${lead.phone}`} className="text-sm text-slate-700">{lead.phone}</a>
                 </div>
               )}
-              <div className="flex items-center gap-2 mt-1">
-                <span className="text-xs text-slate-500">DSGVO-Einwilligung:</span>
-                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                  lead.gdprConsent ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                }`}>
-                  {lead.gdprConsent ? 'Erteilt' : 'Nicht erteilt'}
-                </span>
-              </div>
+              {lead.gdprConsent && (
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-xs text-slate-500">DSGVO-Einwilligung:</span>
+                  <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-green-100 text-green-700">
+                    Erteilt
+                  </span>
+                </div>
+              )}
             </div>
           </div>
+
+          {/* Zusätzliche Felder (JobQuest customFields) */}
+          {lead.customFields && Object.keys(lead.customFields).length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Weitere Angaben</p>
+              <div className="space-y-2.5">
+                {Object.entries(lead.customFields).map(([key, val]) => {
+                  if (!val) return null;
+                  return (
+                    <div key={key} className="bg-slate-50 rounded-xl px-3 py-2.5">
+                      <p className="text-xs text-slate-500 mb-0.5">{key}</p>
+                      <p className="text-sm text-slate-800 break-words">{val}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Formular-Antworten */}
           {lead.source === 'formular' && lead.formFieldDefs && lead.formFieldDefs.length > 0 && (
