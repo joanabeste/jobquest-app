@@ -13,6 +13,7 @@ import {
 import { v4 as uuidv4 } from 'uuid';
 import { ChevronRight, ChevronLeft, Check } from 'lucide-react';
 import { fontFamilyFor } from '@/lib/fonts';
+import { useSlugRedirect } from '@/lib/use-slug-redirect';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -391,6 +392,7 @@ export default function FormularPage() {
   const [company, setCompany] = useState<Company | null>(null);
   const [funnelDoc, setFunnelDoc] = useState<FunnelDoc | null | undefined>(undefined);
   const [notFound, setNotFound] = useState(false);
+  const redirecting = useSlugRedirect(slug, 'form_page', '/formular', notFound);
   const [submitted, setSubmitted] = useState(false);
 
   const formSectionRef = useRef<HTMLDivElement>(null);
@@ -408,6 +410,14 @@ export default function FormularPage() {
     }
     load();
   }, [slug]);
+
+  if (redirecting) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="w-8 h-8 rounded-full border-2 border-slate-300 border-t-transparent animate-spin" />
+      </div>
+    );
+  }
 
   if (notFound) {
     return (

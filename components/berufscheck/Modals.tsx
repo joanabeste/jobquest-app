@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { Sparkles, ArrowRight, Plus, Trash2, CheckCircle, X, Link as LinkIcon } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Dimension, DIMENSION_COLORS } from '@/lib/types';
+import { useAuth } from '@/contexts/AuthContext';
+import { getPublicUrl } from '@/lib/url';
 
 function uid() { return crypto.randomUUID(); }
 
@@ -105,9 +107,8 @@ export function SetupWizard({ onComplete }: { onComplete: (dims: Dimension[]) =>
 export function PublishModal({ slug, onShowQR, onClose }: {
   slug: string; onShowQR: () => void; onClose: () => void;
 }) {
-  const publicUrl = typeof window !== 'undefined'
-    ? `${window.location.origin}/berufscheck/${slug}`
-    : `/berufscheck/${slug}`;
+  const { company } = useAuth();
+  const publicUrl = getPublicUrl(`/berufscheck/${slug}`, company);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
@@ -143,9 +144,8 @@ export function PublishModal({ slug, onShowQR, onClose }: {
 
 // ── QR modal ──────────────────────────────────────────────────────────────────
 export function QRModal({ slug, onClose }: { slug: string; onClose: () => void }) {
-  const publicUrl = typeof window !== 'undefined'
-    ? `${window.location.origin}/berufscheck/${slug}`
-    : `/berufscheck/${slug}`;
+  const { company } = useAuth();
+  const publicUrl = getPublicUrl(`/berufscheck/${slug}`, company);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">

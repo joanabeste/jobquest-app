@@ -6,7 +6,6 @@ import dynamic from 'next/dynamic';
 import { questStorage } from '@/lib/storage';
 import { JobQuest } from '@/lib/types';
 import { useAuth } from '@/contexts/AuthContext';
-import { slugify } from '@/lib/utils';
 
 const FunnelEditor = dynamic(() => import('@/components/funnel-editor/FunnelEditor'), { ssr: false });
 
@@ -46,13 +45,14 @@ export default function EditorPage() {
 
   async function handleTitleChange(title: string) {
     if (!quest) return;
-    // Preserve the existing random suffix to keep the slug unique across quests with the same title
-    const existingSuffix = quest.slug.match(/-([a-z0-9]{6})$/)?.[1];
-    const newBase = slugify(title) || 'quest';
-    const newSlug = existingSuffix ? `${newBase}-${existingSuffix}` : `${newBase}-${Math.random().toString(36).slice(2, 8)}`;
-    const updated = { ...quest, title, slug: newSlug, updatedAt: new Date().toISOString() };
+    const updated = { ...quest, title, updatedAt: new Date().toISOString() };
     await questStorage.save(updated);
     setQuest(updated);
+  }
+
+  function handleSlugChange(newSlug: string) {
+    if (!quest) return;
+    setQuest({ ...quest, slug: newSlug });
   }
 
   async function handlePublish() {
@@ -74,6 +74,7 @@ export default function EditorPage() {
       title={quest.title}
       onTitleChange={handleTitleChange}
       slug={quest.slug}
+      onSlugChange={handleSlugChange}
       previewHref={`/jobquest/${quest.slug}`}
       status={quest.status}
       onPublish={handlePublish}

@@ -27,6 +27,20 @@ import GenerateQuestModal from './GenerateQuestModal';
 import GenerateCheckModal from './GenerateCheckModal';
 import FlowView from './FlowView';
 import EmailConfigModal from './EmailConfigModal';
+import SlugEditor from '@/components/ui/SlugEditor';
+import type { EntityType } from '@/lib/slug-validation';
+import { getPublicUrl } from '@/lib/url';
+
+const CONTENT_TYPE_TO_ENTITY: Record<FunnelContentType, EntityType> = {
+  quest: 'job_quest',
+  check: 'career_check',
+  form: 'form_page',
+};
+const CONTENT_TYPE_TO_PREFIX: Record<FunnelContentType, string> = {
+  quest: '/jobquest',
+  check: '/berufscheck',
+  form: '/formular',
+};
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 export interface FunnelEditorProps {
@@ -35,6 +49,7 @@ export interface FunnelEditorProps {
   title: string;
   onTitleChange: (t: string) => void;
   slug: string;
+  onSlugChange?: (newSlug: string) => void;
   previewHref: string;
   status: 'draft' | 'published';
   onPublish: () => void;
@@ -49,7 +64,7 @@ export interface FunnelEditorProps {
 // ─── Main Editor ──────────────────────────────────────────────────────────────
 export default function FunnelEditor({
   contentId, contentType, title, onTitleChange,
-  slug, previewHref, status, onPublish, onBack, extraPanel, onAIGeneratedDimensions,
+  slug, onSlugChange, previewHref, status, onPublish, onBack, extraPanel, onAIGeneratedDimensions,
 }: FunnelEditorProps) {
   const [initialDoc, setInitialDoc] = useState<FunnelDoc | null>(null);
   const [loading, setLoading] = useState(true);
@@ -74,14 +89,14 @@ export default function FunnelEditor({
   return <FunnelEditorInner
     initialDoc={initialDoc}
     contentType={contentType} title={title} onTitleChange={onTitleChange}
-    slug={slug} previewHref={previewHref} status={status} onPublish={onPublish} onBack={onBack} extraPanel={extraPanel}
+    slug={slug} onSlugChange={onSlugChange} previewHref={previewHref} status={status} onPublish={onPublish} onBack={onBack} extraPanel={extraPanel}
     onAIGeneratedDimensions={onAIGeneratedDimensions}
   />;
 }
 
 function FunnelEditorInner({
   initialDoc, contentType, title, onTitleChange,
-  slug: _slug, previewHref, status, onPublish, onBack, extraPanel, onAIGeneratedDimensions,
+  slug, onSlugChange, previewHref, status, onPublish, onBack, extraPanel, onAIGeneratedDimensions,
 }: Omit<FunnelEditorProps, 'contentId'> & { initialDoc: FunnelDoc }) {
   const { company } = useAuth();
   const ci = useCorporateDesign(company ?? { id: '', name: '', contactName: '', contactEmail: '', createdAt: '' });
@@ -356,6 +371,19 @@ function FunnelEditorInner({
           className="min-w-0 flex-shrink w-32 lg:w-44 text-[13px] font-semibold text-slate-800 bg-transparent border-none outline-none hover:bg-slate-50 focus:bg-slate-100 rounded-lg px-2 py-1 transition-colors"
         />
 
+        {/* Slug editor */}
+        {onSlugChange && (
+          <div className="flex-shrink-0 max-w-[280px]">
+            <SlugEditor
+              slug={slug}
+              entityId={doc.contentId}
+              entityType={CONTENT_TYPE_TO_ENTITY[contentType]}
+              pathPrefix={CONTENT_TYPE_TO_PREFIX[contentType]}
+              onSlugChanged={onSlugChange}
+            />
+          </div>
+        )}
+
         <div className="w-px h-5 bg-slate-200 flex-shrink-0" />
 
         {/* Undo / Redo */}
@@ -554,7 +582,7 @@ function FunnelEditorInner({
     )}
     {showShareModal && typeof window !== 'undefined' && (
       <ShareModal
-        url={`${window.location.origin}${previewHref}`}
+        url={getPublicUrl(previewHref, company)}
         title={title}
         logoUrl={company?.corporateDesign?.faviconUrl || company?.logo}
         onClose={() => setShowShareModal(false)}

@@ -6,7 +6,6 @@ import dynamic from 'next/dynamic';
 import { careerCheckStorage } from '@/lib/storage';
 import { CareerCheck, Dimension } from '@/lib/types';
 import { useAuth } from '@/contexts/AuthContext';
-import { slugify } from '@/lib/utils';
 
 const FunnelEditor = dynamic(() => import('@/components/funnel-editor/FunnelEditor'), { ssr: false });
 
@@ -46,12 +45,14 @@ export default function BerufsCheckEditorPage() {
 
   async function handleTitleChange(title: string) {
     if (!check) return;
-    const existingSuffix = check.slug.match(/-([a-z0-9]{6})$/)?.[1];
-    const newBase = slugify(title) || 'check';
-    const newSlug = existingSuffix ? `${newBase}-${existingSuffix}` : `${newBase}-${Math.random().toString(36).slice(2, 8)}`;
-    const updated = { ...check, title, slug: newSlug, updatedAt: new Date().toISOString() };
+    const updated = { ...check, title, updatedAt: new Date().toISOString() };
     await careerCheckStorage.save(updated);
     setCheck(updated);
+  }
+
+  function handleSlugChange(newSlug: string) {
+    if (!check) return;
+    setCheck({ ...check, slug: newSlug });
   }
 
   async function handleAIGenerated(dimensions: Dimension[], title?: string) {
@@ -85,6 +86,7 @@ export default function BerufsCheckEditorPage() {
       title={check.title}
       onTitleChange={handleTitleChange}
       slug={check.slug}
+      onSlugChange={handleSlugChange}
       previewHref={`/berufscheck/${check.slug}`}
       status={check.status}
       onPublish={handlePublish}

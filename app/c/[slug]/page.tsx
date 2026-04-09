@@ -8,6 +8,7 @@ import { Company, JobQuest, CareerCheck } from '@/lib/types';
 import { useCorporateDesign } from '@/lib/use-corporate-design';
 import { useFavicon } from '@/lib/use-favicon';
 import { ArrowRight, Image as ImageIcon } from 'lucide-react';
+import { useSlugRedirect } from '@/lib/use-slug-redirect';
 
 interface ResolvedItem {
   id: string;
@@ -24,6 +25,7 @@ export default function ShowcasePage() {
     { loading: true } | { loading: false; items: ResolvedItem[] }
   >({ loading: true });
   const [notFound, setNotFound] = useState(false);
+  const redirecting = useSlugRedirect(slug, 'company', '/c', notFound);
   const itemsLoading = itemsState.loading;
   const items = itemsState.loading ? [] : itemsState.items;
 
@@ -81,6 +83,14 @@ export default function ShowcasePage() {
     '--showcase-primary': design.primary,
     '--showcase-radius': design.br,
   } as React.CSSProperties), [design]);
+
+  if (redirecting) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="w-8 h-8 rounded-full border-2 border-slate-300 border-t-transparent animate-spin" />
+      </div>
+    );
+  }
 
   if (notFound) {
     return (

@@ -249,6 +249,8 @@ export interface Company {
   successPage?: SuccessPageConfig;
   showcase?: ShowcaseConfig;
   plan?: CompanyPlan;
+  customDomain?: string;
+  domainVerified?: boolean;
 }
 
 export interface LeadFormConfig {

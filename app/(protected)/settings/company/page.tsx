@@ -9,6 +9,7 @@ import ImageCropModal from '@/components/shared/ImageCropModal';
 import MediaLibrary from '@/components/shared/MediaLibrary';
 import ImportFromWebsiteModal, { ExtractedProfile } from '@/components/company/ImportFromWebsiteModal';
 import { FONT_OPTIONS, fontFamilyFor } from '@/lib/fonts';
+import CustomDomainSettings from '@/components/settings/CustomDomainSettings';
 
 type Tab = 'company' | 'design' | 'success';
 
@@ -294,6 +295,11 @@ export default function SettingsCompanyPage() {
                     value={form.imprintUrl} onChange={(e) => handleChange('imprintUrl', e.target.value)} />
                 </div>
               </div>
+            </div>
+
+            {/* Custom Domain */}
+            <div className="border-t border-slate-100 pt-5 mt-5">
+              <CustomDomainSettings />
             </div>
           </div>
         )}

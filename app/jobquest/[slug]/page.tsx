@@ -8,6 +8,7 @@ import { FunnelDoc } from '@/lib/funnel-types';
 import { JobQuest, Company } from '@/lib/types';
 import QuestPlayer from '@/components/quest/QuestPlayer';
 import FunnelPlayer from '@/components/funnel-editor/FunnelPlayer';
+import { useSlugRedirect } from '@/lib/use-slug-redirect';
 
 export default function PublicQuestPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -15,6 +16,7 @@ export default function PublicQuestPage() {
   const [company, setCompany] = useState<Company | null>(null);
   const [funnelDoc, setFunnelDoc] = useState<FunnelDoc | null | undefined>(undefined);
   const [notFound, setNotFound] = useState(false);
+  const redirecting = useSlugRedirect(slug, 'job_quest', '/jobquest', notFound);
 
   useEffect(() => {
     async function load() {
@@ -31,6 +33,14 @@ export default function PublicQuestPage() {
     }
     load();
   }, [slug]);
+
+  if (redirecting) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="w-8 h-8 border-2 border-violet-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   if (notFound) {
     return (

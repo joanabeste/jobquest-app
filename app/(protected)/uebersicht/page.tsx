@@ -8,6 +8,7 @@ import {
   JobQuest, CareerCheck, ShowcaseConfig, DEFAULT_SHOWCASE,
 } from '@/lib/types';
 import { slugify } from '@/lib/utils';
+import { getPublicUrl } from '@/lib/url';
 import {
   Globe, Save, ExternalLink, ChevronUp, ChevronDown,
   Trash2, Plus, CheckCircle, Copy, Check,
@@ -123,7 +124,7 @@ export default function UebersichtPage() {
   // Public URL reflects the *saved* slug on the company, not the input field —
   // so it always matches what visitors actually see.
   const publicUrl = company?.slug
-    ? (typeof window !== 'undefined' ? `${window.location.origin}/c/${company.slug}` : `/c/${company.slug}`)
+    ? getPublicUrl(`/c/${company.slug}`, company)
     : null;
   const isLive = !!(company?.showcase?.enabled && publicUrl);
 

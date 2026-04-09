@@ -8,6 +8,7 @@ import { funnelStorage } from '@/lib/funnel-storage';
 import { FunnelDoc } from '@/lib/funnel-types';
 import FunnelPlayer from '@/components/funnel-editor/FunnelPlayer';
 import { fontFamilyFor } from '@/lib/fonts';
+import { useSlugRedirect } from '@/lib/use-slug-redirect';
 import {
   CareerCheck, Company, BerufsCheckBlock, Dimension,
   IntroBlock, VornameBlock, SelbsteinschaetzungBlock, FrageBlock, ErgebnisfrageBlock,
@@ -59,6 +60,7 @@ export default function BerufsCheckPlayer() {
   const [company, setCompany] = useState<Company | null>(null);
   const [funnelDoc, setFunnelDoc] = useState<FunnelDoc | null | undefined>(undefined);
   const [notFound, setNotFound] = useState(false);
+  const redirecting = useSlugRedirect(slug, 'career_check', '/berufscheck', notFound);
 
   // Player state
   const [step, setStep] = useState(0); // index into check.blocks
@@ -83,6 +85,7 @@ export default function BerufsCheckPlayer() {
     load();
   }, [slug]);
 
+  if (redirecting) return <Loading />;
   if (notFound) return <NotFound />;
   if (!check || !company || funnelDoc === undefined) return <Loading />;
 

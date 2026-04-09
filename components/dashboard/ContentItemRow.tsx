@@ -7,6 +7,7 @@ import { formatDateShort } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import type { BaseContentItem, ContentTypeConfig } from '@/lib/dashboard/contentTypes';
 import ShareModal from '@/components/ShareModal';
+import { getPublicUrl } from '@/lib/url';
 
 interface ContentItemRowProps<T extends BaseContentItem> {
   item: T;
@@ -29,7 +30,7 @@ export default function ContentItemRow<T extends BaseContentItem>({
   const [shareOpen, setShareOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const { company } = useAuth();
-  const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}${publicHref}` : publicHref;
+  const shareUrl = getPublicUrl(publicHref, company);
 
   useEffect(() => {
     if (!menuOpen) return;

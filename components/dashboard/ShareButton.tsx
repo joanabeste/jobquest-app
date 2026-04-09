@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { QrCode } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import ShareModal from '@/components/ShareModal';
+import { getPublicUrl } from '@/lib/url';
 
 interface ShareButtonProps {
   /** Path on this site, e.g. /jobquest/my-slug — origin is prepended at click time. */
@@ -14,7 +15,7 @@ interface ShareButtonProps {
 export default function ShareButton({ path, title }: ShareButtonProps) {
   const { company } = useAuth();
   const [open, setOpen] = useState(false);
-  const url = typeof window !== 'undefined' ? `${window.location.origin}${path}` : path;
+  const url = getPublicUrl(path, company);
   return (
     <>
       <button

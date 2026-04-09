@@ -6,7 +6,6 @@ import dynamic from 'next/dynamic';
 import { formPageStorage } from '@/lib/storage';
 import { FormPage } from '@/lib/types';
 import { useAuth } from '@/contexts/AuthContext';
-import { slugify } from '@/lib/utils';
 import { useToast } from '@/components/ui/Toast';
 
 const FunnelEditor = dynamic(() => import('@/components/funnel-editor/FunnelEditor'), { ssr: false });
@@ -48,16 +47,18 @@ export default function FormularEditorPage() {
 
   async function handleTitleChange(title: string) {
     if (!formPage) return;
-    const existingSuffix = formPage.slug.match(/-([a-z0-9]{6})$/)?.[1];
-    const newBase = slugify(title) || 'form';
-    const newSlug = existingSuffix ? `${newBase}-${existingSuffix}` : `${newBase}-${Math.random().toString(36).slice(2, 8)}`;
-    const updated = { ...formPage, title, slug: newSlug, updatedAt: new Date().toISOString() };
+    const updated = { ...formPage, title, updatedAt: new Date().toISOString() };
     try {
       await formPageStorage.save(updated);
       setFormPage(updated);
     } catch {
       toast.error('Titel konnte nicht gespeichert werden.');
     }
+  }
+
+  function handleSlugChange(newSlug: string) {
+    if (!formPage) return;
+    setFormPage({ ...formPage, slug: newSlug });
   }
 
   async function handlePublish() {
@@ -84,6 +85,7 @@ export default function FormularEditorPage() {
       title={formPage.title}
       onTitleChange={handleTitleChange}
       slug={formPage.slug}
+      onSlugChange={handleSlugChange}
       previewHref={`/formular/${formPage.slug}`}
       status={formPage.status}
       onPublish={handlePublish}
