@@ -30,7 +30,7 @@ export default function ContentItemRow<T extends BaseContentItem>({
   const [shareOpen, setShareOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const { company } = useAuth();
-  const shareUrl = getPublicUrl(publicHref, company);
+  const shareUrl = getPublicUrl(publicHref, company, item.useCustomDomain);
 
   useEffect(() => {
     if (!menuOpen) return;

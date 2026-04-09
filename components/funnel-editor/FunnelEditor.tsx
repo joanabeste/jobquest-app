@@ -50,6 +50,8 @@ export interface FunnelEditorProps {
   onTitleChange: (t: string) => void;
   slug: string;
   onSlugChange?: (newSlug: string) => void;
+  useCustomDomain?: boolean;
+  onUseCustomDomainChange?: (v: boolean) => void;
   previewHref: string;
   status: 'draft' | 'published';
   onPublish: () => void;
@@ -64,7 +66,7 @@ export interface FunnelEditorProps {
 // ─── Main Editor ──────────────────────────────────────────────────────────────
 export default function FunnelEditor({
   contentId, contentType, title, onTitleChange,
-  slug, onSlugChange, previewHref, status, onPublish, onBack, extraPanel, onAIGeneratedDimensions,
+  slug, onSlugChange, useCustomDomain, onUseCustomDomainChange, previewHref, status, onPublish, onBack, extraPanel, onAIGeneratedDimensions,
 }: FunnelEditorProps) {
   const [initialDoc, setInitialDoc] = useState<FunnelDoc | null>(null);
   const [loading, setLoading] = useState(true);
@@ -89,14 +91,14 @@ export default function FunnelEditor({
   return <FunnelEditorInner
     initialDoc={initialDoc}
     contentType={contentType} title={title} onTitleChange={onTitleChange}
-    slug={slug} onSlugChange={onSlugChange} previewHref={previewHref} status={status} onPublish={onPublish} onBack={onBack} extraPanel={extraPanel}
+    slug={slug} onSlugChange={onSlugChange} useCustomDomain={useCustomDomain} onUseCustomDomainChange={onUseCustomDomainChange} previewHref={previewHref} status={status} onPublish={onPublish} onBack={onBack} extraPanel={extraPanel}
     onAIGeneratedDimensions={onAIGeneratedDimensions}
   />;
 }
 
 function FunnelEditorInner({
   initialDoc, contentType, title, onTitleChange,
-  slug, onSlugChange, previewHref, status, onPublish, onBack, extraPanel, onAIGeneratedDimensions,
+  slug, onSlugChange, useCustomDomain, onUseCustomDomainChange, previewHref, status, onPublish, onBack, extraPanel, onAIGeneratedDimensions,
 }: Omit<FunnelEditorProps, 'contentId'> & { initialDoc: FunnelDoc }) {
   const { company } = useAuth();
   const ci = useCorporateDesign(company ?? { id: '', name: '', contactName: '', contactEmail: '', createdAt: '' });
@@ -380,6 +382,10 @@ function FunnelEditorInner({
               entityType={CONTENT_TYPE_TO_ENTITY[contentType]}
               pathPrefix={CONTENT_TYPE_TO_PREFIX[contentType]}
               onSlugChanged={onSlugChange}
+              useCustomDomain={useCustomDomain}
+              onDomainToggle={onUseCustomDomainChange}
+              customDomain={company?.customDomain}
+              domainVerified={company?.domainVerified}
             />
           </div>
         )}
@@ -582,7 +588,7 @@ function FunnelEditorInner({
     )}
     {showShareModal && typeof window !== 'undefined' && (
       <ShareModal
-        url={getPublicUrl(previewHref, company)}
+        url={getPublicUrl(previewHref, company, useCustomDomain)}
         title={title}
         logoUrl={company?.corporateDesign?.faviconUrl || company?.logo}
         onClose={() => setShowShareModal(false)}

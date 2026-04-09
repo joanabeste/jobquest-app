@@ -10,12 +10,13 @@ interface ShareButtonProps {
   /** Path on this site, e.g. /jobquest/my-slug — origin is prepended at click time. */
   path: string;
   title: string;
+  useCustomDomain?: boolean;
 }
 
-export default function ShareButton({ path, title }: ShareButtonProps) {
+export default function ShareButton({ path, title, useCustomDomain }: ShareButtonProps) {
   const { company } = useAuth();
   const [open, setOpen] = useState(false);
-  const url = getPublicUrl(path, company);
+  const url = getPublicUrl(path, company, useCustomDomain);
   return (
     <>
       <button

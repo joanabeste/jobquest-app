@@ -20,6 +20,7 @@ export interface BaseContentItem {
   title: string;
   slug: string;
   status: 'draft' | 'published';
+  useCustomDomain?: boolean;
   createdAt: string;
   updatedAt: string;
 }

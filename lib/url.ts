@@ -1,14 +1,17 @@
 import type { Company } from './types';
 
 /**
- * Build a public URL for content. Uses the company's custom domain
- * if one is verified, otherwise falls back to the current origin.
+ * Build a public URL for content.
+ * Uses the company's custom domain only when the content item
+ * has explicitly opted in via `useCustomDomain`.
+ * Falls back to the current origin (SaaS domain).
  */
 export function getPublicUrl(
   path: string,
   company?: Pick<Company, 'customDomain' | 'domainVerified'> | null,
+  useCustomDomain = false,
 ): string {
-  if (company?.customDomain && company.domainVerified) {
+  if (useCustomDomain && company?.customDomain && company.domainVerified) {
     return `https://${company.customDomain}${path}`;
   }
   if (typeof window !== 'undefined') {

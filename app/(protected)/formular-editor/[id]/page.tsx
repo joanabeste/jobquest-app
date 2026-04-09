@@ -61,6 +61,17 @@ export default function FormularEditorPage() {
     setFormPage({ ...formPage, slug: newSlug });
   }
 
+  async function handleUseCustomDomainChange(v: boolean) {
+    if (!formPage) return;
+    const updated = { ...formPage, useCustomDomain: v, updatedAt: new Date().toISOString() };
+    try {
+      await formPageStorage.save(updated);
+      setFormPage(updated);
+    } catch {
+      toast.error('Domain-Einstellung konnte nicht gespeichert werden.');
+    }
+  }
+
   async function handlePublish() {
     if (!formPage) return;
     const newStatus = formPage.status === 'published' ? 'draft' : 'published';
@@ -86,6 +97,8 @@ export default function FormularEditorPage() {
       onTitleChange={handleTitleChange}
       slug={formPage.slug}
       onSlugChange={handleSlugChange}
+      useCustomDomain={formPage.useCustomDomain}
+      onUseCustomDomainChange={handleUseCustomDomainChange}
       previewHref={`/formular/${formPage.slug}`}
       status={formPage.status}
       onPublish={handlePublish}

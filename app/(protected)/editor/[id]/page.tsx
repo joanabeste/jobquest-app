@@ -55,6 +55,13 @@ export default function EditorPage() {
     setQuest({ ...quest, slug: newSlug });
   }
 
+  async function handleUseCustomDomainChange(v: boolean) {
+    if (!quest) return;
+    const updated = { ...quest, useCustomDomain: v, updatedAt: new Date().toISOString() };
+    await questStorage.save(updated);
+    setQuest(updated);
+  }
+
   async function handlePublish() {
     if (!quest) return;
     const newStatus = quest.status === 'published' ? 'draft' : 'published';
@@ -75,6 +82,8 @@ export default function EditorPage() {
       onTitleChange={handleTitleChange}
       slug={quest.slug}
       onSlugChange={handleSlugChange}
+      useCustomDomain={quest.useCustomDomain}
+      onUseCustomDomainChange={handleUseCustomDomainChange}
       previewHref={`/jobquest/${quest.slug}`}
       status={quest.status}
       onPublish={handlePublish}

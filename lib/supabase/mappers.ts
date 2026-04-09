@@ -120,6 +120,7 @@ export function questFromDb(row: DbRow): JobQuest {
     modules: json<JobQuest['modules']>(row, 'modules', [] as JobQuest['modules']),
     leadConfig: json<JobQuest['leadConfig']>(row, 'lead_config'),
     cardImage: optStr(row, 'card_image'),
+    useCustomDomain: optBool(row, 'use_custom_domain'),
     createdAt: str(row, 'created_at'),
     updatedAt: str(row, 'updated_at'),
     publishedAt: optStr(row, 'published_at'),
@@ -139,6 +140,7 @@ export function questToDb(q: JobQuest): Record<string, unknown> {
     updated_at: q.updatedAt,
     published_at: q.publishedAt ?? null,
     card_image: q.cardImage || null,
+    use_custom_domain: q.useCustomDomain ?? false,
   };
 }
 
@@ -217,6 +219,7 @@ export function careerCheckFromDb(row: DbRow): CareerCheck {
     blocks: json<CareerCheck['blocks']>(row, 'blocks', [] as CareerCheck['blocks']),
     dimensions: json<CareerCheck['dimensions']>(row, 'dimensions', [] as CareerCheck['dimensions']),
     cardImage: optStr(row, 'card_image'),
+    useCustomDomain: optBool(row, 'use_custom_domain'),
     createdAt: str(row, 'created_at'),
     updatedAt: str(row, 'updated_at'),
     publishedAt: optStr(row, 'published_at'),
@@ -236,6 +239,7 @@ export function careerCheckToDb(c: CareerCheck): Record<string, unknown> {
     updated_at: c.updatedAt,
     published_at: c.publishedAt ?? null,
     card_image: c.cardImage || null,
+    use_custom_domain: c.useCustomDomain ?? false,
   };
 }
 
@@ -283,6 +287,7 @@ export function formPageFromDb(row: DbRow): FormPage {
     contentBlocks: json<FormPage['contentBlocks']>(row, 'content_blocks', [] as FormPage['contentBlocks']),
     formSteps: json<FormPage['formSteps']>(row, 'form_steps', [] as FormPage['formSteps']),
     formConfig: json<FormPage['formConfig']>(row, 'form_config', {} as FormPage['formConfig']),
+    useCustomDomain: optBool(row, 'use_custom_domain'),
     createdAt: str(row, 'created_at'),
     updatedAt: str(row, 'updated_at'),
     publishedAt: optStr(row, 'published_at'),
@@ -302,6 +307,7 @@ export function formPageToDb(f: FormPage): Record<string, unknown> {
     created_at: f.createdAt,
     updated_at: f.updatedAt,
     published_at: f.publishedAt ?? null,
+    use_custom_domain: f.useCustomDomain ?? false,
   };
 }
 

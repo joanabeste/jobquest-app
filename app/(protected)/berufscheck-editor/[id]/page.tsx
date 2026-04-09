@@ -55,6 +55,13 @@ export default function BerufsCheckEditorPage() {
     setCheck({ ...check, slug: newSlug });
   }
 
+  async function handleUseCustomDomainChange(v: boolean) {
+    if (!check) return;
+    const updated = { ...check, useCustomDomain: v, updatedAt: new Date().toISOString() };
+    await careerCheckStorage.save(updated);
+    setCheck(updated);
+  }
+
   async function handleAIGenerated(dimensions: Dimension[], title?: string) {
     if (!check) return;
     const updated: CareerCheck = {
@@ -87,6 +94,8 @@ export default function BerufsCheckEditorPage() {
       onTitleChange={handleTitleChange}
       slug={check.slug}
       onSlugChange={handleSlugChange}
+      useCustomDomain={check.useCustomDomain}
+      onUseCustomDomainChange={handleUseCustomDomainChange}
       previewHref={`/berufscheck/${check.slug}`}
       status={check.status}
       onPublish={handlePublish}

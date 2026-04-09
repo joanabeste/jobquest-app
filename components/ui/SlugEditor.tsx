@@ -12,9 +12,20 @@ interface SlugEditorProps {
   pathPrefix: string;
   /** Called after a successful slug update with the new slug */
   onSlugChanged: (newSlug: string) => void;
+  /** Per-content domain preference */
+  useCustomDomain?: boolean;
+  /** Called when user toggles domain selection */
+  onDomainToggle?: (useCustomDomain: boolean) => void;
+  /** Company's custom domain, e.g. "karriere.acme.de" */
+  customDomain?: string;
+  /** Whether the custom domain is verified */
+  domainVerified?: boolean;
 }
 
-export default function SlugEditor({ slug, entityId, entityType, pathPrefix, onSlugChanged }: SlugEditorProps) {
+export default function SlugEditor({
+  slug, entityId, entityType, pathPrefix, onSlugChanged,
+  useCustomDomain, onDomainToggle, customDomain, domainVerified,
+}: SlugEditorProps) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(slug);
   const [checking, setChecking] = useState(false);
@@ -24,7 +35,11 @@ export default function SlugEditor({ slug, entityId, entityType, pathPrefix, onS
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
-  const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+  const saasOrigin = typeof window !== 'undefined' ? window.location.origin : '';
+  const hasCustomDomain = !!(customDomain && domainVerified);
+  const isCustom = !!(useCustomDomain && hasCustomDomain);
+  const displayOrigin = isCustom ? `https://${customDomain}` : saasOrigin;
+  const saasHostname = typeof window !== 'undefined' ? window.location.hostname : 'app.jobquest-ausbildung.de';
 
   useEffect(() => {
     if (editing && inputRef.current) {
@@ -33,7 +48,6 @@ export default function SlugEditor({ slug, entityId, entityType, pathPrefix, onS
     }
   }, [editing]);
 
-  // Reset state when slug prop changes externally
   useEffect(() => {
     if (!editing) setValue(slug);
   }, [slug, editing]);
@@ -123,10 +137,23 @@ export default function SlugEditor({ slug, entityId, entityType, pathPrefix, onS
     if (e.key === 'Escape') handleCancel();
   }
 
+  // ── Non-edit mode ──────────────────────────────────────────────────────────
   if (!editing) {
     return (
       <div className="flex items-center gap-1.5 text-xs text-slate-400 min-w-0">
-        <span className="truncate">{baseUrl}{pathPrefix}/{slug}</span>
+        {hasCustomDomain ? (
+          <button
+            type="button"
+            onClick={() => onDomainToggle?.(!useCustomDomain)}
+            className="shrink-0 border-b border-dashed border-slate-300 hover:border-violet-400 hover:text-violet-600 transition-colors cursor-pointer"
+            title="Domain wechseln"
+          >
+            {isCustom ? customDomain : saasHostname}
+          </button>
+        ) : (
+          <span className="shrink-0">{saasHostname}</span>
+        )}
+        <span className="truncate">{pathPrefix}/{slug}</span>
         <button
           type="button"
           onClick={() => setEditing(true)}
@@ -139,8 +166,38 @@ export default function SlugEditor({ slug, entityId, entityType, pathPrefix, onS
     );
   }
 
+  // ── Edit mode ──────────────────────────────────────────────────────────────
   return (
     <div className="space-y-1">
+      {/* Domain toggle (only if custom domain available) */}
+      {hasCustomDomain && (
+        <div className="flex items-center gap-0.5 bg-slate-100 rounded-md p-0.5">
+          <button
+            type="button"
+            onClick={() => onDomainToggle?.(false)}
+            className={`px-2 py-0.5 text-[10px] font-medium rounded transition-colors truncate ${
+              !isCustom
+                ? 'bg-white text-violet-700 shadow-sm'
+                : 'text-slate-400 hover:text-slate-600'
+            }`}
+          >
+            {saasHostname}
+          </button>
+          <button
+            type="button"
+            onClick={() => onDomainToggle?.(true)}
+            className={`px-2 py-0.5 text-[10px] font-medium rounded transition-colors truncate ${
+              isCustom
+                ? 'bg-white text-violet-700 shadow-sm'
+                : 'text-slate-400 hover:text-slate-600'
+            }`}
+          >
+            {customDomain}
+          </button>
+        </div>
+      )}
+
+      {/* Slug input */}
       <div className="flex items-center gap-1.5">
         <span className="text-xs text-slate-400 shrink-0">{pathPrefix}/</span>
         <input

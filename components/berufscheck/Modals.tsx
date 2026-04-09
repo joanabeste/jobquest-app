@@ -104,11 +104,11 @@ export function SetupWizard({ onComplete }: { onComplete: (dims: Dimension[]) =>
 }
 
 // ── Publish modal ─────────────────────────────────────────────────────────────
-export function PublishModal({ slug, onShowQR, onClose }: {
-  slug: string; onShowQR: () => void; onClose: () => void;
+export function PublishModal({ slug, useCustomDomain, onShowQR, onClose }: {
+  slug: string; useCustomDomain?: boolean; onShowQR: () => void; onClose: () => void;
 }) {
   const { company } = useAuth();
-  const publicUrl = getPublicUrl(`/berufscheck/${slug}`, company);
+  const publicUrl = getPublicUrl(`/berufscheck/${slug}`, company, useCustomDomain);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
@@ -143,9 +143,9 @@ export function PublishModal({ slug, onShowQR, onClose }: {
 }
 
 // ── QR modal ──────────────────────────────────────────────────────────────────
-export function QRModal({ slug, onClose }: { slug: string; onClose: () => void }) {
+export function QRModal({ slug, useCustomDomain, onClose }: { slug: string; useCustomDomain?: boolean; onClose: () => void }) {
   const { company } = useAuth();
-  const publicUrl = getPublicUrl(`/berufscheck/${slug}`, company);
+  const publicUrl = getPublicUrl(`/berufscheck/${slug}`, company, useCustomDomain);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">

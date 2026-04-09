@@ -282,6 +282,7 @@ export interface JobQuest {
   modules: QuestModule[];
   leadConfig?: LeadFormConfig;
   cardImage?: string;
+  useCustomDomain?: boolean;
   createdAt: string;
   updatedAt: string;
   publishedAt?: string;
@@ -464,6 +465,7 @@ export interface CareerCheck {
   blocks: BerufsCheckBlock[];
   dimensions: Dimension[];
   cardImage?: string;
+  useCustomDomain?: boolean;
   createdAt: string;
   updatedAt: string;
   publishedAt?: string;
@@ -580,6 +582,7 @@ export interface FormPage {
   contentBlocks: FormContentBlock[];
   formSteps: FormStep[];
   formConfig: FormConfig;
+  useCustomDomain?: boolean;
   createdAt: string;
   updatedAt: string;
   publishedAt?: string;
