@@ -219,31 +219,52 @@ export async function POST(req: NextRequest) {
   }
 
   // ── Fetch Heyflow page and extract text ────────────────────────────────────
-  let heyflowHtml: string;
+  // Heyflow is a SPA — the main URL is just a shell. The real slide content
+  // lives at the assets bucket: assets.prd.heyflow.com/flows/{flow-id}/www/index.html
+  // Step 1: Fetch the main page to discover the FLOW_BUCKET_URL
+  // Step 2: Fetch the actual content from the assets URL
+
+  let textContent = '';
   try {
-    const res = await fetch(parsed.data.url, {
+    const mainRes = await fetch(parsed.data.url, {
       headers: { 'User-Agent': 'Mozilla/5.0 (compatible; JobQuest/1.0)' },
     });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    heyflowHtml = await res.text();
+    if (!mainRes.ok) throw new Error(`HTTP ${mainRes.status}`);
+    const mainHtml = await mainRes.text();
+
+    // Extract the flow bucket URL from the SPA shell
+    const bucketMatch = mainHtml.match(/FLOW_BUCKET_URL\s*=\s*["']([^"']+)["']/);
+    let contentHtml = mainHtml;
+
+    if (bucketMatch) {
+      // Fetch the real content from the assets bucket
+      const assetsUrl = `${bucketMatch[1]}/www/index.html`;
+      console.log('[import-heyflow] fetching assets from', assetsUrl);
+      const assetsRes = await fetch(assetsUrl, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; JobQuest/1.0)' },
+      });
+      if (assetsRes.ok) {
+        contentHtml = await assetsRes.text();
+      }
+    }
+
+    // Strip HTML tags, keep text content
+    textContent = contentHtml
+      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/\s+/g, ' ')
+      .trim();
   } catch (err) {
     console.error('[import-heyflow] fetch failed', err);
     return NextResponse.json({ error: 'Heyflow-Seite konnte nicht geladen werden.' }, { status: 502 });
   }
-
-  // Strip HTML tags, keep text content. Simple but effective for Heyflow pages.
-  const textContent = heyflowHtml
-    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/\s+/g, ' ')
-    .trim();
 
   if (textContent.length < 50) {
     return NextResponse.json({ error: 'Heyflow-Seite enthält zu wenig Inhalt.' }, { status: 400 });
