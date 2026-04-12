@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { companyStorage } from '@/lib/storage';
 import { Company } from '@/lib/types';
 import { useCorporateDesign } from '@/lib/use-corporate-design';
 import { useFavicon } from '@/lib/use-favicon';
@@ -27,7 +26,7 @@ export default function ShowcasePage() {
   const [notFound, setNotFound] = useState(false);
   const redirecting = useSlugRedirect(slug, 'company', '/c', notFound);
   const itemsLoading = itemsState.loading;
-  const items = itemsState.loading ? [] : itemsState.items;
+  const items = useMemo(() => itemsState.loading ? [] : itemsState.items, [itemsState]);
 
   useEffect(() => {
     let cancelled = false;
