@@ -191,7 +191,7 @@ function PageSettingsEditor({ currentPage, pages, onUpdate }: { currentPage?: Fu
             onChange={(e) => onUpdate?.({ hideLocationHint: e.target.checked })}
             className="rounded border-slate-300"
           />
-          Lokalen Hinweis ausblenden
+          Seitenname im Player ausblenden
         </label>
       </div>
       <div>
