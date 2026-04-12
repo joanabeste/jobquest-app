@@ -264,12 +264,18 @@ export default function UebersichtPage() {
           </div>
           <div>
             <label className="block text-xs font-medium text-slate-600 mb-1">Headerbild (optional)</label>
-            <input value={config.imageUrl ?? ''}
-              onChange={(e) => setConfig((c) => ({ ...c, imageUrl: e.target.value || undefined }))}
-              placeholder="https://... (Bild-URL)"
-              className="input-field text-sm" />
-            {config.imageUrl && (
-              <img src={config.imageUrl} alt="" className="mt-2 w-full max-h-32 object-cover rounded-lg border border-slate-200" />
+            {config.imageUrl ? (
+              <div className="flex items-center gap-3 mt-1">
+                <img src={config.imageUrl} alt="" className="h-16 w-28 object-cover rounded-lg border border-slate-200" />
+                <button type="button" onClick={() => setConfig((c) => ({ ...c, imageUrl: undefined }))}
+                  className="p-1.5 text-slate-400 hover:text-red-500 transition-colors"><X size={14} /></button>
+              </div>
+            ) : (
+              <button type="button"
+                onClick={() => setMediaPickerFor({ type: 'jobquest', contentId: '__header__' })}
+                className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 text-xs text-slate-500 border border-dashed border-slate-200 rounded-lg hover:border-violet-300 hover:text-violet-600 transition-colors">
+                <ImageIcon size={12} /> Bild aus Mediathek wahlen
+              </button>
             )}
           </div>
         </div>
@@ -416,7 +422,11 @@ export default function UebersichtPage() {
         onClose={() => setMediaPickerFor(null)}
         onSelect={(url) => {
           if (mediaPickerFor) {
-            updateCardImage(mediaPickerFor.type, mediaPickerFor.contentId, url);
+            if (mediaPickerFor.contentId === '__header__') {
+              setConfig((c) => ({ ...c, imageUrl: url }));
+            } else {
+              updateCardImage(mediaPickerFor.type, mediaPickerFor.contentId, url);
+            }
             setMediaPickerFor(null);
           }
         }}
