@@ -105,20 +105,22 @@ export default function ErgebnisBlock({
         <>
           {/* Tab bar — same on mobile and desktop */}
           {visibleGroups.length > 1 && (
-            <div className="flex gap-1.5 mb-5 overflow-x-auto pb-1">
-              {visibleGroups.map((g, i) => (
-                <button
-                  key={g.id}
-                  type="button"
-                  onClick={() => setActiveTab(i)}
-                  className="flex-1 min-w-0 px-2 py-2.5 rounded-xl text-xs font-semibold text-center transition-all leading-tight"
-                  style={i === activeTab
-                    ? { background: `${primary}15`, color: primary, border: `2px solid ${primary}` }
-                    : { background: '#f1f5f9', color: '#64748b', border: '2px solid transparent' }}
-                >
-                  {g.label}
-                </button>
-              ))}
+            <div className="overflow-x-auto -mx-2 px-2 pb-2 mb-4">
+              <div className="flex gap-2" style={{ minWidth: 'max-content' }}>
+                {visibleGroups.map((g, i) => (
+                  <button
+                    key={g.id}
+                    type="button"
+                    onClick={() => setActiveTab(i)}
+                    className="px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all"
+                    style={i === activeTab
+                      ? { background: primary, color: '#fff' }
+                      : { background: '#f1f5f9', color: '#64748b' }}
+                  >
+                    {g.label}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
           {/* Active tab content only */}
