@@ -570,6 +570,7 @@ function FunnelEditorInner({
       <GenerateQuestModal
         onGenerate={handleGenerateQuest}
         onClose={() => setShowGenerateModal(false)}
+        showHeyflowImport={!!company?.features?.heyflowImport}
       />
     )}
     {showGenerateCheckModal && (

@@ -192,6 +192,11 @@ export const DEFAULT_SUCCESS_PAGE: SuccessPageConfig = {
   links: [],
 };
 
+// ─── Feature Flags ───────────────────────────────────────────────────────────
+export interface CompanyFeatures {
+  heyflowImport?: boolean;
+}
+
 // ─── Plan / Kontingent ────────────────────────────────────────────────────────
 export type ContentType = 'jobquests' | 'berufschecks' | 'formulare';
 
@@ -249,6 +254,7 @@ export interface Company {
   successPage?: SuccessPageConfig;
   showcase?: ShowcaseConfig;
   plan?: CompanyPlan;
+  features?: CompanyFeatures;
   customDomain?: string;
   domainVerified?: boolean;
 }

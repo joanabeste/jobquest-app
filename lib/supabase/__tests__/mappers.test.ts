@@ -29,6 +29,7 @@ describe('companyFromDb / companyToDb', () => {
     createdAt: '2025-01-01T00:00:00Z',
     corporateDesign: { primaryColor: '#7c3aed', accentColor: '#f59e0b', textColor: '#1e293b', headingColor: '#0f172a', borderRadius: 12, headingFontName: 'system', bodyFontName: 'system' },
     plan: { maxJobQuests: 5, maxBerufschecks: 2, maxFormulare: 0 },
+    features: {},
   };
 
   const dbRow = {
@@ -46,6 +47,7 @@ describe('companyFromDb / companyToDb', () => {
     created_at: '2025-01-01T00:00:00Z',
     corporate_design: { primaryColor: '#7c3aed', accentColor: '#f59e0b', textColor: '#1e293b', headingColor: '#0f172a', borderRadius: 12, headingFontName: 'system', bodyFontName: 'system' },
     success_page: null,
+    features: {},
     max_job_quests: 5,
     max_berufschecks: 2,
     max_formulare: 0,

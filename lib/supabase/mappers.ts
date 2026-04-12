@@ -47,6 +47,7 @@ export function companyFromDb(row: DbRow): Company {
       maxBerufschecks: num(row, 'max_berufschecks', 0),
       maxFormulare: num(row, 'max_formulare', 0),
     },
+    features: json(row, 'features') ?? {},
     customDomain: optStr(row, 'custom_domain'),
     domainVerified: optBool(row, 'domain_verified'),
   };
@@ -75,6 +76,7 @@ export function companyToDb(c: Company): Record<string, unknown> {
     } : {}),
     ...(c.slug !== undefined ? { slug: c.slug || null } : {}),
     ...(c.showcase !== undefined ? { showcase_config: c.showcase } : {}),
+    ...(c.features !== undefined ? { features: c.features } : {}),
     ...(c.customDomain !== undefined ? { custom_domain: c.customDomain || null } : {}),
     ...(c.domainVerified !== undefined ? { domain_verified: c.domainVerified } : {}),
   };
