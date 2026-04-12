@@ -363,16 +363,12 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars }: {
     case 'quest_scene':
       return (
         <div className="space-y-3">
-          <ImageUploadField value={(props.imageUrl as string) ?? ''} onChange={(v) => onChange({ imageUrl: v })} label="Bild (oben)" />
-          <Field label="Titel"><VarInput value={(props.title as string) ?? ''} onChange={(v) => onChange({ title: v })} className="input-field text-sm" variables={availableVars} /></Field>
+          <ImageUploadField value={(props.imageUrl as string) ?? ''} onChange={(v) => onChange({ imageUrl: v })} label="Bild" />
+          <Field label="Titel"><VarInput value={(props.title as string) ?? ''} onChange={(v) => onChange({ title: v })} className="input-field text-sm" placeholder="Willkommen bei …" variables={availableVars} /></Field>
+          <Field label="Einleitungstext"><VarInput value={(props.subtext as string) ?? ''} onChange={(v) => onChange({ subtext: v })} className="input-field text-sm" placeholder="Erlebe virtuell einen typischen Arbeitstag als:" variables={availableVars} /></Field>
+          <Field label="Jobtitel"><input value={(props.accentText as string) ?? ''} onChange={(e) => onChange({ accentText: e.target.value })} className="input-field text-sm" placeholder="z. B. Pflegefachkraft (m/w/d)" /><p className="text-[10px] text-slate-400 mt-1">Wird farbig hervorgehoben</p></Field>
           <Field label="Beschreibung"><VarTextarea value={(props.description as string) ?? ''} onChange={(v) => onChange({ description: v })} rows={3} variables={availableVars} /></Field>
-          <Section label="Verhalten" collapsible defaultOpen={true}>
-            <Field label="Button-Text"><input value={(props.buttonText as string) ?? ''} onChange={(e) => onChange({ buttonText: e.target.value })} className="input-field text-sm" placeholder="Alles klar, verstanden!" /></Field>
-          </Section>
-          <Section label="Erweitert" collapsible defaultOpen={false}>
-            <Field label="Subtext"><VarInput value={(props.subtext as string) ?? ''} onChange={(v) => onChange({ subtext: v })} className="input-field text-sm" placeholder="Erlebe virtuell einen typischen Arbeitstag als:" variables={availableVars} /></Field>
-            <Field label="Akzenttext"><input value={(props.accentText as string) ?? ''} onChange={(e) => onChange({ accentText: e.target.value })} className="input-field text-sm" placeholder="BERUFSBEZEICHNUNG" /></Field>
-          </Section>
+          <Field label="Button-Text"><input value={(props.buttonText as string) ?? ''} onChange={(e) => onChange({ buttonText: e.target.value })} className="input-field text-sm" placeholder="Alles klar, verstanden!" /></Field>
         </div>
       );
 

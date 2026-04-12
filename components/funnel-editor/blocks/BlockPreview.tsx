@@ -500,10 +500,13 @@ export default function BlockPreview({ node, onUpdate }: {
           }
           <div className="px-6 pt-6 pb-5 text-center bg-white">
             <RichEd v={(p.title as string) ?? ''} up={up?.('title')} ph="Titel" cl="fp-heading leading-tight" />
-            {!!(p.accentText as string) && (
-              <p className="text-sm font-bold uppercase tracking-wide mt-1" style={{ color: primary }}>{p.accentText as string}</p>
+            {!!(p.subtext as string) && (
+              <p className="text-sm text-slate-600 mt-2 leading-relaxed">{p.subtext as string}</p>
             )}
-            <RichEd v={(p.description as string) ?? ''} up={up?.('description')} ph="Beschreibung…" cl="text-sm text-slate-500 mt-2 leading-relaxed" />
+            {!!(p.accentText as string) && (
+              <p className="text-sm font-bold uppercase tracking-wide mt-2" style={{ color: primary }}>{p.accentText as string}</p>
+            )}
+            <RichEd v={(p.description as string) ?? ''} up={up?.('description')} ph="Beschreibung…" cl="text-sm text-slate-500 mt-3 leading-relaxed" />
             <div className="mt-4 text-white text-sm font-semibold py-3 px-6 inline-block" style={{ background: primary, borderRadius: br }}>
               {(p.buttonText as string) || 'Alles klar, verstanden!'}
             </div>
