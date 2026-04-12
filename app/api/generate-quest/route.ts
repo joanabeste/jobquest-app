@@ -135,11 +135,11 @@ quest_decision
   → question: Konkrete Situation mit Handlungsdruck — kein abstraktes "Was würdest du tun?", sondern
     eine lebendige Beschreibung: "Ein Alarm piept. Du siehst, dass Patient 4 unruhig wird. Was tust du?"
   → 2 Optionen bei Branching, sonst 2–3.
-  → isWrong: optional. Setze auf TRUE, wenn die Wahl objektiv unsinnig oder gefährlich wäre
-    (z.B. "Den Notfall ignorieren und Pause machen"). Bei Branching-Decisions immer FALSE lassen
-    (beide Pfade müssen valide sein). Bei linearen Decisions ist mindestens 1 unsinnige Option erlaubt.
-  → reaction: Kurze, empathische Konsequenz (1-2 Sätze). Bei isWrong=true die Reaction erklären, WARUM
-    es keine gute Idee war (z.B. "Ein Notfall darf nie ignoriert werden — Patient:innen verlassen sich auf dich.").
+  → isWrong: SEHR SPARSAM verwenden! Nur bei wirklich gefährlichem/absurdem Verhalten.
+    Die meisten Optionen sollten valide sein — der Nutzer soll motiviert werden, nicht belehrt.
+    Bei Branching-Decisions IMMER false (beide Pfade sind valide).
+  → reaction: Kurze, ermutigende Konsequenz (1-2 Sätze). Immer positiv und motivierend formulieren.
+    Bei isWrong: freundlich erklären, nicht tadeln ("Das wäre nicht ideal, weil..." statt "Das ist falsch!").
   → emoji: NUR Icon-Namen aus dieser Liste (kein Emoji-Zeichen wie 🚨 oder 👍):
     Briefcase, Star, Heart, Zap, Target, Users, Clock, Globe, Shield, Lightbulb,
     Rocket, TrendingUp, Award, CheckCircle, XCircle, ThumbsUp, ThumbsDown,
@@ -182,8 +182,9 @@ BRANCHING-MECHANISMUS — ZWEI Arten von nextPageIndex, beide nötig:
 quest_quiz
   Props: { question: string, options: [{ id: "UUID", text: string, correct: boolean, feedback: string }] }
   → 3–4 Optionen. Genau eine ist correct: true.
-  → feedback für jede Option: kurze, informative Erklärung (auch für falsche Antworten lehrreich).
-  → Fragen sollen echtes Berufswissen testen, nicht Allgemeinwissen.
+  → feedback: motivierend und lehrreich! Bei richtiger Antwort: kurzes Lob ("Genau!").
+    Bei falscher: freundlich erklaren, nicht tadeln ("Guter Gedanke, aber tatsachlich...").
+    Der Nutzer soll sich gut fuhlen, nicht dumm — es ist ein Erkundungserlebnis, keine Prufung.
 
 quest_info
   Props: { title: string, text: string }
@@ -245,8 +246,10 @@ DIALOGE & CHOICES:
 • Jede Figur hat eine eigene Stimme und Persönlichkeit – gib Kolleg:innen Namen und Rollen.
 • Gespräche sollen lebendig sein, nicht wie Lehrbuchdialoge. Nutze Slang, kurze Sätze, echte Reaktionen.
 • @vorname überall einsetzen, um den Nutzer persönlich anzusprechen.
-• Feedback und Erklarungen als Dialog: Kollegin reagiert kurz ("Super, @vorname! Genau richtig.").
-  Feedback-Dialoge maximal 2–3 Zeilen — nicht alles ausfuhrlich erklaren, nur das Wichtigste.
+• Feedback IMMER ermutigend und motivierend! Kollegin reagiert kurz und positiv
+  ("Super, @vorname!", "Gut gemacht!", "Das war genau richtig!"). Auch bei nicht-optimalen
+  Entscheidungen: freundlich und verstandnisvoll, nie streng oder belehrend.
+  Feedback-Dialoge maximal 2–3 Zeilen.
 • Manche Entscheidungen passen besser als quest_dialog MIT choices statt quest_decision:
   → Wenn eine Kollegin eine Aufgabe übergibt ("Okay, mache ich!" / "Kurze Frage dazu…")
   → Lockere Gespräche, in denen der Nutzer eine Haltung zeigt
