@@ -88,7 +88,8 @@ Vorletzte - 1: quest_rating  → { "question": "Wie war dein Arbeitstag?", "emoj
 Vorletzte:     quest_rating  → { "question": "Wie gut kannst du dir vorstellen, als [Berufsbezeichnung] zu arbeiten?", "emoji": "👍", "count": 5 }
 Letzte:        quest_lead    → Kontaktformular (fields: [])
 
-GESAMT: ca. 25–28 Seiten – du kannst weitere Seiten hinzufügen wenn die Story es braucht.
+GESAMT: ca. 18–22 Seiten. Halte die Quest KOMPAKT — lieber kurzer und knackiger als zu lang!
+Die Quest soll in ca. 3 Minuten durchspielbar sein. Vermeide Fuller-Seiten ohne Interaktion.
 
 ═══════════════════════════════════════════════════════
   BLOCK-TYPEN (exakte Props-Struktur beachten!)
@@ -111,7 +112,7 @@ quest_spinner
 
 quest_dialog
   Props: { lines: [{ id: "UUID", speaker: string, text: string, position: "left"|"right"|"center" }], choices?: [{ id: "UUID", text: string, reaction?: string }], input?: { placeholder: string, captures?: string, followUpText?: string } }
-  → 4–8 Dialog-Zeilen zwischen 2-3 Personen. Mindestens ein Dialog im Pflichtinhalt soll 6+ Zeilen haben.
+  → 3–5 Dialog-Zeilen pro Gesprach — kurz und knackig, kein Smalltalk-Fuller!
   → position: "left" = Kolleg:in oder andere Person spricht | "right" = der Nutzer (@vorname) spricht.
     "center" = Erzähler-Handlung / Regieanweisung (z.B. "Du klopfst an die Tür.", "Ihr geht gemeinsam in den Aufenthaltsraum.").
     Center-Zeilen haben KEINEN speaker — sie beschreiben was passiert, nicht was jemand sagt.

@@ -73,7 +73,7 @@ Vorletzte - 1: quest_rating → { "question": "Wie war dein Arbeitstag?", "emoji
 Vorletzte:     quest_rating → { "question": "Wie gut kannst du dir vorstellen, als [Berufsbezeichnung] zu arbeiten?", "emoji": "👍", "count": 5 }
 Letzte:        quest_lead  → Kontaktformular (fields: [])
 
-GESAMT: Mindestens 20 Seiten. Lieber zu viele als zu wenige!
+GESAMT: ca. 15–22 Seiten. Halte die Quest KOMPAKT — in ca. 3 Minuten durchspielbar.
 
 ═══════════════════════════════════════════════════════
   BRANCHING-MECHANISMUS
@@ -109,7 +109,7 @@ quest_spinner
 quest_dialog
   Props: { lines: [{ id: "UUID", speaker: string, text: string, position: "left"|"right"|"center" }], choices?: [{ id: "UUID", text: string, reaction?: string }], input?: { placeholder: string, captures?: string, followUpText?: string } }
   → BEVORZUGTER Block fur Informationsvermittlung! Wandle statische Texte in Dialoge um.
-  → 4–8 Zeilen. position: "left" = Kolleg:in, "right" = Nutzer.
+  → 3–5 Zeilen pro Dialog — kurz und knackig! position: "left" = Kolleg:in, "right" = Nutzer.
     "center" = Erzahler-Handlung (z.B. "Du klopfst an die Tur.", "Ihr geht in den Aufenthaltsraum.").
     Center-Zeilen beschreiben Handlungen/Ortswechsel, keine gesprochenen Satze. speaker kann leer sein.
   → speaker mit Rolle (z.B. "Sarah (Teamleiterin)"). @vorname nutzen.
