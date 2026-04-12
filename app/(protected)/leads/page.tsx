@@ -6,7 +6,7 @@ import { useToast } from '@/components/ui/Toast';
 import { questStorage, leadStorage, careerCheckStorage, careerCheckLeadStorage, formPageStorage, formSubmissionStorage } from '@/lib/storage';
 import { Dimension, FormField } from '@/lib/types';
 import { formatDateTime } from '@/lib/utils';
-import { Users, Download, Search, Mail, Phone, X, Filter, MailCheck, MailX, Trash2 } from 'lucide-react';
+import { Users, Download, Search, Mail, Phone, X, Filter, MailCheck, MailX, Trash2, CheckSquare } from 'lucide-react';
 import { StatCardSkeleton, TableRowSkeleton } from '@/components/ui/Skeleton';
 import ConfirmModal from '@/components/shared/ConfirmModal';
 
@@ -113,6 +113,9 @@ export default function LeadsPage() {
   const [selectedLead, setSelectedLead] = useState<UnifiedLead | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteConfirmLead, setDeleteConfirmLead] = useState<UnifiedLead | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
 
   const load = useCallback(async () => {
     if (!company) return;
@@ -217,6 +220,45 @@ export default function LeadsPage() {
     }
   }
 
+  function toggleSelect(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    if (selected.size === filtered.length) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(filtered.map((l) => l.id)));
+    }
+  }
+
+  async function bulkDelete() {
+    setBulkDeleting(true);
+    const toDelete = allLeads.filter((l) => selected.has(l.id));
+    let failed = 0;
+    for (const lead of toDelete) {
+      try {
+        if (lead.source === 'jobquest') await leadStorage.delete(lead.id);
+        else if (lead.source === 'berufscheck') await careerCheckLeadStorage.delete(lead.id);
+        else await formSubmissionStorage.delete(lead.id);
+      } catch { failed++; }
+    }
+    setAllLeads((prev) => prev.filter((l) => !selected.has(l.id) || false));
+    setSelected(new Set());
+    setBulkDeleting(false);
+    if (failed > 0) toast.error(`${failed} Kontakt(e) konnten nicht gelöscht werden.`);
+    else toast.success(`${toDelete.length} Kontakt(e) gelöscht`);
+  }
+
+  function exportSelected() {
+    const selectedLeads = filtered.filter((l) => selected.has(l.id));
+    exportCSV(selectedLeads.length > 0 ? selectedLeads : filtered);
+  }
+
   const filtered = allLeads.filter((l) => {
     if (sourceFilter !== 'all' && l.source !== sourceFilter) return false;
     const q = search.toLowerCase();
@@ -254,7 +296,7 @@ export default function LeadsPage() {
             className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition-colors shadow-sm"
           >
             <Download size={15} />
-            CSV herunterladen
+            Alle als CSV
           </button>
         )}
       </div>
@@ -356,12 +398,48 @@ export default function LeadsPage() {
             </div>
           </div>
 
+          {/* Bulk action bar */}
+          {selected.size > 0 && (
+            <div className="flex items-center gap-3 mb-3 px-4 py-2.5 bg-violet-50 border border-violet-200 rounded-xl text-sm">
+              <CheckSquare size={15} className="text-violet-600 flex-shrink-0" />
+              <span className="font-medium text-violet-700">{selected.size} ausgewahlt</span>
+              <div className="flex-1" />
+              <button
+                onClick={exportSelected}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg transition-colors"
+              >
+                <Download size={12} /> CSV
+              </button>
+              <button
+                onClick={() => setBulkDeleteConfirm(true)}
+                disabled={bulkDeleting}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-white border border-red-200 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+              >
+                <Trash2 size={12} /> Loschen
+              </button>
+              <button
+                onClick={() => setSelected(new Set())}
+                className="p-1 text-violet-400 hover:text-violet-600 transition-colors"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          )}
+
           {/* Table */}
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-slate-100 bg-slate-50">
+                    <th className="w-10 px-3 py-3">
+                      <input
+                        type="checkbox"
+                        checked={filtered.length > 0 && selected.size === filtered.length}
+                        onChange={toggleSelectAll}
+                        className="rounded border-slate-300 text-violet-600 focus:ring-violet-500"
+                      />
+                    </th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500">Name</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500">E-Mail</th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 hidden md:table-cell">Telefon</th>
@@ -374,7 +452,15 @@ export default function LeadsPage() {
                   {filtered.map((lead, i) => (
                     <tr key={lead.id}
                       onClick={() => setSelectedLead(lead)}
-                      className={`border-b border-slate-50 hover:bg-slate-50 transition-colors cursor-pointer ${i % 2 !== 0 ? 'bg-slate-50/40' : ''}`}>
+                      className={`border-b border-slate-50 hover:bg-slate-50 transition-colors cursor-pointer ${selected.has(lead.id) ? 'bg-violet-50/50' : i % 2 !== 0 ? 'bg-slate-50/40' : ''}`}>
+                      <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          checked={selected.has(lead.id)}
+                          onChange={() => toggleSelect(lead.id)}
+                          className="rounded border-slate-300 text-violet-600 focus:ring-violet-500"
+                        />
+                      </td>
                       <td className="px-4 py-3 font-medium text-slate-900 whitespace-nowrap">
                         {lead.firstName} {lead.lastName}
                       </td>
@@ -404,7 +490,7 @@ export default function LeadsPage() {
                             onClick={() => setDeleteConfirmLead(lead)}
                             disabled={deletingId === lead.id}
                             className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-40"
-                            title="Kontakt löschen"
+                            title="Kontakt loschen"
                           >
                             <Trash2 size={13} />
                           </button>
@@ -435,17 +521,28 @@ export default function LeadsPage() {
         />
       )}
 
-      {/* Delete confirmation */}
+      {/* Delete confirmation (single) */}
       {deleteConfirmLead && (
         <ConfirmModal
-          title="Kontakt löschen?"
+          title="Kontakt loschen?"
           description={
             <>
-              <span className="font-medium">{deleteConfirmLead.firstName} {deleteConfirmLead.lastName}</span> wird unwiderruflich gelöscht und kann nicht wiederhergestellt werden.
+              <span className="font-medium">{deleteConfirmLead.firstName} {deleteConfirmLead.lastName}</span> wird unwiderruflich geloscht und kann nicht wiederhergestellt werden.
             </>
           }
           onConfirm={() => { deleteLead(deleteConfirmLead); setDeleteConfirmLead(null); }}
           onCancel={() => setDeleteConfirmLead(null)}
+          zIndexClass="z-[60]"
+        />
+      )}
+
+      {/* Bulk delete confirmation */}
+      {bulkDeleteConfirm && (
+        <ConfirmModal
+          title={`${selected.size} Kontakt(e) loschen?`}
+          description={<>Die ausgewahlten Kontakte werden unwiderruflich geloscht und konnen nicht wiederhergestellt werden.</>}
+          onConfirm={() => { setBulkDeleteConfirm(false); bulkDelete(); }}
+          onCancel={() => setBulkDeleteConfirm(false)}
           zIndexClass="z-[60]"
         />
       )}
