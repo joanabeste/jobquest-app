@@ -577,6 +577,7 @@ function FunnelEditorInner({
       <GenerateCheckModal
         onGenerate={handleGenerateCheck}
         onClose={() => setShowGenerateCheckModal(false)}
+        showHeyflowImport={!!company?.features?.heyflowImport}
       />
     )}
     {showEmailConfig && (

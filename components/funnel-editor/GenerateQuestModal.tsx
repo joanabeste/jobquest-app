@@ -158,7 +158,7 @@ export default function GenerateQuestModal({ onGenerate, onClose, showHeyflowImp
                 onClick={() => { setTab('import'); setError(''); }}
                 className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-b-2 transition-colors ${tab === 'import' ? 'border-violet-500 text-violet-700' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
               >
-                <ArrowDownToLine size={12} /> Heyflow importieren
+                <ArrowDownToLine size={12} /> Prototyp importieren
               </button>
             </div>
           )}

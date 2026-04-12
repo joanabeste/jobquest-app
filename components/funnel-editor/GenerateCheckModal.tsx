@@ -1,13 +1,16 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { X, Sparkles, Plus, Globe, Loader2 } from 'lucide-react';
+import { X, Sparkles, Plus, Globe, Loader2, ArrowDownToLine } from 'lucide-react';
 import type { FunnelPage } from '@/lib/funnel-types';
 import type { Dimension } from '@/lib/types';
+
+type Tab = 'generate' | 'import';
 
 interface Props {
   onGenerate: (pages: FunnelPage[], dimensions: Dimension[], title: string) => void;
   onClose: () => void;
+  showHeyflowImport?: boolean;
 }
 
 const LOADING_STEPS = [
@@ -19,12 +22,14 @@ const LOADING_STEPS = [
   'Letzte Feinheiten werden angepasst…',
 ];
 
-export default function GenerateCheckModal({ onGenerate, onClose }: Props) {
+export default function GenerateCheckModal({ onGenerate, onClose, showHeyflowImport }: Props) {
+  const [tab, setTab] = useState<Tab>('generate');
   const [berufe, setBerufe] = useState<string[]>([]);
   const [studiengaenge, setStudiengaenge] = useState<string[]>([]);
   const [berufInput, setBerufInput] = useState('');
   const [studiumInput, setStudiumInput] = useState('');
   const [notes, setNotes] = useState('');
+  const [heyflowUrl, setHeyflowUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [importOpen, setImportOpen] = useState(false);
@@ -97,6 +102,27 @@ export default function GenerateCheckModal({ onGenerate, onClose }: Props) {
     }
   }
 
+  async function handleImportHeyflow() {
+    if (!heyflowUrl.trim() || loading) return;
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetch('/api/import-heyflow-check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: heyflowUrl.trim() }),
+      });
+      const data = await res.json() as { pages?: FunnelPage[]; dimensions?: Dimension[]; error?: string };
+      if (!res.ok) throw new Error(data.error ?? 'Unbekannter Fehler');
+      if (!data.pages?.length || !data.dimensions?.length) throw new Error('KI hat keinen vollstandigen Check generiert.');
+      setLoadingProgress(100);
+      setTimeout(() => onGenerate(data.pages!, data.dimensions!, 'Berufscheck'), 400);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Fehler beim Import');
+      setLoading(false);
+    }
+  }
+
   async function handleGenerate() {
     if (berufe.length === 0 || loading) return;
     setLoading(true);
@@ -127,15 +153,33 @@ export default function GenerateCheckModal({ onGenerate, onClose }: Props) {
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={!loading ? onClose : undefined}>
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-          <div className="flex items-center gap-2">
-            <Sparkles size={18} className="text-violet-500" />
-            <h2 className="text-base font-semibold text-slate-900">KI Berufscheck generieren</h2>
+        <div className="px-6 pt-4 pb-0 border-b border-slate-100">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Sparkles size={18} className="text-violet-500" />
+              <h2 className="text-base font-semibold text-slate-900">KI Berufscheck</h2>
+            </div>
+            {!loading && (
+              <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 transition-colors">
+                <X size={16} />
+              </button>
+            )}
           </div>
-          {!loading && (
-            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 transition-colors">
-              <X size={16} />
-            </button>
+          {showHeyflowImport && !loading && (
+            <div className="flex gap-0.5">
+              <button
+                onClick={() => { setTab('generate'); setError(''); }}
+                className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-b-2 transition-colors ${tab === 'generate' ? 'border-violet-500 text-violet-700' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+              >
+                <Sparkles size={12} /> Neu generieren
+              </button>
+              <button
+                onClick={() => { setTab('import'); setError(''); }}
+                className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-b-2 transition-colors ${tab === 'import' ? 'border-violet-500 text-violet-700' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+              >
+                <ArrowDownToLine size={12} /> Prototyp importieren
+              </button>
+            </div>
           )}
         </div>
 
@@ -158,7 +202,9 @@ export default function GenerateCheckModal({ onGenerate, onClose }: Props) {
             </div>
             <div className="text-center">
               <p className="text-sm font-medium text-slate-700 transition-all duration-500">{LOADING_STEPS[loadingStep]}</p>
-              <p className="text-xs text-slate-400 mt-1">{berufe.length} Berufe · {studiengaenge.length} Studiengänge</p>
+              <p className="text-xs text-slate-400 mt-1">
+                {tab === 'import' ? 'Prototyp wird konvertiert…' : `${berufe.length} Berufe · ${studiengaenge.length} Studiengange`}
+              </p>
             </div>
             <div className="flex gap-1.5">
               {LOADING_STEPS.map((_, i) => (
@@ -169,6 +215,24 @@ export default function GenerateCheckModal({ onGenerate, onClose }: Props) {
           </div>
         ) : (
           <>
+            {tab === 'import' ? (
+              <div className="px-6 py-5 space-y-4">
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 mb-1.5">Prototyp-URL <span className="text-red-400">*</span></label>
+                  <input
+                    type="url"
+                    value={heyflowUrl}
+                    onChange={(e) => setHeyflowUrl(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleImportHeyflow()}
+                    placeholder="https://...heyflow.site/..."
+                    className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:border-violet-400 focus:outline-none transition-colors"
+                    autoFocus
+                  />
+                  <p className="text-[11px] text-slate-400 mt-1.5">Die KI liest den Prototyp-Inhalt und konvertiert ihn in einen interaktiven Berufscheck mit Swipe-Karten, Selbsteinschatzung und Ergebnis.</p>
+                </div>
+                {error && <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>}
+              </div>
+            ) : (
             <div className="px-6 py-5 space-y-4 max-h-[70vh] overflow-y-auto">
               {/* Website import */}
               {!importOpen ? (
@@ -306,18 +370,29 @@ export default function GenerateCheckModal({ onGenerate, onClose }: Props) {
 
               {error && <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>}
             </div>
+            )}
 
             <div className="px-6 pb-5 flex gap-2 justify-end border-t border-slate-100 pt-4">
               <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">
                 Abbrechen
               </button>
-              <button
-                onClick={handleGenerate}
-                disabled={berufe.length === 0}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-violet-600 text-white rounded-xl hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                <Sparkles size={14} /> Generieren
-              </button>
+              {tab === 'import' ? (
+                <button
+                  onClick={handleImportHeyflow}
+                  disabled={!heyflowUrl.trim()}
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-violet-600 text-white rounded-xl hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ArrowDownToLine size={14} /> Importieren
+                </button>
+              ) : (
+                <button
+                  onClick={handleGenerate}
+                  disabled={berufe.length === 0}
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-violet-600 text-white rounded-xl hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <Sparkles size={14} /> Generieren
+                </button>
+              )}
             </div>
           </>
         )}
