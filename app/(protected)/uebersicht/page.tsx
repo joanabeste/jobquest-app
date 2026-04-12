@@ -11,8 +11,9 @@ import { slugify } from '@/lib/utils';
 import { getPublicUrl } from '@/lib/url';
 import {
   Globe, Save, ExternalLink, ChevronUp, ChevronDown,
-  Trash2, Plus, CheckCircle, Copy, Check,
+  Trash2, Plus, CheckCircle, Copy, Check, Image as ImageIcon, X,
 } from 'lucide-react';
+import MediaLibrary from '@/components/shared/MediaLibrary';
 
 export default function UebersichtPage() {
   const { company, updateCompany } = useAuth();
@@ -92,6 +93,8 @@ export default function UebersichtPage() {
       });
     } catch { /* silent */ }
   }
+
+  const [mediaPickerFor, setMediaPickerFor] = useState<{ type: 'jobquest' | 'berufscheck'; contentId: string } | null>(null);
 
   // Items not yet on the showcase, available to add
   const availableQuests = quests.filter(
@@ -361,13 +364,20 @@ export default function UebersichtPage() {
                     </div>
                   </div>
                   <div className="px-3 pb-3">
-                    <input
-                      type="url"
-                      value={cardImages[item.contentId] ?? ''}
-                      onChange={(e) => updateCardImage(item.type, item.contentId, e.target.value)}
-                      placeholder="Titelbild-URL (optional)"
-                      className="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:border-violet-400 focus:outline-none"
-                    />
+                    {cardImages[item.contentId] ? (
+                      <div className="flex items-center gap-2">
+                        <img src={cardImages[item.contentId]} alt="" className="h-8 w-14 object-cover rounded" />
+                        <span className="text-[11px] text-slate-500 truncate flex-1">{cardImages[item.contentId].split('/').pop()}</span>
+                        <button type="button" onClick={() => updateCardImage(item.type, item.contentId, '')}
+                          className="p-1 text-slate-400 hover:text-red-500"><X size={12} /></button>
+                      </div>
+                    ) : (
+                      <button type="button"
+                        onClick={() => setMediaPickerFor({ type: item.type, contentId: item.contentId })}
+                        className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs text-slate-500 border border-dashed border-slate-200 rounded-lg hover:border-violet-300 hover:text-violet-600 transition-colors">
+                        <ImageIcon size={12} /> Titelbild wahlen
+                      </button>
+                    )}
                   </div>
                 </li>
               );
@@ -400,6 +410,17 @@ export default function UebersichtPage() {
           </div>
         )}
       </div>
+
+      <MediaLibrary
+        open={!!mediaPickerFor}
+        onClose={() => setMediaPickerFor(null)}
+        onSelect={(url) => {
+          if (mediaPickerFor) {
+            updateCardImage(mediaPickerFor.type, mediaPickerFor.contentId, url);
+            setMediaPickerFor(null);
+          }
+        }}
+      />
     </div>
   );
 }
