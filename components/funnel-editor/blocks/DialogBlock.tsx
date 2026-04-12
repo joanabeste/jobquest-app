@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { applyVars } from '@/lib/funnel-variables';
 
-export interface DialogLine { id: string; speaker: string; text: string; imageUrl?: string; position?: 'left' | 'right'; }
+export interface DialogLine { id: string; speaker: string; text: string; imageUrl?: string; position?: 'left' | 'right' | 'center'; }
 interface DialogChoice { id: string; text: string; reaction?: string; }
 interface DialogInput { placeholder?: string; captures?: string; followUpText?: string; }
 
@@ -115,6 +115,20 @@ export default function DialogBlock({ lines, primary, visibleCount, onAdvance, f
     <div className="py-4 space-y-3">
       {visible.map((line, idx) => {
         const isRight = line.position === 'right';
+        const isCenter = line.position === 'center';
+
+        if (isCenter) {
+          return (
+            <div
+              key={line.id}
+              className="px-8 py-1"
+              style={{ animation: idx === visibleCount - 1 ? 'fadeSlideIn 0.3s ease-out' : undefined }}
+            >
+              <p className="text-xs italic text-slate-400 text-center leading-relaxed">{line.text}</p>
+            </div>
+          );
+        }
+
         return (
           <div
             key={line.id}

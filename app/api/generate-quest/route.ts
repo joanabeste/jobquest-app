@@ -110,12 +110,16 @@ quest_spinner
   → Automatischer Ladescreen, springt nach ~2 Sekunden selbst weiter. Genau diese Props, kein Abweichen.
 
 quest_dialog
-  Props: { lines: [{ id: "UUID", speaker: string, text: string, position: "left"|"right" }], choices?: [{ id: "UUID", text: string, reaction?: string }], input?: { placeholder: string, captures?: string, followUpText?: string } }
+  Props: { lines: [{ id: "UUID", speaker: string, text: string, position: "left"|"right"|"center" }], choices?: [{ id: "UUID", text: string, reaction?: string }], input?: { placeholder: string, captures?: string, followUpText?: string } }
   → 4–8 Dialog-Zeilen zwischen 2-3 Personen. Mindestens ein Dialog im Pflichtinhalt soll 6+ Zeilen haben.
   → position: "left" = Kolleg:in oder andere Person spricht | "right" = der Nutzer (@vorname) spricht.
+    "center" = Erzähler-Handlung / Regieanweisung (z.B. "Du klopfst an die Tür.", "Ihr geht gemeinsam in den Aufenthaltsraum.").
+    Center-Zeilen haben KEINEN speaker — sie beschreiben was passiert, nicht was jemand sagt.
+    Nutze center für Ortswechsel, Handlungen und Szenenbeschreibungen innerhalb eines Dialogs.
     Zeilen des Nutzers sind kurze Reaktionen ("Verstanden!" / "Mach ich sofort.") — kein Monolog.
   → speaker: Realistische deutsche Vornamen + Rolle (z.B. "Sarah (Teamleiterin)", "Dr. Meier", "Du").
     Bei position "right" immer speaker "@vorname" oder "Du" verwenden.
+    Bei position "center" kann speaker leer sein oder "Erzähler".
   → @vorname in Zeilen anderer Personen einsetzen, um den Nutzer direkt anzusprechen.
   → choices (optional): 2–3 kurze Antwortoptionen als Chat-Buttons — erscheinen nach allen Dialog-Zeilen.
     → text: Erste-Person-Antwort (z.B. "Klar, ich übernehme das!").

@@ -516,19 +516,25 @@ export default function BlockPreview({ node, onUpdate }: {
     }
 
     case 'quest_dialog': {
-      const lines = (p.lines as { id: string; speaker: string; text: string }[]) || [];
+      const lines = (p.lines as { id: string; speaker: string; text: string; position?: string }[]) || [];
       return (
         <div className="py-4 space-y-3">
           {lines.slice(0, 3).map((l) => (
-            <div key={l.id} className="flex items-start gap-3 px-5">
-              <div className="w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center flex-shrink-0 mt-auto">
-                <span className="text-xs font-bold text-violet-600">{l.speaker?.[0]?.toUpperCase()}</span>
+            l.position === 'center' ? (
+              <div key={l.id} className="px-8 py-1">
+                <p className="text-xs italic text-slate-400 text-center">{l.text || '…'}</p>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[11px] text-slate-400 mb-1">{l.speaker}</p>
-                <div className="bg-slate-100 rounded-2xl px-3 py-2.5 text-sm text-slate-700">{l.text || '…'}</div>
+            ) : (
+              <div key={l.id} className="flex items-start gap-3 px-5">
+                <div className="w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center flex-shrink-0 mt-auto">
+                  <span className="text-xs font-bold text-violet-600">{l.speaker?.[0]?.toUpperCase()}</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[11px] text-slate-400 mb-1">{l.speaker}</p>
+                  <div className="bg-slate-100 rounded-2xl px-3 py-2.5 text-sm text-slate-700">{l.text || '…'}</div>
+                </div>
               </div>
-            </div>
+            )
           ))}
           {lines.length > 3 && (
             <p className="text-[11px] text-center text-slate-400 px-5">+{lines.length - 3} weitere</p>

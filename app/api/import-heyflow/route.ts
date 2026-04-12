@@ -112,11 +112,13 @@ quest_spinner
   Props: { text: string, doneText: string }
 
 quest_dialog
-  Props: { lines: [{ id: "UUID", speaker: string, text: string, position: "left"|"right" }], choices?: [{ id: "UUID", text: string, reaction?: string }], input?: { placeholder: string, captures?: string, followUpText?: string } }
-  → BEVORZUGTER Block für Informationsvermittlung! Wandle statische Texte in Dialoge um.
+  Props: { lines: [{ id: "UUID", speaker: string, text: string, position: "left"|"right"|"center" }], choices?: [{ id: "UUID", text: string, reaction?: string }], input?: { placeholder: string, captures?: string, followUpText?: string } }
+  → BEVORZUGTER Block fur Informationsvermittlung! Wandle statische Texte in Dialoge um.
   → 4–8 Zeilen. position: "left" = Kolleg:in, "right" = Nutzer.
+    "center" = Erzahler-Handlung (z.B. "Du klopfst an die Tur.", "Ihr geht in den Aufenthaltsraum.").
+    Center-Zeilen beschreiben Handlungen/Ortswechsel, keine gesprochenen Satze. speaker kann leer sein.
   → speaker mit Rolle (z.B. "Sarah (Teamleiterin)"). @vorname nutzen.
-  → choices: 2–3 Antwortoptionen mit reaction. Nutze choices für interaktive Gespräche.
+  → choices: 2–3 Antwortoptionen mit reaction. Nutze choices fur interaktive Gesprache.
 
 quest_decision
   Props: { question: string, options: [{ id: "UUID", text: string, emoji: string, reaction: string, isWrong?: boolean, nextPageIndex?: number }] }
@@ -144,6 +146,9 @@ quest_rating
 
 quest_lead
   Props: { headline: string, subtext: string, buttonText: "Weitere Infos anfordern", privacyText: "", fields: [] }
+  → WICHTIG: Ubernimm die Texte (Headline, Subtext) aus dem Heyflow-Formular! Wenn der Prototyp z.B.
+    "Danke fur deinen virtuellen Arbeitstag" oder "Weitere Ausbildungsinformationen" zeigt, nutze genau diese Texte.
+  → fields: [] — Felder werden automatisch erganzt, nicht manuell setzen.
 
 ═══════════════════════════════════════════════════════
   QUALITÄTSANFORDERUNGEN
