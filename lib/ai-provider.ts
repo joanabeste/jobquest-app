@@ -106,7 +106,7 @@ async function chatAnthropic(options: AiChatOptions): Promise<string> {
     },
     body: JSON.stringify({
       model,
-      max_tokens: 16384,
+      max_tokens: 64000,
       temperature: options.temperature ?? 0.7,
       system: options.system,
       messages: [
@@ -121,7 +121,15 @@ async function chatAnthropic(options: AiChatOptions): Promise<string> {
     throw new Error(`Anthropic API error: ${res.status}`);
   }
 
-  const data = await res.json() as { content?: Array<{ type: string; text?: string }> };
+  const data = await res.json() as {
+    content?: Array<{ type: string; text?: string }>;
+    stop_reason?: string;
+  };
+
+  if (data.stop_reason === 'max_tokens') {
+    console.warn('[ai-provider:anthropic] response truncated (max_tokens reached)');
+  }
+
   return data.content?.find((c) => c.type === 'text')?.text ?? '';
 }
 

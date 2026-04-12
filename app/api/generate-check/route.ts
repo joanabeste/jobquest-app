@@ -174,6 +174,8 @@ WICHTIG:
 • Sprich Bewerber:innen freundlich und persönlich an.`;
 
 // ─── POST handler ─────────────────────────────────────────────────────────────
+export const maxDuration = 300;
+
 export async function POST(req: NextRequest) {
   const session = await getSession();
   if (!session) return unauthorized();

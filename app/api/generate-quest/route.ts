@@ -325,6 +325,8 @@ const DEFAULT_LEAD_FIELDS = [
   { type: 'checkbox', label: 'Ich stimme zu, dass <a href="@datenschutzUrl" target="_blank">@companyName</a> meine Daten gemäß <a href="@datenschutzUrl" target="_blank">Datenschutzerklärung</a> verarbeitet. <a href="@impressumUrl" target="_blank">Impressum</a>', required: true, variable: 'datenschutz' },
 ];
 
+export const maxDuration = 300;
+
 export async function POST(req: NextRequest) {
   const session = await getSession();
   if (!session) return unauthorized();
