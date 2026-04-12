@@ -1,7 +1,27 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Trophy, Video, FileText, Send, ExternalLink, ChevronDown } from 'lucide-react';
+
+/** Hook: starts at 0, animates to target after a delay */
+function useAnimatedValue(target: number, delay = 300, duration = 800): number {
+  const [value, setValue] = useState(0);
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const start = performance.now();
+      const step = () => {
+        const elapsed = performance.now() - start;
+        const progress = Math.min(elapsed / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+        setValue(Math.round(target * eased));
+        if (progress < 1) requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    }, delay);
+    return () => clearTimeout(t);
+  }, [target, delay, duration]);
+  return value;
+}
 import { Dimension } from '@/lib/types';
 import { sh, b, inlineHtml } from './helpers';
 
@@ -141,23 +161,31 @@ function SimpleBars({ dimensions, scores, primary }: { dimensions: Dimension[]; 
   }
   return (
     <div className="space-y-4 mt-4">
-      {dimensions.map((dim) => {
+      {dimensions.map((dim, i) => {
         const score = scores[dim.id] ?? 0;
         const pct = Math.min(100, Math.round((score / max) * 100));
-        const barColor = dim.color || primary;
         return (
           <div key={dim.id}>
-            <div className="flex justify-between mb-1.5">
-              <span className="text-sm font-medium text-slate-700">{dim.name}</span>
-              <span className="text-sm font-bold" style={{ color: barColor }}>{score} Punkte</span>
-            </div>
-            <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
-              <div className="h-full rounded-full transition-all duration-700 ease-out" style={{ width: `${pct}%`, background: barColor }} />
-            </div>
+            <AnimatedBar name={dim.name} pct={pct} color={dim.color || primary} delay={300 + i * 150} />
             {dim.description && <p className="text-xs text-slate-400 mt-1">{dim.description}</p>}
           </div>
         );
       })}
+    </div>
+  );
+}
+
+function AnimatedBar({ name, pct, color, delay }: { name: string; pct: number; color: string; delay: number }) {
+  const animPct = useAnimatedValue(pct, delay, 900);
+  return (
+    <div>
+      <p className="text-xs font-medium text-slate-700 mb-1">{name}</p>
+      <div className="flex items-center gap-2">
+        <div className="flex-1 h-2.5 bg-slate-100 rounded-full overflow-hidden">
+          <div className="h-full rounded-full" style={{ width: `${animPct}%`, background: color }} />
+        </div>
+        <span className="text-xs font-bold w-8 text-right" style={{ color }}>{animPct}%</span>
+      </div>
     </div>
   );
 }
@@ -169,21 +197,10 @@ function GroupBars({ group, dimensions, scores, primary }: { group: ErgebnisGrou
   if (groupDims.length === 0) return null;
   return (
     <div className="space-y-3 mb-4">
-      {groupDims.map((dim) => {
+      {groupDims.map((dim, i) => {
         const score = scores[dim.id] ?? 0;
         const pct = Math.min(100, Math.round((score / max) * 100));
-        const c = dim.color || primary;
-        return (
-          <div key={dim.id}>
-            <p className="text-xs font-medium text-slate-700 mb-1">{dim.name}</p>
-            <div className="flex items-center gap-2">
-              <div className="flex-1 h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                <div className="h-full rounded-full" style={{ width: `${pct}%`, background: c, transition: 'width 700ms ease-out' }} />
-              </div>
-              <span className="text-xs font-bold w-8 text-right" style={{ color: c }}>{pct}%</span>
-            </div>
-          </div>
-        );
+        return <AnimatedBar key={dim.id} name={dim.name} pct={pct} color={dim.color || primary} delay={300 + i * 150} />;
       })}
     </div>
   );
