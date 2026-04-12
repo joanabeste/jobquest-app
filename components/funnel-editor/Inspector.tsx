@@ -184,6 +184,15 @@ function PageSettingsEditor({ currentPage, pages, onUpdate }: { currentPage?: Fu
       <div>
         <label className="label">Seitenname</label>
         <input className="input-field" value={currentPage.name} onChange={(e) => onUpdate?.({ name: e.target.value })} />
+        <label className="flex items-center gap-2 mt-2 text-xs text-slate-600 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={currentPage.hideLocationHint ?? false}
+            onChange={(e) => onUpdate?.({ hideLocationHint: e.target.checked })}
+            className="rounded border-slate-300"
+          />
+          Lokalen Hinweis ausblenden
+        </label>
       </div>
       <div>
         <label className="label">Nächste Seite</label>

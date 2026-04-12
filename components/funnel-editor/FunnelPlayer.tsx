@@ -312,6 +312,10 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
   })();
   const progress = (pageIndex + (swipeBlock ? swipeFraction : 1)) / doc.pages.length;
 
+  // Scene block with its own CTA button → hide global footer
+  const sceneBlock = blocks.find((bl) => bl.type === 'quest_scene');
+  const sceneHasButton = sceneBlock && !!(sceneBlock.props.buttonText as string);
+
   // Dialog input in footer: show when dialog has input, lines are done, and not yet submitted
   const showDialogInput = dialogBlock && hasDialogInput && dialogComplete && !dialogInteractionAnswered;
   const dialogInputMeta = dialogBlock
@@ -410,7 +414,7 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
       </header>
 
       {/* ── Location badge (Quest only) ─────────────────────────────────────── */}
-      {!completed && doc.contentType === 'quest' && currentPage.name && (
+      {!completed && doc.contentType === 'quest' && currentPage.name && !currentPage.hideLocationHint && (
         <div className="flex justify-center py-1.5 bg-white border-b border-slate-100">
           <span className="text-[11px] font-medium text-slate-400 flex items-center gap-1">
             <MapPin size={10} className="flex-shrink-0" />
@@ -449,7 +453,7 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
           frage/slider auto-advance, swipe deck, lead form), so we hide the
           global Zurück/Weiter footer for them. The header has a discreet
           back arrow instead. */}
-      {!completed && !submitPage && !spinnerBlock && doc.contentType !== 'check' && (
+      {!completed && !submitPage && !spinnerBlock && !sceneHasButton && doc.contentType !== 'check' && (
         <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-slate-200 px-4 py-4">
           <div className="max-w-lg mx-auto flex gap-3">
             {showDialogInput ? (

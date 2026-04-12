@@ -64,6 +64,8 @@ export interface FunnelPage {
   nextPageId?: string;
   /** Optional gate – if set, the page is auto-skipped when the condition is unmet. */
   visibleIf?: VisibilityCondition;
+  /** Hide the location badge (page name with map pin) in the player. Default: false (visible). */
+  hideLocationHint?: boolean;
 }
 
 // ─── Email Config ─────────────────────────────────────────────────────────────

@@ -14,7 +14,10 @@ export interface SessionData {
 export async function getSession(): Promise<SessionData | null> {
   const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
+  if (!user) {
+    console.warn('[getSession] no auth user — session missing or expired');
+    return null;
+  }
 
   const admin = createAdminClient();
   const { data: memberRow } = await admin
@@ -23,7 +26,10 @@ export async function getSession(): Promise<SessionData | null> {
     .eq('id', user.id)
     .eq('status', 'active')
     .single();
-  if (!memberRow) return null;
+  if (!memberRow) {
+    console.warn('[getSession] no workspace_members row for user', user.id);
+    return null;
+  }
 
   const member = memberFromDb(memberRow);
 
@@ -44,7 +50,10 @@ export async function getSession(): Promise<SessionData | null> {
     .select('*')
     .eq('id', companyId)
     .single();
-  if (!companyRow) return null;
+  if (!companyRow) {
+    console.warn('[getSession] company not found', companyId);
+    return null;
+  }
 
   return {
     member,

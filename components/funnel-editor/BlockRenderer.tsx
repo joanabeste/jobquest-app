@@ -306,6 +306,7 @@ export function BlockRenderer({
       const subtext      = s(p.subtext);
       const accentText   = s(p.accentText);
       const bulletPoints = (p.bulletPoints as string[]) || [];
+      const buttonText   = s(p.buttonText);
       return (
         <div>
           {imageUrl && (
@@ -329,6 +330,15 @@ export function BlockRenderer({
                   </li>
                 ))}
               </ul>
+            )}
+            {!!buttonText && (
+              <button
+                onClick={() => onNext()}
+                className="fp-btn w-full mt-2 py-3.5 font-semibold text-sm flex items-center justify-center gap-2"
+                style={{ borderRadius: br, background: primary, color: '#fff' }}
+              >
+                {buttonText} <ChevronRight size={15} />
+              </button>
             )}
           </div>
         </div>
