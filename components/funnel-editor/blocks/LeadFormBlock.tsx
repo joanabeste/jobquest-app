@@ -136,6 +136,38 @@ export default function LeadFormBlock({ props: p, company, br, primary, leadForm
         style={{ borderRadius: br, background: primary, color: '#fff' }}>
         {s(p.buttonText, 'Abschicken')}
       </button>
+
+      {/* Berufe-Liste aus Firmenprofil */}
+      {company.successPage?.showJobs && company.successPage.jobs.length > 0 && (() => {
+        const jobs = company.successPage.jobs;
+        const groups = [...new Set(jobs.map((j) => j.group || '').filter(Boolean))];
+        const hasGroups = groups.length > 0;
+        const sections = hasGroups
+          ? [...groups.map((g) => ({ group: g, items: jobs.filter((j) => j.group === g) })), ...(() => { const ug = jobs.filter((j) => !j.group); return ug.length > 0 ? [{ group: '', items: ug }] : []; })()]
+          : [{ group: '', items: jobs }];
+        return (
+          <div className="mt-6 pt-5 border-t border-slate-100">
+            <p className="text-sm font-semibold text-slate-700 mb-3">{company.successPage.jobsHeadline || 'Unsere Ausbildungsberufe'}</p>
+            {sections.map(({ group, items }) => (
+              <div key={group || '__ungrouped'} className="mb-3 last:mb-0">
+                {group && <p className="text-xs font-semibold uppercase tracking-wide mb-1.5" style={{ color: primary }}>{group}</p>}
+                <div className="flex flex-col gap-1">
+                  {items.map((job) => (
+                    <div key={job.id} className="flex items-center gap-2 text-xs text-slate-600">
+                      <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: primary }} />
+                      {job.url ? (
+                        <a href={job.url} target="_blank" rel="noopener noreferrer" className="hover:underline">{job.title}</a>
+                      ) : (
+                        <span>{job.title}</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
     </div>
   );
 }
