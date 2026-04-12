@@ -40,6 +40,7 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
   const [_completionMsg, setCompletionMsg] = useState<{ headline: string; text: string } | null>(null);
   const [dialogVisible, setDialogVisible] = useState(0);
   const [footerInputValue, setFooterInputValue] = useState('');
+  const [pageTransition, setPageTransition] = useState<'visible' | 'fading-out' | 'fading-in'>('visible');
   const topRef = useRef<HTMLDivElement>(null);
 
   // Reset dialog + footer input when page changes (must be before any conditional returns)
@@ -134,6 +135,17 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
   function scrollTop() {
     requestAnimationFrame(() => topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
   }
+
+  /** Animate page transition: fade out → apply change → fade in */
+  function transitionTo(changeFn: () => void) {
+    setPageTransition('fading-out');
+    setTimeout(() => {
+      changeFn();
+      scrollTop();
+      setPageTransition('fading-in');
+      setTimeout(() => setPageTransition('visible'), 300);
+    }, 250);
+  }
   /**
    * Returns true when the page's visibleIf condition is satisfied (or absent).
    * Used to auto-skip pages whose gating filter doesn't match the current answers.
@@ -154,18 +166,20 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
     return -1;
   }
   function goNext(targetPageId?: string) {
+    if (pageTransition !== 'visible') return; // prevent double-click during transition
     if (targetPageId) {
       const idx = doc.pages.findIndex((p) => p.id === targetPageId);
       if (idx >= 0) {
         const visible = findNextVisible(idx);
-        if (visible >= 0) { setHistory((h) => [...h, pageIndex]); setPageIndex(visible); scrollTop(); return; }
+        if (visible >= 0) { transitionTo(() => { setHistory((h) => [...h, pageIndex]); setPageIndex(visible); }); return; }
       }
     }
     const next = findNextVisible(pageIndex + 1);
-    if (next >= 0) { setHistory((h) => [...h, pageIndex]); setPageIndex(next); scrollTop(); }
-    else { setCompleted(true); scrollTop(); }
+    if (next >= 0) { transitionTo(() => { setHistory((h) => [...h, pageIndex]); setPageIndex(next); }); }
+    else { transitionTo(() => setCompleted(true)); }
   }
   function goBack() {
+    if (pageTransition !== 'visible') return; // prevent double-click during transition
     const prevIdx = history[history.length - 1] ?? (pageIndex > 0 ? pageIndex - 1 : -1);
     if (prevIdx < 0) return;
     // Reset answer of the first interactive block on the target page
@@ -185,9 +199,7 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
         setDialogVisible(0);
       }
     }
-    setHistory((h) => h.slice(0, -1));
-    setPageIndex(prevIdx);
-    scrollTop();
+    transitionTo(() => { setHistory((h) => h.slice(0, -1)); setPageIndex(prevIdx); });
   }
   function setAnswer(nodeId: string, value: unknown) {
     setAnswers((prev) => ({ ...prev, [nodeId]: value }));
@@ -424,7 +436,14 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
       )}
 
       {/* ── Content ────────────────────────────────────────────────────────── */}
-      <main className={`max-w-lg mx-auto w-full ${doc.contentType === 'check' ? 'pb-6' : 'pb-24'}`}>
+      <main
+        className={`max-w-lg mx-auto w-full ${doc.contentType === 'check' ? 'pb-6' : 'pb-24'}`}
+        style={{
+          transition: 'opacity 250ms ease, transform 250ms ease',
+          opacity: pageTransition === 'fading-out' ? 0 : 1,
+          transform: pageTransition === 'fading-out' ? 'translateY(8px)' : pageTransition === 'fading-in' ? 'translateY(0)' : undefined,
+        }}
+      >
         {completed ? (
           <SuccessPage company={company} primary={primary} br={br} />
         ) : (
