@@ -66,11 +66,32 @@ export default function UebersichtPage() {
   }, [slug, company?.slug]);
 
   const itemMeta = useMemo(() => {
-    const map = new Map<string, { title: string; published: boolean }>();
-    quests.forEach((q) => map.set(`jobquest:${q.id}`, { title: q.title, published: q.status === 'published' }));
-    checks.forEach((c) => map.set(`berufscheck:${c.id}`, { title: c.title, published: c.status === 'published' }));
+    const map = new Map<string, { title: string; published: boolean; cardImage?: string }>();
+    quests.forEach((q) => map.set(`jobquest:${q.id}`, { title: q.title, published: q.status === 'published', cardImage: q.cardImage }));
+    checks.forEach((c) => map.set(`berufscheck:${c.id}`, { title: c.title, published: c.status === 'published', cardImage: c.cardImage }));
     return map;
   }, [quests, checks]);
+
+  // Card image state (stored on quest/check, not on showcase item)
+  const [cardImages, setCardImages] = useState<Record<string, string>>({});
+  useEffect(() => {
+    const imgs: Record<string, string> = {};
+    quests.forEach((q) => { if (q.cardImage) imgs[q.id] = q.cardImage; });
+    checks.forEach((c) => { if (c.cardImage) imgs[c.id] = c.cardImage; });
+    setCardImages(imgs);
+  }, [quests, checks]);
+
+  async function updateCardImage(type: 'jobquest' | 'berufscheck', contentId: string, imageUrl: string) {
+    setCardImages((prev) => ({ ...prev, [contentId]: imageUrl }));
+    const endpoint = type === 'jobquest' ? 'quests' : 'career-checks';
+    try {
+      await fetch(`/api/${endpoint}/${contentId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cardImage: imageUrl || null }),
+      });
+    } catch { /* silent */ }
+  }
 
   // Items not yet on the showcase, available to add
   const availableQuests = quests.filter(
@@ -310,29 +331,43 @@ export default function UebersichtPage() {
               const meta = itemMeta.get(`${item.type}:${item.contentId}`);
               return (
                 <li key={item.id}
-                  className="flex items-center gap-3 p-3 border border-slate-200 rounded-xl">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-900 truncate">
-                      {meta?.title ?? '— gelöscht —'}
-                    </p>
-                    <p className="text-[11px] text-slate-400">
-                      {item.type === 'jobquest' ? 'JobQuest' : 'Berufscheck'}
-                      {meta && !meta.published && ' · nicht veröffentlicht'}
-                    </p>
+                  className="border border-slate-200 rounded-xl overflow-hidden">
+                  <div className="flex items-center gap-3 p-3">
+                    {cardImages[item.contentId] && (
+                      <img src={cardImages[item.contentId]} alt="" className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-slate-900 truncate">
+                        {meta?.title ?? '— geloscht —'}
+                      </p>
+                      <p className="text-[11px] text-slate-400">
+                        {item.type === 'jobquest' ? 'JobQuest' : 'Berufscheck'}
+                        {meta && !meta.published && ' · nicht veroffentlicht'}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button type="button" onClick={() => moveItem(item.id, -1)} disabled={idx === 0}
+                        className="p-1.5 text-slate-400 hover:text-slate-700 disabled:opacity-30">
+                        <ChevronUp size={14} />
+                      </button>
+                      <button type="button" onClick={() => moveItem(item.id, 1)} disabled={idx === config.items.length - 1}
+                        className="p-1.5 text-slate-400 hover:text-slate-700 disabled:opacity-30">
+                        <ChevronDown size={14} />
+                      </button>
+                      <button type="button" onClick={() => removeItem(item.id)}
+                        className="p-1.5 text-slate-400 hover:text-red-500">
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <button type="button" onClick={() => moveItem(item.id, -1)} disabled={idx === 0}
-                      className="p-1.5 text-slate-400 hover:text-slate-700 disabled:opacity-30">
-                      <ChevronUp size={14} />
-                    </button>
-                    <button type="button" onClick={() => moveItem(item.id, 1)} disabled={idx === config.items.length - 1}
-                      className="p-1.5 text-slate-400 hover:text-slate-700 disabled:opacity-30">
-                      <ChevronDown size={14} />
-                    </button>
-                    <button type="button" onClick={() => removeItem(item.id)}
-                      className="p-1.5 text-slate-400 hover:text-red-500">
-                      <Trash2 size={14} />
-                    </button>
+                  <div className="px-3 pb-3">
+                    <input
+                      type="url"
+                      value={cardImages[item.contentId] ?? ''}
+                      onChange={(e) => updateCardImage(item.type, item.contentId, e.target.value)}
+                      placeholder="Titelbild-URL (optional)"
+                      className="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:border-violet-400 focus:outline-none"
+                    />
                   </div>
                 </li>
               );
