@@ -700,15 +700,18 @@ export function BlockRenderer({
     case 'check_intro': {
       const imageUrl = s(p.imageUrl);
       return (
-        <div className="px-6 py-10 text-white text-center min-h-[320px] flex flex-col justify-center" style={{ background: primary }}>
+        <div className="px-6 pt-12 pb-8 text-center min-h-[400px] flex flex-col justify-center">
           {!!imageUrl && (
-            <img src={imageUrl} alt="" className="w-full max-h-48 object-cover rounded-xl mb-4 opacity-90" />
+            <img src={imageUrl} alt="" className="w-full max-h-48 object-cover rounded-xl mb-6" />
           )}
-          <h1 className="text-2xl font-bold mb-3 leading-tight" dangerouslySetInnerHTML={{ __html: sh(inlineHtml(s(p.headline))) }} />
-          <div className="text-sm text-white/70 mb-8 leading-relaxed rte" dangerouslySetInnerHTML={{ __html: sh(s(p.subtext)) }} />
+          <h1 className="fp-heading text-2xl font-bold mb-4 leading-tight" dangerouslySetInnerHTML={{ __html: sh(inlineHtml(s(p.headline))) }} />
+          <p className="text-sm text-slate-500 mb-10 leading-relaxed max-w-xs mx-auto">{s(p.subtext)}</p>
           <div>
-            <button onClick={() => onNext()} className="fp-btn px-10 py-3.5 font-semibold text-base" style={{ borderRadius: br, background: primary, color: '#fff' }}>
-              {s(p.buttonText, 'Jetzt starten')}
+            <button onClick={() => onNext()}
+              className="w-full flex items-center justify-between px-6 py-4 font-semibold text-base text-white"
+              style={{ borderRadius: br, background: primary }}>
+              <span>{s(p.buttonText, 'Berufscheck starten')}</span>
+              <ChevronRight size={20} />
             </button>
           </div>
         </div>
