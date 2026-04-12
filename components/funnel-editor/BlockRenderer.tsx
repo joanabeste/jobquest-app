@@ -799,6 +799,47 @@ export function BlockRenderer({
         </div>
       );
 
+    case 'check_statements': {
+      const stmts = (p.statements as Array<{ id: string; text: string }>) ?? [];
+      const checked = Array.isArray(answers[node.id]) ? (answers[node.id] as string[]) : [];
+      return (
+        <div className="fp-card bg-white shadow-sm mx-4 my-3 p-6">
+          <h2 className="fp-heading text-lg font-bold mb-1 text-center" dangerouslySetInnerHTML={{ __html: sh(inlineHtml(s(p.question))) }} />
+          <p className="text-xs text-slate-400 text-center mb-4">Wahle alles, was auf dich zutrifft</p>
+          <div className="space-y-2">
+            {stmts.map((stmt) => {
+              const isChecked = checked.includes(stmt.id);
+              return (
+                <button
+                  key={stmt.id}
+                  onClick={() => {
+                    const next = isChecked ? checked.filter((id) => id !== stmt.id) : [...checked, stmt.id];
+                    onAnswer(node.id, next);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 text-left text-sm transition-all active:scale-[0.98]"
+                  style={{
+                    borderColor: isChecked ? primary : '#e2e8f0',
+                    background: isChecked ? `${primary}08` : 'white',
+                  }}
+                >
+                  <div
+                    className="w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-colors"
+                    style={{
+                      borderColor: isChecked ? primary : '#cbd5e1',
+                      background: isChecked ? primary : 'transparent',
+                    }}
+                  >
+                    {isChecked && <Check size={12} className="text-white" />}
+                  </div>
+                  <span className={`font-medium ${isChecked ? 'text-slate-900' : 'text-slate-600'}`}>{stmt.text}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+
     case 'check_lead':
       return leadSubmitted
         ? <CompletionScreen company={company} headline={s(p.thankYouHeadline, 'Vielen Dank!')} text={s(p.thankYouText)} primary={primary} buttonText={s(p.thankYouButtonText)} buttonUrl={s(p.thankYouButtonUrl)} />

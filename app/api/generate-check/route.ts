@@ -72,22 +72,29 @@ Seite 2 (oder 1 wenn keine Studiengänge):
   → Beispiel-Karte für Mechatroniker: { "text": "Du erhältst ein technisches Gerät zum Auseinandernehmen und Zusammenbauen.", "optionPositive": { "label": "Mache ich gerne", "emoji": "👍", "scores": { "Mechatronik": 2, "Technisch": 1 } }, "optionNeutral": { "label": "Ist okay", "emoji": "😐", "scores": {} }, "optionNegative": { "label": "Eher nicht", "emoji": "👎", "scores": {} } }
   → Vermeide Berufe-spezifische Wörter im Text — schreibe Alltagsszenarien aus Schule/Freizeit, die auf Interessen und Fähigkeiten zielen.
 
-4–6 Seiten check_selbst (Selbsteinschätzung — eine Page pro Slider):
+1 Seite check_statements (Schnell-Check — BEVORZUGT statt vieler check_selbst Slider!):
+  Props: {
+    "question": "Was trifft auf dich zu?",
+    "statements": [
+      { "text": "Ich helfe gerne Menschen in Alltagssituationen", "dimensionId": "<DIMENSION_NAME>", "points": 2 },
+      { "text": "Technik und Maschinen faszinieren mich", "dimensionId": "<DIMENSION_NAME>", "points": 2 },
+      { "text": "Ich organisiere gerne und behalte den Überblick", "dimensionId": "<DIMENSION_NAME>", "points": 2 }
+    ]
+  }
+  → BEVORZUGT gegenuber check_selbst! Generiere 4–8 kurze Aussagen auf EINER Seite.
+  → Jede Aussage ist ein kurzer Satz (max 10 Worter), den der Nutzer per Checkbox bestatigt.
+  → dimensionId MUSS exakt einem Dimensions-Namen entsprechen.
+  → points: Wie viele Punkte ein Haken gibt (Standard: 2).
+  → Decke alle Dimensionen ab — mindestens eine Aussage pro Dimension.
+
+Optional: 1–2 Seiten check_selbst falls ein Slider wirklich besser passt (z.B. Intensitats-Skala):
   Props: {
     "question": "Wie gerne ...?",
-    "description": "",
-    "sliderMin": 0,
-    "sliderMax": 10,
-    "sliderStep": 1,
-    "sliderLabelMin": "Gar nicht",
-    "sliderLabelMax": "Sehr gerne",
+    "sliderMin": 0, "sliderMax": 10, "sliderStep": 1,
+    "sliderLabelMin": "Gar nicht", "sliderLabelMax": "Sehr gerne",
     "sliderDimensionId": "<DIMENSION_NAME>"
   }
-  → sliderDimensionId MUSS exakt einem deiner Dimensions-Namen entsprechen.
-  → Generiere 4–6 Slider, die zusammen alle Dimensionen abdecken.
-  → Beispielfragen: "Wie gerne arbeitest du mit Software und Code?" → Informatik
-                    "Wie gerne übernimmst du praktische Aufgaben?" → Gewerblich
-                    "Wie gerne präsentierst du Ideen vor anderen?" → Kaufmännisch
+  → Nur nutzen wenn eine Intensitats-Skala wirklich Sinn macht — NICHT als Standard!
 
 Vorletzte Seite: check_ergebnis
   Props: {
@@ -351,6 +358,13 @@ export async function POST(req: NextRequest) {
         if (block.type === 'check_frage' && props.frageType === 'slider' && props.sliderDimensionId) {
           const id = resolveDimRef(props.sliderDimensionId);
           if (id) props.sliderDimensionId = id; else delete props.sliderDimensionId;
+        }
+        if (block.type === 'check_statements' && Array.isArray(props.statements)) {
+          props.statements = (props.statements as Array<Record<string, unknown>>).map((stmt) => ({
+            ...stmt,
+            id: stmt.id || crypto.randomUUID(),
+            dimensionId: resolveDimRef(stmt.dimensionId) ?? '',
+          }));
         }
 
         if (block.type === 'check_ergebnis' && Array.isArray(props.groups)) {

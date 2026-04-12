@@ -8,7 +8,7 @@ export type FunnelBlockType =
   | 'quest_scene' | 'quest_dialog' | 'quest_decision' | 'quest_quiz' | 'quest_info' | 'quest_freetext'
   | 'quest_file' | 'quest_lead' | 'quest_spinner' | 'quest_rating' | 'quest_hotspot' | 'quest_zuordnung'
   // BerufsCheck
-  | 'check_intro' | 'check_vorname' | 'check_frage' | 'check_ergebnisfrage' | 'check_selbst' | 'check_lead' | 'check_ergebnis' | 'check_swipe_deck'
+  | 'check_intro' | 'check_vorname' | 'check_frage' | 'check_ergebnisfrage' | 'check_selbst' | 'check_statements' | 'check_lead' | 'check_ergebnis' | 'check_swipe_deck'
   // Formular
   | 'form_hero' | 'form_text' | 'form_image' | 'form_step' | 'form_config';
 
@@ -186,6 +186,13 @@ export function getDefaultProps(type: FunnelBlockType): Record<string, unknown> 
       ],
     };
     case 'check_lead':          return contactLeadDefault();
+    case 'check_statements':    return {
+      question: 'Was trifft auf dich zu?',
+      statements: [
+        { id: uid(), text: 'Ich helfe gerne Menschen', dimensionId: '', points: 2 },
+        { id: uid(), text: 'Ich organisiere gerne', dimensionId: '', points: 2 },
+      ],
+    };
     case 'form_config':         return contactLeadDefault();
     // All other block types have no nested items with IDs — safe to return static values.
     default:                    return DEFAULT_BLOCK_PROPS[type];
@@ -218,6 +225,7 @@ export const DEFAULT_BLOCK_PROPS: Record<FunnelBlockType, Record<string, unknown
   check_frage:         { frageType: 'single_choice', question: 'Frage?', options: [], allowSkip: false },
   check_ergebnisfrage: { question: 'Ergebnisfrage?', options: [] },
   check_selbst:        { question: 'Wie schätzt du dich ein?', sliderMin: 0, sliderMax: 10, sliderStep: 1, sliderLabelMin: 'Gar nicht', sliderLabelMax: 'Sehr' },
+  check_statements:    { question: 'Was trifft auf dich zu?', statements: [] },
   check_swipe_deck:    { question: 'Swipe dich durch die Szenarien', allowSkip: true, cards: [] },
   check_lead:          { headline: 'Interessiert?', subtext: 'Hinterlasse deine Kontaktdaten – wir melden uns bei dir.', buttonText: 'Jetzt bewerben', privacyText: 'Ich stimme zu, dass @companyName meine Daten speichert und mich kontaktiert.', thankYouHeadline: 'Vielen Dank!', thankYouText: 'Wir melden uns bei dir.', thankYouButtonText: '', thankYouButtonUrl: '', fields: [] },
   check_ergebnis:      { headline: 'Dein Ergebnis, @firstName!', subtext: 'Basierend auf deinen Antworten.', layout: 'simple', showDimensionBars: true, groups: [] },
@@ -262,6 +270,7 @@ export const BLOCK_CATALOG: Record<FunnelContentType, BlockTypeConfig[]> = {
     { type: 'check_frage',         label: 'Frage',              description: 'Einzel- oder Slider-Frage',    category: 'Eingabe',   defaultProps: DEFAULT_BLOCK_PROPS.check_frage },
     { type: 'check_ergebnisfrage', label: 'Ergebnisfrage',      description: 'Frage mit Dimensions-Score',   category: 'Eingabe',   defaultProps: DEFAULT_BLOCK_PROPS.check_ergebnisfrage },
     { type: 'check_selbst',        label: 'Selbsteinschätzung', description: 'Slider-Einschätzung',          category: 'Eingabe',   defaultProps: DEFAULT_BLOCK_PROPS.check_selbst },
+    { type: 'check_statements',    label: 'Schnell-Check',      description: 'Aussagen per Checkbox',        category: 'Eingabe',   defaultProps: DEFAULT_BLOCK_PROPS.check_statements },
     { type: 'check_swipe_deck',    label: 'Swipe-Karten',       description: 'Tinder-Style Szenario-Stack',  category: 'Eingabe',   defaultProps: DEFAULT_BLOCK_PROPS.check_swipe_deck },
     { type: 'check_ergebnis',      label: 'Ergebnis',           description: 'Ergebnisanzeige',              category: 'Abschluss', defaultProps: DEFAULT_BLOCK_PROPS.check_ergebnis },
     { type: 'check_lead',          label: 'Kontaktformular',    description: 'Lead-Erfassung',               category: 'Abschluss', defaultProps: DEFAULT_BLOCK_PROPS.check_lead },
@@ -281,6 +290,6 @@ export const BLOCK_LABELS: Record<FunnelBlockType, string> = {
   heading: 'Überschrift', paragraph: 'Text', button: 'Button', image: 'Bild', spacer: 'Abstand', video: 'Video',
   quest_scene: 'Szene', quest_dialog: 'Dialog', quest_decision: 'Entscheidung', quest_quiz: 'Quiz', quest_info: 'Info', quest_freetext: 'Freitext',
   quest_file: 'Datei', quest_lead: 'Kontaktformular', quest_spinner: 'Ladescreen', quest_rating: 'Bewertung', quest_hotspot: 'Hotspot', quest_zuordnung: 'Zuordnung',
-  check_intro: 'Intro', check_vorname: 'Name', check_frage: 'Frage', check_ergebnisfrage: 'Ergebnisfrage', check_selbst: 'Selbsteinschätzung', check_swipe_deck: 'Swipe-Karten', check_lead: 'Kontaktformular', check_ergebnis: 'Ergebnis',
+  check_intro: 'Intro', check_vorname: 'Name', check_frage: 'Frage', check_ergebnisfrage: 'Ergebnisfrage', check_selbst: 'Selbsteinschätzung', check_statements: 'Schnell-Check', check_swipe_deck: 'Swipe-Karten', check_lead: 'Kontaktformular', check_ergebnis: 'Ergebnis',
   form_hero: 'Hero', form_text: 'Textabschnitt', form_image: 'Bild', form_step: 'Formular-Schritt', form_config: 'Einstellungen',
 };

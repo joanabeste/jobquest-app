@@ -775,6 +775,25 @@ export default function BlockPreview({ node, onUpdate }: {
         </div>
       );
 
+    case 'check_statements': {
+      const stmts = (p.statements as Array<{ id: string; text: string }>) ?? [];
+      return (
+        <div className="mx-4 my-3 bg-white border border-slate-200 rounded-xl shadow-sm p-5">
+          <RichEd v={(p.question as string) ?? ''} up={up?.('question')} ph="Was trifft auf dich zu?" cl="fp-heading mb-3 block text-center" />
+          <div className="space-y-1.5">
+            {stmts.slice(0, 4).map((stmt) => (
+              <div key={stmt.id} className="flex items-center gap-2 px-3 py-2 border border-slate-200 rounded-lg">
+                <div className="w-4 h-4 rounded border-2 border-slate-300 flex-shrink-0" />
+                <span className="text-xs text-slate-600">{stmt.text || 'Aussage…'}</span>
+              </div>
+            ))}
+            {stmts.length > 4 && <p className="text-[11px] text-slate-400 text-center">+{stmts.length - 4} weitere</p>}
+            {stmts.length === 0 && <p className="text-xs text-slate-400 text-center italic">Keine Aussagen</p>}
+          </div>
+        </div>
+      );
+    }
+
     case 'check_swipe_deck': {
       const cards = (p.cards as Array<{ id: string; text: string }>) ?? [];
       const cur = cards[0];

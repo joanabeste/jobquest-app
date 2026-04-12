@@ -58,6 +58,14 @@ export function computeScores(
         (o) => o.id === answer,
       );
       addScores(scores, opt?.scores);
+    } else if (node.type === 'check_statements') {
+      const stmts = (props.statements as Array<{ id: string; dimensionId?: string; points?: number }>) ?? [];
+      const checked = Array.isArray(answer) ? (answer as string[]) : [];
+      stmts.forEach((stmt) => {
+        if (checked.includes(stmt.id) && stmt.dimensionId) {
+          scores[stmt.dimensionId] = (scores[stmt.dimensionId] ?? 0) + (stmt.points ?? 2);
+        }
+      });
     } else if (node.type === 'check_swipe_deck') {
       // answer = Array<{ cardId: string; choice: 'pos'|'neu'|'neg'|'skip' }>
       const cards = (props.cards as Array<Record<string, unknown>>) || [];

@@ -279,7 +279,7 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars }: {
   pages?: FunnelPage[];
   availableVars: VariableDef[];
 }) {
-  const { selectedFieldId, setSelectedFieldId } = useFunnelEditorCtx();
+  const { selectedFieldId, setSelectedFieldId, dimensions } = useFunnelEditorCtx();
 
   switch (node.type) {
 
@@ -565,6 +565,62 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars }: {
           </div>
         </div>
       );
+
+    case 'check_statements': {
+      const stmts = (props.statements as Array<{ id: string; text: string; dimensionId?: string; points?: number }>) ?? [];
+      return (
+        <div className="space-y-3">
+          <Field label="Frage"><VarInput value={(props.question as string) ?? ''} onChange={(v) => onChange({ question: v })} className="input-field text-sm" variables={availableVars} /></Field>
+          <div>
+            <label className="label">Aussagen</label>
+            <div className="space-y-2">
+              {stmts.map((stmt, i) => (
+                <div key={stmt.id} className="border border-slate-200 rounded-lg p-2 space-y-1.5">
+                  <input
+                    value={stmt.text}
+                    onChange={(e) => {
+                      const next = [...stmts];
+                      next[i] = { ...stmt, text: e.target.value };
+                      onChange({ statements: next });
+                    }}
+                    className="input-field text-xs"
+                    placeholder="Aussage..."
+                  />
+                  <div className="flex gap-1.5">
+                    <select
+                      value={stmt.dimensionId ?? ''}
+                      onChange={(e) => {
+                        const next = [...stmts];
+                        next[i] = { ...stmt, dimensionId: e.target.value || undefined };
+                        onChange({ statements: next });
+                      }}
+                      className="input-field text-xs flex-1"
+                    >
+                      <option value="">— Dimension —</option>
+                      {dimensions.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+                    </select>
+                    <button
+                      onClick={() => onChange({ statements: stmts.filter((_, j) => j !== i) })}
+                      className="px-2 text-red-400 hover:text-red-600 text-xs"
+                    >
+                      ×
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={() => onChange({
+                statements: [...stmts, { id: crypto.randomUUID(), text: '', dimensionId: '', points: 2 }],
+              })}
+              className="mt-2 w-full px-3 py-1.5 text-xs font-medium text-violet-600 bg-violet-50 rounded-lg hover:bg-violet-100 transition-colors"
+            >
+              + Aussage hinzufugen
+            </button>
+          </div>
+        </div>
+      );
+    }
 
     case 'check_lead':
       return (
