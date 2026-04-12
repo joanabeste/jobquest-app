@@ -184,21 +184,26 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
     if (transitionRef.current !== 'visible') return; // prevent double-click during transition
     const prevIdx = history[history.length - 1] ?? (pageIndex > 0 ? pageIndex - 1 : -1);
     if (prevIdx < 0) return;
-    // Reset answer of the first interactive block on the target page
+    // Reset ALL interactive blocks on the target page so the user can re-decide
     const targetPage = doc.pages[prevIdx];
     const targetBlocks = flatBlocks(targetPage.nodes);
     const interactiveTypes = ['quest_decision', 'quest_quiz', 'quest_rating', 'quest_zuordnung', 'quest_dialog'];
-    const interactiveBlock = targetBlocks.find((b) => interactiveTypes.includes(b.type));
-    if (interactiveBlock) {
+    const interactiveBlocks = targetBlocks.filter((b) => interactiveTypes.includes(b.type));
+    if (interactiveBlocks.length > 0) {
       setAnswers((prev) => {
         const next = { ...prev };
-        delete next[interactiveBlock.id];
-        delete next[`${interactiveBlock.id}_checked`]; // Quiz reveal
-        delete next[`${interactiveBlock.id}_confirmed`]; // Zuordnung
+        for (const block of interactiveBlocks) {
+          delete next[block.id];
+          delete next[`${block.id}_checked`];
+          delete next[`${block.id}_confirmed`];
+        }
         return next;
       });
-      if (interactiveBlock.type === 'quest_dialog') {
-        setDialogVisible(0);
+      // For dialogs: show all lines up to the choice point (not from scratch)
+      const dialogBlock = interactiveBlocks.find((b) => b.type === 'quest_dialog');
+      if (dialogBlock) {
+        const lines = (dialogBlock.props.lines as unknown[]) ?? [];
+        setDialogVisible(lines.length); // all lines visible → choices/input ready
       }
     }
     transitionTo(() => { setHistory((h) => h.slice(0, -1)); setPageIndex(prevIdx); });
