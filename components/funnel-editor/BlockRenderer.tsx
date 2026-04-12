@@ -836,6 +836,14 @@ export function BlockRenderer({
               );
             })}
           </div>
+          <button
+            onClick={() => onNext()}
+            disabled={checked.length === 0}
+            className="fp-btn w-full mt-4 py-3 font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{ borderRadius: br, background: primary, color: '#fff' }}
+          >
+            Weiter
+          </button>
         </div>
       );
     }
