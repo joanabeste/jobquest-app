@@ -507,6 +507,10 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars }: {
                 <input value={(props.thankYouButtonUrl as string) ?? ''} onChange={(e) => onChange({ thankYouButtonUrl: e.target.value })} className="input-field text-sm" placeholder="https://..." />
               </Field>
             )}
+            <a href="/settings/company" target="_blank" className="flex items-center gap-1.5 mt-3 px-3 py-2 text-[11px] text-violet-600 bg-violet-50 rounded-lg hover:bg-violet-100 transition-colors">
+              <span>Globale Erfolgsseite (Berufe, Links, etc.) in den Firmeneinstellungen anpassen</span>
+              <span className="ml-auto text-violet-400">&rarr;</span>
+            </a>
           </Section>
           <LeadFieldBuilder fields={fields} onChange={(f) => onChange({ fields: f })} />
         </div>
@@ -594,6 +598,10 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars }: {
                 <input value={(props.thankYouButtonUrl as string) ?? ''} onChange={(e) => onChange({ thankYouButtonUrl: e.target.value })} className="input-field text-sm" placeholder="https://..." />
               </Field>
             )}
+            <a href="/settings/company" target="_blank" className="flex items-center gap-1.5 mt-3 px-3 py-2 text-[11px] text-violet-600 bg-violet-50 rounded-lg hover:bg-violet-100 transition-colors">
+              <span>Globale Erfolgsseite (Berufe, Links, etc.) in den Firmeneinstellungen anpassen</span>
+              <span className="ml-auto text-violet-400">&rarr;</span>
+            </a>
           </Section>
         </div>
       );
@@ -689,6 +697,10 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars }: {
                 <input value={(props.thankYouButtonUrl as string) ?? ''} onChange={(e) => onChange({ thankYouButtonUrl: e.target.value })} className="input-field text-sm" placeholder="https://..." />
               </Field>
             )}
+            <a href="/settings/company" target="_blank" className="flex items-center gap-1.5 mt-3 px-3 py-2 text-[11px] text-violet-600 bg-violet-50 rounded-lg hover:bg-violet-100 transition-colors">
+              <span>Globale Erfolgsseite (Berufe, Links, etc.) in den Firmeneinstellungen anpassen</span>
+              <span className="ml-auto text-violet-400">&rarr;</span>
+            </a>
           </Section>
           <LeadFieldBuilder fields={fcFields} onChange={(f) => onChange({ fields: f })} />
         </div>
