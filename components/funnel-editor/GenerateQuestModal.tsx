@@ -13,6 +13,7 @@ interface Props {
   onClose: () => void;
   showHeyflowImport?: boolean;
   currentPages?: FunnelPage[];
+  companyJobs?: string[];
 }
 
 const LOADING_STEPS = [
@@ -24,7 +25,7 @@ const LOADING_STEPS = [
   'Letzte Feinheiten werden angepasst…',
 ];
 
-export default function GenerateQuestModal({ onGenerate, onClose, showHeyflowImport, currentPages }: Props) {
+export default function GenerateQuestModal({ onGenerate, onClose, showHeyflowImport, currentPages, companyJobs }: Props) {
   const hasExistingContent = !!currentPages && currentPages.length > 0;
   const [tab, setTab] = useState<Tab>(hasExistingContent ? 'refine' : 'generate');
   const [beruf, setBeruf] = useState('');
@@ -293,6 +294,20 @@ export default function GenerateQuestModal({ onGenerate, onClose, showHeyflowImp
                     className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:border-violet-400 focus:outline-none transition-colors"
                     autoFocus
                   />
+                  {companyJobs && companyJobs.length > 0 && !beruf.trim() && (
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {companyJobs.slice(0, 8).map((job) => (
+                        <button
+                          key={job}
+                          type="button"
+                          onClick={() => setBeruf(job)}
+                          className="px-2.5 py-1 text-[11px] rounded-full bg-violet-50 text-violet-600 border border-violet-200 hover:bg-violet-100 transition-colors"
+                        >
+                          {job}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div>

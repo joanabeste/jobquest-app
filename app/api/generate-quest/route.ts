@@ -365,6 +365,12 @@ export async function POST(req: NextRequest) {
   if (session.company.location) companyContext.push(`Standort: ${session.company.location}`);
   if (session.company.description?.trim()) companyContext.push(`Über uns: ${session.company.description.trim()}`);
 
+  // Include company jobs for context (lead form, other career options)
+  const companyJobs = session.company.successPage?.jobs ?? [];
+  if (companyJobs.length > 0) {
+    companyContext.push(`Weitere Ausbildungsberufe des Unternehmens: ${companyJobs.map((j) => j.title).join(', ')}`);
+  }
+
   let userMessageText = `${companyContext.join('\n')}\n\nErstelle eine JobQuest für den Beruf: ${beruf.trim()}${notes?.trim() ? `\n\nZusätzliche Hinweise: ${notes.trim()}` : ''}`;
 
   if (imageUrls.length > 0) {

@@ -572,6 +572,7 @@ function FunnelEditorInner({
         onClose={() => setShowGenerateModal(false)}
         showHeyflowImport={!!company?.features?.heyflowImport}
         currentPages={doc.pages.length > 0 ? doc.pages : undefined}
+        companyJobs={company?.successPage?.jobs?.map((j) => j.title).filter(Boolean)}
       />
     )}
     {showGenerateCheckModal && (
