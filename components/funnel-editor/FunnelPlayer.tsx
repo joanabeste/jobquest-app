@@ -10,7 +10,7 @@ import { useState, useRef, useMemo, useEffect } from 'react';
 import { FunnelDoc, LayoutNode, BlockNode } from '@/lib/funnel-types';
 import { Company, Dimension } from '@/lib/types';
 import { flatBlocks, isSubmitPage, computeScores } from '@/lib/funnel-utils';
-import { careerCheckStorage, analyticsStorage } from '@/lib/storage';
+import { analyticsStorage } from '@/lib/storage';
 import { useCorporateDesign } from '@/lib/use-corporate-design';
 import { useFavicon } from '@/lib/use-favicon';
 import { ChevronLeft, ChevronRight, MapPin, CheckCircle, Send } from 'lucide-react';
@@ -116,13 +116,22 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [completed, trackable, contentDbId]);
 
-  const [careerCheck, setCareerCheck] = useState<import('@/lib/types').CareerCheck | null>(null);
+  // Load dimensions directly from Supabase (not via authenticated API)
+  // because the public player has no auth session.
+  const [dimensions, setDimensionsState] = useState<Dimension[]>([]);
   useEffect(() => {
-    if (doc.contentType === 'check' && contentDbId) {
-      careerCheckStorage.getById(contentDbId).then((c) => setCareerCheck(c ?? null));
-    }
+    if (doc.contentType !== 'check' || !contentDbId) return;
+    import('@/lib/supabase/client').then(({ createClient }) => {
+      createClient()
+        .from('career_checks')
+        .select('dimensions')
+        .eq('id', contentDbId)
+        .single()
+        .then(({ data }) => {
+          if (data?.dimensions) setDimensionsState(data.dimensions as Dimension[]);
+        });
+    });
   }, [doc.contentType, contentDbId]);
-  const dimensions: Dimension[] = careerCheck?.dimensions ?? [];
 
   const { primary, br, css } = useCorporateDesign(company);
   useFavicon(company.corporateDesign?.faviconUrl);
