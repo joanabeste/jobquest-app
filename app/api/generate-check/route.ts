@@ -67,34 +67,23 @@ Seite 2 (oder 1 wenn keine Studiengänge):
     "cards": [ ... ]
   }
   → Generiere genau cardCount Karten.
+  → WICHTIG: JEDE Dimension muss in mindestens 2 Karten vorkommen! Keine Dimension darf 0% im Ergebnis haben.
   → Jede Karte: { "text": "Du sollst …", "optionPositive": { "label": "Klingt gut", "emoji": "👍", "scores": {...} }, "optionNeutral": { "label": "Geht so", "emoji": "😐", "scores": {...} }, "optionNegative": { "label": "Eher nicht", "emoji": "👎", "scores": {...} } }
   → scores-Maps: Dimensions-NAMEN als Keys, integer Punkte 1-3 als Values. Nur die Dimension(en) reinschreiben, die wirklich passen.
-  → Beispiel-Karte für Mechatroniker: { "text": "Du erhältst ein technisches Gerät zum Auseinandernehmen und Zusammenbauen.", "optionPositive": { "label": "Mache ich gerne", "emoji": "👍", "scores": { "Mechatronik": 2, "Technisch": 1 } }, "optionNeutral": { "label": "Ist okay", "emoji": "😐", "scores": {} }, "optionNegative": { "label": "Eher nicht", "emoji": "👎", "scores": {} } }
-  → Vermeide Berufe-spezifische Wörter im Text — schreibe Alltagsszenarien aus Schule/Freizeit, die auf Interessen und Fähigkeiten zielen.
+  → Vermeide Berufe-spezifische Worter im Text — schreibe Alltagsszenarien aus Schule/Freizeit, die auf Interessen und Fahigkeiten zielen.
+  → Auch bei optionNeutral und optionNegative KÖNNEN Punkte vergeben werden (z.B. 1 Punkt bei neutral).
 
-1 Seite check_statements (Schnell-Check — BEVORZUGT statt vieler check_selbst Slider!):
-  Props: {
-    "question": "Was trifft auf dich zu?",
-    "statements": [
-      { "text": "Ich helfe gerne Menschen in Alltagssituationen", "dimensionId": "<DIMENSION_NAME>", "points": 2 },
-      { "text": "Technik und Maschinen faszinieren mich", "dimensionId": "<DIMENSION_NAME>", "points": 2 },
-      { "text": "Ich organisiere gerne und behalte den Überblick", "dimensionId": "<DIMENSION_NAME>", "points": 2 }
-    ]
-  }
-  → BEVORZUGT gegenuber check_selbst! Generiere 4–8 kurze Aussagen auf EINER Seite.
-  → Jede Aussage ist ein kurzer Satz (max 10 Worter), den der Nutzer per Checkbox bestatigt.
-  → dimensionId MUSS exakt einem Dimensions-Namen entsprechen.
-  → points: Wie viele Punkte ein Haken gibt (Standard: 2).
-  → Decke alle Dimensionen ab — mindestens eine Aussage pro Dimension.
-
-Optional: 1–2 Seiten check_selbst falls ein Slider wirklich besser passt (z.B. Intensitats-Skala):
+4–6 Seiten check_selbst (Selbsteinschatzung — eine Page pro Slider):
   Props: {
     "question": "Wie gerne ...?",
+    "description": "",
     "sliderMin": 0, "sliderMax": 10, "sliderStep": 1,
     "sliderLabelMin": "Gar nicht", "sliderLabelMax": "Sehr gerne",
     "sliderDimensionId": "<DIMENSION_NAME>"
   }
-  → Nur nutzen wenn eine Intensitats-Skala wirklich Sinn macht — NICHT als Standard!
+  → sliderDimensionId MUSS exakt einem Dimensions-Namen entsprechen.
+  → Generiere eine Slider-Frage pro Dimension (mindestens 4, maximal 6).
+  → Kurze, klare Fragen: "Wie gerne arbeitest du mit Software?" → Informatik
 
 Vorletzte Seite: check_ergebnis
   Props: {

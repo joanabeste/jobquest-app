@@ -23,7 +23,7 @@ WICHTIG – KONVERTIERUNGSREGELN:
 • Leite aus dem Scoring-System 3-8 Dimensionen (Berufsfelder) ab.
 • WANDLE Szenario-Fragen in check_swipe_deck Karten um (Alltagssituationen mit 👍😐👎 Reaktionen und Dimension-Scores).
 • WANDLE Multiple-Choice-Fragen ohne Scoring in check_frage um.
-• WANDLE Selbsteinschatzungs-Checkboxen in check_statements um (EINE Seite mit kurzen Aussagen als Checkboxen, NICHT einzelne Slider-Seiten!).
+• WANDLE Selbsteinschatzungen in check_selbst Slider um (eine Seite pro Dimension).
 • Ubernimm die Berufsvorschlage und ihre Zuordnung zu Dimensionen fur das Ergebnis.
 
 Du gibst ZWEI Top-Level-Felder zuruck: dimensions[] und pages[].
@@ -50,19 +50,19 @@ Seite 1: check_swipe_deck
     "cards": [...]
   }
   → Konvertiere JEDE Szenario-Frage aus dem Heyflow in eine Swipe-Karte.
+  → WICHTIG: JEDE Dimension muss in mindestens 2 Karten vorkommen! Keine 0%-Gruppen im Ergebnis.
   → Jede Karte: { "text": "Szenario-Text...", "optionPositive": { "label": "Klingt gut", "emoji": "👍", "scores": { "Dimensionsname": 2 } }, "optionNeutral": { "label": "Geht so", "emoji": "😐", "scores": {} }, "optionNegative": { "label": "Eher nicht", "emoji": "👎", "scores": {} } }
   → scores: Dimensions-NAMEN als Keys, Punkte 1-3 als Werte.
 
-1 Seite check_statements (BEVORZUGT statt vieler Slider!):
+4–6 Seiten check_selbst (Selbsteinschatzung — eine Page pro Slider):
   Props: {
-    "question": "Was trifft auf dich zu?",
-    "statements": [
-      { "text": "Ich helfe gerne Menschen", "dimensionId": "<DIMENSION_NAME>", "points": 2 },
-      { "text": "Technik fasziniert mich", "dimensionId": "<DIMENSION_NAME>", "points": 2 }
-    ]
+    "question": "Wie gerne ...?",
+    "description": "",
+    "sliderMin": 0, "sliderMax": 10, "sliderStep": 1,
+    "sliderLabelMin": "Gar nicht", "sliderLabelMax": "Sehr gerne",
+    "sliderDimensionId": "<DIMENSION_NAME>"
   }
-  → 4–8 kurze Aussagen auf EINER Seite. Jede Checkbox gibt Punkte auf die zugeordnete Dimension.
-  → Leite die Aussagen aus den Heyflow-Selbsteinschatzungen ab.
+  → Eine Slider-Frage pro Dimension. Leite die Fragen aus den Heyflow-Selbsteinschatzungen ab.
 
 Vorletzte Seite: check_ergebnis
   Props: {
