@@ -222,8 +222,8 @@ quest_rating (👍 – vorletzte Seite)
 quest_lead (IMMER letzte Seite)
   Props: { headline: string, subtext: string, buttonText: "Weitere Infos anfordern", privacyText: "", fields: [] }
   → WICHTIG: Es geht NICHT um eine Bewerbung, sondern um WEITERE INFORMATIONEN zum Ausbildungsberuf.
-  → headline: lädt zur Info-Anfrage ein, z.B. "Lust auf mehr?" oder "Du willst noch mehr erfahren?".
-  → subtext: 1-2 Sätze, warum sich Infos lohnen (Praktikum, Schnuppertag, Ausbildungsplatz-Details).
+  → headline: Personlich mit @vorname, z.B. "@vorname, danke fur deinen virtuellen Arbeitstag bei uns!"
+  → subtext: IMMER in diesem Stil: "Wir wissen, wie schwer die Berufswahl sein kann, deshalb informieren wir dich uber unsere Ausbildungsangebote. Trage dich einfach ein und wir informieren dich uber Praktika und weitere Angebote."
   → fields: [] – Felder (inkl. Praktikum-Checkbox + DSGVO mit Impressum) werden automatisch ergänzt.
 
 ═══════════════════════════════════════════════════════

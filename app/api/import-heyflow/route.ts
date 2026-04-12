@@ -141,8 +141,9 @@ quest_rating
 
 quest_lead
   Props: { headline: string, subtext: string, buttonText: "Weitere Infos anfordern", privacyText: "", fields: [] }
-  → WICHTIG: Ubernimm die Texte (Headline, Subtext) aus dem Heyflow-Formular! Wenn der Prototyp z.B.
-    "Danke fur deinen virtuellen Arbeitstag" oder "Weitere Ausbildungsinformationen" zeigt, nutze genau diese Texte.
+  → headline: Personlich mit @vorname, z.B. "@vorname, danke fur deinen virtuellen Arbeitstag bei uns!"
+  → subtext: "Wir wissen, wie schwer die Berufswahl sein kann, deshalb informieren wir dich uber unsere Ausbildungsangebote. Trage dich einfach ein und wir informieren dich uber Praktika und weitere Angebote."
+  → Ubernimm den Stil aus dem Heyflow-Formular wenn vorhanden, aber immer personlich und einladend.
   → fields: [] — Felder werden automatisch erganzt, nicht manuell setzen.
 
 ═══════════════════════════════════════════════════════
