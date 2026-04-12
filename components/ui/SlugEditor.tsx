@@ -38,7 +38,7 @@ export default function SlugEditor({
   const saasOrigin = typeof window !== 'undefined' ? window.location.origin : '';
   const hasCustomDomain = !!(customDomain && domainVerified);
   const isCustom = !!(useCustomDomain && hasCustomDomain);
-  const displayOrigin = isCustom ? `https://${customDomain}` : saasOrigin;
+  const _displayOrigin = isCustom ? `https://${customDomain}` : saasOrigin;
   const saasHostname = typeof window !== 'undefined' ? window.location.hostname : 'app.jobquest-ausbildung.de';
 
   useEffect(() => {

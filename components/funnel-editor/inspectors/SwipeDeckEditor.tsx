@@ -52,7 +52,7 @@ export function SwipeDeckEditor({ props, onChange, variables = [] }: {
 
       <label className="flex items-center gap-2 cursor-pointer">
         <input type="checkbox" checked={allowSkip} onChange={(e) => onChange({ allowSkip: e.target.checked })} className="accent-violet-600" />
-        <span className="text-xs text-slate-700">„Weiß nicht / überspringen"-Button anzeigen</span>
+        <span className="text-xs text-slate-700">&bdquo;Weiß nicht / überspringen&ldquo;-Button anzeigen</span>
       </label>
 
       <div className="pt-2 border-t border-slate-100">

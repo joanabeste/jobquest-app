@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getSession, unauthorized } from '@/lib/api-auth';
-import { addDomain, removeDomain } from '@/lib/vercel-domains';
+import { removeDomain } from '@/lib/vercel-domains';
 import { v4 as uuidv4 } from 'uuid';
 
 const DOMAIN_REGEX = /^(?!-)[a-z0-9-]+(\.[a-z0-9-]+)+$/i;
