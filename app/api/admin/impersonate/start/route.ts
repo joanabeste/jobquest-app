@@ -1,8 +1,8 @@
 import crypto from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
 import { z } from 'zod';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { setImpersonation } from '@/lib/impersonation';
 
 const MAX_AGE_MS = 60 * 1000; // Token gültig für 60 Sekunden
 const UuidSchema = z.string().uuid();
@@ -81,10 +81,86 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Company not found' }, { status: 404 });
   }
 
-  // Cookie setzen
-  await setImpersonation({ companyId: company.id, companyName: company.name });
+  // Platform-Admin finden, um eine Auth-Session zu erstellen
+  const { data: adminMember } = await admin
+    .from('workspace_members')
+    .select('user_id, email')
+    .eq('role', 'platform_admin')
+    .eq('status', 'active')
+    .limit(1)
+    .single();
 
-  // Zum Dashboard weiterleiten
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
-  return NextResponse.redirect(`${siteUrl}/dashboard`);
+  if (!adminMember) {
+    console.error('[impersonate/start] no active platform_admin found');
+    return NextResponse.json({ error: 'No admin user found' }, { status: 500 });
+  }
+
+  // Magic-Link-Token serverseitig generieren (kein E-Mail-Versand)
+  const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
+    type: 'magiclink',
+    email: adminMember.email,
+  });
+
+  if (linkErr || !linkData) {
+    console.error('[impersonate/start] generateLink failed', linkErr);
+    return NextResponse.json({ error: 'Session creation failed' }, { status: 500 });
+  }
+
+  // HTML-Response erstellen, die Cookies setzt und dann per JS weiterleitet.
+  // Ein serverseitiger Redirect (302/307) kann dazu führen, dass Browser die
+  // Set-Cookie-Header nicht rechtzeitig verarbeiten, bevor der Redirect-Request
+  // abgeschickt wird — das verursacht einen Redirect-Loop.
+  const dashboardUrl = new URL('/dashboard', req.nextUrl.origin).toString();
+
+  const response = new NextResponse(
+    `<!DOCTYPE html>
+<html><head><meta charset="utf-8"></head>
+<body><p>Weiterleitung…</p>
+<script>window.location.replace(${JSON.stringify(dashboardUrl)});</script>
+</body></html>`,
+    { status: 200, headers: { 'content-type': 'text/html; charset=utf-8' } },
+  );
+
+  // Supabase-Client erstellen, der Cookies direkt auf die Response schreibt
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return req.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options),
+          );
+        },
+      },
+    },
+  );
+
+  // Token einlösen → erstellt Auth-Session und schreibt sb-* Cookies
+  const { error: verifyErr } = await supabase.auth.verifyOtp({
+    token_hash: linkData.properties.hashed_token,
+    type: 'magiclink',
+  });
+
+  if (verifyErr) {
+    console.error('[impersonate/start] verifyOtp failed', verifyErr);
+    return NextResponse.json({ error: 'Session creation failed' }, { status: 500 });
+  }
+
+  // Impersonation-Cookie direkt auf die Response setzen
+  response.cookies.set('jq_impersonate', JSON.stringify({
+    companyId: company.id,
+    companyName: company.name,
+  }), {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 60 * 60 * 4,
+  });
+
+  return response;
 }
