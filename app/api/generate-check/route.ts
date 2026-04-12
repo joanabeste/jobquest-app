@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getSession, unauthorized } from '@/lib/api-auth';
 import { defaultLeadFields } from '@/lib/lead-field-defaults';
+import { aiChat, isAiConfigured } from '@/lib/ai-provider';
 
 // ─── Input schema ─────────────────────────────────────────────────────────────
 const GenerateCheckSchema = z.object({
@@ -193,9 +194,8 @@ export async function POST(req: NextRequest) {
   }
   const { berufe, studiengaenge, notes, cardCount } = parsedBody.data;
 
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json({ error: 'API-Schlüssel (OPENAI_API_KEY) nicht konfiguriert' }, { status: 500 });
+  if (!isAiConfigured()) {
+    return NextResponse.json({ error: 'KI-API-Schlüssel nicht konfiguriert' }, { status: 500 });
   }
 
   // Build company context
@@ -214,31 +214,18 @@ export async function POST(req: NextRequest) {
     notes?.trim() ? `\nZusätzliche Hinweise: ${notes.trim()}` : '',
   ].filter(Boolean).join('\n');
 
-  const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o',
+  let rawText: string;
+  try {
+    rawText = await aiChat({
+      system: SYSTEM_PROMPT,
+      user: userMessage,
       temperature: 0.75,
-      response_format: { type: 'json_object' },
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: userMessage },
-      ],
-    }),
-  });
-
-  if (!openaiRes.ok) {
-    const errText = await openaiRes.text();
-    console.error('[generate-check] OpenAI error:', openaiRes.status, errText);
+      json: true,
+    });
+  } catch (err) {
+    console.error('[generate-check] AI error:', err);
     return NextResponse.json({ error: 'KI-Anfrage fehlgeschlagen.' }, { status: 502 });
   }
-
-  const aiData = await openaiRes.json() as { choices?: Array<{ message: { content: string } }> };
-  const rawText = aiData.choices?.[0]?.message?.content ?? '';
 
   type AIDim = { name: string; description?: string };
   type AIBlock = { type: string; props: Record<string, unknown> };

@@ -3,6 +3,7 @@ import * as cheerio from 'cheerio';
 import { getSession, unauthorized } from '@/lib/api-auth';
 import { INDUSTRY_OPTIONS, ROLE_PERMISSIONS } from '@/lib/types';
 import { FONT_OPTIONS } from '@/lib/fonts';
+import { aiChat, isAiConfigured } from '@/lib/ai-provider';
 import { safeFetch, isSafePublicUrl } from '@/lib/safe-fetch';
 import { createAdminClient } from '@/lib/supabase/admin';
 
@@ -252,7 +253,7 @@ interface AiResult {
   };
 }
 
-async function callOpenAi(extracted: Extracted, sourceUrl: string, apiKey: string): Promise<AiResult | null> {
+async function callAi(extracted: Extracted, sourceUrl: string): Promise<AiResult | null> {
   const systemPrompt = `Du bist ein Assistent, der Firmenprofil-Felder aus Roh-Daten einer Firmenwebsite extrahiert.
 Antworte AUSSCHLIESSLICH mit validem JSON ohne Markdown, kein Text davor oder danach.
 
@@ -287,26 +288,17 @@ Wähle Werte ausschließlich aus den gegebenen Kandidaten. Wenn nichts passt, gi
     colorCandidates: extracted.colorCandidates,
   }, null, 2);
 
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      temperature: 0.2,
-      response_format: { type: 'json_object' },
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPayload },
-      ],
-    }),
-  });
-
-  if (!res.ok) return null;
-  const data = await res.json() as { choices?: Array<{ message: { content: string } }> };
-  const raw = data.choices?.[0]?.message?.content ?? '';
   try {
+    const raw = await aiChat({
+      system: systemPrompt,
+      user: userPayload,
+      temperature: 0.2,
+      json: true,
+      model: process.env.AI_PROVIDER === 'openai' ? 'gpt-4o-mini' : undefined,
+    });
     return JSON.parse(raw) as AiResult;
-  } catch {
+  } catch (err) {
+    console.error('[extract-company] AI error:', err);
     return null;
   }
 }
@@ -358,9 +350,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Ungültige URL. Bitte gib eine vollständige öffentliche https-URL an.' }, { status: 400 });
   }
 
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json({ error: 'OPENAI_API_KEY nicht konfiguriert' }, { status: 500 });
+  if (!isAiConfigured()) {
+    return NextResponse.json({ error: 'KI-API-Schlüssel nicht konfiguriert' }, { status: 500 });
   }
 
   const fetched = await fetchWithLimit(url.toString(), MAX_HTML_BYTES);
@@ -383,7 +374,7 @@ export async function POST(req: NextRequest) {
   }
   extracted.colorCandidates = rankColors(extracted.colorCounts);
 
-  const ai = await callOpenAi(extracted, url.toString(), apiKey);
+  const ai = await callAi(extracted, url.toString());
   if (!ai) {
     return NextResponse.json({ error: 'KI-Analyse fehlgeschlagen.' }, { status: 502 });
   }

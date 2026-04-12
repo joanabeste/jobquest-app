@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getSession, unauthorized } from '@/lib/api-auth';
+import { aiChat, isAiConfigured } from '@/lib/ai-provider';
 
 // Hard caps to limit prompt-injection blast-radius and OpenAI cost.
 // Image URLs must be HTTPS and bounded in count; the model will only ever
@@ -342,9 +343,8 @@ export async function POST(req: NextRequest) {
   const notes = parsedBody.data.notes;
   const imageUrls = parsedBody.data.imageUrls;
 
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json({ error: 'API-Schlüssel (OPENAI_API_KEY) nicht konfiguriert' }, { status: 500 });
+  if (!isAiConfigured()) {
+    return NextResponse.json({ error: 'KI-API-Schlüssel nicht konfiguriert' }, { status: 500 });
   }
 
   // Build company context block from settings
@@ -361,36 +361,23 @@ export async function POST(req: NextRequest) {
   }
 
   // Multimodal user message: text + optional images
-  const userContent: Array<Record<string, unknown>> = [{ type: 'text', text: userMessageText }];
+  const userContent: Array<{ type: string; [key: string]: unknown }> = [{ type: 'text', text: userMessageText }];
   for (const url of imageUrls) {
     userContent.push({ type: 'image_url', image_url: { url } });
   }
 
-  const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o',
+  let rawText: string;
+  try {
+    rawText = await aiChat({
+      system: SYSTEM_PROMPT,
+      user: imageUrls.length > 0 ? userContent : userMessageText,
       temperature: 0.85,
-      response_format: { type: 'json_object' },
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: imageUrls.length > 0 ? userContent : userMessageText },
-      ],
-    }),
-  });
-
-  if (!openaiRes.ok) {
-    const errText = await openaiRes.text();
-    console.error('[generate-quest] OpenAI error:', openaiRes.status, errText);
+      json: true,
+    });
+  } catch (err) {
+    console.error('[generate-quest] AI error:', err);
     return NextResponse.json({ error: 'KI-Anfrage fehlgeschlagen.' }, { status: 502 });
   }
-
-  const aiData = await openaiRes.json() as { choices?: Array<{ message: { content: string } }> };
-  const rawText = aiData.choices?.[0]?.message?.content ?? '';
 
   type RawOption = Record<string, unknown> & { nextPageIndex?: number };
   type RawBlock = { type: string; props: Record<string, unknown> };

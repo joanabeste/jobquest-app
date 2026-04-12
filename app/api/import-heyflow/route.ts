@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getSession, unauthorized } from '@/lib/api-auth';
+import { aiChat, isAiConfigured } from '@/lib/ai-provider';
 
 const ImportSchema = z.object({
   url: z.string().url().refine(
@@ -213,9 +214,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'validation_error' }, { status: 400 });
   }
 
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json({ error: 'API-Schlüssel (OPENAI_API_KEY) nicht konfiguriert' }, { status: 500 });
+  if (!isAiConfigured()) {
+    return NextResponse.json({ error: 'KI-API-Schlüssel nicht konfiguriert' }, { status: 500 });
   }
 
   // ── Fetch Heyflow page and extract text ────────────────────────────────────
@@ -279,32 +279,19 @@ export async function POST(req: NextRequest) {
 
   const userMessage = `${companyContext.join('\n')}\n\n══ HEYFLOW-INHALT (konvertiere diesen Prototyp in eine JobQuest) ══\n\n${textContent.slice(0, 24000)}`;
 
-  // ── Call OpenAI ────────────────────────────────────────────────────────────
-  const openaiRes = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o',
+  // ── Call AI provider ──────────────────────────────────────────────────────
+  let rawText: string;
+  try {
+    rawText = await aiChat({
+      system: SYSTEM_PROMPT,
+      user: userMessage,
       temperature: 0.7,
-      response_format: { type: 'json_object' },
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: userMessage },
-      ],
-    }),
-  });
-
-  if (!openaiRes.ok) {
-    const errText = await openaiRes.text();
-    console.error('[import-heyflow] OpenAI error:', openaiRes.status, errText);
+      json: true,
+    });
+  } catch (err) {
+    console.error('[import-heyflow] AI error:', err);
     return NextResponse.json({ error: 'KI-Anfrage fehlgeschlagen.' }, { status: 502 });
   }
-
-  const aiData = await openaiRes.json() as { choices?: Array<{ message: { content: string } }> };
-  const rawText = aiData.choices?.[0]?.message?.content ?? '';
 
   type RawOption = Record<string, unknown> & { nextPageIndex?: number };
   type RawBlock = { type: string; props: Record<string, unknown> };

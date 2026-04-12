@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import * as cheerio from 'cheerio';
 import { getSession, unauthorized } from '@/lib/api-auth';
 import { safeFetch, isSafePublicUrl } from '@/lib/safe-fetch';
+import { aiChat, isAiConfigured } from '@/lib/ai-provider';
 
 export const runtime = 'nodejs';
 export const maxDuration = 120;
@@ -99,7 +100,7 @@ interface AiResult {
   studiengaenge?: string[];
 }
 
-async function callOpenAi(pages: PageContent[], apiKey: string): Promise<AiResult | null> {
+async function callAi(pages: PageContent[]): Promise<AiResult | null> {
   const systemPrompt = `Du extrahierst aus Roh-Text einer Unternehmenswebsite ALLE dort genannten Ausbildungsberufe und dualen Studiengänge.
 
 Antworte AUSSCHLIESSLICH mit validem JSON, kein Markdown, kein Text drumherum:
@@ -119,8 +120,6 @@ REGELN:
 • Wenn du nichts findest, gib leere Arrays zurück.
 • Bis zu 60 Berufe und 40 Studiengänge sind erlaubt — schöpfe das Limit aber nur aus, wenn die Quellen wirklich so viele zeigen.`;
 
-  // Pack as much page content as possible into the prompt budget. Earlier
-  // pages get full slots; later ones can still be truncated by the slice cap.
   const chunks: string[] = [];
   let used = 0;
   for (const p of pages) {
@@ -136,29 +135,16 @@ REGELN:
   }
   const userPayload = chunks.join('\n\n');
 
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({
-      model: 'gpt-4o',
-      temperature: 0.1,
-      response_format: { type: 'json_object' },
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPayload },
-      ],
-    }),
-  });
-
-  if (!res.ok) {
-    console.error('[extract-jobs] OpenAI status', res.status, await res.text().catch(() => ''));
-    return null;
-  }
-  const data = await res.json() as { choices?: Array<{ message: { content: string } }> };
-  const raw = data.choices?.[0]?.message?.content ?? '';
   try {
+    const raw = await aiChat({
+      system: systemPrompt,
+      user: userPayload,
+      temperature: 0.1,
+      json: true,
+    });
     return JSON.parse(raw) as AiResult;
-  } catch {
+  } catch (err) {
+    console.error('[extract-jobs] AI error:', err);
     return null;
   }
 }
@@ -195,9 +181,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Ungültige URL. Bitte gib eine vollständige öffentliche https-URL an.' }, { status: 400 });
   }
 
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json({ error: 'OPENAI_API_KEY nicht konfiguriert' }, { status: 500 });
+  if (!isAiConfigured()) {
+    return NextResponse.json({ error: 'KI-API-Schlüssel nicht konfiguriert' }, { status: 500 });
   }
 
   // 1. Fetch start page
@@ -239,7 +224,7 @@ export async function POST(req: NextRequest) {
   }
 
   // 3. Ask AI for structured berufe + studiengaenge
-  const ai = await callOpenAi(pages, apiKey);
+  const ai = await callAi(pages);
   if (!ai) {
     return NextResponse.json({ error: 'KI-Analyse fehlgeschlagen.' }, { status: 502 });
   }
