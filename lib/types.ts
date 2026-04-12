@@ -223,6 +223,7 @@ export interface ShowcaseConfig {
   enabled: boolean;
   headline?: string;
   subtext?: string;
+  imageUrl?: string;
   questsHeadline?: string;
   questsSubtext?: string;
   checksHeadline?: string;

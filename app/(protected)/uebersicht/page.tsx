@@ -238,6 +238,16 @@ export default function UebersichtPage() {
               placeholder="Entdecke unsere Berufe spielerisch."
               className="input-field text-sm w-full" />
           </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">Headerbild (optional)</label>
+            <input value={config.imageUrl ?? ''}
+              onChange={(e) => setConfig((c) => ({ ...c, imageUrl: e.target.value || undefined }))}
+              placeholder="https://... (Bild-URL)"
+              className="input-field text-sm" />
+            {config.imageUrl && (
+              <img src={config.imageUrl} alt="" className="mt-2 w-full max-h-32 object-cover rounded-lg border border-slate-200" />
+            )}
+          </div>
         </div>
       </div>
 

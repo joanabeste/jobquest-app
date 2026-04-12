@@ -3,8 +3,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { companyStorage, questStorage, careerCheckStorage } from '@/lib/storage';
+import { companyStorage } from '@/lib/storage';
 import { Company, JobQuest, CareerCheck } from '@/lib/types';
+import { createClient } from '@/lib/supabase/client';
+import { questFromDb, careerCheckFromDb } from '@/lib/supabase/mappers';
 import { useCorporateDesign } from '@/lib/use-corporate-design';
 import { useFavicon } from '@/lib/use-favicon';
 import { ArrowRight, Image as ImageIcon } from 'lucide-react';
@@ -38,10 +40,14 @@ export default function ShowcasePage() {
       if (cancelled) return;
       setCompany(comp);
 
-      const [quests, checks] = await Promise.all([
-        questStorage.getByCompany(comp.id).catch(() => [] as JobQuest[]),
-        careerCheckStorage.getByCompany(comp.id).catch(() => [] as CareerCheck[]),
+      // Load directly from Supabase (no auth required for public showcase)
+      const supabase = createClient();
+      const [questsRes, checksRes] = await Promise.all([
+        supabase.from('job_quests').select('*').eq('company_id', comp.id).eq('status', 'published'),
+        supabase.from('career_checks').select('*').eq('company_id', comp.id).eq('status', 'published'),
       ]);
+      const quests = (questsRes.data ?? []).map((r) => questFromDb(r as Record<string, unknown>)) as JobQuest[];
+      const checks = (checksRes.data ?? []).map((r) => careerCheckFromDb(r as Record<string, unknown>)) as CareerCheck[];
       if (cancelled) return;
 
       const qById = new Map(quests.map((q) => [q.id, q]));
@@ -164,7 +170,12 @@ export default function ShowcasePage() {
 
       <main className="flex-1">
       {/* Hero */}
-      <section className="max-w-5xl mx-auto px-4 md:px-6 pt-10 pb-6 text-center">
+      {sc.imageUrl && (
+        <div className="max-w-5xl mx-auto px-4 md:px-6 pt-6">
+          <img src={sc.imageUrl} alt="" className="w-full max-h-72 object-cover rounded-2xl" />
+        </div>
+      )}
+      <section className="max-w-5xl mx-auto px-4 md:px-6 pt-8 pb-6 text-center">
         <h2 className="text-3xl md:text-4xl font-bold text-slate-900">{headline}</h2>
         {sc.subtext && (
           <p className="text-slate-500 text-base mt-3 max-w-2xl mx-auto">{sc.subtext}</p>
