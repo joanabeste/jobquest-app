@@ -85,22 +85,20 @@ export default function ErgebnisBlock({
         <>
           {/* Tab bar — same on mobile and desktop */}
           {visibleGroups.length > 1 && (
-            <div className="flex justify-center mb-5">
-              <div className="inline-flex p-1 bg-slate-100 rounded-xl">
-                {visibleGroups.map((g, i) => (
-                  <button
-                    key={g.id}
-                    type="button"
-                    onClick={() => setActiveTab(i)}
-                    className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                    style={i === activeTab
-                      ? { background: 'white', color: primary, boxShadow: '0 1px 3px rgba(0,0,0,.06)' }
-                      : { color: '#64748b', background: 'transparent' }}
-                  >
-                    {g.label}
-                  </button>
-                ))}
-              </div>
+            <div className="flex gap-1.5 mb-5 overflow-x-auto pb-1">
+              {visibleGroups.map((g, i) => (
+                <button
+                  key={g.id}
+                  type="button"
+                  onClick={() => setActiveTab(i)}
+                  className="flex-1 min-w-0 px-2 py-2.5 rounded-xl text-xs font-semibold text-center transition-all leading-tight"
+                  style={i === activeTab
+                    ? { background: `${primary}15`, color: primary, border: `2px solid ${primary}` }
+                    : { background: '#f1f5f9', color: '#64748b', border: '2px solid transparent' }}
+                >
+                  {g.label}
+                </button>
+              ))}
             </div>
           )}
           {/* Active tab content only */}
@@ -177,12 +175,12 @@ function GroupBars({ group, dimensions, scores, primary }: { group: ErgebnisGrou
         const c = dim.color || primary;
         return (
           <div key={dim.id}>
-            <div className="flex justify-between mb-1">
-              <span className="text-xs font-medium text-slate-700">{dim.name}</span>
-              <span className="text-xs font-bold" style={{ color: c }}>{pct}%</span>
-            </div>
-            <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-              <div className="h-full rounded-full" style={{ width: `${pct}%`, background: c, transition: 'width 700ms ease-out' }} />
+            <p className="text-xs font-medium text-slate-700 mb-1">{dim.name}</p>
+            <div className="flex items-center gap-2">
+              <div className="flex-1 h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                <div className="h-full rounded-full" style={{ width: `${pct}%`, background: c, transition: 'width 700ms ease-out' }} />
+              </div>
+              <span className="text-xs font-bold w-8 text-right" style={{ color: c }}>{pct}%</span>
             </div>
           </div>
         );
@@ -229,19 +227,19 @@ function GroupSuggestions({ group, dimensions, scores, primary, br }: { group: E
                 <img
                   src={sug.imageUrl}
                   alt=""
-                  className="w-14 h-14 rounded-lg object-cover flex-shrink-0"
+                  className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
                 />
               ) : (
                 <div
-                  className="w-14 h-14 rounded-lg flex-shrink-0 flex items-center justify-center text-base font-bold"
+                  className="w-10 h-10 rounded-lg flex-shrink-0 flex items-center justify-center text-sm font-bold"
                   style={{ background: primary + '15', color: primary }}
                 >
                   {sug.title.charAt(0)}
                 </div>
               )}
-              <p className="flex-1 text-sm font-bold text-slate-900 min-w-0 truncate">{sug.title}</p>
+              <p className="flex-1 text-sm font-semibold text-slate-900 min-w-0 leading-snug">{sug.title}</p>
               <ChevronDown
-                size={18}
+                size={16}
                 className="flex-shrink-0 text-slate-400 transition-transform"
                 style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
               />
