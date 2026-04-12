@@ -28,10 +28,14 @@ WICHTIG – STORY-KOHÄRENZ:
 ═══════════════════════════════════════════════════════
 
 ── FESTER EINSTIEG (immer genau diese Seiten in dieser Reihenfolge) ──────────
-Seite 0: quest_scene    → Beruf vorstellen: Was macht diesen Job aus? Was erwartet mich? Mach neugierig!
-                          Kein Erzähl-Einstieg, sondern eine Einladung.
-                          title = IMMER die genaue Berufsbezeichnung mit "(m/w/d)", z.B. "Pflegefachkraft (m/w/d)".
-                          description = 2-3 Sätze, die den Job lebendig und einladend beschreiben.
+Seite 0: quest_scene    → Willkommensseite: Einladung zum virtuellen Arbeitstag.
+                          hideLocationHint = true (Seitenname wird NICHT im Player angezeigt).
+                          title = "Willkommen bei [Firmenname]" (exakter Firmenname aus dem Kontext).
+                          subtext = "Erlebe virtuell einen typischen Arbeitstag als:"
+                          accentText = Berufsbezeichnung mit "(m/w/d)", z.B. "Auszubildende Pflegefachkraft (m/w/d)".
+                          description = "In 3 Minuten bekommst du einen kleinen Einblick in den Arbeitstag und kannst selbst Entscheidungen treffen."
+                          buttonText = "Alles klar, verstanden!"
+                          Falls Bilder mitgeschickt: imageUrl = das beste/repräsentativste Bild.
 Seite 1: quest_spinner  → { "text": "Dein Arbeitstag beginnt…", "doneText": "Los geht's!" }
                           Automatischer Übergang nach ~2 Sekunden. KEINE anderen Props.
 Seite 2: quest_dialog   → PFLICHT: Namensabfrage über Gespräch.
@@ -90,12 +94,15 @@ GESAMT: ca. 25–28 Seiten – du kannst weitere Seiten hinzufügen wenn die Sto
 ═══════════════════════════════════════════════════════
 
 quest_scene
-  Props: { title: string, description: string, imageUrl: "", bulletPoints?: string[] }
+  Props: { title: string, description: string, imageUrl: "", subtext?: string, accentText?: string, buttonText?: string, bulletPoints?: string[] }
   → Szeneneinstieg: kurze, bildhafte Beschreibung einer Situation.
   → title: prägnant (max 8 Wörter). description: 2-3 Sätze, lebhaft und immersiv.
+  → subtext: optionaler Einleitungstext unter dem Titel (z.B. "Erlebe virtuell einen typischen Arbeitstag als:").
+  → accentText: optionaler Text in Akzentfarbe (z.B. Jobtitel). Wird farbig hervorgehoben.
+  → buttonText: optionaler eigener CTA-Button (z.B. "Alles klar, verstanden!"). Ersetzt den Standard-"Weiter"-Button.
   → bulletPoints: Pflicht für Seite 3 (Aufgaben des Tages, 4–6 Einträge). Optional auf anderen Szenen-Seiten.
-  → SEITE 0 (Startbildschirm): title MUSS die exakte Berufsbezeichnung enthalten (z.B. "Pflegefachkraft (m/w/d)").
-    Falls Bilder mitgeschickt wurden: Setze imageUrl auf eine der echten URLs (das beste/repräsentativste Bild).
+  → SEITE 0: Nutze subtext, accentText und buttonText wie oben beschrieben.
+    Falls Bilder mitgeschickt wurden: Setze imageUrl auf eine der echten URLs.
 
 quest_spinner
   Props: { text: "Dein Arbeitstag beginnt…", doneText: "Los geht's!" }
@@ -265,21 +272,31 @@ SPRACHE & STIL:
 ALLGEMEIN:
 • Jede id: eindeutiger UUID-String (Format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
 • Keine Seiten-IDs generieren – nur IDs für Options und Dialog-Lines
-• Seitennamen sollen kurz und beschreibend sein (max 4 Wörter)
+• Seitennamen = Ort oder Situation, z.B. "Schichtübergabe", "Frühstück", "Notfall", "Frau Lehmanns Zimmer". Kein "Seite 1" oder "Intro". Max 4 Wörter.
 
 ═══════════════════════════════════════════════════════
   AUSGABEFORMAT
 ═══════════════════════════════════════════════════════
 
 Antworte NUR mit validem JSON – kein Markdown, keine Erklärungen, kein Text davor oder danach.
-Pages können optional nextPageIndex (0-basiert) enthalten, damit der "Weiter"-Klick zu einer bestimmten Seite springt
-(Pfad-A-Seite bekommt nextPageIndex zur Konvergenzseite, damit Pfad B übersprungen wird):
+Pages können optional nextPageIndex (0-basiert) und hideLocationHint (boolean) enthalten.
+Seite 0 MUSS hideLocationHint: true haben (Willkommensseite zeigt keinen Ortsnamen).
 
 {
   "pages": [
     {
-      "name": "Kurzer Seitenname",
-      "nextPageIndex": 11,
+      "name": "Willkommen",
+      "hideLocationHint": true,
+      "blocks": [
+        {
+          "type": "quest_scene",
+          "props": { "title": "Willkommen bei ...", "subtext": "...", "accentText": "...", "description": "...", "buttonText": "Alles klar, verstanden!", "imageUrl": "" }
+        }
+      ]
+    },
+    {
+      "name": "Schichtübergabe",
+      "nextPageIndex": 5,
       "blocks": [
         {
           "type": "quest_scene",
@@ -371,7 +388,7 @@ export async function POST(req: NextRequest) {
 
   type RawOption = Record<string, unknown> & { nextPageIndex?: number };
   type RawBlock = { type: string; props: Record<string, unknown> };
-  type RawPage  = { name: string; nextPageIndex?: number; blocks: RawBlock[] };
+  type RawPage  = { name: string; nextPageIndex?: number; hideLocationHint?: boolean; blocks: RawBlock[] };
 
   let parsed: { pages: RawPage[] };
   try {
@@ -400,10 +417,14 @@ export async function POST(req: NextRequest) {
       ? pageIds[page.nextPageIndex]
       : undefined;
 
+    // Page 0 always hides location hint; respect AI output for other pages
+    const hideHint = pIdx === 0 || page.hideLocationHint === true;
+
     return {
       id: pageIds[pIdx],
       name: page.name,
       ...(pageNextId ? { nextPageId: pageNextId } : {}),
+      ...(hideHint ? { hideLocationHint: true } : {}),
       nodes: page.blocks.map((block) => {
         let props = block.props;
 
