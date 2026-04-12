@@ -184,27 +184,29 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
     if (transitionRef.current !== 'visible') return; // prevent double-click during transition
     const prevIdx = history[history.length - 1] ?? (pageIndex > 0 ? pageIndex - 1 : -1);
     if (prevIdx < 0) return;
-    // Reset ALL interactive blocks on the target page so the user can re-decide
-    const targetPage = doc.pages[prevIdx];
-    const targetBlocks = flatBlocks(targetPage.nodes);
+    // Reset ALL interactive blocks on the target page AND all pages after it,
+    // so going forward again gives a fresh experience (no pre-filled quizzes etc.)
     const interactiveTypes = ['quest_decision', 'quest_quiz', 'quest_rating', 'quest_zuordnung', 'quest_dialog'];
-    const interactiveBlocks = targetBlocks.filter((b) => interactiveTypes.includes(b.type));
-    if (interactiveBlocks.length > 0) {
-      setAnswers((prev) => {
-        const next = { ...prev };
-        for (const block of interactiveBlocks) {
-          delete next[block.id];
-          delete next[`${block.id}_checked`];
-          delete next[`${block.id}_confirmed`];
+    setAnswers((prev) => {
+      const next = { ...prev };
+      for (let i = prevIdx; i < doc.pages.length; i++) {
+        const blocks = flatBlocks(doc.pages[i].nodes);
+        for (const block of blocks) {
+          if (interactiveTypes.includes(block.type)) {
+            delete next[block.id];
+            delete next[`${block.id}_checked`];
+            delete next[`${block.id}_confirmed`];
+          }
         }
-        return next;
-      });
-      // For dialogs: show all lines up to the choice point (not from scratch)
-      const dialogBlock = interactiveBlocks.find((b) => b.type === 'quest_dialog');
-      if (dialogBlock) {
-        const lines = (dialogBlock.props.lines as unknown[]) ?? [];
-        setDialogVisible(lines.length); // all lines visible → choices/input ready
       }
+      return next;
+    });
+    // For dialogs on target page: show all lines up to the choice point
+    const targetBlocks = flatBlocks(doc.pages[prevIdx].nodes);
+    const dialogBlock = targetBlocks.find((b) => b.type === 'quest_dialog');
+    if (dialogBlock) {
+      const lines = (dialogBlock.props.lines as unknown[]) ?? [];
+      setDialogVisible(lines.length);
     }
     transitionTo(() => { setHistory((h) => h.slice(0, -1)); setPageIndex(prevIdx); });
   }
