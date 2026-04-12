@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getSession, unauthorized } from '@/lib/api-auth';
-import { aiChat, isAiConfigured } from '@/lib/ai-provider';
+import { aiChat, isAiConfigured, AiError } from '@/lib/ai-provider';
 
 const ImportSchema = z.object({
   url: z.string().url().refine(
@@ -293,7 +293,12 @@ export async function POST(req: NextRequest) {
     });
   } catch (err) {
     console.error('[import-heyflow] AI error:', err);
-    return NextResponse.json({ error: 'KI-Anfrage fehlgeschlagen.' }, { status: 502 });
+    const msg = err instanceof AiError ? err.message : 'KI-Anfrage fehlgeschlagen.';
+    const status = err instanceof AiError && err.code === 'missing_key' ? 500
+      : err instanceof AiError && err.code === 'auth' ? 500
+      : err instanceof AiError && err.code === 'rate_limit' ? 429
+      : 502;
+    return NextResponse.json({ error: msg }, { status });
   }
 
   type RawOption = Record<string, unknown> & { nextPageIndex?: number };

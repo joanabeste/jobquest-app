@@ -28,14 +28,20 @@ function getProvider(): Provider {
   return 'anthropic';
 }
 
+export class AiError extends Error {
+  constructor(message: string, public readonly code: 'missing_key' | 'auth' | 'rate_limit' | 'truncated' | 'api_error') {
+    super(message);
+  }
+}
+
 function getApiKey(provider: Provider): string {
   if (provider === 'anthropic') {
     const key = process.env.ANTHROPIC_API_KEY;
-    if (!key) throw new Error('ANTHROPIC_API_KEY nicht konfiguriert');
+    if (!key) throw new AiError('ANTHROPIC_API_KEY ist nicht konfiguriert. Bitte in den Vercel Environment Variables setzen.', 'missing_key');
     return key;
   }
   const key = process.env.OPENAI_API_KEY;
-  if (!key) throw new Error('OPENAI_API_KEY nicht konfiguriert');
+  if (!key) throw new AiError('OPENAI_API_KEY ist nicht konfiguriert. Bitte in den Vercel Environment Variables setzen.', 'missing_key');
   return key;
 }
 
@@ -69,7 +75,9 @@ async function chatOpenAI(options: AiChatOptions): Promise<string> {
   if (!res.ok) {
     const errText = await res.text();
     console.error('[ai-provider:openai] error:', res.status, errText);
-    throw new Error(`OpenAI API error: ${res.status}`);
+    if (res.status === 401) throw new AiError('OpenAI API-Key ist ungultig oder abgelaufen.', 'auth');
+    if (res.status === 429) throw new AiError('OpenAI Rate-Limit erreicht. Bitte kurz warten und erneut versuchen.', 'rate_limit');
+    throw new AiError(`OpenAI API-Fehler (${res.status}): ${errText.slice(0, 200)}`, 'api_error');
   }
 
   const data = await res.json() as { choices?: Array<{ message: { content: string } }> };
@@ -118,7 +126,10 @@ async function chatAnthropic(options: AiChatOptions): Promise<string> {
   if (!res.ok) {
     const errText = await res.text();
     console.error('[ai-provider:anthropic] error:', res.status, errText);
-    throw new Error(`Anthropic API error: ${res.status}`);
+    if (res.status === 401) throw new AiError('Anthropic API-Key ist ungultig oder abgelaufen.', 'auth');
+    if (res.status === 429) throw new AiError('Anthropic Rate-Limit erreicht. Bitte kurz warten und erneut versuchen.', 'rate_limit');
+    if (res.status === 529) throw new AiError('Anthropic API ist uberlastet. Bitte spater erneut versuchen.', 'api_error');
+    throw new AiError(`Anthropic API-Fehler (${res.status}): ${errText.slice(0, 200)}`, 'api_error');
   }
 
   const data = await res.json() as {
@@ -127,7 +138,8 @@ async function chatAnthropic(options: AiChatOptions): Promise<string> {
   };
 
   if (data.stop_reason === 'max_tokens') {
-    console.warn('[ai-provider:anthropic] response truncated (max_tokens reached)');
+    console.error('[ai-provider:anthropic] response truncated (max_tokens reached)');
+    throw new AiError('KI-Antwort wurde abgeschnitten (zu lang). Bitte mit kurzerem Inhalt erneut versuchen.', 'truncated');
   }
 
   return data.content?.find((c) => c.type === 'text')?.text ?? '';

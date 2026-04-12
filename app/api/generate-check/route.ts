@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getSession, unauthorized } from '@/lib/api-auth';
 import { defaultLeadFields } from '@/lib/lead-field-defaults';
-import { aiChat, isAiConfigured } from '@/lib/ai-provider';
+import { aiChat, isAiConfigured, AiError } from '@/lib/ai-provider';
 
 // ─── Input schema ─────────────────────────────────────────────────────────────
 const GenerateCheckSchema = z.object({
@@ -226,7 +226,9 @@ export async function POST(req: NextRequest) {
     });
   } catch (err) {
     console.error('[generate-check] AI error:', err);
-    return NextResponse.json({ error: 'KI-Anfrage fehlgeschlagen.' }, { status: 502 });
+    const msg = err instanceof AiError ? err.message : 'KI-Anfrage fehlgeschlagen.';
+    const status = err instanceof AiError && err.code === 'rate_limit' ? 429 : err instanceof AiError && (err.code === 'missing_key' || err.code === 'auth') ? 500 : 502;
+    return NextResponse.json({ error: msg }, { status });
   }
 
   type AIDim = { name: string; description?: string };
