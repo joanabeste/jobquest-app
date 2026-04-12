@@ -582,6 +582,7 @@ function FunnelEditorInner({
         showHeyflowImport={!!company?.features?.heyflowImport}
         currentPages={doc.pages.length > 0 ? doc.pages : undefined}
         currentDimensions={dimensions.length > 0 ? dimensions : undefined}
+        companyJobs={company?.successPage?.jobs?.map((j) => j.title).filter(Boolean)}
       />
     )}
     {showEmailConfig && (

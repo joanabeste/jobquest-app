@@ -4,9 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { companyStorage } from '@/lib/storage';
-import { Company, JobQuest, CareerCheck } from '@/lib/types';
-import { createClient } from '@/lib/supabase/client';
-import { questFromDb, careerCheckFromDb } from '@/lib/supabase/mappers';
+import { Company } from '@/lib/types';
 import { useCorporateDesign } from '@/lib/use-corporate-design';
 import { useFavicon } from '@/lib/use-favicon';
 import { ArrowRight, Image as ImageIcon } from 'lucide-react';
@@ -35,44 +33,25 @@ export default function ShowcasePage() {
     let cancelled = false;
     async function load() {
       if (!slug) return;
-      const comp = await companyStorage.getBySlug(slug);
-      if (!comp || !comp.showcase?.enabled) { setNotFound(true); return; }
+      // Use public API route (no auth required)
+      const res = await fetch(`/api/public/showcase/${encodeURIComponent(slug)}`);
+      if (!res.ok) { setNotFound(true); return; }
       if (cancelled) return;
-      setCompany(comp);
-
-      // Load directly from Supabase (no auth required for public showcase)
-      const supabase = createClient();
-      const [questsRes, checksRes] = await Promise.all([
-        supabase.from('job_quests').select('*').eq('company_id', comp.id).eq('status', 'published'),
-        supabase.from('career_checks').select('*').eq('company_id', comp.id).eq('status', 'published'),
-      ]);
-      const quests = (questsRes.data ?? []).map((r) => questFromDb(r as Record<string, unknown>)) as JobQuest[];
-      const checks = (checksRes.data ?? []).map((r) => careerCheckFromDb(r as Record<string, unknown>)) as CareerCheck[];
-      if (cancelled) return;
-
-      const qById = new Map(quests.map((q) => [q.id, q]));
-      const cById = new Map(checks.map((c) => [c.id, c]));
-      const resolved: ResolvedItem[] = [];
-      for (const it of comp.showcase.items) {
-        if (it.type === 'jobquest') {
-          const q = qById.get(it.contentId);
-          if (q && q.status === 'published') {
-            resolved.push({
-              id: it.id, type: 'jobquest', title: q.title,
-              href: `/jobquest/${q.slug}`, cardImage: q.cardImage,
-            });
-          }
-        } else {
-          const c = cById.get(it.contentId);
-          if (c && c.status === 'published') {
-            resolved.push({
-              id: it.id, type: 'berufscheck', title: c.title,
-              href: `/berufscheck/${c.slug}`, cardImage: c.cardImage,
-            });
-          }
-        }
-      }
-      setItemsState({ loading: false, items: resolved });
+      const data = await res.json() as {
+        company: Company;
+        items: Array<{ id: string; type: 'jobquest' | 'berufscheck'; title: string; slug: string; cardImage?: string }>;
+      };
+      setCompany(data.company);
+      setItemsState({
+        loading: false,
+        items: data.items.map((it) => ({
+          id: it.id,
+          type: it.type,
+          title: it.title,
+          href: it.type === 'jobquest' ? `/jobquest/${it.slug}` : `/berufscheck/${it.slug}`,
+          cardImage: it.cardImage,
+        })),
+      });
     }
     load();
     return () => { cancelled = true; };

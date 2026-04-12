@@ -13,6 +13,7 @@ interface Props {
   showHeyflowImport?: boolean;
   currentPages?: FunnelPage[];
   currentDimensions?: Dimension[];
+  companyJobs?: string[];
 }
 
 const LOADING_STEPS = [
@@ -24,7 +25,7 @@ const LOADING_STEPS = [
   'Letzte Feinheiten werden angepasst…',
 ];
 
-export default function GenerateCheckModal({ onGenerate, onClose, showHeyflowImport, currentPages, currentDimensions }: Props) {
+export default function GenerateCheckModal({ onGenerate, onClose, showHeyflowImport, currentPages, currentDimensions, companyJobs }: Props) {
   const hasExistingContent = !!currentPages && currentPages.length > 0;
   const [tab, setTab] = useState<Tab>(hasExistingContent ? 'refine' : 'generate');
   const [berufe, setBerufe] = useState<string[]>([]);
@@ -342,7 +343,16 @@ export default function GenerateCheckModal({ onGenerate, onClose, showHeyflowImp
                 <label className="block text-xs font-medium text-slate-500 mb-1.5">
                   Berufe <span className="text-red-400">*</span>
                 </label>
-                <p className="text-[11px] text-slate-400 mb-2">Pflichtfeld. Drücke Enter oder klicke + nach jedem Beruf.</p>
+                <p className="text-[11px] text-slate-400 mb-2">Pflichtfeld. Drucke Enter oder klicke + nach jedem Beruf.</p>
+                {companyJobs && companyJobs.length > 0 && berufe.length === 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setBerufe(companyJobs.filter((j) => !berufe.includes(j)))}
+                    className="w-full mb-2 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-xl border border-dashed border-violet-300 text-violet-600 bg-violet-50/40 hover:bg-violet-50 transition-colors"
+                  >
+                    <Sparkles size={12} /> {companyJobs.length} Berufe aus Firmenprofil ubernehmen
+                  </button>
+                )}
                 <div className="flex gap-1">
                   <input
                     type="text"
