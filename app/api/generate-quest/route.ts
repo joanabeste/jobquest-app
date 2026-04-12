@@ -383,11 +383,17 @@ export async function POST(req: NextRequest) {
   type RawBlock = { type: string; props: Record<string, unknown> };
   type RawPage  = { name: string; nextPageIndex?: number; hideLocationHint?: boolean; blocks: RawBlock[] };
 
+  // Strip markdown code fences that Claude sometimes wraps around JSON
+  let jsonText = rawText.trim();
+  if (jsonText.startsWith('```')) {
+    jsonText = jsonText.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?```\s*$/, '');
+  }
+
   let parsed: { pages: RawPage[] };
   try {
-    parsed = JSON.parse(rawText);
+    parsed = JSON.parse(jsonText);
   } catch {
-    console.error('[generate-quest] JSON parse failed, raw length=', rawText.length);
+    console.error('[generate-quest] JSON parse failed, raw length=', rawText.length, 'first 200 chars:', rawText.slice(0, 200));
     return NextResponse.json({ error: 'KI-Antwort ungültig.' }, { status: 502 });
   }
 
