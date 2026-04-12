@@ -20,7 +20,7 @@ WICHTIG – KONVERTIERUNGSREGELN:
 • GLEICHE die Berufe ab: Wenn ein Firmenprofil mit Berufen mitgegeben wird, stelle sicher dass ALLE diese
   Berufe im Ergebnis als Suggestions vorkommen — auch wenn sie im Heyflow-Prototyp fehlen. Ordne sie passenden Dimensionen zu.
 • Hinterfrage den Inhalt: Wenn der Prototyp Fehler, Lucken oder Inkonsistenzen hat, korrigiere sie.
-• Leite aus dem Scoring-System 3-8 Dimensionen (Berufsfelder) ab.
+• Leite aus dem Scoring-System 3-4 Dimensionen (Berufsfelder) ab.
 • WANDLE Szenario-Fragen in check_swipe_deck Karten um (Alltagssituationen mit 👍😐👎 Reaktionen und Dimension-Scores).
 • WANDLE Multiple-Choice-Fragen ohne Scoring in check_frage um.
 • WANDLE Selbsteinschatzungen in check_selbst Slider um (eine Seite pro Dimension).
@@ -29,7 +29,7 @@ WICHTIG – KONVERTIERUNGSREGELN:
 Du gibst ZWEI Top-Level-Felder zuruck: dimensions[] und pages[].
 
 ═══════════════════════════════════════════════════════
-  DIMENSIONS (3–8 Stuck)
+  DIMENSIONS (3–4 Stuck, NICHT mehr)
 ═══════════════════════════════════════════════════════
 Leite die Dimensionen direkt aus dem Heyflow-Scoring/den Ergebniskategorien ab.
 Jede Dimension: { "name": string, "description": string }

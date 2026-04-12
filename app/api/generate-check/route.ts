@@ -27,17 +27,16 @@ const SYSTEM_PROMPT = `Du bist ein Experte für Karriere-Orientierungstools. Dei
 
 Du gibst ZWEI Top-Level-Felder zurück: dimensions[] und pages[].
 
-── DIMENSIONS (4–8 Stück) ────────────────────────────────────────────────
-Leite aus den vorgegebenen Berufen + Studiengängen 4–8 Berufsfelder ab. Beispiele:
-• Industriemechaniker / Werkzeugmechaniker → "Gewerblich", "Technisch"
-• Industriekaufmann / Bürokaufmann → "Kaufmännisch"
-• Fachinformatiker / B.Sc. Informatik / Software Engineering → "Informatik"
-• B.Eng. Mechatronik / Mechatroniker → "Mechatronik", "Technisch"
-• B.Eng. Wirtschaftsingenieurwesen → "Ingenieurwesen", "Kaufmännisch"
-• B.Eng. Maschinenbau / Elektrotechnik → "Ingenieurwesen", "Technisch"
+── DIMENSIONS (3–4 Stuck, NICHT mehr!) ────────────────────────────────────
+Leite aus den vorgegebenen Berufen 3–4 ubergeordnete Berufsfelder ab. MAXIMAL 4!
+Wenige, klare Kategorien sind besser als viele kleine. Beispiele:
+• Pflege + Sozialarbeit + Betreuung → "Pflege & Soziales"
+• Handwerk + Technik + IT → "Handwerk & Technik"
+• Kaufmann + Buro + Verwaltung → "Organisation & Verwaltung"
 
 Jede Dimension hat: { "name": string, "description": string }
-Die Namen werden im weiteren Verlauf als Schlüssel in scores-Maps verwendet — verwende sie konsistent!
+Die Namen werden als Schlussel in scores-Maps verwendet — konsistent verwenden!
+JEDER Beruf muss eindeutig einer Dimension zugeordnet werden konnen.
 
 ── PAGES (in dieser Reihenfolge) ────────────────────────────────────────
 Seite 0: check_intro
@@ -94,45 +93,36 @@ Vorletzte Seite: check_ergebnis
     "groups": [ ... ]
   }
 
-  Gruppen:
-  Gruppe "Ausbildung" (immer sichtbar):
-  {
-    "label": "Ausbildung",
-    "dimensionIds": [<Namen aller Dimensionen, die zu Ausbildungsberufen gehören>],
-    "showBars": true,
-    "topN": 3,
-    "suggestions": [
-      {
-        "title": "<Berufsname genau wie eingegeben>",
-        "description": "1–2 Sätze, was diesen Beruf ausmacht.",
-        "imageUrl": "",
-        "requiresDimensionIds": [<1–2 Dimensions-Namen, die für diesen Beruf charakteristisch sind>],
-        "links": []
-      }
-      // … eine Suggestion pro Beruf in der Eingabeliste
-    ]
-  }
+  Gruppen — EINE GRUPPE PRO DIMENSION, mit den zugehorigen Berufen:
+  Erstelle fur JEDE Dimension eine eigene Gruppe, die als Tab im Ergebnis angezeigt wird.
+  So sieht der Nutzer sofort, welche Berufe zu welcher Kategorie gehoren.
 
-  WENN studiengaenge gegeben sind, zusätzlich Gruppe "Duales Studium":
-  {
-    "label": "Duales Studium",
-    "visibleIf": { "sourceBlockIndex": <Index der Filterfrage>, "optionIndex": [1, 2, 3] },
-      // optionIndex referenziert die Optionen der Filterfrage:
-      //   0 = Hauptschule (NICHT zeigen)
-      //   1 = Realschule, 2 = (Fach-)Abi, 3 = unklar (zeigen)
-    "dimensionIds": [<Namen aller Dimensionen, die zu Studiengängen gehören>],
-    "showBars": true,
-    "topN": 2,
-    "suggestions": [
-      {
-        "title": "<Studiengang genau wie eingegeben>",
-        "description": "1–2 Sätze, was den Studiengang ausmacht.",
-        "imageUrl": "",
-        "requiresDimensionIds": [<passende Dimensionen>],
-        "links": []
-      }
-    ]
-  }
+  Beispiel bei 3 Dimensionen:
+  [
+    {
+      "label": "Pflege & Soziales",
+      "dimensionIds": ["Pflege & Soziales"],
+      "showBars": true,
+      "topN": 3,
+      "suggestions": [
+        { "title": "Pflegefachkraft", "description": "...", "imageUrl": "", "requiresDimensionIds": ["Pflege & Soziales"], "links": [] },
+        { "title": "Heilerziehungspfleger", "description": "...", "imageUrl": "", "requiresDimensionIds": ["Pflege & Soziales"], "links": [] }
+      ]
+    },
+    {
+      "label": "Handwerk & Technik",
+      "dimensionIds": ["Handwerk & Technik"],
+      "showBars": true,
+      "topN": 3,
+      "suggestions": [
+        { "title": "Tischler", "description": "...", "imageUrl": "", "requiresDimensionIds": ["Handwerk & Technik"], "links": [] }
+      ]
+    }
+  ]
+
+  WENN studiengaenge gegeben sind: Fuege die Studiengange in die passende Dimensions-Gruppe ein
+  (z.B. "B.Eng. Mechatronik" in "Handwerk & Technik"). Optional: Separate Gruppe "Duales Studium"
+  mit visibleIf-Filter auf Schulabschluss-Frage.
 
 Letzte Seite: check_lead
   Props: {
