@@ -583,7 +583,29 @@ function JobImportFromUrl({ onImport }: { onImport: (jobs: string[]) => void }) 
     setLoading(true);
     setResult(null);
     try {
-      // Try the extract-jobs API first (works for career pages)
+      // For Heyflow/prototype URLs: try the check import endpoint first
+      // (it fetches from the assets bucket and can extract job listings)
+      const isPrototype = url.includes('heyflow.site');
+      if (isPrototype) {
+        // Fetch the prototype content and extract job titles with a simple AI call
+        const res = await fetch('/api/extract-jobs-from-prototype', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: url.trim() }),
+        });
+        if (res.ok) {
+          const data = await res.json() as { berufe?: string[] };
+          const all = data.berufe ?? [];
+          if (all.length > 0) {
+            onImport(all);
+            setResult(`${all.length} Berufe ubernommen.`);
+            setUrl('');
+            return;
+          }
+        }
+      }
+
+      // Standard: extract jobs from career website
       const res = await fetch('/api/companies/extract-jobs-from-website', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
