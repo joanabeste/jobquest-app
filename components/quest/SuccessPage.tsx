@@ -54,36 +54,39 @@ export default function SuccessPage({ company, primary, br, featuredQuests = [] 
       )}
 
       {/* ── Ausbildungsberufe ───────────────────────────────────────────── */}
-      {cfg.showJobs && cfg.jobs.length > 0 && (
-        <div className="w-full">
-          <h3 className="text-sm font-semibold text-slate-700 mb-3">{cfg.jobsHeadline}</h3>
-          <div className="flex flex-col gap-2">
-            {cfg.jobs.map((job) =>
-              job.url ? (
-                <a
-                  key={job.id}
-                  href={job.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-between bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium text-slate-800 hover:border-slate-300 hover:bg-slate-50 transition-colors group"
-                  style={{ borderRadius: br }}
-                >
-                  {job.title}
-                  <ChevronRight size={15} className="text-slate-400 group-hover:text-slate-600" />
-                </a>
-              ) : (
-                <div
-                  key={job.id}
-                  className="bg-white border border-slate-200 px-4 py-3 text-sm font-medium text-slate-800"
-                  style={{ borderRadius: br }}
-                >
-                  {job.title}
-                </div>
-              ),
-            )}
+      {cfg.showJobs && cfg.jobs.length > 0 && (() => {
+        const groups = [...new Set(cfg.jobs.map((j) => j.group || '').filter(Boolean))];
+        const hasGroups = groups.length > 0;
+        const ungrouped = cfg.jobs.filter((j) => !j.group);
+        const sections = hasGroups
+          ? [...groups.map((g) => ({ group: g, jobs: cfg.jobs.filter((j) => j.group === g) })), ...(ungrouped.length > 0 ? [{ group: '', jobs: ungrouped }] : [])]
+          : [{ group: '', jobs: cfg.jobs }];
+
+        const renderJob = (job: typeof cfg.jobs[0]) => job.url ? (
+          <a key={job.id} href={job.url} target="_blank" rel="noopener noreferrer"
+            className="flex items-center justify-between bg-white border border-slate-200 px-4 py-3 text-sm font-medium text-slate-800 hover:border-slate-300 hover:bg-slate-50 transition-colors group"
+            style={{ borderRadius: br }}>
+            {job.title}
+            <ChevronRight size={15} className="text-slate-400 group-hover:text-slate-600" />
+          </a>
+        ) : (
+          <div key={job.id} className="bg-white border border-slate-200 px-4 py-3 text-sm font-medium text-slate-800" style={{ borderRadius: br }}>
+            {job.title}
           </div>
-        </div>
-      )}
+        );
+
+        return (
+          <div className="w-full">
+            <h3 className="text-sm font-semibold text-slate-700 mb-3">{cfg.jobsHeadline}</h3>
+            {sections.map(({ group, jobs }) => (
+              <div key={group || '__ungrouped'} className="mb-4 last:mb-0">
+                {group && <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: primary }}>{group}</p>}
+                <div className="flex flex-col gap-1.5">{jobs.map(renderJob)}</div>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
 
       {/* ── Weitere Quests ──────────────────────────────────────────────── */}
       {cfg.showQuests && featuredQuests.length > 0 && (

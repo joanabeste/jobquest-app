@@ -495,22 +495,35 @@ export default function SettingsCompanyPage() {
                       onChange={(e) => setSuccessPage((s) => ({ ...s, jobsHeadline: e.target.value }))} />
                   </div>
                   <div className="space-y-2">
-                    {successPage.jobs.map((job: SuccessJob) => (
-                      <div key={job.id} className="flex gap-2">
-                        <input type="text" className="input-field flex-1" placeholder="Berufsbezeichnung"
-                          value={job.title} onChange={(e) => setSuccessPage((s) => ({ ...s, jobs: s.jobs.map((j) => j.id === job.id ? { ...j, title: e.target.value } : j) }))} />
-                        <input type="url" className="input-field flex-1" placeholder="Link (optional)"
-                          value={job.url ?? ''} onChange={(e) => setSuccessPage((s) => ({ ...s, jobs: s.jobs.map((j) => j.id === job.id ? { ...j, url: e.target.value || undefined } : j) }))} />
-                        <button type="button" onClick={() => setSuccessPage((s) => ({ ...s, jobs: s.jobs.filter((j) => j.id !== job.id) }))}
-                          className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
-                          <X size={16} />
-                        </button>
-                      </div>
-                    ))}
+                    {(() => {
+                      const groups = [...new Set(successPage.jobs.map((j) => j.group || '').filter(Boolean))];
+                      const ungrouped = successPage.jobs.filter((j) => !j.group);
+                      const grouped = groups.map((g) => ({ group: g, jobs: successPage.jobs.filter((j) => j.group === g) }));
+                      const sections = [...grouped, ...(ungrouped.length > 0 ? [{ group: '', jobs: ungrouped }] : [])];
+                      return sections.map(({ group, jobs: sectionJobs }) => (
+                        <div key={group || '__ungrouped'}>
+                          {group && (
+                            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mt-3 mb-1.5">{group}</p>
+                          )}
+                          {sectionJobs.map((job: SuccessJob) => (
+                            <div key={job.id} className="flex gap-1.5 mb-1.5">
+                              <input type="text" className="input-field flex-[2]" placeholder="Berufsbezeichnung"
+                                value={job.title} onChange={(e) => setSuccessPage((s) => ({ ...s, jobs: s.jobs.map((j) => j.id === job.id ? { ...j, title: e.target.value } : j) }))} />
+                              <input type="text" className="input-field flex-1" placeholder="Gruppe (optional)"
+                                value={job.group ?? ''} onChange={(e) => setSuccessPage((s) => ({ ...s, jobs: s.jobs.map((j) => j.id === job.id ? { ...j, group: e.target.value || undefined } : j) }))} />
+                              <button type="button" onClick={() => setSuccessPage((s) => ({ ...s, jobs: s.jobs.filter((j) => j.id !== job.id) }))}
+                                className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0">
+                                <X size={14} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      ));
+                    })()}
                     <button type="button"
-                      onClick={() => setSuccessPage((s) => ({ ...s, jobs: [...s.jobs, { id: crypto.randomUUID(), title: '', url: '' }] }))}
+                      onClick={() => setSuccessPage((s) => ({ ...s, jobs: [...s.jobs, { id: crypto.randomUUID(), title: '' }] }))}
                       className="flex items-center gap-1.5 text-sm text-violet-600 font-medium hover:text-violet-700 mt-1">
-                      <Plus size={15} /> Beruf hinzufügen
+                      <Plus size={15} /> Beruf hinzufugen
                     </button>
                   </div>
                 </>

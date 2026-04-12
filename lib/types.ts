@@ -150,6 +150,7 @@ export interface SuccessJob {
   id: string;
   title: string;
   url?: string;
+  group?: string;  // Optional: Gruppenname (z.B. "Pflege & Begleitung", "Handwerk & Technik")
 }
 
 export interface SuccessLink {
