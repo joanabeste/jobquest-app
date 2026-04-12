@@ -154,7 +154,8 @@ quest_lead
 • Nutze quest_quiz wenn es klar richtige/falsche Antworten gibt.
 • Nutze quest_decision für echte Entscheidungen, MINDESTENS 2× MIT BRANCHING.
 • Vermeide mehrere gleichartige Blöcke direkt hintereinander.
-• Seitennamen = Ort oder Situation (z.B. "Schichtübergabe", "Frühstück", "Notfall"). Max 4 Wörter.
+• Seitennamen = immer der Ort, z.B. "Schichtübergabe", "Frühstück", "Notfall".
+  NIEMALS "Feedback", "Feedback Falsch", "Reaktion" oder "Konsequenz". Auch Feedback-Seiten behalten den Ortsnamen. Max 4 Wörter.
 • Jede id: eindeutiger UUID-String.
 • @vorname überall einsetzen, um den Nutzer persönlich anzusprechen.
 • Normale Groß-/Kleinschreibung. Keine ALL CAPS.

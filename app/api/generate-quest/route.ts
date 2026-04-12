@@ -283,7 +283,9 @@ SPRACHE & STIL:
 ALLGEMEIN:
 • Jede id: eindeutiger UUID-String (Format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
 • Keine Seiten-IDs generieren – nur IDs für Options und Dialog-Lines
-• Seitennamen = Ort oder Situation, z.B. "Schichtübergabe", "Frühstück", "Notfall", "Frau Lehmanns Zimmer". Kein "Seite 1" oder "Intro". Max 4 Wörter.
+• Seitennamen = immer der Ort oder die Situation, z.B. "Schichtübergabe", "Frühstück", "Notfall", "Frau Lehmanns Zimmer".
+  NIEMALS technische Namen wie "Feedback", "Feedback Falsch", "Reaktion", "Konsequenz" oder "Seite 1".
+  Auch Feedback-/Reaktionsseiten bekommen den Ortsnamen, an dem man sich gerade befindet (z.B. weiterhin "Medikamentenausgabe" statt "Feedback Medikamente"). Max 4 Wörter.
 
 ═══════════════════════════════════════════════════════
   AUSGABEFORMAT
