@@ -5,10 +5,7 @@ import { defaultLeadFields } from '@/lib/lead-field-defaults';
 import { aiChat, isAiConfigured, AiError } from '@/lib/ai-provider';
 
 const ImportSchema = z.object({
-  url: z.string().url().refine(
-    (u) => { try { return new URL(u).hostname.endsWith('heyflow.site'); } catch { return false; } },
-    { message: 'URL muss eine heyflow.site-Domain sein' },
-  ),
+  url: z.string().url().startsWith('https://'),
 });
 
 const DIMENSION_PALETTE = [

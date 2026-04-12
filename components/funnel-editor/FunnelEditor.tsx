@@ -571,6 +571,7 @@ function FunnelEditorInner({
         onGenerate={handleGenerateQuest}
         onClose={() => setShowGenerateModal(false)}
         showHeyflowImport={!!company?.features?.heyflowImport}
+        currentPages={doc.pages.length > 0 ? doc.pages : undefined}
       />
     )}
     {showGenerateCheckModal && (
@@ -578,6 +579,8 @@ function FunnelEditorInner({
         onGenerate={handleGenerateCheck}
         onClose={() => setShowGenerateCheckModal(false)}
         showHeyflowImport={!!company?.features?.heyflowImport}
+        currentPages={doc.pages.length > 0 ? doc.pages : undefined}
+        currentDimensions={dimensions.length > 0 ? dimensions : undefined}
       />
     )}
     {showEmailConfig && (

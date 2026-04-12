@@ -1,16 +1,18 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { X, Sparkles, Plus, Globe, Loader2, ArrowDownToLine } from 'lucide-react';
+import { X, Sparkles, Plus, Globe, Loader2, ArrowDownToLine, Wand2 } from 'lucide-react';
 import type { FunnelPage } from '@/lib/funnel-types';
 import type { Dimension } from '@/lib/types';
 
-type Tab = 'generate' | 'import';
+type Tab = 'generate' | 'import' | 'refine';
 
 interface Props {
   onGenerate: (pages: FunnelPage[], dimensions: Dimension[], title: string) => void;
   onClose: () => void;
   showHeyflowImport?: boolean;
+  currentPages?: FunnelPage[];
+  currentDimensions?: Dimension[];
 }
 
 const LOADING_STEPS = [
@@ -22,14 +24,16 @@ const LOADING_STEPS = [
   'Letzte Feinheiten werden angepasst…',
 ];
 
-export default function GenerateCheckModal({ onGenerate, onClose, showHeyflowImport }: Props) {
-  const [tab, setTab] = useState<Tab>('generate');
+export default function GenerateCheckModal({ onGenerate, onClose, showHeyflowImport, currentPages, currentDimensions }: Props) {
+  const hasExistingContent = !!currentPages && currentPages.length > 0;
+  const [tab, setTab] = useState<Tab>(hasExistingContent ? 'refine' : 'generate');
   const [berufe, setBerufe] = useState<string[]>([]);
   const [studiengaenge, setStudiengaenge] = useState<string[]>([]);
   const [berufInput, setBerufInput] = useState('');
   const [studiumInput, setStudiumInput] = useState('');
   const [notes, setNotes] = useState('');
   const [heyflowUrl, setHeyflowUrl] = useState('');
+  const [refineInstructions, setRefineInstructions] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [importOpen, setImportOpen] = useState(false);
@@ -102,6 +106,27 @@ export default function GenerateCheckModal({ onGenerate, onClose, showHeyflowImp
     }
   }
 
+  async function handleRefine() {
+    if (!refineInstructions.trim() || !currentPages?.length || loading) return;
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetch('/api/refine-check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pages: currentPages, dimensions: currentDimensions, instructions: refineInstructions.trim() }),
+      });
+      const data = await res.json() as { pages?: FunnelPage[]; dimensions?: Dimension[]; error?: string };
+      if (!res.ok) throw new Error(data.error ?? 'Unbekannter Fehler');
+      if (!data.pages?.length) throw new Error('KI hat keinen vollstandigen Check generiert.');
+      setLoadingProgress(100);
+      setTimeout(() => onGenerate(data.pages!, data.dimensions ?? currentDimensions ?? [], 'Berufscheck'), 400);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Fehler beim Anpassen');
+      setLoading(false);
+    }
+  }
+
   async function handleImportHeyflow() {
     if (!heyflowUrl.trim() || loading) return;
     setLoading(true);
@@ -165,20 +190,30 @@ export default function GenerateCheckModal({ onGenerate, onClose, showHeyflowImp
               </button>
             )}
           </div>
-          {showHeyflowImport && !loading && (
+          {(showHeyflowImport || hasExistingContent) && !loading && (
             <div className="flex gap-0.5">
+              {hasExistingContent && (
+                <button
+                  onClick={() => { setTab('refine'); setError(''); }}
+                  className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-b-2 transition-colors ${tab === 'refine' ? 'border-violet-500 text-violet-700' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+                >
+                  <Wand2 size={12} /> Anpassen
+                </button>
+              )}
               <button
                 onClick={() => { setTab('generate'); setError(''); }}
                 className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-b-2 transition-colors ${tab === 'generate' ? 'border-violet-500 text-violet-700' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
               >
                 <Sparkles size={12} /> Neu generieren
               </button>
-              <button
-                onClick={() => { setTab('import'); setError(''); }}
-                className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-b-2 transition-colors ${tab === 'import' ? 'border-violet-500 text-violet-700' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
-              >
-                <ArrowDownToLine size={12} /> Prototyp importieren
-              </button>
+              {showHeyflowImport && (
+                <button
+                  onClick={() => { setTab('import'); setError(''); }}
+                  className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-b-2 transition-colors ${tab === 'import' ? 'border-violet-500 text-violet-700' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+                >
+                  <ArrowDownToLine size={12} /> Prototyp importieren
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -203,7 +238,7 @@ export default function GenerateCheckModal({ onGenerate, onClose, showHeyflowImp
             <div className="text-center">
               <p className="text-sm font-medium text-slate-700 transition-all duration-500">{LOADING_STEPS[loadingStep]}</p>
               <p className="text-xs text-slate-400 mt-1">
-                {tab === 'import' ? 'Prototyp wird konvertiert…' : `${berufe.length} Berufe · ${studiengaenge.length} Studiengange`}
+                {tab === 'refine' ? 'Check wird angepasst…' : tab === 'import' ? 'Prototyp wird konvertiert…' : `${berufe.length} Berufe · ${studiengaenge.length} Studiengange`}
               </p>
             </div>
             <div className="flex gap-1.5">
@@ -215,7 +250,23 @@ export default function GenerateCheckModal({ onGenerate, onClose, showHeyflowImp
           </div>
         ) : (
           <>
-            {tab === 'import' ? (
+            {tab === 'refine' ? (
+              <div className="px-6 py-5 space-y-4">
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 mb-1.5">Was soll angepasst werden? <span className="text-red-400">*</span></label>
+                  <textarea
+                    value={refineInstructions}
+                    onChange={(e) => setRefineInstructions(e.target.value)}
+                    placeholder="z.B. Fuege mehr Swipe-Karten hinzu, aendere die Dimensionen, passe die Berufsvorschlage an..."
+                    rows={5}
+                    className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:border-violet-400 focus:outline-none resize-none transition-colors"
+                    autoFocus
+                  />
+                  <p className="text-[11px] text-slate-400 mt-1.5">Die KI passt den bestehenden Berufscheck nach deinen Wunschen an. Alles, was du nicht erwahnst, bleibt unverandert.</p>
+                </div>
+                {error && <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>}
+              </div>
+            ) : tab === 'import' ? (
               <div className="px-6 py-5 space-y-4">
                 <div>
                   <label className="block text-xs font-medium text-slate-500 mb-1.5">Prototyp-URL <span className="text-red-400">*</span></label>
@@ -224,7 +275,7 @@ export default function GenerateCheckModal({ onGenerate, onClose, showHeyflowImp
                     value={heyflowUrl}
                     onChange={(e) => setHeyflowUrl(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleImportHeyflow()}
-                    placeholder="https://...heyflow.site/..."
+                    placeholder="https://beispiel.de/mein-berufscheck"
                     className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:border-violet-400 focus:outline-none transition-colors"
                     autoFocus
                   />
@@ -376,7 +427,15 @@ export default function GenerateCheckModal({ onGenerate, onClose, showHeyflowImp
               <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">
                 Abbrechen
               </button>
-              {tab === 'import' ? (
+              {tab === 'refine' ? (
+                <button
+                  onClick={handleRefine}
+                  disabled={!refineInstructions.trim()}
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-violet-600 text-white rounded-xl hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <Wand2 size={14} /> Anpassen
+                </button>
+              ) : tab === 'import' ? (
                 <button
                   onClick={handleImportHeyflow}
                   disabled={!heyflowUrl.trim()}

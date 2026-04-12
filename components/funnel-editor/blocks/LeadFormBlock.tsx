@@ -56,7 +56,7 @@ export default function LeadFormBlock({ props: p, company, br, primary, leadForm
 
   return (
     <div className="fp-card bg-white shadow-sm mx-4 my-3 p-6">
-      <h2 className="fp-heading text-xl font-bold mb-1">{s(p.headline)}</h2>
+      <h2 className="fp-heading text-lg font-bold mb-1 break-words">{s(p.headline)}</h2>
       {b(p.subtext) && <p className="text-slate-500 text-sm mb-4">{s(p.subtext)}</p>}
       <div className="space-y-3 mt-3">
         {fieldDefs.map((f) => {

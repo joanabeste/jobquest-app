@@ -1,17 +1,18 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { X, Sparkles, Upload, Trash2, Image as ImageIcon, ArrowDownToLine } from 'lucide-react';
+import { X, Sparkles, Upload, Trash2, Image as ImageIcon, ArrowDownToLine, Wand2 } from 'lucide-react';
 import { FunnelPage } from '@/lib/funnel-types';
 import type { MediaAsset } from '@/lib/types';
 import MediaLibrary, { uploadToMediaLibrary } from '@/components/shared/MediaLibrary';
 
-type Tab = 'generate' | 'import';
+type Tab = 'generate' | 'import' | 'refine';
 
 interface Props {
   onGenerate: (pages: FunnelPage[], title: string) => void;
   onClose: () => void;
   showHeyflowImport?: boolean;
+  currentPages?: FunnelPage[];
 }
 
 const LOADING_STEPS = [
@@ -23,11 +24,13 @@ const LOADING_STEPS = [
   'Letzte Feinheiten werden angepasst…',
 ];
 
-export default function GenerateQuestModal({ onGenerate, onClose, showHeyflowImport }: Props) {
-  const [tab, setTab] = useState<Tab>('generate');
+export default function GenerateQuestModal({ onGenerate, onClose, showHeyflowImport, currentPages }: Props) {
+  const hasExistingContent = !!currentPages && currentPages.length > 0;
+  const [tab, setTab] = useState<Tab>(hasExistingContent ? 'refine' : 'generate');
   const [beruf, setBeruf] = useState('');
   const [notes, setNotes] = useState('');
   const [heyflowUrl, setHeyflowUrl] = useState('');
+  const [refineInstructions, setRefineInstructions] = useState('');
   const [images, setImages] = useState<MediaAsset[]>([]);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -108,6 +111,27 @@ export default function GenerateQuestModal({ onGenerate, onClose, showHeyflowImp
     }
   }
 
+  async function handleRefine() {
+    if (!refineInstructions.trim() || !currentPages?.length || loading) return;
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetch('/api/refine-quest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pages: currentPages, instructions: refineInstructions.trim() }),
+      });
+      const data = await res.json() as { pages?: FunnelPage[]; error?: string };
+      if (!res.ok) throw new Error(data.error ?? 'Unbekannter Fehler');
+      if (!data.pages?.length) throw new Error('Keine Seiten generiert');
+      setLoadingProgress(100);
+      setTimeout(() => onGenerate(data.pages!, ''), 400);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Fehler beim Anpassen');
+      setLoading(false);
+    }
+  }
+
   async function handleImport() {
     if (!heyflowUrl.trim() || loading) return;
     setLoading(true);
@@ -146,20 +170,30 @@ export default function GenerateQuestModal({ onGenerate, onClose, showHeyflowImp
               </button>
             )}
           </div>
-          {showHeyflowImport && !loading && (
+          {(showHeyflowImport || hasExistingContent) && !loading && (
             <div className="flex gap-0.5">
+              {hasExistingContent && (
+                <button
+                  onClick={() => { setTab('refine'); setError(''); }}
+                  className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-b-2 transition-colors ${tab === 'refine' ? 'border-violet-500 text-violet-700' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+                >
+                  <Wand2 size={12} /> Anpassen
+                </button>
+              )}
               <button
                 onClick={() => { setTab('generate'); setError(''); }}
                 className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-b-2 transition-colors ${tab === 'generate' ? 'border-violet-500 text-violet-700' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
               >
                 <Sparkles size={12} /> Neu generieren
               </button>
-              <button
-                onClick={() => { setTab('import'); setError(''); }}
-                className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-b-2 transition-colors ${tab === 'import' ? 'border-violet-500 text-violet-700' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
-              >
-                <ArrowDownToLine size={12} /> Prototyp importieren
-              </button>
+              {showHeyflowImport && (
+                <button
+                  onClick={() => { setTab('import'); setError(''); }}
+                  className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-b-2 transition-colors ${tab === 'import' ? 'border-violet-500 text-violet-700' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+                >
+                  <ArrowDownToLine size={12} /> Prototyp importieren
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -192,7 +226,7 @@ export default function GenerateQuestModal({ onGenerate, onClose, showHeyflowImp
                 {LOADING_STEPS[loadingStep]}
               </p>
               <p className="text-xs text-slate-400 mt-1">
-                {tab === 'import' ? 'Heyflow wird konvertiert…' : <>Für <span className="font-medium text-slate-600">{beruf}</span></>}
+                {tab === 'refine' ? 'Quest wird angepasst…' : tab === 'import' ? 'Prototyp wird konvertiert…' : <>Fur <span className="font-medium text-slate-600">{beruf}</span></>}
               </p>
             </div>
 
@@ -210,25 +244,40 @@ export default function GenerateQuestModal({ onGenerate, onClose, showHeyflowImp
         ) : (
           /* ── Form ────────────────────────────────────────────────────────── */
           <>
-            {tab === 'import' ? (
-              /* ── Heyflow Import tab ──────────────────────────────────────── */
+            {tab === 'refine' ? (
+              /* ── Refine tab ──────────────────────────────────────────────── */
               <div className="px-6 py-5 space-y-4">
                 <div>
-                  <label className="block text-xs font-medium text-slate-500 mb-1.5">Heyflow-URL <span className="text-red-400">*</span></label>
+                  <label className="block text-xs font-medium text-slate-500 mb-1.5">Was soll angepasst werden? <span className="text-red-400">*</span></label>
+                  <textarea
+                    value={refineInstructions}
+                    onChange={(e) => setRefineInstructions(e.target.value)}
+                    placeholder="z.B. Fuege eine Szene im Labor hinzu, mache den Dialog mit Sarah laenger, aendere das Quiz zur Medikamentengabe..."
+                    rows={5}
+                    className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:border-violet-400 focus:outline-none resize-none transition-colors"
+                    autoFocus
+                  />
+                  <p className="text-[11px] text-slate-400 mt-1.5">Die KI passt die bestehende Quest nach deinen Wunschen an. Alles, was du nicht erwahnst, bleibt unverandert.</p>
+                </div>
+                {error && <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>}
+              </div>
+            ) : tab === 'import' ? (
+              /* ── Import tab ──────────────────────────────────────────────── */
+              <div className="px-6 py-5 space-y-4">
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 mb-1.5">Prototyp-URL <span className="text-red-400">*</span></label>
                   <input
                     type="url"
                     value={heyflowUrl}
                     onChange={(e) => setHeyflowUrl(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleImport()}
-                    placeholder="https://...heyflow.site/..."
+                    placeholder="https://beispiel.de/mein-prototyp"
                     className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:border-violet-400 focus:outline-none transition-colors"
                     autoFocus
                   />
-                  <p className="text-[11px] text-slate-400 mt-1.5">Die KI liest den Heyflow-Inhalt und konvertiert ihn in eine interaktive JobQuest mit Dialogen, Quiz und Entscheidungen.</p>
+                  <p className="text-[11px] text-slate-400 mt-1.5">Die KI liest den Prototyp-Inhalt und konvertiert ihn in eine interaktive JobQuest mit Dialogen, Quiz und Entscheidungen.</p>
                 </div>
-                {error && (
-                  <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>
-                )}
+                {error && <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>}
               </div>
             ) : (
               /* ── Generate tab ────────────────────────────────────────────── */
@@ -331,7 +380,15 @@ export default function GenerateQuestModal({ onGenerate, onClose, showHeyflowImp
               >
                 Abbrechen
               </button>
-              {tab === 'import' ? (
+              {tab === 'refine' ? (
+                <button
+                  onClick={handleRefine}
+                  disabled={!refineInstructions.trim()}
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-violet-600 text-white rounded-xl hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <Wand2 size={14} /> Anpassen
+                </button>
+              ) : tab === 'import' ? (
                 <button
                   onClick={handleImport}
                   disabled={!heyflowUrl.trim()}
