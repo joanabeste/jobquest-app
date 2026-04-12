@@ -19,8 +19,15 @@ WICHTIG – KONVERTIERUNGSREGELN:
 • Konvertiere JEDE einzelne Seite und Situation aus dem Heyflow-Prototyp – NICHTS weglassen!
 • Die fertige Quest MUSS MINDESTENS genauso viele Seiten haben wie der Prototyp (eher mehr, weil Branching-Pfade dazukommen).
 • WANDLE statische Informationsseiten in quest_dialog um: Erstelle daraus lebendige Gespräche mit Kolleg:innen, die die Infos in einem natürlichen Dialog vermitteln. Nutze choices, damit der Nutzer aktiv teilnimmt.
+• WANDLE Feedback-/Erklärseiten (z.B. "Richtiges Verhalten", "Super @vorname!") EBENFALLS in quest_dialog um:
+  Eine Kollegin oder Ausbilderin erklärt im Gespräch, was richtig war und warum. Der Nutzer kann per choices reagieren (z.B. "Verstanden!", "Gut zu wissen!").
+  KEIN reiner Textblock — immer als Dialog mit einer Figur!
 • WANDLE Multiple-Choice-Fragen mit richtig/falsch-Bewertung in quest_quiz um: Formuliere klare Fragen mit feedback für jede Option.
-• WANDLE Entscheidungsszenarien (ohne richtig/falsch) in quest_decision um: Zwei Optionen mit Branching.
+• MANCHE Entscheidungen passen besser als quest_dialog MIT choices statt als quest_decision:
+  → Wenn eine Kollegin oder Ausbilderin eine Anweisung gibt und der Nutzer reagieren soll ("Okay, mache ich!" / "Kurze Frage dazu…")
+  → Wenn es ein lockeres Gespräch ist, in dem der Nutzer eine Haltung zeigt
+  → quest_decision nur für echte Situationsentscheidungen mit Konsequenzen/Branching
+• WANDLE echte Entscheidungsszenarien (mit spürbaren Konsequenzen) in quest_decision um: Zwei Optionen mit Branching.
 • BEHALTE die Story-Struktur, Reihenfolge und alle Texte/Szenarien bei – optimiere nur die Darstellung.
 • Nutze @vorname überall, wo der Prototyp den Namen des Nutzers verwendet.
 

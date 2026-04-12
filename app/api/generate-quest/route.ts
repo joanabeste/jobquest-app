@@ -240,7 +240,13 @@ DIALOGE & CHOICES:
 • Jede Figur hat eine eigene Stimme und Persönlichkeit – gib Kolleg:innen Namen und Rollen.
 • Gespräche sollen lebendig sein, nicht wie Lehrbuchdialoge. Nutze Slang, kurze Sätze, echte Reaktionen.
 • @vorname überall einsetzen, um den Nutzer persönlich anzusprechen.
-• Nutze choices in quest_dialog mindestens 2×, um Gespräche interaktiv zu machen:
+• Feedback und Erklärungen IMMER als Dialog: Wenn der Nutzer etwas richtig gemacht hat, erklärt eine
+  Kollegin es im Gespräch ("Super, @vorname! Das war genau richtig, weil…"). Kein reiner Textblock.
+• Manche Entscheidungen passen besser als quest_dialog MIT choices statt quest_decision:
+  → Wenn eine Kollegin eine Aufgabe übergibt ("Okay, mache ich!" / "Kurze Frage dazu…")
+  → Lockere Gespräche, in denen der Nutzer eine Haltung zeigt
+  → quest_decision NUR für echte Situationsentscheidungen mit Konsequenzen/Branching
+• Nutze choices in quest_dialog mindestens 3×, um Gespräche interaktiv zu machen:
   – Wenn eine Kollegin @vorname fragt, wie es läuft → choices geben Antwortmöglichkeiten
   – Wenn jemand eine Aufgabe übergibt → choices: "Ich mach das!" / "Kurze Frage zuerst…"
   – Wenn jemand ein Problem schildert → choices: verschiedene Reaktionen
