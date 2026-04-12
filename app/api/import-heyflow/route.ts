@@ -282,7 +282,13 @@ export async function POST(req: NextRequest) {
   if (session.company.location) companyContext.push(`Standort: ${session.company.location}`);
   if (session.company.description?.trim()) companyContext.push(`Über uns: ${session.company.description.trim()}`);
 
-  const userMessage = `${companyContext.join('\n')}\n\n══ HEYFLOW-INHALT (konvertiere diesen Prototyp in eine JobQuest) ══\n\n${textContent.slice(0, 24000)}`;
+  // Include company jobs if available — AI should reference them in the lead form
+  const companyJobs = session.company.successPage?.jobs ?? [];
+  const jobsInfo = companyJobs.length > 0
+    ? `\n\nBerufe des Unternehmens: ${companyJobs.map((j) => j.title).join(', ')}`
+    : '';
+
+  const userMessage = `${companyContext.join('\n')}${jobsInfo}\n\n══ HEYFLOW-INHALT (konvertiere diesen Prototyp in eine JobQuest) ══\n\n${textContent.slice(0, 24000)}`;
 
   // ── Call AI provider ──────────────────────────────────────────────────────
   let rawText: string;

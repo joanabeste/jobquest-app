@@ -17,6 +17,9 @@ const SYSTEM_PROMPT = `Du konvertierst den Inhalt eines bestehenden Heyflow-Beru
 
 WICHTIG – KONVERTIERUNGSREGELN:
 • Ubernimm ALLE Fragen, Szenarien, Dimensionen und Berufsvorschlage aus dem Heyflow — NICHTS weglassen!
+• GLEICHE die Berufe ab: Wenn ein Firmenprofil mit Berufen mitgegeben wird, stelle sicher dass ALLE diese
+  Berufe im Ergebnis als Suggestions vorkommen — auch wenn sie im Heyflow-Prototyp fehlen. Ordne sie passenden Dimensionen zu.
+• Hinterfrage den Inhalt: Wenn der Prototyp Fehler, Lucken oder Inkonsistenzen hat, korrigiere sie.
 • Leite aus dem Scoring-System 3-8 Dimensionen (Berufsfelder) ab.
 • WANDLE Szenario-Fragen in check_swipe_deck Karten um (Alltagssituationen mit 👍😐👎 Reaktionen und Dimension-Scores).
 • WANDLE Multiple-Choice-Fragen ohne Scoring in check_frage um.
@@ -161,7 +164,13 @@ export async function POST(req: NextRequest) {
   if (session.company.location) ctx.push(`Standort: ${session.company.location}`);
   if (session.company.description?.trim()) ctx.push(`Uber uns: ${session.company.description.trim()}`);
 
-  const userMessage = `${ctx.join('\n')}\n\n══ HEYFLOW-BERUFSCHECK (konvertiere in einen optimierten Berufscheck) ══\n\n${textContent.slice(0, 24000)}`;
+  // Include company jobs from success page if available
+  const companyJobs = session.company.successPage?.jobs ?? [];
+  const jobsInfo = companyJobs.length > 0
+    ? `\n\n══ BERUFE AUS DEM FIRMENPROFIL (alle mussen im Ergebnis abgedeckt sein!) ══\n${companyJobs.map((j) => `- ${j.title}${j.group ? ` (${j.group})` : ''}`).join('\n')}`
+    : '';
+
+  const userMessage = `${ctx.join('\n')}${jobsInfo}\n\n══ HEYFLOW-BERUFSCHECK (konvertiere in einen optimierten Berufscheck) ══\n\n${textContent.slice(0, 24000)}`;
 
   // ── Call AI ────────────────────────────────────────────────────────────────
   let rawText: string;
