@@ -382,10 +382,12 @@ export function BlockRenderer({
 
       return (
         <div className="mx-4 my-3">
-          <p className="fp-heading font-semibold text-base mb-4 px-1 text-center" dangerouslySetInnerHTML={{ __html: sh(inlineHtml(si(p.question))) }} />
+          <div className="bg-white rounded-2xl shadow-sm p-5 mb-3">
+            <p className="text-base font-semibold text-slate-800 text-center leading-snug" dangerouslySetInnerHTML={{ __html: sh(inlineHtml(si(p.question))) }} />
+          </div>
 
           {hasEmojis ? (
-            <div className={`grid gap-3 ${opts.length === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
+            <div className="space-y-2">
               {opts.map((o) => {
                 const isSelected = selected === o.id;
                 const IconComp   = isIconName(o.emoji) ? DECISION_ICONS[o.emoji] : null;
@@ -395,15 +397,17 @@ export function BlockRenderer({
                     key={o.id}
                     onClick={() => { if (!selected) onAnswer(node.id, o.id); }}
                     disabled={!!selected}
-                    className="fp-card bg-white shadow-sm p-4 flex flex-col items-center gap-2.5 text-center transition-all duration-200 hover:shadow-md active:scale-95"
-                    style={isSelected ? { borderColor: optAccent, background: `${optAccent}10`, transform: 'scale(0.97)' } : {}}>
-                    {IconComp
-                      ? <IconComp size={32} style={{ color: optAccent }} />
-                      : <span className="text-4xl leading-none">{o.emoji}</span>
-                    }
-                    <span className="text-xs font-medium text-slate-700 leading-tight">{o.text}</span>
+                    className="fp-card bg-white shadow-sm w-full px-4 py-3.5 flex items-center gap-3 text-left transition-all duration-200 hover:shadow-md active:scale-[0.98]"
+                    style={isSelected ? { borderColor: optAccent, background: `${optAccent}08` } : {}}>
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: `${isSelected ? optAccent : primary}15` }}>
+                      {IconComp
+                        ? <IconComp size={20} style={{ color: isSelected ? optAccent : primary }} />
+                        : <span className="text-xl leading-none">{o.emoji}</span>
+                      }
+                    </div>
+                    <span className="text-sm font-medium text-slate-700 leading-snug flex-1">{o.text}</span>
                     {isSelected && (
-                      <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: optAccent }}>
+                      <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: optAccent }}>
                         {o.isWrong ? <X size={11} className="text-white" /> : <Check size={11} className="text-white" />}
                       </div>
                     )}
