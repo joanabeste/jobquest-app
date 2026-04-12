@@ -88,8 +88,7 @@ Vorletzte - 1: quest_rating  → { "question": "Wie war dein Arbeitstag?", "emoj
 Vorletzte:     quest_rating  → { "question": "Wie gut kannst du dir vorstellen, als [Berufsbezeichnung] zu arbeiten?", "emoji": "👍", "count": 5 }
 Letzte:        quest_lead    → Kontaktformular (fields: [])
 
-GESAMT: ca. 18–22 Seiten. Halte die Quest KOMPAKT — lieber kurzer und knackiger als zu lang!
-Die Quest soll in ca. 3 Minuten durchspielbar sein. Vermeide Fuller-Seiten ohne Interaktion.
+GESAMT: ca. 18–22 Seiten. Die Quest soll in ca. 3 Minuten durchspielbar sein.
 
 ═══════════════════════════════════════════════════════
   BLOCK-TYPEN (exakte Props-Struktur beachten!)
@@ -246,8 +245,8 @@ DIALOGE & CHOICES:
 • Jede Figur hat eine eigene Stimme und Persönlichkeit – gib Kolleg:innen Namen und Rollen.
 • Gespräche sollen lebendig sein, nicht wie Lehrbuchdialoge. Nutze Slang, kurze Sätze, echte Reaktionen.
 • @vorname überall einsetzen, um den Nutzer persönlich anzusprechen.
-• Feedback und Erklärungen IMMER als Dialog: Wenn der Nutzer etwas richtig gemacht hat, erklärt eine
-  Kollegin es im Gespräch ("Super, @vorname! Das war genau richtig, weil…"). Kein reiner Textblock.
+• Feedback und Erklarungen als Dialog: Kollegin reagiert kurz ("Super, @vorname! Genau richtig.").
+  Feedback-Dialoge maximal 2–3 Zeilen — nicht alles ausfuhrlich erklaren, nur das Wichtigste.
 • Manche Entscheidungen passen besser als quest_dialog MIT choices statt quest_decision:
   → Wenn eine Kollegin eine Aufgabe übergibt ("Okay, mache ich!" / "Kurze Frage dazu…")
   → Lockere Gespräche, in denen der Nutzer eine Haltung zeigt
