@@ -41,6 +41,8 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
   const [dialogVisible, setDialogVisible] = useState(0);
   const [footerInputValue, setFooterInputValue] = useState('');
   const [pageTransition, setPageTransition] = useState<'visible' | 'fading-out' | 'fading-in'>('visible');
+  const transitionRef = useRef(pageTransition);
+  transitionRef.current = pageTransition;
   const topRef = useRef<HTMLDivElement>(null);
 
   // Reset dialog + footer input when page changes (must be before any conditional returns)
@@ -166,7 +168,7 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
     return -1;
   }
   function goNext(targetPageId?: string) {
-    if (pageTransition !== 'visible') return; // prevent double-click during transition
+    if (transitionRef.current !== 'visible') return; // prevent double-click during transition
     if (targetPageId) {
       const idx = doc.pages.findIndex((p) => p.id === targetPageId);
       if (idx >= 0) {
@@ -179,7 +181,7 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
     else { transitionTo(() => setCompleted(true)); }
   }
   function goBack() {
-    if (pageTransition !== 'visible') return; // prevent double-click during transition
+    if (transitionRef.current !== 'visible') return; // prevent double-click during transition
     const prevIdx = history[history.length - 1] ?? (pageIndex > 0 ? pageIndex - 1 : -1);
     if (prevIdx < 0) return;
     // Reset answer of the first interactive block on the target page
