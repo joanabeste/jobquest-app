@@ -481,8 +481,16 @@ export default function SettingsCompanyPage() {
               </div>
               {successPage.showJobs && (
                 <>
+                  {/* URL-Import */}
+                  <JobImportFromUrl onImport={(jobs) => {
+                    setSuccessPage((s) => {
+                      const existing = new Set(s.jobs.map((j) => j.title.toLowerCase()));
+                      const newJobs = jobs.filter((j) => !existing.has(j.toLowerCase())).map((j) => ({ id: crypto.randomUUID(), title: j }));
+                      return { ...s, jobs: [...s.jobs, ...newJobs] };
+                    });
+                  }} />
                   <div>
-                    <label className="label">Überschrift</label>
+                    <label className="label">Uberschrift</label>
                     <input type="text" className="input-field" value={successPage.jobsHeadline}
                       onChange={(e) => setSuccessPage((s) => ({ ...s, jobsHeadline: e.target.value }))} />
                   </div>
@@ -547,6 +555,74 @@ export default function SettingsCompanyPage() {
           </div>
         )}
       </form>
+    </div>
+  );
+}
+
+// ── Job Import from URL ─────────────────────────────────────────────────────
+function JobImportFromUrl({ onImport }: { onImport: (jobs: string[]) => void }) {
+  const [url, setUrl] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<string | null>(null);
+
+  async function handleImport() {
+    if (!url.trim() || loading) return;
+    setLoading(true);
+    setResult(null);
+    try {
+      // Try the extract-jobs API first (works for career pages)
+      const res = await fetch('/api/companies/extract-jobs-from-website', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: url.trim() }),
+      });
+      const data = await res.json() as { berufe?: string[]; studiengaenge?: string[]; error?: string };
+      if (!res.ok) throw new Error(data.error ?? 'Import fehlgeschlagen');
+      const all = [...(data.berufe ?? []), ...(data.studiengaenge ?? [])];
+      if (all.length === 0) {
+        setResult('Keine Berufe gefunden.');
+      } else {
+        onImport(all);
+        setResult(`${all.length} Berufe ubernommen.`);
+        setUrl('');
+      }
+    } catch (e) {
+      setResult(e instanceof Error ? e.message : 'Import fehlgeschlagen');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="rounded-xl border border-dashed border-violet-200 bg-violet-50/30 p-3 space-y-2">
+      <p className="text-xs font-medium text-violet-700 flex items-center gap-1.5">
+        <Globe size={12} /> Berufe von Website importieren
+      </p>
+      <div className="flex gap-1.5">
+        <input
+          type="url"
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleImport()}
+          placeholder="https://karriere.firma.de oder Prototyp-URL"
+          className="flex-1 px-3 py-2 text-xs border border-slate-200 rounded-lg focus:border-violet-400 focus:outline-none bg-white"
+          disabled={loading}
+        />
+        <button
+          onClick={handleImport}
+          disabled={!url.trim() || loading}
+          className="px-3 py-2 rounded-lg bg-violet-600 text-white text-xs font-medium hover:bg-violet-700 disabled:opacity-50 flex items-center gap-1 flex-shrink-0"
+        >
+          {loading ? <Sparkles size={12} className="animate-spin" /> : <Sparkles size={12} />}
+          {loading ? 'Ladt…' : 'Importieren'}
+        </button>
+      </div>
+      <p className="text-[10px] text-slate-400">Karriereseite, Prototyp oder Ausbildungsseite eingeben — die KI erkennt automatisch alle Berufe.</p>
+      {result && (
+        <p className={`text-[11px] px-2 py-1 rounded ${result.includes('fehlgeschlagen') || result.includes('Keine') ? 'text-red-600 bg-red-50' : 'text-emerald-700 bg-emerald-50'}`}>
+          {result}
+        </p>
+      )}
     </div>
   );
 }
