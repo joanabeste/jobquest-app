@@ -195,7 +195,8 @@ function AnimatedBar({ name, pct, color, delay }: { name: string; pct: number; c
 function GroupBars({ group, dimensions, scores, primary }: { group: ErgebnisGroup; dimensions: Dimension[]; scores: Record<string, number>; primary: string }) {
   if (!group.showBars) return null;
   const groupDims = dimensions.filter((d) => group.dimensionIds.includes(d.id));
-  const max = Math.max(...groupDims.map((d) => scores[d.id] ?? 0), 1);
+  // Max across ALL dimensions (not just this group) so bars are relative to overall scores
+  const max = Math.max(...dimensions.map((d) => scores[d.id] ?? 0), 1);
   if (groupDims.length === 0) return null;
   return (
     <div className="space-y-3 mb-4">
