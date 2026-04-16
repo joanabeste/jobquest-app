@@ -80,11 +80,13 @@ interface NodeViewProps {
   onDuplicate: () => void;
   onUpdate?: (patch: { props?: Record<string, unknown>; style?: Partial<FunnelStyle> }) => void;
   renderColumns?: (layout: LayoutNode) => React.ReactNode;
+  /** Review-Modus: wenn gesetzt, wird dieser Badge statt der Edit-Buttons oben rechts angezeigt. */
+  reviewPin?: React.ReactNode;
 }
 
 export default function NodeView({
   node, isSelected, isDragging, isLocked, dragHandle,
-  onSelect, onDelete, onDuplicate, onUpdate, renderColumns,
+  onSelect, onDelete, onDuplicate, onUpdate, renderColumns, reviewPin,
 }: NodeViewProps) {
   const meta = node.kind === 'block' ? BLOCK_META[node.type] : null;
   const Icon = meta?.icon;
@@ -145,7 +147,11 @@ export default function NodeView({
         </span>
       </div>
 
-      {!isLocked && (
+      {reviewPin ? (
+        <div className="absolute top-2 right-2 z-20">
+          {reviewPin}
+        </div>
+      ) : (!isLocked && (
         <div className={`absolute top-2 right-2 flex items-center gap-0.5 z-20 transition-opacity duration-100 ${actionOpacity}`}>
           <button
             onClick={(e) => { e.stopPropagation(); onDuplicate(); }}
@@ -162,7 +168,7 @@ export default function NodeView({
             <Trash2 size={11} />
           </button>
         </div>
-      )}
+      ))}
     </div>
   );
 }

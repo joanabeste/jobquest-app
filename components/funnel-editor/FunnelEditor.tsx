@@ -1,13 +1,17 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFunnelHistory } from '@/hooks/useFunnelHistory';
 import Link from 'next/link';
-import { ArrowLeft, Save, Globe, Eye, Undo2, Redo2, Check, Sparkles, GitBranch, LayoutTemplate, Mail, QrCode } from 'lucide-react';
+import { ArrowLeft, Save, Globe, Eye, Undo2, Redo2, Check, Sparkles, GitBranch, LayoutTemplate, Mail, QrCode, MessageSquare } from 'lucide-react';
 import ShareModal from '@/components/ShareModal';
 import { FunnelDoc, FunnelContentType, FunnelPage, InsertTarget, FunnelNode, FunnelStyle, BlockNode, EmailConfig } from '@/lib/funnel-types';
 import { getAvailableVariables, getEmailVariables } from '@/lib/funnel-variables';
 import { funnelStorage } from '@/lib/funnel-storage';
+import { funnelCommentsStorage } from '@/lib/funnel-comments-storage';
+import type { FunnelComment } from '@/lib/types';
+import ReviewPanel from './ReviewPanel';
+import ReviewPin from './ReviewPin';
 import {
   createFunnelDoc, insertNode, deleteNode, updateNode, duplicateNode,
   addPage, deletePage, renamePage, duplicatePage, updatePage,
@@ -100,7 +104,7 @@ function FunnelEditorInner({
   initialDoc, contentType, title, onTitleChange,
   slug, onSlugChange, useCustomDomain, onUseCustomDomainChange, previewHref, status, onPublish, onBack, extraPanel, onAIGeneratedDimensions,
 }: Omit<FunnelEditorProps, 'contentId'> & { initialDoc: FunnelDoc }) {
-  const { company } = useAuth();
+  const { company, currentMember } = useAuth();
   const ci = useCorporateDesign(company ?? { id: '', name: '', contactName: '', contactEmail: '', createdAt: '' });
 
   const { doc, push, undo, redo, canUndo, canRedo } = useFunnelHistory(initialDoc);
@@ -128,7 +132,8 @@ function FunnelEditorInner({
   const [showGenerateCheckModal, setShowGenerateCheckModal] = useState(false);
   const [showEmailConfig, setShowEmailConfig] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
-  const [view, setView] = useState<'canvas' | 'flow'>('canvas');
+  const [view, setView] = useState<'canvas' | 'flow' | 'review'>('canvas');
+  const [comments, setComments] = useState<FunnelComment[]>([]);
 
   // Local draft for the title input — only commits on blur or Enter
   const [draftTitle, setDraftTitle] = useState(title);
@@ -166,6 +171,76 @@ function FunnelEditorInner({
     if (savedTimer.current) clearTimeout(savedTimer.current);
     savedTimer.current = setTimeout(() => setSaveStatus('idle'), 2000);
   }
+
+  // ── Review / Kommentare ─────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!doc.id) return;
+    let cancelled = false;
+    funnelCommentsStorage.list(doc.id)
+      .then((list) => { if (!cancelled) setComments(list); })
+      .catch(() => { if (!cancelled) setComments([]); });
+    return () => { cancelled = true; };
+  }, [doc.id]);
+
+  const openCommentCount = useMemo(
+    () => comments.filter((c) => c.status === 'open').length,
+    [comments],
+  );
+
+  const commentStatsByBlock = useMemo(() => {
+    const map = new Map<string, { open: number; resolved: number }>();
+    comments.forEach((c) => {
+      if (c.parentId) return;
+      if (!c.blockId) return;
+      const cur = map.get(c.blockId) ?? { open: 0, resolved: 0 };
+      if (c.status === 'open') cur.open += 1; else cur.resolved += 1;
+      map.set(c.blockId, cur);
+    });
+    return map;
+  }, [comments]);
+
+  const handleCreateComment = useCallback(async (input: {
+    pageId: string;
+    blockId?: string;
+    parentId?: string;
+    content: string;
+  }) => {
+    if (!doc.id) return;
+    const created = await funnelCommentsStorage.create({
+      funnelDocId: doc.id,
+      pageId: input.pageId,
+      blockId: input.blockId,
+      parentId: input.parentId,
+      content: input.content,
+    });
+    setComments((prev) => [...prev, created]);
+  }, [doc.id]);
+
+  const handleToggleCommentStatus = useCallback(async (c: FunnelComment) => {
+    const nextStatus = c.status === 'open' ? 'resolved' : 'open';
+    const updated = await funnelCommentsStorage.update(c.id, { status: nextStatus });
+    setComments((prev) => prev.map((p) => p.id === c.id ? updated : p));
+  }, []);
+
+  const handleDeleteComment = useCallback(async (c: FunnelComment) => {
+    if (!confirm('Diesen Kommentar wirklich löschen?')) return;
+    await funnelCommentsStorage.remove(c.id);
+    // Entferne auch alle Replies (parent_id FK macht das in DB, hier lokal spiegeln)
+    setComments((prev) => prev.filter((p) => p.id !== c.id && p.parentId !== c.id));
+  }, []);
+
+  const buildReviewPin = useCallback((node: FunnelNode) => {
+    const stats = commentStatsByBlock.get(node.id);
+    if (!stats || (stats.open === 0 && stats.resolved === 0)) return null;
+    return (
+      <ReviewPin
+        openCount={stats.open}
+        resolvedCount={stats.resolved}
+        isActive={selectedNodeId === node.id}
+        onClick={() => setSelectedNodeId(node.id)}
+      />
+    );
+  }, [commentStatsByBlock, selectedNodeId]);
 
   // ── keyboard shortcuts ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -428,6 +503,22 @@ function FunnelEditorInner({
           >
             <GitBranch size={12} /> Flow
           </button>
+          <button
+            onClick={() => setView('review')}
+            className={`relative flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-semibold rounded-md transition-all ${
+              view === 'review'
+                ? 'bg-white text-slate-800 shadow-sm'
+                : 'text-slate-500 hover:text-slate-700'
+            }`}
+            title="Review-Modus"
+          >
+            <MessageSquare size={12} /> Review
+            {openCommentCount > 0 && (
+              <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[14px] h-[14px] px-1 rounded-full bg-violet-600 text-white text-[9px] font-bold leading-none">
+                {openCommentCount > 9 ? '9+' : openCommentCount}
+              </span>
+            )}
+          </button>
         </div>
 
         {/* AI Generate – quest + check */}
@@ -544,9 +635,26 @@ function FunnelEditorInner({
               onReorderRoot={handleReorderRoot}
               onReorderColumn={handleReorderColumn}
               onMoveToContainer={handleMoveToContainer}
+              reviewPinFor={view === 'review' ? buildReviewPin : undefined}
             />
 
-            {/* Right – Inspector */}
+            {/* Right – Inspector oder Review-Panel */}
+            {view === 'review' ? (
+              <ReviewPanel
+                comments={comments}
+                pages={doc.pages}
+                activePageId={activePageId}
+                selectedBlockId={selectedNodeId}
+                currentUser={currentMember}
+                onCreate={handleCreateComment}
+                onToggleStatus={handleToggleCommentStatus}
+                onDelete={handleDeleteComment}
+                onFocusBlock={(pageId, blockId) => {
+                  setActivePageId(pageId);
+                  setSelectedNodeId(blockId);
+                }}
+              />
+            ) : (
             <Inspector
               node={selectedNode}
               isLocked={false}
@@ -559,6 +667,7 @@ function FunnelEditorInner({
               onUpdatePage={handleUpdatePage}
               availableVars={availableVars}
             />
+            )}
             </FunnelEditorContext.Provider>
           </>
         )}

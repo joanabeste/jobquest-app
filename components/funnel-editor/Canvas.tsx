@@ -34,6 +34,8 @@ interface CanvasProps {
   onReorderRoot: (from: number, to: number) => void;
   onReorderColumn: (columnId: string, from: number, to: number) => void;
   onMoveToContainer: (nodeId: string, targetContainer: 'root' | string, afterId: string | null) => void;
+  /** Wenn gesetzt, wird für jeden Block der zurückgegebene Pin rechts oben gezeigt. */
+  reviewPinFor?: (node: FunnelNode) => React.ReactNode;
 }
 
 const ROOT_CONTAINER = '__root__';
@@ -45,6 +47,7 @@ export default function Canvas({
   onInsertBlock,
   onDeleteNode, onDuplicateNode, onUpdateNode,
   onReorderRoot, onReorderColumn, onMoveToContainer,
+  reviewPinFor,
 }: CanvasProps) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -150,6 +153,7 @@ export default function Canvas({
                     onDuplicateNode={onDuplicateNode}
                     onUpdateNode={onUpdateNode}
                     onSetInsertTarget={onSetInsertTarget}
+                    reviewPinFor={reviewPinFor}
                   />
                   <InsertZone
                     target={{ location: 'root', afterId: node.id }}
@@ -226,6 +230,7 @@ function SortableNodeWrapper({
   insertTarget, selectedNodeId,
   onSelectNode, onDeleteNode, onDuplicateNode, onUpdateNode,
   onSetInsertTarget,
+  reviewPinFor,
 }: {
   node: FunnelNode; isSelected: boolean; isDragging: boolean; isLocked?: boolean;
   onSelect: () => void; onDelete: () => void; onDuplicate: () => void;
@@ -235,6 +240,7 @@ function SortableNodeWrapper({
   onDuplicateNode: (id: string) => void;
   onUpdateNode: (nodeId: string, patch: { props?: Record<string, unknown>; style?: Partial<FunnelStyle> }) => void;
   onSetInsertTarget: (t: InsertTarget | null) => void;
+  reviewPinFor?: (node: FunnelNode) => React.ReactNode;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: node.id });
   const style = { transform: CSS.Transform.toString(transform), transition };
@@ -258,6 +264,7 @@ function SortableNodeWrapper({
         onDelete={onDelete}
         onDuplicate={onDuplicate}
         onUpdate={onUpdate}
+        reviewPin={reviewPinFor?.(node)}
         renderColumns={node.kind === 'layout' ? (layout: LayoutNode) => (
           <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${layout.columns.length}, 1fr)` }}>
             {layout.columns.map((col) => (
@@ -271,6 +278,7 @@ function SortableNodeWrapper({
                 onDuplicateNode={onDuplicateNode}
                 onUpdateNode={onUpdateNode}
                 onSetInsertTarget={onSetInsertTarget}
+                reviewPinFor={reviewPinFor}
               />
             ))}
           </div>
@@ -284,6 +292,7 @@ function SortableNodeWrapper({
 function ColumnDropZone({
   column, insertTarget, selectedNodeId,
   onSelectNode, onDeleteNode, onDuplicateNode, onUpdateNode, onSetInsertTarget,
+  reviewPinFor,
 }: {
   column: Column;
   insertTarget: InsertTarget | null; selectedNodeId: string | null;
@@ -291,6 +300,7 @@ function ColumnDropZone({
   onDuplicateNode: (id: string) => void;
   onUpdateNode: (nodeId: string, patch: { props?: Record<string, unknown>; style?: Partial<FunnelStyle> }) => void;
   onSetInsertTarget: (t: InsertTarget | null) => void;
+  reviewPinFor?: (node: FunnelNode) => React.ReactNode;
 }) {
   const { setNodeRef } = useDroppable({ id: column.id });
 
@@ -316,6 +326,7 @@ function ColumnDropZone({
             onDuplicateNode={onDuplicateNode}
             onUpdateNode={onUpdateNode}
             onSetInsertTarget={onSetInsertTarget}
+            reviewPinFor={reviewPinFor}
           />
         ))}
 
@@ -331,6 +342,7 @@ function ColumnDropZone({
 function SortableColumnNode({
   node, selectedNodeId, columnId, insertTarget,
   onSelectNode, onDeleteNode, onDuplicateNode, onUpdateNode, onSetInsertTarget,
+  reviewPinFor,
 }: {
   node: BlockNode;
   selectedNodeId: string | null;
@@ -341,6 +353,7 @@ function SortableColumnNode({
   onDuplicateNode: (id: string) => void;
   onUpdateNode: (nodeId: string, patch: { props?: Record<string, unknown>; style?: Partial<FunnelStyle> }) => void;
   onSetInsertTarget: (t: InsertTarget | null) => void;
+  reviewPinFor?: (node: FunnelNode) => React.ReactNode;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: node.id });
   const style = { transform: CSS.Transform.toString(transform), transition };
@@ -362,6 +375,7 @@ function SortableColumnNode({
         onDelete={() => onDeleteNode(node.id)}
         onDuplicate={() => onDuplicateNode(node.id)}
         onUpdate={(patch) => onUpdateNode(node.id, patch)}
+        reviewPin={reviewPinFor?.(node)}
       />
       <InsertZone
         target={{ location: 'column', columnId, afterId: node.id }}

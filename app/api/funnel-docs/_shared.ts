@@ -24,3 +24,18 @@ export async function ownsContent(
     .single();
   return !!data;
 }
+
+/** Ownership-Check für ein Funnel-Doc: lädt das Doc und leitet auf ownsContent weiter. */
+export async function ownsFunnelDoc(
+  companyId: string,
+  funnelDocId: string,
+): Promise<boolean> {
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from('funnel_docs')
+    .select('content_id, content_type')
+    .eq('id', funnelDocId)
+    .single();
+  if (!data) return false;
+  return ownsContent(companyId, data.content_id as string, data.content_type as FunnelContentType);
+}

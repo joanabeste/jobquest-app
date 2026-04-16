@@ -10,6 +10,7 @@ import type {
   WorkspaceMember,
   WorkspaceRole,
   CorporateDesign,
+  FunnelComment,
 } from '../types';
 import type { FunnelDoc, EmailConfig } from '../funnel-types';
 import { type DbRow, str, optStr, num, json, optBool, bool } from './row-helpers';
@@ -107,6 +108,49 @@ export function memberToDb(m: WorkspaceMember): Record<string, unknown> {
     invited_by: m.invitedBy ?? null,
     status: m.status,
     created_at: m.createdAt,
+  };
+}
+
+// ─── FunnelComment ──────────────────────────────────────────────────────────
+
+export function commentFromDb(row: DbRow): FunnelComment {
+  return {
+    id: str(row, 'id'),
+    funnelDocId: str(row, 'funnel_doc_id'),
+    pageId: str(row, 'page_id'),
+    blockId: optStr(row, 'block_id'),
+    parentId: optStr(row, 'parent_id'),
+    authorType: str(row, 'author_type') as FunnelComment['authorType'],
+    authorMemberId: optStr(row, 'author_member_id'),
+    authorName: str(row, 'author_name'),
+    authorEmail: optStr(row, 'author_email'),
+    content: str(row, 'content'),
+    status: str(row, 'status') as FunnelComment['status'],
+    resolvedBy: optStr(row, 'resolved_by'),
+    resolvedAt: optStr(row, 'resolved_at'),
+    createdAt: str(row, 'created_at'),
+    updatedAt: str(row, 'updated_at'),
+  };
+}
+
+export function commentToDb(c: FunnelComment, companyId: string): Record<string, unknown> {
+  return {
+    id: c.id,
+    funnel_doc_id: c.funnelDocId,
+    company_id: companyId,
+    page_id: c.pageId,
+    block_id: c.blockId ?? null,
+    parent_id: c.parentId ?? null,
+    author_type: c.authorType,
+    author_member_id: c.authorMemberId ?? null,
+    author_name: c.authorName,
+    author_email: c.authorEmail ?? null,
+    content: c.content,
+    status: c.status,
+    resolved_by: c.resolvedBy ?? null,
+    resolved_at: c.resolvedAt ?? null,
+    created_at: c.createdAt,
+    updated_at: c.updatedAt,
   };
 }
 

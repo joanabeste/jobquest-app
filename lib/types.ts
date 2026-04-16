@@ -621,6 +621,25 @@ export interface WorkspaceMember {
   status: 'active' | 'pending';
 }
 
+// ─── Review-Kommentare ──────────────────────────────────────────────────────
+export interface FunnelComment {
+  id: string;
+  funnelDocId: string;
+  pageId: string;
+  blockId?: string;          // fehlt = Page-Level-Kommentar
+  parentId?: string;         // fehlt = Root-Kommentar eines Threads
+  authorType: 'member' | 'external';
+  authorMemberId?: string;
+  authorName: string;        // Snapshot, überlebt Member-Löschung
+  authorEmail?: string;
+  content: string;
+  status: 'open' | 'resolved';
+  resolvedBy?: string;
+  resolvedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Visible roles only (platform_admin intentionally excluded from UI)
 export const VISIBLE_ROLES: Exclude<WorkspaceRole, 'platform_admin'>[] = [
   'admin', 'editor', 'viewer',
