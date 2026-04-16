@@ -88,12 +88,12 @@ export default function ErgebnisBlock({
   const [activeTab, setActiveTab] = useState(0);
 
   return (
-    <div className="fp-card bg-white shadow-sm mx-4 my-3 p-6">
-      <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: `${primary}20` }}>
+    <div className="fp-card bg-white shadow-sm mx-4 my-5 p-5 sm:p-8">
+      <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5" style={{ background: `${primary}20` }}>
         <Trophy size={28} style={{ color: primary }} />
       </div>
       <h2 className="fp-heading text-2xl font-bold mb-2 text-center" dangerouslySetInnerHTML={{ __html: sh(inlineHtml(headline)) }} />
-      {b(subtext) && <div className="text-slate-500 text-sm mb-5 text-center rte" dangerouslySetInnerHTML={{ __html: sh(subtext) }} />}
+      {b(subtext) && <div className="text-slate-500 text-sm mb-6 text-center rte" dangerouslySetInnerHTML={{ __html: sh(subtext) }} />}
 
       {layout === 'groups' && visibleGroups.length === 0 && groups.length > 0 && (
         <p className="text-sm text-slate-500 text-center mt-3">

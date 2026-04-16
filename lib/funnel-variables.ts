@@ -222,3 +222,12 @@ const legacyKeyMap: Record<string, string> = {
   company: 'companyName',
   name: 'firstName',
 };
+
+/**
+ * Strips name-placeholder segments (", @firstName" / ", {{name}}") from a
+ * headline when no firstName is available, so "Dein Ergebnis, @firstName!"
+ * degrades to "Dein Ergebnis!" instead of "Dein Ergebnis, dir!".
+ */
+export function stripNamePlaceholder(template: string): string {
+  return template.replace(/,?\s*(?:@firstName|\{\{name\}\})/g, '');
+}

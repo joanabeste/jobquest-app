@@ -8,6 +8,7 @@ import { funnelStorage } from '@/lib/funnel-storage';
 import { FunnelDoc } from '@/lib/funnel-types';
 import FunnelPlayer from '@/components/funnel-editor/FunnelPlayer';
 import { fontFamilyFor } from '@/lib/fonts';
+import { stripNamePlaceholder } from '@/lib/funnel-variables';
 import { useSlugRedirect } from '@/lib/use-slug-redirect';
 import {
   CareerCheck, Company, BerufsCheckBlock, Dimension,
@@ -569,7 +570,9 @@ function ErgebnisRenderer({ block, firstName, scores, dimensions, primaryColor }
   dimensions: Dimension[];
   primaryColor: string;
 }) {
-  const headline = block.headline.replace(/\{\{name\}\}|@firstName/g, firstName || 'du');
+  const headline = firstName
+    ? block.headline.replace(/\{\{name\}\}|@firstName/g, firstName)
+    : stripNamePlaceholder(block.headline);
 
   // Compute percentages
   const maxScore = Math.max(...Object.values(scores), 1);

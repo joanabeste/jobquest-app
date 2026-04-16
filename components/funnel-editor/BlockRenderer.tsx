@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { ArrowRight, FileDown, Check, X, ChevronRight } from 'lucide-react';
 import { BlockNode } from '@/lib/funnel-types';
-import { applyVars } from '@/lib/funnel-variables';
+import { applyVars, stripNamePlaceholder } from '@/lib/funnel-variables';
 import { Company, Dimension } from '@/lib/types';
 import { DECISION_ICONS, isIconName } from '@/lib/decision-icons';
 import { SKIP_ANSWER } from '@/lib/funnel-utils';
@@ -857,7 +857,10 @@ export function BlockRenderer({
         : <LeadFormBlock props={p} company={company} br={br} primary={primary} leadForm={leadForm} setLeadForm={setLeadForm} onSubmit={(form) => onLeadSubmit(form)} />;
 
     case 'check_ergebnis': {
-      const headline = applyVars(s(p.headline, 'Dein Ergebnis!'), { ...varsMap, firstName: firstName || 'dir' });
+      const rawHeadline = s(p.headline, 'Dein Ergebnis!');
+      const headline = firstName
+        ? applyVars(rawHeadline, { ...varsMap, firstName })
+        : applyVars(stripNamePlaceholder(rawHeadline), varsMap);
       return (
         <ErgebnisBlock
           headline={headline}
