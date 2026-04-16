@@ -59,7 +59,7 @@ function csrfRejected(request: NextRequest): boolean {
 
 // ─── Custom domain routing ───────────────────────────────────────────────────
 // Public path prefixes that are allowed on custom domains
-const PUBLIC_CONTENT_PREFIXES = ['/jobquest/', '/berufscheck/', '/formular/'];
+const PUBLIC_CONTENT_PREFIXES = ['/jobquest/', '/berufscheck/', '/formular/', '/review/'];
 
 function isPublicContentPath(pathname: string): boolean {
   return PUBLIC_CONTENT_PREFIXES.some((p) => pathname.startsWith(p));

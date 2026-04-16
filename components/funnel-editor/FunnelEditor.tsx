@@ -646,6 +646,7 @@ function FunnelEditorInner({
                 activePageId={activePageId}
                 selectedBlockId={selectedNodeId}
                 currentUser={currentMember}
+                funnelDocId={doc.id}
                 onCreate={handleCreateComment}
                 onToggleStatus={handleToggleCommentStatus}
                 onDelete={handleDeleteComment}

@@ -621,6 +621,20 @@ export interface WorkspaceMember {
   status: 'active' | 'pending';
 }
 
+// ─── Review-Link (externer Zugang per Token) ───────────────────────────────
+export interface ReviewLink {
+  id: string;
+  funnelDocId: string;
+  companyId: string;
+  token: string;
+  label?: string;
+  canComment: boolean;
+  expiresAt?: string;
+  createdBy?: string;
+  createdAt: string;
+  revokedAt?: string;
+}
+
 // ─── Review-Kommentare ──────────────────────────────────────────────────────
 export interface FunnelComment {
   id: string;

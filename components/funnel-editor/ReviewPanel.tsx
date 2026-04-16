@@ -1,9 +1,10 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { MessageSquare, Check, Trash2, CornerDownRight, FileText } from 'lucide-react';
+import { MessageSquare, Check, Trash2, CornerDownRight, FileText, Link2 } from 'lucide-react';
 import type { FunnelComment, WorkspaceMember } from '@/lib/types';
 import type { FunnelPage } from '@/lib/funnel-types';
+import ReviewLinksModal from './ReviewLinksModal';
 
 type Filter = 'open' | 'resolved' | 'all';
 
@@ -13,6 +14,7 @@ interface ReviewPanelProps {
   activePageId: string;
   selectedBlockId: string | null;
   currentUser: WorkspaceMember | null;
+  funnelDocId: string;
   onCreate: (input: {
     pageId: string;
     blockId?: string;
@@ -57,7 +59,7 @@ function canModify(comment: FunnelComment, user: WorkspaceMember | null): boolea
 }
 
 export default function ReviewPanel({
-  comments, pages, activePageId, selectedBlockId, currentUser,
+  comments, pages, activePageId, selectedBlockId, currentUser, funnelDocId,
   onCreate, onToggleStatus, onDelete, onFocusBlock,
 }: ReviewPanelProps) {
   const [filter, setFilter] = useState<Filter>('open');
@@ -65,6 +67,7 @@ export default function ReviewPanel({
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
   const [busy, setBusy] = useState(false);
+  const [showLinksModal, setShowLinksModal] = useState(false);
 
   // Roots gefiltert nach Status + aktivem Kontext
   const rootsByThread = useMemo(() => {
@@ -139,12 +142,22 @@ export default function ReviewPanel({
   }
 
   return (
+    <>
     <div className="w-72 bg-white border-l border-slate-200 flex flex-col overflow-hidden flex-shrink-0">
       {/* Header */}
       <div className="flex-shrink-0 px-3 py-3 border-b border-slate-100">
-        <div className="flex items-center gap-2 mb-2">
-          <MessageSquare size={14} className="text-violet-600" />
-          <h2 className="text-sm font-semibold text-slate-800">Review</h2>
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <MessageSquare size={14} className="text-violet-600" />
+            <h2 className="text-sm font-semibold text-slate-800">Review</h2>
+          </div>
+          <button
+            onClick={() => setShowLinksModal(true)}
+            className="flex items-center gap-1 px-2 py-1 text-[10px] font-semibold rounded-md text-slate-600 hover:bg-slate-100 transition-colors"
+            title="Externe Links verwalten"
+          >
+            <Link2 size={11} /> Externe Links
+          </button>
         </div>
         <div className="flex gap-1 bg-slate-100 p-0.5 rounded-lg">
           {(['open', 'resolved', 'all'] as const).map((f) => (
@@ -263,6 +276,13 @@ export default function ReviewPanel({
         )}
       </div>
     </div>
+    {showLinksModal && (
+      <ReviewLinksModal
+        funnelDocId={funnelDocId}
+        onClose={() => setShowLinksModal(false)}
+      />
+    )}
+    </>
   );
 }
 

@@ -11,6 +11,7 @@ import type {
   WorkspaceRole,
   CorporateDesign,
   FunnelComment,
+  ReviewLink,
 } from '../types';
 import type { FunnelDoc, EmailConfig } from '../funnel-types';
 import { type DbRow, str, optStr, num, json, optBool, bool } from './row-helpers';
@@ -130,6 +131,21 @@ export function commentFromDb(row: DbRow): FunnelComment {
     resolvedAt: optStr(row, 'resolved_at'),
     createdAt: str(row, 'created_at'),
     updatedAt: str(row, 'updated_at'),
+  };
+}
+
+export function reviewLinkFromDb(row: DbRow): ReviewLink {
+  return {
+    id: str(row, 'id'),
+    funnelDocId: str(row, 'funnel_doc_id'),
+    companyId: str(row, 'company_id'),
+    token: str(row, 'token'),
+    label: optStr(row, 'label'),
+    canComment: bool(row, 'can_comment'),
+    expiresAt: optStr(row, 'expires_at'),
+    createdBy: optStr(row, 'created_by'),
+    createdAt: str(row, 'created_at'),
+    revokedAt: optStr(row, 'revoked_at'),
   };
 }
 
