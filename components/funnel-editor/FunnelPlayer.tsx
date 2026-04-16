@@ -113,12 +113,14 @@ export default function FunnelPlayer({ doc, company, contentDbId, onPageChange }
   }, [pageIndex, trackable, contentDbId]);
 
   // Seite an Parent melden (z.B. Review-Flow). Bewusst unabhängig von `trackable`,
-  // damit der Callback auch bei fehlendem contentDbId feuert.
+  // damit der Callback auch bei fehlendem contentDbId feuert. Via Ref, damit
+  // inline definierte Callbacks keinen Render-Loop auslösen.
+  const onPageChangeRef = useRef(onPageChange);
+  useEffect(() => { onPageChangeRef.current = onPageChange; });
   useEffect(() => {
-    if (!onPageChange) return;
     const page = doc.pages[pageIndex];
-    if (page) onPageChange(page.id, page.name, pageIndex);
-  }, [pageIndex, doc.pages, onPageChange]);
+    if (page) onPageChangeRef.current?.(page.id, page.name, pageIndex);
+  }, [pageIndex, doc.pages]);
   useEffect(() => {
     if (!trackable || !completed || completedRef.current) return;
     completedRef.current = true;
