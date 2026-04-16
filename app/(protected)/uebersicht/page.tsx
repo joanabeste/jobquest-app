@@ -192,17 +192,52 @@ export default function UebersichtPage() {
         <div className="mb-6 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700">{error}</div>
       )}
 
-      {/* Live banner */}
-      {isLive && publicUrl && (
-        <div className="mb-6 bg-emerald-50 border border-emerald-200 rounded-2xl p-5 shadow-sm">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
-            </span>
-            <span className="text-sm font-semibold text-emerald-900">Übersichtsseite ist live</span>
+      {/* Status card — Toggle + Live-URL */}
+      <div className={`mb-6 rounded-2xl border shadow-sm p-5 transition-colors ${
+        config.enabled
+          ? 'bg-emerald-50 border-emerald-200'
+          : 'bg-slate-50 border-slate-200'
+      }`}>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              {config.enabled ? (
+                <span className="relative flex h-2.5 w-2.5 flex-shrink-0">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+                </span>
+              ) : (
+                <span className="w-2.5 h-2.5 rounded-full bg-slate-300 flex-shrink-0" />
+              )}
+              <span className={`text-sm font-semibold ${config.enabled ? 'text-emerald-900' : 'text-slate-700'}`}>
+                {config.enabled ? 'Übersichtsseite ist live' : 'Übersichtsseite ist offline'}
+              </span>
+            </div>
+            <p className={`text-xs ${config.enabled ? 'text-emerald-700' : 'text-slate-500'}`}>
+              {config.enabled
+                ? 'Die Seite ist öffentlich erreichbar.'
+                : 'Niemand kann die Seite aktuell aufrufen.'}
+            </p>
           </div>
-          <div className="flex items-center gap-2 bg-white rounded-xl border border-emerald-200 px-3 py-2">
+          <button
+            type="button"
+            role="switch"
+            aria-checked={config.enabled}
+            onClick={() => setConfig((c) => ({ ...c, enabled: !c.enabled }))}
+            className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+              config.enabled ? 'bg-emerald-500 focus:ring-emerald-500' : 'bg-slate-300 focus:ring-slate-400'
+            }`}
+          >
+            <span
+              className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
+                config.enabled ? 'translate-x-5' : 'translate-x-0.5'
+              }`}
+            />
+          </button>
+        </div>
+
+        {config.enabled && publicUrl && (
+          <div className="mt-4 flex items-center gap-2 bg-white rounded-xl border border-emerald-200 px-3 py-2">
             <Globe size={14} className="text-emerald-600 flex-shrink-0" />
             <p className="text-sm font-mono text-slate-700 flex-1 truncate select-all">{publicUrl}</p>
             <button onClick={handleCopy}
@@ -215,8 +250,8 @@ export default function UebersichtPage() {
               <ExternalLink size={12} /> Öffnen
             </Link>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* General settings */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 mb-6">
@@ -224,13 +259,6 @@ export default function UebersichtPage() {
           <Globe size={16} className="text-violet-600" /> Allgemein
         </h2>
         <div className="space-y-4">
-          <label className="flex items-center gap-3">
-            <input type="checkbox" checked={config.enabled}
-              onChange={(e) => setConfig((c) => ({ ...c, enabled: e.target.checked }))}
-              className="w-4 h-4 accent-violet-600" />
-            <span className="text-sm text-slate-700">Übersichtsseite öffentlich verfügbar machen</span>
-          </label>
-
           <div>
             <label className="block text-xs font-medium text-slate-600 mb-1">URL-Slug</label>
             <div className="flex items-center gap-2">
