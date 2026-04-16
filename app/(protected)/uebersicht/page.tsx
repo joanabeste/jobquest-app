@@ -248,6 +248,13 @@ export default function UebersichtPage() {
           <input
             value={slug}
             onChange={(e) => setSlug(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && slugStatus === 'available' && !saving) {
+                e.preventDefault();
+                e.currentTarget.blur();
+                handleSave();
+              }
+            }}
             placeholder="meine-firma"
             className={`flex-1 min-w-0 text-sm font-mono bg-transparent border-0 border-b border-dashed px-0 py-0 focus:outline-none focus:ring-0 ${
               slugStatus === 'taken' || slugStatus === 'invalid'
