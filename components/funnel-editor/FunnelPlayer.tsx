@@ -17,10 +17,17 @@ import { ChevronLeft, ChevronRight, MapPin, CheckCircle, Send } from 'lucide-rea
 import { StyledBlock, DialogLine, LeadForm, emptyLead } from './BlockRenderer';
 import SuccessPage from '@/components/quest/SuccessPage';
 
-interface Props { doc: FunnelDoc; company: Company; contentDbId?: string; }
+interface Props {
+  doc: FunnelDoc;
+  company: Company;
+  contentDbId?: string;
+  /** Feuert bei Mount + jedem Seitenwechsel. Genutzt z.B. vom Review-Flow,
+   *  um Kommentare an die aktuelle Seite zu hängen. */
+  onPageChange?: (pageId: string, pageName: string, pageIndex: number) => void;
+}
 
 // ─── Main player ──────────────────────────────────────────────────────────────
-export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
+export default function FunnelPlayer({ doc, company, contentDbId, onPageChange }: Props) {
   const [pageIndex, setPageIndex]   = useState(0);
   const [history, setHistory]       = useState<number[]>([]);
   const sessionIdRef = useRef<string>('');
@@ -104,6 +111,14 @@ export default function FunnelPlayer({ doc, company, contentDbId }: Props) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageIndex, trackable, contentDbId]);
+
+  // Seite an Parent melden (z.B. Review-Flow). Bewusst unabhängig von `trackable`,
+  // damit der Callback auch bei fehlendem contentDbId feuert.
+  useEffect(() => {
+    if (!onPageChange) return;
+    const page = doc.pages[pageIndex];
+    if (page) onPageChange(page.id, page.name, pageIndex);
+  }, [pageIndex, doc.pages, onPageChange]);
   useEffect(() => {
     if (!trackable || !completed || completedRef.current) return;
     completedRef.current = true;

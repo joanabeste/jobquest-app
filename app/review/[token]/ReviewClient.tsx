@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { MessageSquare, Send, X, Check, Loader2 } from 'lucide-react';
+import { MessageSquare, Send, X, Check, Loader2, FileText } from 'lucide-react';
 import type { FunnelComment, Company } from '@/lib/types';
 import type { FunnelDoc } from '@/lib/funnel-types';
 import FunnelPlayer from '@/components/funnel-editor/FunnelPlayer';
@@ -51,11 +51,12 @@ export default function ReviewClient({ token }: { token: string }) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Aktueller Funnel-Seite (wird über einen Observer aus FunnelPlayer abgeleitet
-  // — für MVP zeigen wir Kommentare zu ALLEN Seiten ungefiltert)
   const [panelOpen, setPanelOpen] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  // Wird vom FunnelPlayer via onPageChange gefüttert (aktuelle Seite im Flow)
+  const [currentPage, setCurrentPage] = useState<{ id: string; name: string; index: number } | null>(null);
 
   // Reviewer-Identität (Name/Email) — aus LocalStorage oder beim ersten Kommentar erfragt
   const [reviewer, setReviewer] = useState<{ name: string; email: string } | null>(null);
@@ -92,9 +93,7 @@ export default function ReviewClient({ token }: { token: string }) {
     if (!data || !commentText.trim() || submitting) return;
     if (!reviewer) { setAskIdentity(true); return; }
 
-    // Ohne genaue Seitenreferenz aus FunnelPlayer (MVP): wir referenzieren die erste Seite
-    // des Funnels — Reviewer soll im Text die Seite nennen.
-    const pageId = data.doc.pages[0]?.id ?? '';
+    const pageId = currentPage?.id ?? data.doc.pages[0]?.id ?? '';
     if (!pageId) return;
 
     setSubmitting(true);
@@ -208,7 +207,11 @@ export default function ReviewClient({ token }: { token: string }) {
 
       {/* Funnel preview */}
       <div className="max-w-[480px] mx-auto">
-        <FunnelPlayer doc={doc} company={playerCompany} />
+        <FunnelPlayer
+          doc={doc}
+          company={playerCompany}
+          onPageChange={(id, name, index) => setCurrentPage({ id, name, index })}
+        />
       </div>
 
       {/* Floating Comments Panel */}
@@ -252,6 +255,14 @@ export default function ReviewClient({ token }: { token: string }) {
           {/* Eingabe */}
           {canComment && (
             <div className="p-3 border-t border-slate-100 space-y-2">
+              {currentPage && (
+                <div className="flex items-center gap-1.5 text-[11px] text-slate-500 bg-slate-50 px-2 py-1 rounded">
+                  <FileText size={11} className="flex-shrink-0" />
+                  <span className="truncate">
+                    Kommentar zu: <strong className="text-slate-700">{currentPage.name}</strong>
+                  </span>
+                </div>
+              )}
               {reviewer && (
                 <p className="text-[10px] text-slate-400">
                   Als <strong>{reviewer.name}</strong>{' '}
