@@ -38,9 +38,11 @@ interface Props {
 export default function MediaLibrary({ open, onClose, onSelect, mode = 'pick', title }: Props) {
   const [assets, setAssets] = useState<MediaAsset[]>([]);
   const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number } | null>(null);
   const [error, setError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const uploading = uploadProgress !== null;
 
   const refresh = useCallback(() => {
     setLoading(true);
@@ -55,16 +57,34 @@ export default function MediaLibrary({ open, onClose, onSelect, mode = 'pick', t
     if (open) refresh();
   }, [open, refresh]);
 
-  async function handleUpload(file: File) {
+  async function handleUploadFiles(files: File[]) {
+    if (files.length === 0) return;
     setError('');
-    setUploading(true);
-    try {
-      const asset = await uploadToMediaLibrary(file);
-      setAssets((prev) => [asset, ...prev]);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Upload fehlgeschlagen');
-    } finally {
-      setUploading(false);
+    setUploadProgress({ done: 0, total: files.length });
+
+    const failed: string[] = [];
+    // Parallel mit individueller Fehlerbehandlung — eine fehlgeschlagene Datei
+    // kippt nicht den ganzen Batch.
+    await Promise.all(
+      files.map(async (file) => {
+        try {
+          const asset = await uploadToMediaLibrary(file);
+          setAssets((prev) => [asset, ...prev]);
+        } catch {
+          failed.push(file.name);
+        } finally {
+          setUploadProgress((p) => p ? { done: p.done + 1, total: p.total } : null);
+        }
+      }),
+    );
+
+    setUploadProgress(null);
+    if (failed.length > 0) {
+      setError(
+        failed.length === files.length
+          ? 'Upload fehlgeschlagen.'
+          : `${failed.length} von ${files.length} Bildern fehlgeschlagen: ${failed.slice(0, 3).join(', ')}${failed.length > 3 ? '…' : ''}`,
+      );
     }
   }
 
@@ -95,10 +115,11 @@ export default function MediaLibrary({ open, onClose, onSelect, mode = 'pick', t
             ref={fileInputRef}
             type="file"
             accept="image/*"
+            multiple
             className="hidden"
             onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) handleUpload(f);
+              const files = e.target.files ? Array.from(e.target.files) : [];
+              if (files.length > 0) handleUploadFiles(files);
               e.target.value = '';
             }}
           />
@@ -108,7 +129,9 @@ export default function MediaLibrary({ open, onClose, onSelect, mode = 'pick', t
             className="btn-primary disabled:opacity-60"
           >
             <Upload size={16} />
-            {uploading ? 'Wird hochgeladen…' : 'Bild hochladen'}
+            {uploadProgress
+              ? `Lädt ${uploadProgress.done} von ${uploadProgress.total}…`
+              : 'Bilder hochladen'}
           </button>
           {error && (
             <p className="text-sm text-red-600 mt-2">{error}</p>
