@@ -11,7 +11,17 @@ const geistSans = localFont({
   weight: '100 900',
 });
 
+// Ermöglicht, dass relative og:image-URLs in generateMetadata() korrekt
+// absolutiert werden (Social-Media-Scraper akzeptieren nur absolute URLs).
+function resolveAppUrl(): URL {
+  const domain = process.env.NEXT_PUBLIC_APP_DOMAIN ?? 'localhost:3000';
+  const isLocal = domain.startsWith('localhost');
+  const first = domain.split(',')[0].trim();
+  return new URL(`${isLocal ? 'http' : 'https'}://${first}`);
+}
+
 export const metadata: Metadata = {
+  metadataBase: resolveAppUrl(),
   title: 'JobQuest – Digitales Ausbildungsmarketing',
   description: 'Interaktive Berufserkundungsreisen für Unternehmen erstellen und veröffentlichen.',
 };
