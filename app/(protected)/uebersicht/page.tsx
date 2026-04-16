@@ -14,6 +14,7 @@ import {
   Trash2, Plus, CheckCircle, Copy, Check, Image as ImageIcon, X,
 } from 'lucide-react';
 import MediaLibrary from '@/components/shared/MediaLibrary';
+import ShareButton from '@/components/dashboard/ShareButton';
 
 export default function UebersichtPage() {
   const { company, updateCompany } = useAuth();
@@ -170,11 +171,14 @@ export default function UebersichtPage() {
           <p className="text-slate-500 text-sm mt-0.5">Eine öffentliche Seite mit allen JobQuests und Berufschecks deiner Wahl.</p>
         </div>
         <div className="flex items-center gap-2">
-          {isLive && publicUrl && (
-            <Link href={publicUrl} target="_blank"
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition-colors">
-              <ExternalLink size={14} /> Vorschau
-            </Link>
+          {isLive && publicUrl && company?.slug && (
+            <>
+              <ShareButton path={`/c/${company.slug}`} title={`${company.name} – Übersicht`} />
+              <Link href={publicUrl} target="_blank"
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition-colors">
+                <ExternalLink size={14} /> Vorschau
+              </Link>
+            </>
           )}
           <button onClick={handleSave} disabled={saving || slugStatus === 'taken' || slugStatus === 'invalid' || slugStatus === 'checking'}
             className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-violet-600 hover:bg-violet-700 disabled:opacity-50 rounded-xl transition-colors">
