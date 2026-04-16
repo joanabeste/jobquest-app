@@ -20,18 +20,18 @@ interface ReviewData {
 
 const REVIEWER_KEY = 'jobquest.reviewer';
 
-function loadReviewer(): { name: string; email: string } | null {
+function loadReviewer(): { name: string } | null {
   if (typeof window === 'undefined') return null;
   try {
     const raw = window.localStorage.getItem(REVIEWER_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
-    if (typeof parsed?.name === 'string') return parsed;
+    if (typeof parsed?.name === 'string') return { name: parsed.name };
   } catch { /* ignore */ }
   return null;
 }
 
-function saveReviewer(reviewer: { name: string; email: string }) {
+function saveReviewer(reviewer: { name: string }) {
   try { window.localStorage.setItem(REVIEWER_KEY, JSON.stringify(reviewer)); } catch { /* ignore */ }
 }
 
@@ -58,11 +58,10 @@ export default function ReviewClient({ token }: { token: string }) {
   // Wird vom FunnelPlayer via onPageChange gefüttert (aktuelle Seite im Flow)
   const [currentPage, setCurrentPage] = useState<{ id: string; name: string; index: number } | null>(null);
 
-  // Reviewer-Identität (Name/Email) — aus LocalStorage oder beim ersten Kommentar erfragt
-  const [reviewer, setReviewer] = useState<{ name: string; email: string } | null>(null);
+  // Reviewer-Identität (Name) — aus LocalStorage oder beim ersten Kommentar erfragt
+  const [reviewer, setReviewer] = useState<{ name: string } | null>(null);
   const [askIdentity, setAskIdentity] = useState(false);
   const [identityName, setIdentityName] = useState('');
-  const [identityEmail, setIdentityEmail] = useState('');
 
   useEffect(() => {
     setReviewer(loadReviewer());
@@ -103,7 +102,6 @@ export default function ReviewClient({ token }: { token: string }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           authorName: reviewer.name,
-          authorEmail: reviewer.email || undefined,
           pageId,
           content: commentText.trim(),
         }),
@@ -123,7 +121,7 @@ export default function ReviewClient({ token }: { token: string }) {
   function confirmIdentity() {
     const n = identityName.trim();
     if (!n) return;
-    const next = { name: n, email: identityEmail.trim() };
+    const next = { name: n };
     setReviewer(next);
     saveReviewer(next);
     setAskIdentity(false);
@@ -241,9 +239,6 @@ export default function ReviewClient({ token }: { token: string }) {
               <div key={c.id} className={`border rounded-xl p-2.5 ${c.status === 'resolved' ? 'bg-slate-50 border-slate-100 opacity-60' : 'border-slate-200'}`}>
                 <div className="flex items-center gap-1.5 mb-1">
                   <span className="text-[11px] font-semibold text-slate-800 truncate">{c.authorName}</span>
-                  {c.authorType === 'external' && (
-                    <span className="text-[8px] font-bold uppercase text-amber-700 bg-amber-100 px-1 rounded">Extern</span>
-                  )}
                   <span className="text-[10px] text-slate-400">{relativeTime(c.createdAt)}</span>
                   {c.status === 'resolved' && <Check size={10} className="text-emerald-600" />}
                 </div>
@@ -268,7 +263,7 @@ export default function ReviewClient({ token }: { token: string }) {
                   Als <strong>{reviewer.name}</strong>{' '}
                   <button
                     className="underline hover:text-violet-700"
-                    onClick={() => { setAskIdentity(true); setIdentityName(reviewer.name); setIdentityEmail(reviewer.email); }}
+                    onClick={() => { setAskIdentity(true); setIdentityName(reviewer.name); }}
                   >
                     ändern
                   </button>
@@ -304,22 +299,14 @@ export default function ReviewClient({ token }: { token: string }) {
             <p className="text-[11px] text-slate-500 mb-3">Damit das Team weiß, von wem das Feedback kommt.</p>
             <div className="space-y-2">
               <div>
-                <label className="block text-[10px] font-semibold text-slate-600 mb-0.5">Name *</label>
+                <label className="block text-[10px] font-semibold text-slate-600 mb-0.5">Name</label>
                 <input
                   type="text"
                   value={identityName}
                   onChange={(e) => setIdentityName(e.target.value)}
                   className="w-full text-[12px] text-slate-700 px-2.5 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-200"
                   autoFocus
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-semibold text-slate-600 mb-0.5">E-Mail (optional)</label>
-                <input
-                  type="email"
-                  value={identityEmail}
-                  onChange={(e) => setIdentityEmail(e.target.value)}
-                  className="w-full text-[12px] text-slate-700 px-2.5 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-200"
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); confirmIdentity(); } }}
                 />
               </div>
               <div className="flex gap-2 justify-end pt-2">
