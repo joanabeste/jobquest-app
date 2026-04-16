@@ -152,6 +152,9 @@ export default function UebersichtPage() {
     ? getPublicUrl(`/c/${company.slug}`, company)
     : null;
   const isLive = !!(company?.showcase?.enabled && publicUrl);
+  // Base-URL (alles bis /c/) für die Inline-Slug-Edit-Zeile
+  const urlBase = company ? getPublicUrl('/c/', company) : '/c/';
+  const slugDirty = !!company?.slug && slug.trim() !== company.slug;
 
   function handleCopy() {
     if (!publicUrl) return;
@@ -236,49 +239,60 @@ export default function UebersichtPage() {
           </button>
         </div>
 
-        {config.enabled && publicUrl && (
-          <div className="mt-4 flex items-center gap-2 bg-white rounded-xl border border-emerald-200 px-3 py-2">
-            <Globe size={14} className="text-emerald-600 flex-shrink-0" />
-            <p className="text-sm font-mono text-slate-700 flex-1 truncate select-all">{publicUrl}</p>
-            <button onClick={handleCopy}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-colors flex-shrink-0">
-              {copied ? <Check size={12} /> : <Copy size={12} />}
-              {copied ? 'Kopiert' : 'Link kopieren'}
-            </button>
-            <Link href={publicUrl} target="_blank"
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-100 hover:bg-emerald-200 rounded-lg transition-colors flex-shrink-0">
-              <ExternalLink size={12} /> Öffnen
-            </Link>
-          </div>
+        {/* Inline URL + Slug-Eingabe */}
+        <div className={`mt-4 flex items-center gap-2 bg-white rounded-xl border px-3 py-2 ${
+          config.enabled ? 'border-emerald-200' : 'border-slate-200'
+        }`}>
+          <Globe size={14} className={`flex-shrink-0 ${config.enabled ? 'text-emerald-600' : 'text-slate-400'}`} />
+          <span className="text-sm font-mono text-slate-400 truncate">{urlBase}</span>
+          <input
+            value={slug}
+            onChange={(e) => setSlug(e.target.value)}
+            placeholder="meine-firma"
+            className={`flex-1 min-w-0 text-sm font-mono bg-transparent border-0 border-b border-dashed px-0 py-0 focus:outline-none focus:ring-0 ${
+              slugStatus === 'taken' || slugStatus === 'invalid'
+                ? 'border-red-300 text-red-700 focus:border-red-500'
+                : slugStatus === 'available'
+                ? 'border-emerald-300 text-slate-800 focus:border-emerald-500'
+                : 'border-slate-300 text-slate-800 focus:border-violet-500'
+            }`}
+          />
+          {slugStatus === 'checking' && <span className="text-[11px] text-slate-400 flex-shrink-0">prüfe…</span>}
+          {slugStatus === 'available' && <Check size={13} className="text-emerald-600 flex-shrink-0" />}
+          {slugStatus === 'taken' && <span className="text-[11px] text-red-600 flex-shrink-0">vergeben</span>}
+          {slugStatus === 'invalid' && <span className="text-[11px] text-red-600 flex-shrink-0">zu kurz</span>}
+
+          {config.enabled && publicUrl && !slugDirty && (
+            <>
+              <button onClick={handleCopy}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-colors flex-shrink-0">
+                {copied ? <Check size={12} /> : <Copy size={12} />}
+                {copied ? 'Kopiert' : 'Kopieren'}
+              </button>
+              <Link href={publicUrl} target="_blank"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-100 hover:bg-emerald-200 rounded-lg transition-colors flex-shrink-0">
+                <ExternalLink size={12} /> Öffnen
+              </Link>
+            </>
+          )}
+        </div>
+
+        {/* Helper-Hinweise unter der URL-Zeile */}
+        {(slugDirty || slugStatus === 'invalid' || slugStatus === 'taken') && (
+          <p className="text-[11px] text-slate-500 mt-2">
+            {slugStatus === 'invalid' && 'Mindestens 3 Zeichen.'}
+            {slugStatus === 'taken' && 'Dieser Slug ist bereits vergeben.'}
+            {slugDirty && slugStatus !== 'invalid' && slugStatus !== 'taken' && 'Änderung noch nicht gespeichert.'}
+          </p>
         )}
       </div>
 
       {/* General settings */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 mb-6">
         <h2 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
-          <Globe size={16} className="text-violet-600" /> Allgemein
+          <Globe size={16} className="text-violet-600" /> Inhalt
         </h2>
         <div className="space-y-4">
-          <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">URL-Slug</label>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-400">/c/</span>
-              <input value={slug} onChange={(e) => setSlug(e.target.value)}
-                placeholder="meine-firma"
-                className={`input-field text-sm flex-1 ${
-                  slugStatus === 'taken' || slugStatus === 'invalid' ? 'border-red-300' :
-                  slugStatus === 'available' ? 'border-emerald-300' : ''
-                }`} />
-              {slugStatus === 'checking' && <span className="text-[11px] text-slate-400">prüfe…</span>}
-              {slugStatus === 'available' && <span className="text-[11px] text-emerald-600 flex items-center gap-1"><Check size={11} /> verfügbar</span>}
-              {slugStatus === 'taken' && <span className="text-[11px] text-red-600">vergeben</span>}
-              {slugStatus === 'invalid' && <span className="text-[11px] text-red-600">zu kurz</span>}
-            </div>
-            <p className="text-[11px] text-slate-400 mt-1">
-              Mindestens 3 Zeichen. Wird automatisch normalisiert ({slug ? slugify(slug) || '–' : '–'}).
-            </p>
-          </div>
-
           <div>
             <label className="block text-xs font-medium text-slate-600 mb-1">Überschrift (optional)</label>
             <input value={config.headline ?? ''}
