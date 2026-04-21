@@ -25,6 +25,19 @@ function useAnimatedValue(target: number, delay = 300, duration = 800): number {
 import { Dimension } from '@/lib/types';
 import { sh, b, inlineHtml } from './helpers';
 
+/**
+ * Hängt (m/w/d) an einen Berufstitel an, wenn nicht bereits ein Geschlechter-
+ * Hinweis vorhanden ist. Gesetzlich (§ 11 AGG) ist die geschlechterneutrale
+ * Ausschreibung im Stellenangebot Pflicht — deshalb erzwingen wir das hier
+ * für alle im Ergebnis gelisteten Suggestions.
+ */
+const MWD_PATTERN = /\((?:[mwdxfi](?:[\/\|][mwdxfi])+)\)/i;
+function withMwd(title: string): string {
+  if (!title) return title;
+  if (MWD_PATTERN.test(title)) return title;
+  return `${title.trimEnd()} (m/w/d)`;
+}
+
 export interface ErgebnisLink {
   id: string;
   label: string;
@@ -294,27 +307,20 @@ function MobileAccordion({ groups, dimensions, scores, maxScores, primary, br }:
                   {matching.length === 0 ? (
                     <p className="text-xs text-slate-400 px-3 py-2">Keine passenden Treffer in dieser Kategorie.</p>
                   ) : (
+                    // Mobile: reine Textliste ohne Thumbnails — der Berufstitel
+                    // inkl. "(m/w/d)" braucht den vollen Platz und wird sonst
+                    // bei langen Namen abgeschnitten.
                     matching.map((sug) => (
                       <button
                         key={sug.id}
                         type="button"
                         onClick={() => setModalSug(sug)}
-                        className="w-full flex items-center gap-3 px-2 py-2 rounded-lg text-left hover:bg-slate-50 transition-colors"
+                        className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-left hover:bg-slate-50 transition-colors"
                       >
-                        {sug.imageUrl ? (
-                          <img src={sug.imageUrl} alt="" className="w-11 h-11 rounded-lg object-cover flex-shrink-0" />
-                        ) : (
-                          <div
-                            className="w-11 h-11 rounded-lg flex items-center justify-center text-sm font-bold flex-shrink-0"
-                            style={{ background: primary + '15', color: primary }}
-                          >
-                            {sug.title.charAt(0)}
-                          </div>
-                        )}
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-slate-900 leading-tight line-clamp-1">{sug.title}</p>
+                          <p className="text-sm font-semibold text-slate-900 leading-snug">{withMwd(sug.title)}</p>
                           {sug.description && (
-                            <p className="text-[11px] text-slate-500 leading-snug line-clamp-1">{sug.description}</p>
+                            <p className="text-[11px] text-slate-500 leading-snug line-clamp-1 mt-0.5">{sug.description}</p>
                           )}
                         </div>
                         <ChevronDown size={14} className="flex-shrink-0 text-slate-300 -rotate-90" />
@@ -366,7 +372,7 @@ function MobileAccordion({ groups, dimensions, scores, maxScores, primary, br }:
             {/* Content: flex-col + justify-center lets short descriptions float
                 toward the middle of the min-height instead of hugging the top. */}
             <div className="p-5 pb-6 flex-1 flex flex-col justify-center">
-              <h3 className="fp-heading text-xl font-bold mb-3">{modalSug.title}</h3>
+              <h3 className="fp-heading text-xl font-bold mb-3">{withMwd(modalSug.title)}</h3>
               {modalSug.description && (
                 <p className="text-sm text-slate-600 leading-relaxed mb-4">{modalSug.description}</p>
               )}
@@ -481,7 +487,7 @@ function GroupSuggestions({ group, dimensions, scores, primary, br }: { group: E
             )}
             <div className="p-3 md:p-4">
               <p className="text-sm md:text-base font-semibold text-slate-900 leading-snug mb-1 line-clamp-2">
-                {sug.title}
+                {withMwd(sug.title)}
               </p>
               {sug.description && (
                 <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">{sug.description}</p>
@@ -530,7 +536,7 @@ function GroupSuggestions({ group, dimensions, scores, primary, br }: { group: E
               )}
             </div>
             <div className="p-5 md:p-7">
-              <h3 className="fp-heading text-xl md:text-2xl font-bold mb-3">{openSug.title}</h3>
+              <h3 className="fp-heading text-xl md:text-2xl font-bold mb-3">{withMwd(openSug.title)}</h3>
               {openSug.description && (
                 <p className="text-sm md:text-base text-slate-600 leading-relaxed mb-5">{openSug.description}</p>
               )}
