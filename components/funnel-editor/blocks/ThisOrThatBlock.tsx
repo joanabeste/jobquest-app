@@ -56,14 +56,15 @@ export default function ThisOrThatBlock({
   }
 
   return (
-    <div className="fp-card bg-white shadow-sm mx-4 my-3 p-5 sm:p-6">
-      <h2 className="fp-heading text-lg md:text-xl font-bold text-center mb-1">{question}</h2>
+    <div className="fp-card bg-white shadow-sm mx-4 my-3 p-3 sm:p-5 md:p-6">
+      <h2 className="fp-heading text-base md:text-xl font-bold text-center mb-1 leading-snug">{question}</h2>
       {description && (
-        <p className="text-sm text-slate-500 text-center mb-4">{description}</p>
+        <p className="text-xs md:text-sm text-slate-500 text-center mb-2 md:mb-4">{description}</p>
       )}
 
-      {/* Mobile: stacked with OR divider. Desktop: side-by-side. */}
-      <div className="flex flex-col md:flex-row md:gap-4 gap-3 items-stretch">
+      {/* Mobile: stacked with a slim OR divider, cards kept short so the whole
+          block fits a single 667 px viewport. Desktop: side-by-side tall cards. */}
+      <div className="flex flex-col md:flex-row md:gap-4 gap-1.5 items-stretch">
         <OptionCard
           ref={refA}
           side="A"
@@ -73,15 +74,15 @@ export default function ThisOrThatBlock({
           eager
           primary={primary}
           br={br}
-          aspectMobile="aspect-[4/3]"
+          aspectMobile="aspect-[16/10]"
           aspectDesktop="md:aspect-[3/4]"
           onClick={() => choose('A')}
           onKeyDown={(e) => onKeyOnCard(e, 'A')}
         />
 
-        <div className="flex md:flex-col items-center justify-center gap-2 md:py-0 py-0.5">
+        <div className="flex md:flex-col items-center justify-center gap-1.5 md:py-0 py-0">
           <div className="flex-1 md:flex-initial md:w-px md:h-6 h-px bg-slate-200" />
-          <span className="text-[10px] font-bold tracking-widest uppercase" style={{ color: primary }}>
+          <span className="text-[9px] md:text-[10px] font-bold tracking-widest uppercase" style={{ color: primary }}>
             oder
           </span>
           <div className="flex-1 md:flex-initial md:w-px md:h-6 h-px bg-slate-200" />
@@ -96,7 +97,7 @@ export default function ThisOrThatBlock({
           eager={false}
           primary={primary}
           br={br}
-          aspectMobile="aspect-[4/3]"
+          aspectMobile="aspect-[16/10]"
           aspectDesktop="md:aspect-[3/4]"
           onClick={() => choose('B')}
           onKeyDown={(e) => onKeyOnCard(e, 'B')}
@@ -104,7 +105,7 @@ export default function ThisOrThatBlock({
       </div>
 
       {allowSkip && (
-        <div className="text-center mt-4">
+        <div className="text-center mt-3 md:mt-4">
           <button
             type="button"
             onClick={() => { onAnswer(nodeId, SKIP_ANSWER); onNext(); }}
@@ -164,7 +165,7 @@ const OptionCard = forwardRef<HTMLButtonElement, CardProps>(function OptionCard(
         />
       ) : (
         <div
-          className="absolute inset-0 flex items-center justify-center text-5xl md:text-6xl font-black"
+          className="absolute inset-0 flex items-center justify-center text-4xl md:text-6xl font-black"
           style={{ background: primary + '12', color: primary }}
         >
           {initial}
@@ -172,8 +173,8 @@ const OptionCard = forwardRef<HTMLButtonElement, CardProps>(function OptionCard(
       )}
       {/* Gradient overlay for label readability */}
       <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/70 via-black/20 to-transparent pointer-events-none" />
-      <div className="absolute inset-x-0 bottom-0 p-3 md:p-4">
-        <p className="text-white font-semibold text-sm md:text-base leading-tight drop-shadow">
+      <div className="absolute inset-x-0 bottom-0 p-2 md:p-4">
+        <p className="text-white font-semibold text-xs md:text-base leading-tight drop-shadow line-clamp-2">
           {option.label}
         </p>
       </div>
