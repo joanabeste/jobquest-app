@@ -17,6 +17,7 @@ import { DecisionEditor } from './inspectors/DecisionEditor';
 import { QuizEditor } from './inspectors/QuizEditor';
 import { FrageEditor, ErgebnisfrageEditor } from './inspectors/FrageEditor';
 import { SwipeDeckEditor } from './inspectors/SwipeDeckEditor';
+import { ThisOrThatEditor } from './inspectors/ThisOrThatEditor';
 import { ErgebnisGroupsEditor } from './inspectors/ErgebnisGroupsEditor';
 import { FormStepEditor } from './inspectors/FormStepEditor';
 import { HotspotEditor } from './inspectors/HotspotEditor';
@@ -551,6 +552,9 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars }: {
 
     case 'check_swipe_deck':
       return <SwipeDeckEditor props={props} onChange={onChange} variables={availableVars} />;
+
+    case 'check_this_or_that':
+      return <ThisOrThatEditor props={props} onChange={onChange} variables={availableVars} />;
 
     case 'check_selbst':
       return (

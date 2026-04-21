@@ -815,6 +815,38 @@ export default function BlockPreview({ node, onUpdate }: {
       );
     }
 
+    case 'check_this_or_that': {
+      const optA = (p.optionA as { imageUrl?: string; label?: string } | undefined) ?? {};
+      const optB = (p.optionB as { imageUrl?: string; label?: string } | undefined) ?? {};
+      const MiniCard = ({ o }: { o: { imageUrl?: string; label?: string } }) => (
+        <div className="relative flex-1 aspect-[4/3] rounded-lg overflow-hidden border border-slate-200 bg-slate-50">
+          {o.imageUrl ? (
+            <img src={o.imageUrl} alt="" className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-2xl font-black" style={{ background: primary + '14', color: primary }}>
+              {(o.label ?? '?').charAt(0)}
+            </div>
+          )}
+          <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/70 to-transparent" />
+          <p className="absolute bottom-1.5 left-2 right-2 text-white text-[10px] font-semibold leading-tight drop-shadow line-clamp-1">
+            {o.label || 'Option'}
+          </p>
+        </div>
+      );
+      return (
+        <div className="mx-4 my-3 p-4 bg-white border border-slate-200 rounded-xl shadow-sm">
+          <p className="text-xs text-slate-700 font-medium text-center mb-3">{(p.question as string) || 'Was ist eher dein Vibe?'}</p>
+          <div className="flex items-stretch gap-2">
+            <MiniCard o={optA} />
+            <div className="flex items-center">
+              <span className="text-[9px] font-bold tracking-widest uppercase" style={{ color: primary }}>oder</span>
+            </div>
+            <MiniCard o={optB} />
+          </div>
+        </div>
+      );
+    }
+
     case 'check_lead': {
       const fields = (p.fields as { id: string; type?: string; label: string; placeholder?: string; options?: string[] }[]) || [];
       const rows = fields.length > 0 ? fields : [{ id: 'fallback', type: 'email', label: 'E-Mail', placeholder: 'E-Mail-Adresse' }];

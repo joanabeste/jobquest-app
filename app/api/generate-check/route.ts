@@ -108,6 +108,23 @@ Seite 2 (oder 1 wenn keine Studiengänge):
   → Auch bei optionNeutral und optionNegative KÖNNEN Punkte vergeben werden (z.B. 1 Punkt bei neutral).
   → Wenn im User-Prompt konkrete Beispiel-Fragen aus Bildern stehen, übernimm sie hier 1:1 (oder eng angelehnt) und scoren auf die in maps_to genannten Kategorien.
 
+OPTIONAL: 1–2 Seiten check_this_or_that (Visual A/B — NUR bei klar visueller Dichotomie sinnvoll):
+  Props: {
+    "question": "Was ist eher dein Vibe?",
+    "description": "",
+    "allowSkip": false,
+    "optionA": { "imageUrl": "", "label": "Werkhalle mit Maschine", "scores": { "<DIMENSION_NAME>": 2 } },
+    "optionB": { "imageUrl": "", "label": "Monitor mit Code",       "scores": { "<DIMENSION_NAME>": 2 } }
+  }
+  → Zeigt dem Nutzer zwei Bilder nebeneinander; ein Tap wählt eines, Auto-Advance.
+  → Einsatz: Arbeitsumfeld, Tätigkeitsart, Sinneseindrücke (greifbar vs. digital, drinnen vs. draußen, Team vs. allein).
+  → MAXIMAL 2 dieser Blöcke pro Check — nicht mehr, sonst Entscheidungsmüdigkeit.
+  → POSITIONIERUNG: Zwischen dem Swipe-Deck und den Slidern, NICHT am Anfang, NICHT am Ende.
+  → imageUrl immer als "" lassen — der Nutzer lädt die Bilder später im Editor hoch; Label genügt der KI.
+  → Label: Kurzer, konkreter Bild-Beschreib (2–4 Wörter), z.B. "CNC-Maschine", "Programmier-Setup", "Lagerhalle", "Büro mit Kollegen".
+  → Scores: JEWEILS 2 Punkte auf EINE Dimension pro Seite. Die zwei Optionen müssen GEGENSÄTZLICHE Dimensionen adressieren.
+  → Wenn keine sinnvolle visuelle Dichotomie möglich ist (z.B. "Pflege" vs. "Soziales" — zu ähnlich), NICHT nutzen — lieber check_selbst oder check_frage.
+
 SWIPE-KARTEN vs. SELBST-SLIDER — wann was?
 • Swipe-Karten eignen sich für konkrete Szenarien mit spürbarer Präferenz ("Du öffnest einen elektrischen Schaltkasten — was denkst du?"). Binär/ternär, affektiv, schnell.
 • Slider (check_selbst) eignen sich für graduelle Selbsteinschätzungen zu einer generischen Fähigkeit/Neigung ("Wie gerne arbeitest du analytisch?"). Offen, kalibrierbar, nicht berufsspezifisch.
@@ -565,6 +582,20 @@ export async function POST(req: NextRequest) {
           const id = resolveDimRef(props.sliderDimensionId);
           if (id) props.sliderDimensionId = id; else delete props.sliderDimensionId;
         }
+        if (block.type === 'check_this_or_that') {
+          const resolveOpt = (raw: unknown, side: 'A' | 'B') => {
+            const o = (raw && typeof raw === 'object') ? raw as Record<string, unknown> : {};
+            return {
+              id: side,
+              imageUrl: typeof o.imageUrl === 'string' ? o.imageUrl : '',
+              label: typeof o.label === 'string' ? o.label : `Option ${side}`,
+              scores: resolveScoreMap(o.scores),
+            };
+          };
+          props.optionA = resolveOpt(props.optionA, 'A');
+          props.optionB = resolveOpt(props.optionB, 'B');
+        }
+
         if (block.type === 'check_statements' && Array.isArray(props.statements)) {
           props.statements = (props.statements as Array<Record<string, unknown>>).map((stmt) => ({
             ...stmt,
@@ -629,7 +660,7 @@ export async function POST(req: NextRequest) {
   // page per block. The model is told to do this in the prompt but doesn't
   // always comply, and stacking sliders on a single page makes mobile scrolling
   // confusing AND breaks scrollIntoView when navigating onward.
-  const QUESTION_TYPES = new Set(['check_selbst', 'check_frage', 'check_ergebnisfrage', 'check_swipe_deck']);
+  const QUESTION_TYPES = new Set(['check_selbst', 'check_frage', 'check_ergebnisfrage', 'check_swipe_deck', 'check_this_or_that']);
   type ResolvedPage = (typeof pages)[number];
   const splitPages: ResolvedPage[] = [];
   for (const page of pages) {

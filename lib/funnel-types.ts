@@ -8,7 +8,7 @@ export type FunnelBlockType =
   | 'quest_scene' | 'quest_dialog' | 'quest_decision' | 'quest_quiz' | 'quest_info' | 'quest_freetext'
   | 'quest_file' | 'quest_lead' | 'quest_spinner' | 'quest_rating' | 'quest_hotspot' | 'quest_zuordnung'
   // BerufsCheck
-  | 'check_intro' | 'check_vorname' | 'check_frage' | 'check_ergebnisfrage' | 'check_selbst' | 'check_statements' | 'check_lead' | 'check_ergebnis' | 'check_swipe_deck'
+  | 'check_intro' | 'check_vorname' | 'check_frage' | 'check_ergebnisfrage' | 'check_selbst' | 'check_statements' | 'check_lead' | 'check_ergebnis' | 'check_swipe_deck' | 'check_this_or_that'
   // Formular
   | 'form_hero' | 'form_text' | 'form_image' | 'form_step' | 'form_config';
 
@@ -227,6 +227,7 @@ export const DEFAULT_BLOCK_PROPS: Record<FunnelBlockType, Record<string, unknown
   check_selbst:        { question: 'Wie schätzt du dich ein?', sliderMin: 0, sliderMax: 10, sliderStep: 1, sliderLabelMin: 'Gar nicht', sliderLabelMax: 'Sehr' },
   check_statements:    { question: 'Was trifft auf dich zu?', statements: [] },
   check_swipe_deck:    { question: 'Swipe dich durch die Szenarien', allowSkip: true, cards: [] },
+  check_this_or_that:  { question: 'Was ist eher dein Vibe?', allowSkip: false, optionA: { id: 'A', imageUrl: '', label: 'Option A', scores: {} }, optionB: { id: 'B', imageUrl: '', label: 'Option B', scores: {} } },
   check_lead:          { headline: 'Interessiert?', subtext: 'Hinterlasse deine Kontaktdaten – wir melden uns bei dir.', buttonText: 'Jetzt bewerben', privacyText: 'Ich stimme zu, dass @companyName meine Daten speichert und mich kontaktiert.', thankYouHeadline: 'Vielen Dank!', thankYouText: 'Wir melden uns bei dir.', thankYouButtonText: '', thankYouButtonUrl: '', fields: [] },
   check_ergebnis:      { headline: 'Dein Ergebnis, @firstName!', subtext: 'Basierend auf deinen Antworten.', layout: 'simple', showDimensionBars: true, groups: [] },
   form_hero:           { headline: 'Jetzt anfragen', subtext: 'Wir melden uns bei dir.', imageUrl: '', ctaText: 'Jetzt anfragen' },
@@ -272,6 +273,7 @@ export const BLOCK_CATALOG: Record<FunnelContentType, BlockTypeConfig[]> = {
     { type: 'check_selbst',        label: 'Selbsteinschätzung', description: 'Slider-Einschätzung',          category: 'Eingabe',   defaultProps: DEFAULT_BLOCK_PROPS.check_selbst },
     { type: 'check_statements',    label: 'Schnell-Check',      description: 'Aussagen per Checkbox',        category: 'Eingabe',   defaultProps: DEFAULT_BLOCK_PROPS.check_statements },
     { type: 'check_swipe_deck',    label: 'Swipe-Karten',       description: 'Tinder-Style Szenario-Stack',  category: 'Eingabe',   defaultProps: DEFAULT_BLOCK_PROPS.check_swipe_deck },
+    { type: 'check_this_or_that',  label: 'This-or-That',       description: 'Zwei Bilder — eine Wahl',       category: 'Eingabe',   defaultProps: DEFAULT_BLOCK_PROPS.check_this_or_that },
     { type: 'check_ergebnis',      label: 'Ergebnis',           description: 'Ergebnisanzeige',              category: 'Abschluss', defaultProps: DEFAULT_BLOCK_PROPS.check_ergebnis },
     { type: 'check_lead',          label: 'Kontaktformular',    description: 'Lead-Erfassung',               category: 'Abschluss', defaultProps: DEFAULT_BLOCK_PROPS.check_lead },
     ...BASIC_CONTENT,
@@ -290,6 +292,6 @@ export const BLOCK_LABELS: Record<FunnelBlockType, string> = {
   heading: 'Überschrift', paragraph: 'Text', button: 'Button', image: 'Bild', spacer: 'Abstand', video: 'Video',
   quest_scene: 'Szene', quest_dialog: 'Dialog', quest_decision: 'Entscheidung', quest_quiz: 'Quiz', quest_info: 'Info', quest_freetext: 'Freitext',
   quest_file: 'Datei', quest_lead: 'Kontaktformular', quest_spinner: 'Ladescreen', quest_rating: 'Bewertung', quest_hotspot: 'Hotspot', quest_zuordnung: 'Zuordnung',
-  check_intro: 'Intro', check_vorname: 'Name', check_frage: 'Frage', check_ergebnisfrage: 'Ergebnisfrage', check_selbst: 'Selbsteinschätzung', check_statements: 'Schnell-Check', check_swipe_deck: 'Swipe-Karten', check_lead: 'Kontaktformular', check_ergebnis: 'Ergebnis',
+  check_intro: 'Intro', check_vorname: 'Name', check_frage: 'Frage', check_ergebnisfrage: 'Ergebnisfrage', check_selbst: 'Selbsteinschätzung', check_statements: 'Schnell-Check', check_swipe_deck: 'Swipe-Karten', check_this_or_that: 'This-or-That', check_lead: 'Kontaktformular', check_ergebnis: 'Ergebnis',
   form_hero: 'Hero', form_text: 'Textabschnitt', form_image: 'Bild', form_step: 'Formular-Schritt', form_config: 'Einstellungen',
 };

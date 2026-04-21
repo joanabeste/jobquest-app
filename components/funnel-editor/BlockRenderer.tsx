@@ -13,6 +13,7 @@ import HotspotBlock from './blocks/HotspotBlock';
 import ZuordnungBlock, { type ZuordnungPair } from './blocks/ZuordnungBlock';
 import LeadFormBlock, { LeadForm } from './blocks/LeadFormBlock';
 import SwipeDeckBlock from './blocks/SwipeDeckBlock';
+import ThisOrThatBlock, { type ThisOrThatOption } from './blocks/ThisOrThatBlock';
 import ErgebnisBlock, { type ErgebnisGroup } from './blocks/ErgebnisBlock';
 
 export type { DialogLine } from './blocks/DialogBlock';
@@ -883,6 +884,26 @@ export function BlockRenderer({
           br={br}
         />
       );
+
+    case 'check_this_or_that': {
+      const optA = (p.optionA as ThisOrThatOption | undefined) ?? { id: 'A', label: 'Option A' };
+      const optB = (p.optionB as ThisOrThatOption | undefined) ?? { id: 'B', label: 'Option B' };
+      return (
+        <ThisOrThatBlock
+          nodeId={node.id}
+          question={s(p.question)}
+          description={s(p.description) || undefined}
+          allowSkip={p.allowSkip === true}
+          optionA={optA}
+          optionB={optB}
+          answer={answers[node.id]}
+          onAnswer={onAnswer}
+          onNext={onNext}
+          primary={primary}
+          br={br}
+        />
+      );
+    }
 
     case 'check_selbst':
       return (

@@ -92,6 +92,17 @@ export function computeMaxScores(pages: FunnelPage[]): Record<string, number> {
         });
         Object.entries(dimMax).forEach(([d, v]) => bump(d, v));
       });
+    } else if (node.type === 'check_this_or_that') {
+      // User picks exactly one of {A, B} → max contribution per dimension is
+      // the higher of the two options' scores.
+      const dimMax: Record<string, number> = {};
+      (['optionA', 'optionB'] as const).forEach((k) => {
+        const opt = props[k] as { scores?: Record<string, number> } | undefined;
+        Object.entries(opt?.scores ?? {}).forEach(([d, v]) => {
+          dimMax[d] = Math.max(dimMax[d] ?? 0, v);
+        });
+      });
+      Object.entries(dimMax).forEach(([d, v]) => bump(d, v));
     }
   });
   return max;
@@ -144,6 +155,12 @@ export function computeScores(
         const opt = card[optKey] as { scores?: Record<string, number> } | undefined;
         addScores(scores, opt?.scores);
       });
+    } else if (node.type === 'check_this_or_that') {
+      // answer = 'A' | 'B' — user picked one of two images.
+      const chosen = answer === 'A' ? props.optionA : answer === 'B' ? props.optionB : null;
+      if (chosen && typeof chosen === 'object') {
+        addScores(scores, (chosen as { scores?: Record<string, number> }).scores);
+      }
     }
   });
   return scores;
