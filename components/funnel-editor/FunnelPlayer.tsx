@@ -249,25 +249,49 @@ export default function FunnelPlayer({ doc, company, contentDbId, onPageChange }
   }
 
   // ── Lead saving (shared between quest_lead, check_lead, form_config) ─────────
+  // Berufschecks haben eine eigene Tabelle + einen eigenen Endpoint (sie
+  // enthalten zusätzlich die berechneten Dimension-Scores). Quest- und
+  // Formular-Leads landen gemeinsam in der `leads`-Tabelle.
   async function saveLead(form: LeadForm, customFields?: Record<string, string>) {
     try {
-      const res = await fetch('/api/public/submit-lead', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          lead: {
-            id: crypto.randomUUID(),
-            jobQuestId: contentDbId ?? doc.contentId,
+      const contentIdForApi = contentDbId ?? doc.contentId;
+      const leadId = crypto.randomUUID();
+      const submittedAt = new Date().toISOString();
+
+      const endpoint = isCheck ? '/api/public/submit-career-check-lead' : '/api/public/submit-lead';
+      const leadPayload = isCheck
+        ? {
+            id: leadId,
+            careerCheckId: contentIdForApi,
             companyId: company.id,
             firstName: form.firstName || firstName,
             lastName: form.lastName,
             email: form.email,
             phone: form.phone || undefined,
             gdprConsent: true,
-            submittedAt: new Date().toISOString(),
+            scores,
+            submittedAt,
             ...(customFields ? { customFields } : {}),
-          },
-          contentId: contentDbId ?? doc.contentId,
+          }
+        : {
+            id: leadId,
+            jobQuestId: contentIdForApi,
+            companyId: company.id,
+            firstName: form.firstName || firstName,
+            lastName: form.lastName,
+            email: form.email,
+            phone: form.phone || undefined,
+            gdprConsent: true,
+            submittedAt,
+            ...(customFields ? { customFields } : {}),
+          };
+
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          lead: leadPayload,
+          contentId: contentIdForApi,
           companyName: company.name,
           karriereseiteUrl: company.careerPageUrl ?? '',
         }),
