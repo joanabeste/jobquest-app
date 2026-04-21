@@ -497,6 +497,8 @@ export interface CareerCheckLead {
   phone?: string;
   gdprConsent: boolean;
   scores: Record<string, number>; // dimensionId -> total score
+  customFields?: Record<string, string>;
+  emailSent?: boolean;
   submittedAt: string;
 }
 

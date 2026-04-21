@@ -1,4 +1,4 @@
-import { FunnelDoc, FunnelNode, FunnelPage, FunnelStyle, InsertTarget, Column, BlockNode, LayoutNode } from './funnel-types';
+import { FunnelDoc, FunnelNode, FunnelPage, FunnelStyle, InsertTarget, Column, BlockNode, LayoutNode, DEFAULT_EMAIL_CONFIG } from './funnel-types';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function uid() { return crypto.randomUUID(); }
@@ -242,6 +242,10 @@ export function createFunnelDoc(contentId: string, contentType: import('./funnel
     contentId,
     contentType,
     pages: [{ id: pageId, name: 'Seite 1', nodes: [] }],
+    // Default-EmailConfig aktiviert die Bestätigungs-Mail out-of-the-box.
+    // Der System-SMTP-Absender (SMTP_FROM-Env) verschickt damit automatisch,
+    // ohne dass der Ersteller den EmailConfigModal öffnen muss.
+    emailConfig: { ...DEFAULT_EMAIL_CONFIG },
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };

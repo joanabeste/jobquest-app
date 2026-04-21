@@ -318,6 +318,8 @@ export function careerCheckLeadFromDb(row: DbRow): CareerCheckLead {
     phone: optStr(row, 'phone'),
     gdprConsent: bool(row, 'gdpr_consent'),
     scores: json<CareerCheckLead['scores']>(row, 'scores', {} as CareerCheckLead['scores']),
+    customFields: json<Record<string, string>>(row, 'custom_fields', {}),
+    emailSent: optBool(row, 'email_sent'),
     submittedAt: str(row, 'submitted_at'),
   };
 }
@@ -333,6 +335,7 @@ export function careerCheckLeadToDb(l: CareerCheckLead): Record<string, unknown>
     phone: l.phone ?? null,
     gdpr_consent: l.gdprConsent,
     scores: l.scores,
+    custom_fields: l.customFields ?? {},
     submitted_at: l.submittedAt,
   };
 }

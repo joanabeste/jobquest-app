@@ -270,6 +270,7 @@ export function BlockRenderer({
   leadForm, setLeadForm, leadSubmitted, onLeadSubmit, onFormSubmit,
   scores, maxScores, dimensions,
   buttonBg, buttonText,
+  markedSuggestions, onToggleMarkedSuggestion,
   dialogVisible, onDialogAdvance,
   dialogInputInFooter,
 }: {
@@ -288,6 +289,8 @@ export function BlockRenderer({
   dimensions: Dimension[];
   buttonBg?: string;
   buttonText?: string;
+  markedSuggestions?: Array<{ id: string; title: string }>;
+  onToggleMarkedSuggestion?: (id: string, title: string) => void;
   dialogVisible: number;
   onDialogAdvance: (count: number) => void;
   dialogInputInFooter?: boolean;
@@ -984,7 +987,7 @@ export function BlockRenderer({
     case 'check_lead':
       return leadSubmitted
         ? <CompletionScreen company={company} headline={s(p.thankYouHeadline, 'Vielen Dank!')} text={s(p.thankYouText)} primary={primary} buttonText={s(p.thankYouButtonText)} buttonUrl={s(p.thankYouButtonUrl)} />
-        : <LeadFormBlock props={p} company={company} br={br} primary={primary} leadForm={leadForm} setLeadForm={setLeadForm} onSubmit={(form) => onLeadSubmit(form)} />;
+        : <LeadFormBlock props={p} company={company} br={br} primary={primary} leadForm={leadForm} setLeadForm={setLeadForm} onSubmit={(form, cf) => onLeadSubmit(form, cf)} markedSuggestions={markedSuggestions} />;
 
     case 'check_ergebnis': {
       const rawHeadline = s(p.headline, 'Dein Ergebnis!');
@@ -1005,6 +1008,8 @@ export function BlockRenderer({
           primary={primary}
           buttonBg={buttonBg}
           buttonText={buttonText}
+          markedSuggestions={markedSuggestions}
+          onToggleMarkedSuggestion={onToggleMarkedSuggestion}
           br={br}
           onNext={onNext}
           continueLabel={s(p.continueLabel, 'Weiter')}

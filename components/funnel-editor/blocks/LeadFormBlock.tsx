@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { applyVars } from '@/lib/funnel-variables';
 import { LeadFieldDef } from '@/lib/funnel-types';
 import { Company } from '@/lib/types';
@@ -9,10 +9,23 @@ import { s, b, sh } from './helpers';
 export interface LeadForm { firstName: string; lastName: string; email: string; phone: string; gdpr: boolean; }
 export const emptyLead: LeadForm = { firstName: '', lastName: '', email: '', phone: '', gdpr: false };
 
-export default function LeadFormBlock({ props: p, company, br, primary, leadForm, setLeadForm: _setLeadForm, onSubmit }: {
+// Gesetzliche (m/w/d)-Anfügung — identisch zur Logik in ErgebnisBlock.
+const MWD_PATTERN = /\((?:[mwdxfi](?:[\/\|][mwdxfi])+)\)/i;
+function withMwd(title: string): string {
+  if (!title) return title;
+  if (MWD_PATTERN.test(title)) return title;
+  return `${title.trimEnd()} (m/w/d)`;
+}
+
+const MARKED_FIELD_ID = '__marked_suggestions__';
+
+export default function LeadFormBlock({ props: p, company, br, primary, leadForm, setLeadForm: _setLeadForm, onSubmit, markedSuggestions }: {
   props: Record<string, unknown>; company: Company; br: string; primary: string;
   leadForm: LeadForm; setLeadForm?: (f: LeadForm) => void;
   onSubmit: (form: LeadForm, customFields?: Record<string, string>) => void;
+  /** Berufe, die der User auf der Ergebnis-Seite gemerkt hat. Werden als
+   *  vorausgewähltes checkbox_group-Feld ganz oben im Formular angezeigt. */
+  markedSuggestions?: Array<{ id: string; title: string }>;
 }) {
   const rawFields = (p.fields as LeadFieldDef[]) ?? [];
   // If no custom fields defined, fall back to standard field set with DSGVO checkbox
@@ -25,7 +38,29 @@ export default function LeadFormBlock({ props: p, company, br, primary, leadForm
     { id: 'default_datenschutz', type: 'checkbox', label: 'Ich stimme zu, dass <a href="@datenschutzUrl" target="_blank" rel="noopener noreferrer">@companyName</a> meine Daten zum Zweck der Kontaktaufnahme speichert und verarbeitet. <a href="@impressumUrl" target="_blank" rel="noopener noreferrer">Impressum</a>', required: true, variable: 'datenschutz' },
   ];
   const useFields = true;
-  const [vals, setVals] = useState<Record<string, string>>({});
+  // Synthetisches "Interessierte Berufe"-Feld vor den normalen Feldern einfügen,
+  // wenn der User im Ergebnis Berufe markiert hat. Vorauswahl = alle markierten.
+  const markedTitles = useMemo(
+    () => (markedSuggestions ?? []).map((m) => withMwd(m.title)),
+    [markedSuggestions],
+  );
+  const hasMarked = markedTitles.length > 0;
+  const fieldsWithMarked: LeadFieldDef[] = hasMarked
+    ? [
+        {
+          id: MARKED_FIELD_ID,
+          type: 'checkbox_group',
+          label: 'Zu diesen Berufen möchtest du Infos',
+          required: false,
+          variable: 'interessierteBerufe',
+          options: markedTitles,
+        },
+        ...fieldDefs,
+      ]
+    : fieldDefs;
+  const [vals, setVals] = useState<Record<string, string>>(
+    hasMarked ? { [MARKED_FIELD_ID]: markedTitles.join('|') } : {},
+  );
   const varsMap = {
     companyName:    company.name,
     datenschutzUrl: company.privacyUrl ?? '',
@@ -33,10 +68,10 @@ export default function LeadFormBlock({ props: p, company, br, primary, leadForm
   };
   const setVal = (id: string, val: string) => setVals((prev) => ({ ...prev, [id]: val }));
 
-  const emailField = fieldDefs.find((f) => f.type === 'email');
+  const emailField = fieldsWithMarked.find((f) => f.type === 'email');
   const emailValue = useFields ? (emailField ? (vals[emailField.id] ?? '') : '') : leadForm.email;
   const requiredCheckboxesMet = useFields
-    ? fieldDefs.filter((f) => f.type === 'checkbox' && f.required).every((f) => vals[f.id] === 'true')
+    ? fieldsWithMarked.filter((f) => f.type === 'checkbox' && f.required).every((f) => vals[f.id] === 'true')
     : leadForm.gdpr;
   const canSubmit = emailValue.includes('@') && requiredCheckboxesMet;
 
@@ -45,13 +80,28 @@ export default function LeadFormBlock({ props: p, company, br, primary, leadForm
   function handleSubmit() {
     const finalForm: LeadForm = { ...leadForm };
     if (emailField) finalForm.email = vals[emailField.id] ?? '';
-    const textFields = fieldDefs.filter((f) => f.type === 'text');
+    const textFields = fieldsWithMarked.filter((f) => f.type === 'text');
     if (textFields[0]) finalForm.firstName = vals[textFields[0].id] ?? '';
     if (textFields[1]) finalForm.lastName = vals[textFields[1].id] ?? '';
-    const telField = fieldDefs.find((f) => f.type === 'tel');
+    const telField = fieldsWithMarked.find((f) => f.type === 'tel');
     if (telField) finalForm.phone = vals[telField.id] ?? '';
     finalForm.gdpr = true; // required checkboxes already verified by canSubmit
-    onSubmit(finalForm, vals);
+    // customFields: variable → value. Für checkbox_group wandeln wir das
+    // interne "|"-Separator-Format in eine lesbare Komma-Liste, damit die
+    // Variable z.B. in Mail-Templates direkt als Text nutzbar ist.
+    const cf: Record<string, string> = {};
+    fieldsWithMarked.forEach((f) => {
+      if (!f.variable) return;
+      const raw = vals[f.id] ?? '';
+      if (f.type === 'checkbox_group') {
+        cf[f.variable] = raw.split('|').filter(Boolean).join(', ');
+      } else if (f.type === 'checkbox') {
+        cf[f.variable] = raw === 'true' ? 'ja' : 'nein';
+      } else {
+        cf[f.variable] = raw;
+      }
+    });
+    onSubmit(finalForm, cf);
   }
 
   return (
@@ -59,7 +109,7 @@ export default function LeadFormBlock({ props: p, company, br, primary, leadForm
       <h2 className="fp-heading text-lg font-bold mb-1 break-words">{s(p.headline)}</h2>
       {b(p.subtext) && <p className="text-slate-500 text-sm mb-4">{s(p.subtext)}</p>}
       <div className="space-y-3 mt-3">
-        {fieldDefs.map((f) => {
+        {fieldsWithMarked.map((f) => {
           if (f.type === 'checkbox') {
             return (
               <label key={f.id} className="flex items-start gap-3 cursor-pointer">

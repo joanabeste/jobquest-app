@@ -46,6 +46,16 @@ export default function FunnelPlayer({ doc, company, contentDbId, onPageChange }
   const [completed, setCompleted]   = useState(false);
   const [_completionMsg, setCompletionMsg] = useState<{ headline: string; text: string } | null>(null);
   const [dialogVisible, setDialogVisible] = useState(0);
+  // Berufe, die der User im Ergebnis-Modal als „Interessiert mich" markiert
+  // hat. Wird im Lead-Formular als vorausgewählte Checkbox-Group gerendert
+  // und als customFields.interessierteBerufe mitgespeichert.
+  const [markedSuggestions, setMarkedSuggestions] = useState<Array<{ id: string; title: string }>>([]);
+  function toggleMarkedSuggestion(id: string, title: string) {
+    setMarkedSuggestions((prev) => {
+      const exists = prev.some((s) => s.id === id);
+      return exists ? prev.filter((s) => s.id !== id) : [...prev, { id, title }];
+    });
+  }
   const [footerInputValue, setFooterInputValue] = useState('');
   const [pageTransition, setPageTransition] = useState<'visible' | 'fading-out' | 'fading-in'>('visible');
   const transitionRef = useRef(pageTransition);
@@ -423,6 +433,8 @@ export default function FunnelPlayer({ doc, company, contentDbId, onPageChange }
     dimensions,
     buttonBg,
     buttonText,
+    markedSuggestions,
+    onToggleMarkedSuggestion: toggleMarkedSuggestion,
     dialogVisible,
     onDialogAdvance: (count: number) => setDialogVisible(count),
     dialogInputInFooter: hasDialogInput,

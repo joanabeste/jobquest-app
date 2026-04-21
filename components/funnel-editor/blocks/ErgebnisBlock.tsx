@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Trophy, Video, FileText, Send, ExternalLink, ChevronDown, X } from 'lucide-react';
+import { Trophy, Video, FileText, Send, ExternalLink, ChevronDown, X, Star } from 'lucide-react';
 
 /** Hook: starts at 0, animates to target after a delay */
 function useAnimatedValue(target: number, delay = 300, duration = 800): number {
@@ -89,6 +89,9 @@ interface Props {
   buttonBg?: string;
   /** Button text colour from corporate design — contrast on coloured tab pills. */
   buttonText?: string;
+  /** Berufe, die der User als „Interessiert mich" markiert hat. */
+  markedSuggestions?: Array<{ id: string; title: string }>;
+  onToggleMarkedSuggestion?: (id: string, title: string) => void;
   br: string;
   onNext?: () => void;
   continueLabel?: string;
@@ -97,13 +100,20 @@ interface Props {
 const ICONS = { video: Video, doc: FileText, apply: Send, link: ExternalLink } as const;
 
 export default function ErgebnisBlock({
-  headline, subtext, layout, showDimensionBars, groups, dimensions, scores, maxScores, answers, primary, buttonBg, buttonText, br,
+  headline, subtext, layout, showDimensionBars, groups, dimensions, scores, maxScores, answers, primary, buttonBg, buttonText, markedSuggestions, onToggleMarkedSuggestion, br,
   onNext, continueLabel,
 }: Props) {
   // Tab-pill colouring: mirror the CD button so the label contrast stays correct
   // when the user picks a light primary (yellow/white).
   const pillBg = buttonBg || primary;
   const pillText = buttonText || '#ffffff';
+  const markedIds = new Set((markedSuggestions ?? []).map((s) => s.id));
+  const hasMarked = markedIds.size > 0;
+  const resolvedContinueLabel = continueLabel && continueLabel !== 'Weiter'
+    ? continueLabel
+    : hasMarked
+      ? 'Infos zu meinen Favoriten anfordern'
+      : (continueLabel || 'Weiter');
   // Filter groups whose visibleIf condition is unmet.
   const visibleGroups = groups.filter((g) => {
     if (!g.visibleIf) return true;
@@ -122,7 +132,13 @@ export default function ErgebnisBlock({
           <Trophy size={28} style={{ color: primary }} />
         </div>
         <h2 className="fp-heading text-2xl md:text-3xl font-bold mb-2" dangerouslySetInnerHTML={{ __html: sh(inlineHtml(headline)) }} />
-        {b(subtext) && <div className="text-slate-500 text-sm md:text-base mb-6 rte" dangerouslySetInnerHTML={{ __html: sh(subtext) }} />}
+        {b(subtext) && <div className="text-slate-500 text-sm md:text-base mb-3 rte" dangerouslySetInnerHTML={{ __html: sh(subtext) }} />}
+        {onToggleMarkedSuggestion && (
+          <p className="text-xs md:text-sm mb-6 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full" style={{ background: primary + '12', color: primary }}>
+            <Star size={13} className="flex-shrink-0" />
+            Tipp: Markiere die Berufe, zu denen du Infos bekommen möchtest.
+          </p>
+        )}
       </div>
 
       {layout === 'groups' && visibleGroups.length === 0 && groups.length > 0 && (
@@ -142,6 +158,8 @@ export default function ErgebnisBlock({
               maxScores={maxScores}
               primary={primary}
               br={br}
+              markedIds={markedIds}
+              onToggleMarked={onToggleMarkedSuggestion}
             />
           </div>
 
@@ -172,7 +190,7 @@ export default function ErgebnisBlock({
               return (
                 <div key={g.id}>
                   <GroupBars group={g} dimensions={dimensions} scores={scores} maxScores={maxScores} primary={primary} />
-                  <GroupSuggestions group={g} dimensions={dimensions} scores={scores} primary={primary} br={br} />
+                  <GroupSuggestions group={g} dimensions={dimensions} scores={scores} primary={primary} br={br} markedIds={markedIds} onToggleMarked={onToggleMarkedSuggestion} />
                 </div>
               );
             })()}
@@ -190,7 +208,7 @@ export default function ErgebnisBlock({
           className="fp-btn w-full md:w-auto md:min-w-[16rem] md:mx-auto md:block mt-6 py-3 md:py-3.5 md:px-10 font-semibold text-sm"
           style={{ borderRadius: br }}
         >
-          {continueLabel || 'Weiter'}
+          {resolvedContinueLabel}
         </button>
       )}
     </div>
@@ -230,13 +248,15 @@ function SimpleBars({ dimensions, scores, maxScores, primary }: { dimensions: Di
 // the label + percentage + progress bar; tapping expands to a compact list of
 // matching Berufe with small thumbnails (or initial-badge fallback). Top-match
 // category is opened by default.
-function MobileAccordion({ groups, dimensions, scores, maxScores, primary, br }: {
+function MobileAccordion({ groups, dimensions, scores, maxScores, primary, br, markedIds, onToggleMarked }: {
   groups: ErgebnisGroup[];
   dimensions: Dimension[];
   scores: Record<string, number>;
   maxScores?: Record<string, number>;
   primary: string;
   br: string;
+  markedIds?: Set<string>;
+  onToggleMarked?: (id: string, title: string) => void;
 }) {
   // Aggregate score per group = sum of its dimension scores. Max analogously.
   const ranked = groups.map((g) => {
@@ -310,22 +330,28 @@ function MobileAccordion({ groups, dimensions, scores, maxScores, primary, br }:
                     // Mobile: reine Textliste ohne Thumbnails — der Berufstitel
                     // inkl. "(m/w/d)" braucht den vollen Platz und wird sonst
                     // bei langen Namen abgeschnitten.
-                    matching.map((sug) => (
-                      <button
-                        key={sug.id}
-                        type="button"
-                        onClick={() => setModalSug(sug)}
-                        className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-left hover:bg-slate-50 transition-colors"
-                      >
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-slate-900 leading-snug">{withMwd(sug.title)}</p>
-                          {sug.description && (
-                            <p className="text-[11px] text-slate-500 leading-snug line-clamp-1 mt-0.5">{sug.description}</p>
+                    matching.map((sug) => {
+                      const isMarked = markedIds?.has(sug.id) ?? false;
+                      return (
+                        <button
+                          key={sug.id}
+                          type="button"
+                          onClick={() => setModalSug(sug)}
+                          className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-left hover:bg-slate-50 transition-colors"
+                        >
+                          {isMarked && (
+                            <Star size={14} className="flex-shrink-0 fill-current" style={{ color: primary }} />
                           )}
-                        </div>
-                        <ChevronDown size={14} className="flex-shrink-0 text-slate-300 -rotate-90" />
-                      </button>
-                    ))
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-slate-900 leading-snug">{withMwd(sug.title)}</p>
+                            {sug.description && (
+                              <p className="text-[11px] text-slate-500 leading-snug line-clamp-1 mt-0.5">{sug.description}</p>
+                            )}
+                          </div>
+                          <ChevronDown size={14} className="flex-shrink-0 text-slate-300 -rotate-90" />
+                        </button>
+                      );
+                    })
                   )}
                 </div>
               )}
@@ -376,6 +402,22 @@ function MobileAccordion({ groups, dimensions, scores, maxScores, primary, br }:
               {modalSug.description && (
                 <p className="text-sm text-slate-600 leading-relaxed mb-4">{modalSug.description}</p>
               )}
+              {onToggleMarked && (() => {
+                const isMarked = markedIds?.has(modalSug.id) ?? false;
+                return (
+                  <button
+                    type="button"
+                    onClick={() => onToggleMarked(modalSug.id, modalSug.title)}
+                    className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 mb-3 text-sm font-semibold rounded-xl transition-all"
+                    style={isMarked
+                      ? { background: primary, color: '#fff' }
+                      : { background: primary + '15', color: primary, border: `2px solid ${primary}40` }}
+                  >
+                    <Star size={16} className={isMarked ? 'fill-current' : ''} />
+                    {isMarked ? 'Gemerkt' : 'Interessiert mich'}
+                  </button>
+                );
+              })()}
               {modalSug.links && modalSug.links.length > 0 && (
                 <div className="flex flex-wrap gap-2">
                   {modalSug.links.map((l) => {
@@ -439,7 +481,15 @@ function GroupBars({ group, dimensions, scores, maxScores, primary }: { group: E
   );
 }
 
-function GroupSuggestions({ group, dimensions, scores, primary, br }: { group: ErgebnisGroup; dimensions: Dimension[]; scores: Record<string, number>; primary: string; br: string }) {
+function GroupSuggestions({ group, dimensions, scores, primary, br, markedIds, onToggleMarked }: {
+  group: ErgebnisGroup;
+  dimensions: Dimension[];
+  scores: Record<string, number>;
+  primary: string;
+  br: string;
+  markedIds?: Set<string>;
+  onToggleMarked?: (id: string, title: string) => void;
+}) {
   // Determine top-N dimensions within the group.
   const topN = Math.max(1, group.topN ?? 3);
   const sorted = group.dimensionIds
@@ -467,14 +517,28 @@ function GroupSuggestions({ group, dimensions, scores, primary, br }: { group: E
   return (
     <>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 mt-2">
-        {matching.map((sug) => (
+        {matching.map((sug) => {
+          const isMarked = markedIds?.has(sug.id) ?? false;
+          return (
           <button
             key={sug.id}
             type="button"
             onClick={() => setOpenSug(sug)}
-            className="group text-left border border-slate-200 bg-white overflow-hidden transition-all hover:shadow-md hover:-translate-y-0.5"
-            style={{ borderRadius: br }}
+            className="group relative text-left border bg-white overflow-hidden transition-all hover:shadow-md hover:-translate-y-0.5"
+            style={{
+              borderRadius: br,
+              borderColor: isMarked ? primary : '#e2e8f0',
+              borderWidth: isMarked ? 2 : 1,
+            }}
           >
+            {isMarked && (
+              <div
+                className="absolute top-2 right-2 z-10 w-8 h-8 rounded-full flex items-center justify-center shadow-sm"
+                style={{ background: primary }}
+              >
+                <Star size={14} className="fill-current text-white" />
+              </div>
+            )}
             {sug.imageUrl ? (
               <img src={sug.imageUrl} alt="" className="w-full aspect-[16/10] object-cover" />
             ) : (
@@ -500,7 +564,8 @@ function GroupSuggestions({ group, dimensions, scores, primary, br }: { group: E
               </span>
             </div>
           </button>
-        ))}
+          );
+        })}
       </div>
 
       {openSug && (
@@ -540,6 +605,22 @@ function GroupSuggestions({ group, dimensions, scores, primary, br }: { group: E
               {openSug.description && (
                 <p className="text-sm md:text-base text-slate-600 leading-relaxed mb-5">{openSug.description}</p>
               )}
+              {onToggleMarked && (() => {
+                const isMarked = markedIds?.has(openSug.id) ?? false;
+                return (
+                  <button
+                    type="button"
+                    onClick={() => onToggleMarked(openSug.id, openSug.title)}
+                    className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 mb-4 text-sm font-semibold rounded-xl transition-all"
+                    style={isMarked
+                      ? { background: primary, color: '#fff' }
+                      : { background: primary + '15', color: primary, border: `2px solid ${primary}40` }}
+                  >
+                    <Star size={16} className={isMarked ? 'fill-current' : ''} />
+                    {isMarked ? 'Gemerkt' : 'Interessiert mich'}
+                  </button>
+                );
+              })()}
               {openSug.links && openSug.links.length > 0 && (
                 <div className="flex flex-wrap gap-2">
                   {openSug.links.map((l) => {

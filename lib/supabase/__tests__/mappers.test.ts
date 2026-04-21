@@ -253,6 +253,10 @@ describe('careerCheckLeadFromDb / careerCheckLeadToDb', () => {
     phone: '0170',
     gdprConsent: true,
     scores: { d1: 8, d2: 5 },
+    customFields: { interessierteBerufe: 'Werkzeugmechaniker (m/w/d)' },
+    // emailSent wird nur via UPDATE nach erfolgreichem Mail-Versand gesetzt,
+    // nicht beim Insert — daher im Roundtrip undefined.
+    emailSent: undefined,
     submittedAt: '2025-06-01T00:00:00Z',
   };
 

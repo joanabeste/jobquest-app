@@ -90,6 +90,35 @@ export interface EmailConfig {
   notificationBody: string;
 }
 
+/**
+ * Default-E-Mail-Einstellungen für neu erstellte Funnels (Quest / Check / Form).
+ * confirmationEnabled steht bewusst auf true — System-SMTP verschickt damit
+ * out-of-the-box eine Bestätigungs-Mail vom konfigurierten SMTP_FROM-Absender.
+ * Die Benachrichtigungs-Mail bleibt off, weil dort eine User-Empfänger-Adresse
+ * gesetzt werden muss.
+ */
+export const DEFAULT_EMAIL_CONFIG: EmailConfig = {
+  confirmationEnabled: true,
+  confirmationSubject: 'Danke für deine Teilnahme, @firstName!',
+  confirmationBodyMode: 'text',
+  confirmationBody:
+    'Hallo @firstName,\n\n' +
+    'vielen Dank für deine Teilnahme! Wir haben deine Anfrage erhalten und melden uns in Kürze mit weiteren Informationen bei dir.\n\n' +
+    '@interessierteBerufe\n\n' +
+    'Viele Grüße,\n' +
+    '@companyName',
+  notificationEnabled: false,
+  notificationRecipient: '',
+  notificationSubject: 'Neue Anfrage: @firstName @lastName',
+  notificationBodyMode: 'text',
+  notificationBody:
+    'Neue Anfrage eingegangen:\n\n' +
+    'Name: @firstName @lastName\n' +
+    'E-Mail: @email\n' +
+    'Telefon: @phone\n\n' +
+    '@interessierteBerufe',
+};
+
 export interface FunnelDoc {
   id: string;
   contentId: string;

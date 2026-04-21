@@ -10,6 +10,8 @@ interface LeadBase {
   lastName: string;
   email: string;
   phone?: string;
+  /** Benutzerdefinierte Formularfelder — mit `variable`-Key als Mail-Template-Variable. */
+  customFields?: Record<string, string>;
 }
 
 // Restrict `table` to a closed union so a caller cannot accidentally (or
@@ -103,7 +105,11 @@ export function createSubmitLeadHandler<T extends LeadBase>(
             await Promise.race([
               sendLeadEmails({
                 emailConfig,
+                // customFields first so system-vars (firstName, email …)
+                // nicht überschrieben werden können durch einen zufällig
+                // gleich benannten customField-Key.
                 vars: {
+                  ...(lead.customFields ?? {}),
                   firstName: lead.firstName,
                   lastName: lead.lastName,
                   email: lead.email,

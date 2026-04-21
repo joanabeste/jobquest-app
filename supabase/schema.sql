@@ -83,6 +83,7 @@ create table public.leads (
   phone         text,
   gdpr_consent  boolean not null default false,
   custom_fields jsonb default '{}'::jsonb,
+  email_sent    boolean default false,
   submitted_at  timestamptz not null default now()
 );
 
@@ -154,6 +155,8 @@ create table public.career_check_leads (
   phone            text,
   gdpr_consent     boolean not null default false,
   scores           jsonb not null default '{}'::jsonb,
+  custom_fields    jsonb default '{}'::jsonb,
+  email_sent       boolean default false,
   submitted_at     timestamptz not null default now()
 );
 
