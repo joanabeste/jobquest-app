@@ -9,7 +9,7 @@ const GenerateCheckSchema = z.object({
   berufe: z.array(z.string().min(1).max(200)).max(60).optional().default([]),
   studiengaenge: z.array(z.string().min(1).max(200)).max(40).optional().default([]),
   notes: z.string().max(8000).optional(),
-  cardCount: z.number().int().min(6).max(20).optional().default(12),
+  cardCount: z.number().int().min(6).max(20).optional().default(10),
   // Optional HTTPS image URLs — the model reads them multimodally and
   // extracts Berufe, Studiengänge and zusätzliche Vorgaben from their contents.
   imageUrls: z
@@ -29,7 +29,52 @@ const DIMENSION_PALETTE = [
 ];
 
 // ─── System prompt ────────────────────────────────────────────────────────────
-const SYSTEM_PROMPT = `Du bist ein Experte für Karriere-Orientierungstools. Deine Aufgabe: Erstelle einen interaktiven Berufscheck, der in ca. 3 Minuten passende Berufe (und optional Studiengänge) bei einem Unternehmen vorschlägt.
+const SYSTEM_PROMPT = `Du bist ein Experte für Karriere-Orientierungstools mit psychometrischem Hintergrund. Deine Aufgabe: Erstelle einen interaktiven Berufscheck, der in ca. 2–3 Minuten passende Berufe (und optional Studiengänge) bei einem Unternehmen vorschlägt.
+
+═══════════════════════════════════════════════════════
+  QUALITÄTS-REGELN (GELTEN FÜR ALLE FRAGEN/KARTEN)
+═══════════════════════════════════════════════════════
+
+DIESE REGELN SIND WICHTIGER ALS ALLES, WAS DANACH KOMMT:
+
+(R1) KEIN BERUFS-PRIMING
+  • NIE den Namen eines Berufs oder Studiengangs in einer Frage/Karte nennen.
+  • FALSCH: "Könntest du dir vorstellen, als Werkzeugmechaniker zu arbeiten?"
+  • RICHTIG: "Du bearbeitest ein Metallstück so lange, bis es exakt millimetergenau passt."
+  • Der User weiß meist nicht, was ein "Werkzeugmechaniker" konkret macht. Szenarien > Titel.
+
+(R2) KEIN SOCIAL-DESIRABILITY-BIAS
+  • Formuliere Fragen so, dass es KEINE "offensichtlich richtige" Antwort gibt. Jede Option muss eine authentische Charakter­eigenschaft zeigen, nicht eine moralische Wertung.
+  • FALSCH: "Wie gerne hilfst du anderen?" (primed "sehr gerne" als sozial erwünscht)
+  • RICHTIG als Slider: Linkes Label "Lieber allein arbeiten" ↔ Rechtes Label "Lieber im Team" (beide Pole valid)
+  • RICHTIG als Swipe-Karte: "Ein Freund bittet dich um Hilfe bei einer Aufgabe, die du eigentlich nicht magst." (mehrdeutig, erlaubt echte Selbstwahrnehmung)
+
+(R3) REVERSE-CODED ITEMS
+  • Mindestens 1–2 Swipe-Karten pro Check müssen REVERSE-CODED sein: "optionPositive zu wählen" soll Dimension X stärken, "optionNegative zu wählen" soll Dimension Y stärken — beides gültige Charakter-Signale.
+  • Beispiel: "Du sollst 8 Stunden konzentriert an einer einzigen Aufgabe sitzen." → "Klingt gut" +3 Analytik/Ausdauer; "Eher nicht" +2 Abwechslung/Aktion.
+  • Das verhindert, dass User durch stumpfes "alles positiv wischen" den Check aushebeln.
+
+(R4) KONKRETE ALLTAGSSZENARIEN
+  • Swipe-Karten: aus Schule, Freizeit, Familie, Freundeskreis — nicht "im Beruf".
+  • Slider: offene Selbstreflexion, keine Fähigkeits-Abfrage ("Wie gut kannst du Mathe?" ist schlecht; "Bei Zahlen fühle ich mich …" ist besser).
+
+(R5) FRAGEN-VIELFALT
+  • Mindestens 3 verschiedene Fragetypen pro Check (Swipe + Slider + optional This-or-That oder single-choice Werte-Frage).
+  • Nie mehr als 2 gleiche Blocktypen hintereinander.
+
+(R6) BALANCE DER DIMENSIONEN
+  • Jede Dimension braucht in Summe ähnlich viele Punkte-Chancen. Wenn Dimension X 3 Swipe-Karten + 1 Slider hat, muss auch Dimension Y 3 Swipe-Karten + 1 Slider haben.
+  • Berechne vor der Generierung: "Bei 10 Karten / 4 Dimensionen = 2,5 Karten pro Dim → also 2–3 Karten pro Dim, alle Dimensionen mit optionPositive=3 gleich häufig als Gewinner".
+
+(R7) STORY-BOGEN
+  • Start leicht (Intro → Swipe-Deck spielerisch).
+  • Mitte fokussierend (This-or-That, wenn visuelle Dichotomie sinnvoll).
+  • Reflexion (Slider, dann bei Bedarf Werte-Frage).
+  • Abschluss (Ergebnis → Lead).
+  • Der User soll eine Kurve spüren: erst warmwerden, dann ernster, dann loslassen.
+
+═══════════════════════════════════════════════════════
+
 
 ═══════════════════════════════════════════════════════
   BILDER & EXTRAHIERTE INHALTE
@@ -59,7 +104,15 @@ Jede Dimension hat: { "name": string, "description": string }
 Die Namen werden als Schlussel in scores-Maps verwendet — konsistent verwenden!
 JEDER Beruf muss eindeutig einer Dimension zugeordnet werden konnen.
 
-── PAGES (in dieser Reihenfolge) ────────────────────────────────────────
+── PAGES (in dieser Reihenfolge — Story-Bogen Leicht → Fokus → Reflexion) ──
+Die Seiten bilden einen klaren emotionalen Bogen:
+  • Einstieg LEICHT: Intro + optional Schulabschluss (Seiten 0–1).
+  • Warm-up SPIELERISCH: Swipe-Deck (Seite 2) — der Nutzer kommt in Flow.
+  • FOKUSSIEREND: optional 1–2 This-or-That (Arbeitsumfeld/Tätigkeitsart).
+  • REFLEXION: Slider (genau 1 pro Dimension), optional 1 Werte-Frage als Tiebreaker.
+  • ABSCHLUSS: Ergebnis → Lead-Formular.
+Gesamt-Länge angepeilt: 9–13 Seiten (bei 4 Dimensionen typisch 11).
+
 Seite 0: check_intro
   Props: { headline: string, subtext: string, imageUrl: "", buttonText: "Berufscheck starten" }
   → headline: Eine prägnante Einladung mit EINEM farbig hervorgehobenen Schlagwort in <accent>…</accent>-Tags.
@@ -100,15 +153,22 @@ Seite 2 (oder 1 wenn keine Studiengänge):
     "cards": [ ... ]
   }
   → Generiere genau cardCount Karten.
-  → WICHTIG: JEDE Dimension muss in mindestens 2 Karten mit VOLLER Punktzahl (3 Punkte bei optionPositive) vorkommen! Keine Dimension darf strukturell unterrepräsentiert sein — sonst sind die Ergebnis-Prozente verzerrt.
-  → GLEICHGEWICHT: Verteile die cardCount Karten so, dass jede Dimension ähnlich oft 3-Punkte-Chancen hat (z.B. bei 12 Karten / 4 Dimensionen → je ca. 3 Karten pro Dimension).
+  → WICHTIG: JEDE Dimension muss in mindestens 2 Karten mit VOLLER Punktzahl (3 Punkte bei optionPositive oder optionNegative bei Reverse-Coded Items) vorkommen. Keine Dimension darf strukturell unterrepräsentiert sein.
+  → GLEICHGEWICHT: Verteile die cardCount Karten gleichmäßig. Bei 10 Karten / 4 Dimensionen = 2–3 pro Dimension als Top-Wahl.
   → Jede Karte: { "text": "Du sollst …", "optionPositive": { "label": "Klingt gut", "emoji": "👍", "scores": {...} }, "optionNeutral": { "label": "Geht so", "emoji": "😐", "scores": {...} }, "optionNegative": { "label": "Eher nicht", "emoji": "👎", "scores": {...} } }
-  → scores-Maps: Dimensions-NAMEN als Keys, integer Punkte 1-3 als Values. Nur die Dimension(en) reinschreiben, die wirklich passen. optionPositive sollte üblicherweise 3 Punkte geben.
-  → Vermeide Berufe-spezifische Worter im Text — schreibe Alltagsszenarien aus Schule/Freizeit, die auf Interessen und Fahigkeiten zielen.
-  → Auch bei optionNeutral und optionNegative KÖNNEN Punkte vergeben werden (z.B. 1 Punkt bei neutral).
-  → Wenn im User-Prompt konkrete Beispiel-Fragen aus Bildern stehen, übernimm sie hier 1:1 (oder eng angelehnt) und scoren auf die in maps_to genannten Kategorien.
+  → scores-Maps: Dimensions-NAMEN als Keys, integer Punkte 1-3. Nur die Dimension(en) reinschreiben, die wirklich passen.
+  → REVERSE-CODED ITEMS (Pflicht: 1–2 von cardCount):
+    Bei diesen Karten gibt BEIDE extreme Optionen Punkte auf VERSCHIEDENE Dimensionen — nicht nur optionPositive.
+    Beispiel: "Du sollst 8 Stunden konzentriert an einer Aufgabe sitzen."
+      → optionPositive +3 Analytik/Ausdauer, optionNegative +3 Abwechslung/Aktion.
+    Beispiel: "Am Samstag hilfst du jemandem bei einem langen Projekt — keine Pause."
+      → optionPositive +3 Soziales, optionNegative +2 Unabhängigkeit.
+    Das verhindert das "positive wischen"-Problem.
+  → SOCIAL-DESIRABILITY-FALLE vermeiden: Formuliere KEINE Karten, bei denen "optionPositive" offensichtlich die moralisch "bessere" Antwort ist. Beispiel SCHLECHT: "Deine Oma bittet dich um Hilfe." (jeder sagt "Klingt gut"). STATT: konkretes Szenario mit echtem Trade-off.
+  → Text: konkret aus Schule/Freizeit/Familie ("Nach dem Unterricht sitzt du 2 Stunden am Tablet, um ein Video zu schneiden"), NIEMALS Berufsnamen.
+  → Wenn im User-Prompt konkrete Beispiel-Fragen aus Bildern stehen, übernimm sie sinngemäß (und scoren auf die in maps_to genannten Kategorien).
 
-OPTIONAL: 1–2 Seiten check_this_or_that (Visual A/B — NUR bei klar visueller Dichotomie sinnvoll):
+OPTIONAL: 1–2 Seiten check_this_or_that (Visual A/B — NUR bei klar visueller Dichotomie):
   Props: {
     "question": "Was ist eher dein Vibe?",
     "description": "",
@@ -116,14 +176,35 @@ OPTIONAL: 1–2 Seiten check_this_or_that (Visual A/B — NUR bei klar visueller
     "optionA": { "imageUrl": "", "label": "Werkhalle mit Maschine", "scores": { "<DIMENSION_NAME>": 2 } },
     "optionB": { "imageUrl": "", "label": "Monitor mit Code",       "scores": { "<DIMENSION_NAME>": 2 } }
   }
-  → Zeigt dem Nutzer zwei Bilder nebeneinander; ein Tap wählt eines, Auto-Advance.
-  → Einsatz: Arbeitsumfeld, Tätigkeitsart, Sinneseindrücke (greifbar vs. digital, drinnen vs. draußen, Team vs. allein).
-  → MAXIMAL 2 dieser Blöcke pro Check — nicht mehr, sonst Entscheidungsmüdigkeit.
-  → POSITIONIERUNG: Zwischen dem Swipe-Deck und den Slidern, NICHT am Anfang, NICHT am Ende.
-  → imageUrl immer als "" lassen — der Nutzer lädt die Bilder später im Editor hoch; Label genügt der KI.
-  → Label: Kurzer, konkreter Bild-Beschreib (2–4 Wörter), z.B. "CNC-Maschine", "Programmier-Setup", "Lagerhalle", "Büro mit Kollegen".
-  → Scores: JEWEILS 2 Punkte auf EINE Dimension pro Seite. Die zwei Optionen müssen GEGENSÄTZLICHE Dimensionen adressieren.
-  → Wenn keine sinnvolle visuelle Dichotomie möglich ist (z.B. "Pflege" vs. "Soziales" — zu ähnlich), NICHT nutzen — lieber check_selbst oder check_frage.
+  → Zeigt zwei Bilder nebeneinander; ein Tap wählt eines, Auto-Advance.
+  → DICHOTOMIE-Kategorien (wähle pro Block EINE davon — unterschiedliche Themen, wenn mehrere Blöcke):
+    • Arbeitsumfeld: "Werkhalle" vs. "Büro", "Drinnen" vs. "Draußen", "Laut+Team" vs. "Ruhig+Allein"
+    • Tätigkeitsart: "Mit Händen bauen" vs. "Mit Tastatur tippen", "Planen+Entwerfen" vs. "Bauen+Umsetzen"
+    • Interaktionsstil: "Mit Menschen reden" vs. "Mit Material arbeiten", "Beraten" vs. "Machen"
+    • Problemstil: "Strukturiert+Regeln" vs. "Kreativ+Frei", "Ein Problem tief" vs. "Viele Probleme parallel"
+  → MAXIMAL 2 Blöcke pro Check.
+  → POSITIONIERUNG: Zwischen Swipe-Deck und Slidern.
+  → imageUrl immer als "" lassen — der Nutzer lädt die Bilder später im Editor hoch.
+  → Label: Kurzer, konkreter Bild-Beschrieb (2–4 Wörter), z.B. "CNC-Maschine", "Programmier-Setup", "Kund:innen-Gespräch", "Lagerhalle".
+  → Scores: JEWEILS 2 Punkte auf EINE Dimension pro Seite. Die zwei Optionen MÜSSEN gegensätzliche Dimensionen adressieren.
+  → Wenn keine sinnvolle visuelle Dichotomie möglich (z.B. "Pflege" vs. "Soziales" — zu ähnlich), NICHT nutzen.
+
+OPTIONAL: 1 Werte-Frage als check_frage mit single_choice (direkt vor check_ergebnis):
+  Props: {
+    "frageType": "single_choice",
+    "question": "Was ist dir in deinem zukünftigen Job am wichtigsten?",
+    "options": [
+      { "text": "Sicherheit & feste Strukturen",       "scores": { "<DIM_X>": 2 } },
+      { "text": "Abwechslung & neue Herausforderungen",  "scores": { "<DIM_Y>": 2 } },
+      { "text": "Ein Team, auf das ich mich verlasse",    "scores": { "<DIM_Z>": 2 } },
+      { "text": "Etwas Sinnvolles bewegen",               "scores": { "<DIM_W>": 2 } }
+    ],
+    "allowSkip": false
+  }
+  → Hilft, wenn die Dimensionen bisher knapp ausgegangen sind — ein letzter Tiebreaker.
+  → MAXIMAL 1 solche Frage pro Check. Jede Option muss eine echte Werte-Dimension ansprechen (nicht alles "positiv").
+  → Options-Text: 4–6 Wörter, KONKRET (nicht "gut bezahlt werden" — das wählt jeder).
+  → Optional verzichten, wenn alle 4 Dimensionen bereits gut abgedeckt sind.
 
 SWIPE-KARTEN vs. SELBST-SLIDER — wann was?
 • Swipe-Karten eignen sich für konkrete Szenarien mit spürbarer Präferenz ("Du öffnest einen elektrischen Schaltkasten — was denkst du?"). Binär/ternär, affektiv, schnell.
@@ -133,19 +214,27 @@ SWIPE-KARTEN vs. SELBST-SLIDER — wann was?
 
 PRO-DIMENSION-SLIDER (check_selbst — Pflicht: GENAU 1 Slider pro Dimension):
   Props: {
-    "question": "Wie gerne ...?" oder "Kannst du dir vorstellen ...?",
+    "question": "Was trifft eher zu?",
     "description": "",
     "sliderMin": 0, "sliderMax": 10, "sliderStep": 1,
-    "sliderLabelMin": "Gar nicht", "sliderLabelMax": "Sehr gerne",
-    "sliderEmojiMin": "😕",   // optional, aber empfohlen
-    "sliderEmojiMax": "😍",   // optional, aber empfohlen
+    "sliderLabelMin": "Eher wenig",
+    "sliderLabelMax": "Eher viel",
+    "sliderEmojiMin": "😕",   // empfohlen
+    "sliderEmojiMax": "😍",   // empfohlen
     "sliderDimensionId": "<DIMENSION_NAME>"
   }
   → sliderDimensionId MUSS exakt einem Dimensions-Namen entsprechen.
-  → ERZEUGE FÜR JEDE DIMENSION GENAU EINEN SLIDER (bei 4 Dimensionen → 4 Slider, bei 3 → 3). Keine Dimension auslassen, keine doppelten pro Dimension.
-  → Optional: 1–2 zusätzliche "Mini-Persönlichkeits-Slider" ohne sliderDimensionId (nur für Flavour, keine Scores), falls Platz. Maximum gesamt: 6 Slider.
-  → Fragen sollen OPEN-ENDED und NICHT berufsspezifisch sein. Beispiele: "Wie gerne arbeitest du mit den Händen?" (Handwerk), "Wie wohl fühlst du dich, wenn du anderen hilfst?" (Soziales), "Wie gerne tüftelst du an technischen Problemen?" (Technik).
-  → Formuliere so, dass verschiedene Dimensionen unterschiedlich klingen — keine bloße Wort-Variation des Dimensions-Namens.
+  → ERZEUGE FÜR JEDE DIMENSION GENAU EINEN SLIDER. 4 Dimensionen → 4 Slider. 3 → 3.
+  → BIPOLAR wann immer möglich (Social-Desirability-Killer!):
+    Linkes und rechtes Label beschreiben BEIDE eine valide Präferenz — keine Wertung.
+    GUT: sliderLabelMin "Lieber allein" ↔ sliderLabelMax "Lieber im Team"
+    GUT: sliderLabelMin "Ruhige Präzision" ↔ sliderLabelMax "Hektische Abwechslung"
+    GUT: sliderLabelMin "Erst planen" ↔ sliderLabelMax "Sofort loslegen"
+    SCHLECHT: sliderLabelMin "Gar nicht" ↔ sliderLabelMax "Sehr gerne" (bei Vorlieben → primed max-Wert)
+    Unipolar ("Gar nicht" ↔ "Sehr gerne") NUR bei echten Fähigkeits-/Intensitäts-Fragen ("Wie sehr interessiert dich Technik an sich?").
+  → question: offen formuliert, keine Berufsnamen, nicht "Wie gerne arbeitest du mit X".
+    BESSER: "Was passt eher zu dir?" als generische Frage + bipolare Labels. Oder ein konkretes Szenario: "Nach einem langen Schultag — was tut dir gut?"
+  → Jede Dimension soll OPTISCH und SPRACHLICH anders klingen — nicht Wort-Variation des Dimensions-Namens.
 
 Vorletzte Seite: check_ergebnis
   Props: {
