@@ -32,9 +32,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const title = `${formRow.title} – ${company.name}`;
   const description = `${formRow.title} von ${company.name}`;
 
+  const favicon = company.corporateDesign?.faviconUrl;
   return {
     title,
     description,
+    ...(favicon ? { icons: { icon: favicon } } : {}),
     openGraph: {
       title,
       description,

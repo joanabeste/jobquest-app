@@ -32,9 +32,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const title = `${checkRow.title} – ${company.name}`;
   const description = `Finde heraus, welcher Beruf zu dir passt! Berufscheck von ${company.name}.`;
 
+  const favicon = company.corporateDesign?.faviconUrl;
   return {
     title,
     description,
+    ...(favicon ? { icons: { icon: favicon } } : {}),
     openGraph: {
       title,
       description,

@@ -28,9 +28,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const description = company.showcase.subtext
     ?? `Entdecke die offenen Ausbildungen und Berufschecks bei ${company.name}.`;
 
+  const favicon = company.corporateDesign?.faviconUrl;
   return {
     title,
     description,
+    ...(favicon ? { icons: { icon: favicon } } : {}),
     openGraph: {
       title,
       description,
