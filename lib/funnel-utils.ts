@@ -31,6 +31,72 @@ function addScores(target: ScoreMap, src?: ScoreMap) {
   Object.entries(src).forEach(([d, v]) => { target[d] = (target[d] ?? 0) + v; });
 }
 
+/**
+ * Computes the theoretically achievable maximum per dimension across all pages.
+ * Used to normalise progress bars so 100% means "user answered maximally in
+ * favour of this dimension" (and not "this dim happens to be top-scoring even
+ * with one positive swipe card").
+ */
+export function computeMaxScores(pages: FunnelPage[]): Record<string, number> {
+  const max: Record<string, number> = {};
+  function bump(dim: string, points: number) {
+    if (!dim || points <= 0) return;
+    max[dim] = (max[dim] ?? 0) + points;
+  }
+  pages.flatMap((p) => p.nodes).forEach((node) => {
+    if (node.kind !== 'block') return;
+    const props = node.props;
+
+    if (node.type === 'check_frage' && props.frageType === 'single_choice') {
+      // For single-choice: the user can pick exactly one option → the max
+      // contribution per dimension is the highest-scoring option for that dim.
+      const opts = (props.options as Array<{ scores?: Record<string, number> }>) ?? [];
+      const dimMax: Record<string, number> = {};
+      opts.forEach((o) => {
+        Object.entries(o.scores ?? {}).forEach(([d, v]) => {
+          dimMax[d] = Math.max(dimMax[d] ?? 0, v);
+        });
+      });
+      Object.entries(dimMax).forEach(([d, v]) => bump(d, v));
+    } else if (node.type === 'check_frage' && props.frageType === 'slider' && props.sliderDimensionId) {
+      const sliderMax = typeof props.sliderMax === 'number' ? props.sliderMax : 10;
+      bump(s(props.sliderDimensionId), sliderMax);
+    } else if (node.type === 'check_selbst' && props.sliderDimensionId) {
+      const sliderMax = typeof props.sliderMax === 'number' ? props.sliderMax : 10;
+      bump(s(props.sliderDimensionId), sliderMax);
+    } else if (node.type === 'check_ergebnisfrage') {
+      const opts = (props.options as Array<{ scores?: Record<string, number> }>) ?? [];
+      const dimMax: Record<string, number> = {};
+      opts.forEach((o) => {
+        Object.entries(o.scores ?? {}).forEach(([d, v]) => {
+          dimMax[d] = Math.max(dimMax[d] ?? 0, v);
+        });
+      });
+      Object.entries(dimMax).forEach(([d, v]) => bump(d, v));
+    } else if (node.type === 'check_statements') {
+      const stmts = (props.statements as Array<{ dimensionId?: string; points?: number }>) ?? [];
+      stmts.forEach((stmt) => {
+        if (stmt.dimensionId) bump(stmt.dimensionId, stmt.points ?? 2);
+      });
+    } else if (node.type === 'check_swipe_deck') {
+      // Per card: user picks exactly one of {pos, neu, neg} → max contribution
+      // for a dimension is the highest of the three options' scores.
+      const cards = (props.cards as Array<Record<string, unknown>>) ?? [];
+      cards.forEach((card) => {
+        const dimMax: Record<string, number> = {};
+        (['optionPositive', 'optionNeutral', 'optionNegative'] as const).forEach((k) => {
+          const opt = card[k] as { scores?: Record<string, number> } | undefined;
+          Object.entries(opt?.scores ?? {}).forEach(([d, v]) => {
+            dimMax[d] = Math.max(dimMax[d] ?? 0, v);
+          });
+        });
+        Object.entries(dimMax).forEach(([d, v]) => bump(d, v));
+      });
+    }
+  });
+  return max;
+}
+
 export function computeScores(
   pages: FunnelPage[],
   answers: Record<string, unknown>,

@@ -9,13 +9,21 @@ import { compressImage } from '@/lib/image-compress';
  * Upload a file to the global media library and return the created asset.
  * Used by callers that want to mirror a local upload (e.g. logo crop) into
  * the library so it appears next time the user opens the picker.
+ *
+ * `preserveFormat` opts into lossless compression for text-heavy images
+ * (e.g., Excel screenshots whose text must stay legible for the KI).
  */
-export async function uploadToMediaLibrary(file: File | Blob, filename?: string): Promise<MediaAsset> {
-  const compressed = file instanceof File ? await compressImage(file) : file;
+export async function uploadToMediaLibrary(
+  file: File | Blob,
+  opts: { filename?: string; preserveFormat?: boolean } = {},
+): Promise<MediaAsset> {
+  const compressed = file instanceof File
+    ? await compressImage(file, { preserveFormat: opts.preserveFormat })
+    : file;
   const fd = new FormData();
   const named = compressed instanceof File
     ? compressed
-    : new File([compressed], filename || 'upload.png', { type: compressed.type || 'image/png' });
+    : new File([compressed], opts.filename || 'upload.png', { type: compressed.type || 'image/png' });
   fd.append('file', named);
   const res = await fetch('/api/media', { method: 'POST', body: fd });
   if (!res.ok) {

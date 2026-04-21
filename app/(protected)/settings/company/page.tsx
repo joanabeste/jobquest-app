@@ -4,7 +4,7 @@ import { useState, FormEvent, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { INDUSTRY_OPTIONS, CorporateDesign, DEFAULT_CORPORATE_DESIGN, SuccessPageConfig, DEFAULT_SUCCESS_PAGE, SuccessJob, SuccessLink } from '@/lib/types';
-import { Building2, Save, CheckCircle, Palette, Type, Globe, Upload, SlidersHorizontal, Link2, Trophy, Plus, X, ExternalLink, Sparkles, Image as ImageIcon } from 'lucide-react';
+import { Building2, Save, CheckCircle, Palette, Type, Globe, Upload, SlidersHorizontal, Link2, Trophy, Plus, X, ExternalLink, Sparkles, Image as ImageIcon, MousePointerClick } from 'lucide-react';
 import ImageCropModal from '@/components/shared/ImageCropModal';
 import MediaLibrary from '@/components/shared/MediaLibrary';
 import ImportFromWebsiteModal, { ExtractedProfile } from '@/components/company/ImportFromWebsiteModal';
@@ -94,6 +94,13 @@ export default function SettingsCompanyPage() {
     bodyFontWeight: cd.bodyFontWeight ?? DEFAULT_CORPORATE_DESIGN.bodyFontWeight,
     bodyTextTransform: cd.bodyTextTransform ?? 'none',
     bodyLetterSpacing: cd.bodyLetterSpacing ?? 0,
+    buttonColor: cd.buttonColor,
+    buttonTextColor: cd.buttonTextColor,
+    buttonFontName: cd.buttonFontName,
+    buttonFontCustomName: cd.buttonFontCustomName,
+    buttonFontData: cd.buttonFontData,
+    buttonFontSize: cd.buttonFontSize,
+    buttonFontWeight: cd.buttonFontWeight,
     faviconUrl: cd.faviconUrl,
   });
 
@@ -377,6 +384,98 @@ export default function SettingsCompanyPage() {
                 <ColorPicker label="Akzentfarbe" desc="Sekundäre Akzente" value={design.accentColor} onChange={(v) => setDesign((d) => ({ ...d, accentColor: v }))} />
                 <ColorPicker label="Überschriften-Farbe" desc="Titel und Zwischenüberschriften" value={design.headingColor} onChange={(v) => setDesign((d) => ({ ...d, headingColor: v }))} />
                 <ColorPicker label="Textfarbe" desc="Fließtext und Beschriftungen" value={design.textColor} onChange={(v) => setDesign((d) => ({ ...d, textColor: v }))} />
+              </div>
+            </div>
+
+            <div className="card p-6">
+              <div className="flex items-baseline justify-between mb-5">
+                <h2 className="font-semibold text-slate-900 flex items-center gap-2">
+                  <MousePointerClick size={17} className="text-slate-400" /> Buttons
+                </h2>
+                <p className="text-xs text-slate-400">Farbe und Schrift im Button — unabhängig von Hauptfarbe & Fließtext</p>
+              </div>
+
+              <div className="space-y-5">
+                <div className="grid grid-cols-2 gap-4">
+                  <OptionalColor
+                    label="Button-Farbe"
+                    desc="Leer = Hauptfarbe"
+                    value={design.buttonColor}
+                    fallback={design.primaryColor}
+                    fallbackLabel="Wie Hauptfarbe"
+                    onChange={(v) => setDesign((d) => ({ ...d, buttonColor: v }))}
+                  />
+                  <OptionalColor
+                    label="Button-Textfarbe"
+                    desc="Leer = Weiß"
+                    value={design.buttonTextColor}
+                    fallback="#ffffff"
+                    fallbackLabel="Wie Standard (Weiß)"
+                    onChange={(v) => setDesign((d) => ({ ...d, buttonTextColor: v }))}
+                  />
+                </div>
+
+                <div className="border-t border-slate-100" />
+
+                <FontPicker
+                  label="Button-Schrift"
+                  fontName={design.buttonFontName ?? design.bodyFontName}
+                  customFontName={design.buttonFontCustomName}
+                  customFontData={design.buttonFontData}
+                  primaryColor={design.primaryColor}
+                  onSelectFont={(name) => setDesign((d) => ({ ...d, buttonFontName: name, buttonFontCustomName: undefined, buttonFontData: undefined }))}
+                  onUploadFont={(name, data) => setDesign((d) => ({ ...d, buttonFontName: name, buttonFontCustomName: name, buttonFontData: data }))}
+                  onClearCustomFont={() => setDesign((d) => ({ ...d, buttonFontName: 'system', buttonFontCustomName: undefined, buttonFontData: undefined }))}
+                />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-semibold text-slate-700 block mb-1.5">Schriftgröße</label>
+                    <div className="flex items-center gap-2">
+                      <input type="range" min={12} max={22} value={design.buttonFontSize ?? design.bodyFontSize ?? 14}
+                        onChange={(e) => setDesign((d) => ({ ...d, buttonFontSize: Number(e.target.value) }))}
+                        className="flex-1" style={{ accentColor: design.primaryColor }} />
+                      <span className="text-xs text-slate-500 font-mono w-10 text-right">{design.buttonFontSize ?? design.bodyFontSize ?? 14}px</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-slate-700 block mb-1.5">Schriftgewicht</label>
+                    <select
+                      value={design.buttonFontWeight ?? 600}
+                      onChange={(e) => setDesign((d) => ({ ...d, buttonFontWeight: Number(e.target.value) }))}
+                      className="input-field text-sm"
+                    >
+                      {[300, 400, 500, 600, 700, 800].map((w) => (
+                        <option key={w} value={w}>{w}{w === 600 ? ' (Standard)' : ''}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Live-Preview */}
+                <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <span className="text-[11px] uppercase tracking-wide text-slate-400 font-medium flex-shrink-0">Vorschau</span>
+                  <button
+                    type="button"
+                    disabled
+                    className="px-5 py-2.5 inline-flex items-center justify-center transition-all"
+                    style={{
+                      backgroundColor: design.buttonColor || design.primaryColor,
+                      color: design.buttonTextColor || '#ffffff',
+                      borderRadius: `${design.borderRadius}px`,
+                      fontFamily: design.buttonFontData
+                        ? `'${design.buttonFontName}', system-ui, sans-serif`
+                        : (design.buttonFontName && design.buttonFontName !== 'system')
+                          ? fontFamilyFor(design.buttonFontName)
+                          : design.bodyFontData
+                            ? `'${design.bodyFontName}', system-ui, sans-serif`
+                            : design.bodyFontName === 'system' ? 'inherit' : fontFamilyFor(design.bodyFontName),
+                      fontSize: `${design.buttonFontSize ?? design.bodyFontSize ?? 14}px`,
+                      fontWeight: design.buttonFontWeight ?? 600,
+                    }}
+                  >
+                    Beispiel-Button
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -763,6 +862,70 @@ function ColorPicker({ label, desc, value, onChange }: { label: string; desc: st
           spellCheck={false}
         />
       </div>
+    </div>
+  );
+}
+
+function OptionalColor({ label, desc, value, fallback, fallbackLabel, onChange }: {
+  label: string;
+  desc: string;
+  value: string | undefined;
+  fallback: string;
+  fallbackLabel: string;
+  onChange: (v: string | undefined) => void;
+}) {
+  const colorRef = useRef<HTMLInputElement>(null);
+  const isCustom = typeof value === 'string' && value.length > 0;
+  const effective = isCustom ? value! : fallback;
+
+  function handleHexChange(raw: string) {
+    let v = raw.trim();
+    if (v && !v.startsWith('#')) v = '#' + v;
+    if (/^#[0-9A-Fa-f]{0,6}$/.test(v)) onChange(v);
+  }
+
+  return (
+    <div>
+      <div className="flex items-baseline justify-between mb-1.5">
+        <label className="text-xs font-semibold text-slate-700">{label}</label>
+        <button
+          type="button"
+          onClick={() => isCustom ? onChange(undefined) : onChange(fallback)}
+          className="text-[10px] text-violet-600 hover:text-violet-700 underline underline-offset-2"
+        >
+          {isCustom ? `Zurück: ${fallbackLabel}` : 'Eigene Farbe setzen'}
+        </button>
+      </div>
+      <div className={`flex items-stretch rounded-lg border overflow-hidden transition ${isCustom ? 'border-slate-200 bg-white focus-within:ring-2 focus-within:ring-violet-200 focus-within:border-violet-300' : 'border-dashed border-slate-200 bg-slate-50/60'}`}>
+        <button
+          type="button"
+          onClick={() => { if (isCustom) colorRef.current?.click(); else onChange(fallback); }}
+          aria-label={`${label} ändern`}
+          className="w-11 flex-shrink-0 cursor-pointer relative border-r border-slate-200"
+          style={{ backgroundColor: effective }}
+        >
+          {isCustom && (
+            <input
+              ref={colorRef}
+              type="color"
+              value={effective}
+              onChange={(e) => onChange(e.target.value)}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            />
+          )}
+        </button>
+        <input
+          type="text"
+          value={isCustom ? effective : ''}
+          placeholder={isCustom ? '' : fallbackLabel}
+          onChange={(e) => handleHexChange(e.target.value)}
+          disabled={!isCustom}
+          className="flex-1 min-w-0 px-3 font-mono text-sm text-slate-700 placeholder:text-slate-400 placeholder:font-sans placeholder:italic outline-none bg-transparent disabled:cursor-default"
+          maxLength={7}
+          spellCheck={false}
+        />
+      </div>
+      <p className="text-[10px] text-slate-400 mt-1">{desc}</p>
     </div>
   );
 }

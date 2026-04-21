@@ -6,10 +6,20 @@ import { aiChat, isAiConfigured, AiError } from '@/lib/ai-provider';
 
 // ─── Input schema ─────────────────────────────────────────────────────────────
 const GenerateCheckSchema = z.object({
-  berufe: z.array(z.string().min(1).max(200)).min(1).max(60),
+  berufe: z.array(z.string().min(1).max(200)).max(60).optional().default([]),
   studiengaenge: z.array(z.string().min(1).max(200)).max(40).optional().default([]),
   notes: z.string().max(8000).optional(),
   cardCount: z.number().int().min(6).max(20).optional().default(12),
+  // Optional HTTPS image URLs — the model reads them multimodally and
+  // extracts Berufe, Studiengänge and zusätzliche Vorgaben from their contents.
+  imageUrls: z
+    .array(z.string().url().startsWith('https://').max(2000))
+    .max(10)
+    .optional()
+    .default([]),
+}).refine((v) => v.berufe.length > 0 || v.imageUrls.length > 0, {
+  message: 'Bitte mindestens einen Beruf eingeben oder ein Bild hochladen.',
+  path: ['berufe'],
 });
 
 // Palette of distinct hex colors for auto-generated dimensions.
@@ -20,6 +30,17 @@ const DIMENSION_PALETTE = [
 
 // ─── System prompt ────────────────────────────────────────────────────────────
 const SYSTEM_PROMPT = `Du bist ein Experte für Karriere-Orientierungstools. Deine Aufgabe: Erstelle einen interaktiven Berufscheck, der in ca. 3 Minuten passende Berufe (und optional Studiengänge) bei einem Unternehmen vorschlägt.
+
+═══════════════════════════════════════════════════════
+  BILDER & EXTRAHIERTE INHALTE
+═══════════════════════════════════════════════════════
+Wenn im User-Prompt ein Block "=== Aus Bildern extrahiert ===" vorkommt:
+• Die dort genannten Kategorien werden 1:1 zu Dimensionen (z.B. "Gewerbliche Ausbildungsberufe" → Dimension "Gewerblich" oder "Gewerbliche Ausbildung"). Keine Kategorie darf verloren gehen.
+• Jeder aufgelistete Beruf wird im Ergebnis in der zugehörigen Dimensions-Gruppe als Suggestion platziert.
+• Beispiel-Fragen aus dem Block übernimmst du wörtlich (oder eng angelehnt) als Swipe-Karten. Die "maps_to"-Angabe bestimmt das Scoring der optionPositive auf genau die Dimensionen, die den genannten Berufen/Kategorien entsprechen.
+• Der Text-Block gilt als Ground Truth. Die angehängten Rohbilder dienen nur zur visuellen Gegenprobe.
+Wenn kein Block vorhanden ist, aber Bilder angehängt sind: lies sie direkt und extrahiere Berufe, Kategorien und Beispiel-Fragen selbst.
+
 
 ═══════════════════════════════════════════════════════
   PFLICHT-AUFBAU der Pages
@@ -41,7 +62,20 @@ JEDER Beruf muss eindeutig einer Dimension zugeordnet werden konnen.
 ── PAGES (in dieser Reihenfolge) ────────────────────────────────────────
 Seite 0: check_intro
   Props: { headline: string, subtext: string, imageUrl: "", buttonText: "Berufscheck starten" }
-  → Knackiger Einstieg, "Lass uns deinen Traumberuf finden", ca. 3 Minuten Hinweis.
+  → headline: Eine prägnante Einladung mit EINEM farbig hervorgehobenen Schlagwort in <accent>…</accent>-Tags.
+    Format: "<Einleitung> <accent><Schlagwort></accent> <Ausklang>."
+    Beispiele:
+      • "Lass uns deine <accent>Traum-Ausbildung</accent> finden."
+      • "Finde den Beruf, der <accent>wirklich zu dir</accent> passt."
+      • "Entdecke deinen <accent>Weg zu uns</accent>."
+    → Genau EIN Accent-Abschnitt (2–4 Wörter). Rest der Headline ohne Formatierung.
+    → Kein Fragezeichen, keine ALL-CAPS.
+  → subtext: Ein einziger Satz, ca. 10–15 Wörter. Erwähnt die Dauer ("3 Minuten"), was der User bekommt.
+    Beispiele:
+      • "Finde in 3 Minuten heraus, welcher Beruf zu dir passen könnte."
+      • "In 3 Minuten zeigen wir dir, welche Ausbildung zu dir passt."
+  → buttonText: "Berufscheck starten" (Default belassen, außer der Nutzer-Kontext legt etwas Passenderes nahe).
+  → imageUrl: "" (leer lassen, außer es wurde ein Bild mitgegeben).
 
 Seite 1 — NUR wenn studiengaenge nicht-leer ist:
   check_frage
@@ -49,8 +83,8 @@ Seite 1 — NUR wenn studiengaenge nicht-leer ist:
     "frageType": "single_choice",
     "question": "Welchen Schulabschluss strebst du an oder hast du bereits?",
     "options": [
-      { "text": "Hauptschule" },
-      { "text": "Realschule" },
+      { "text": "Hauptschulabschluss" },
+      { "text": "Mittlerer Schulabschluss" },
       { "text": "(Fach-)Abitur" },
       { "text": "Noch unklar" }
     ],
@@ -66,23 +100,35 @@ Seite 2 (oder 1 wenn keine Studiengänge):
     "cards": [ ... ]
   }
   → Generiere genau cardCount Karten.
-  → WICHTIG: JEDE Dimension muss in mindestens 2 Karten vorkommen! Keine Dimension darf 0% im Ergebnis haben.
+  → WICHTIG: JEDE Dimension muss in mindestens 2 Karten mit VOLLER Punktzahl (3 Punkte bei optionPositive) vorkommen! Keine Dimension darf strukturell unterrepräsentiert sein — sonst sind die Ergebnis-Prozente verzerrt.
+  → GLEICHGEWICHT: Verteile die cardCount Karten so, dass jede Dimension ähnlich oft 3-Punkte-Chancen hat (z.B. bei 12 Karten / 4 Dimensionen → je ca. 3 Karten pro Dimension).
   → Jede Karte: { "text": "Du sollst …", "optionPositive": { "label": "Klingt gut", "emoji": "👍", "scores": {...} }, "optionNeutral": { "label": "Geht so", "emoji": "😐", "scores": {...} }, "optionNegative": { "label": "Eher nicht", "emoji": "👎", "scores": {...} } }
-  → scores-Maps: Dimensions-NAMEN als Keys, integer Punkte 1-3 als Values. Nur die Dimension(en) reinschreiben, die wirklich passen.
+  → scores-Maps: Dimensions-NAMEN als Keys, integer Punkte 1-3 als Values. Nur die Dimension(en) reinschreiben, die wirklich passen. optionPositive sollte üblicherweise 3 Punkte geben.
   → Vermeide Berufe-spezifische Worter im Text — schreibe Alltagsszenarien aus Schule/Freizeit, die auf Interessen und Fahigkeiten zielen.
   → Auch bei optionNeutral und optionNegative KÖNNEN Punkte vergeben werden (z.B. 1 Punkt bei neutral).
+  → Wenn im User-Prompt konkrete Beispiel-Fragen aus Bildern stehen, übernimm sie hier 1:1 (oder eng angelehnt) und scoren auf die in maps_to genannten Kategorien.
 
-4–6 Seiten check_selbst (Selbsteinschatzung — eine Page pro Slider):
+SWIPE-KARTEN vs. SELBST-SLIDER — wann was?
+• Swipe-Karten eignen sich für konkrete Szenarien mit spürbarer Präferenz ("Du öffnest einen elektrischen Schaltkasten — was denkst du?"). Binär/ternär, affektiv, schnell.
+• Slider (check_selbst) eignen sich für graduelle Selbsteinschätzungen zu einer generischen Fähigkeit/Neigung ("Wie gerne arbeitest du analytisch?"). Offen, kalibrierbar, nicht berufsspezifisch.
+→ Nutze den jeweils passenderen Typ. Wenn eine Dimension am besten über ein Szenario rüberkommt (z.B. Pflege → "Eine ältere Dame fällt und du hilfst auf"), dann Swipe-Karte. Wenn eine Dimension eine ruhigere Selbstreflexion braucht (z.B. "Mir fällt es leicht, komplexe Probleme zu analysieren" → Technik), dann Slider.
+→ Vermeide Routine: nicht für jede Dimension stumpf "Wie gerne arbeitest du mit X?" wiederholen. Variiere Formulierungen.
+
+PRO-DIMENSION-SLIDER (check_selbst — Pflicht: GENAU 1 Slider pro Dimension):
   Props: {
-    "question": "Wie gerne ...?",
+    "question": "Wie gerne ...?" oder "Kannst du dir vorstellen ...?",
     "description": "",
     "sliderMin": 0, "sliderMax": 10, "sliderStep": 1,
     "sliderLabelMin": "Gar nicht", "sliderLabelMax": "Sehr gerne",
+    "sliderEmojiMin": "😕",   // optional, aber empfohlen
+    "sliderEmojiMax": "😍",   // optional, aber empfohlen
     "sliderDimensionId": "<DIMENSION_NAME>"
   }
   → sliderDimensionId MUSS exakt einem Dimensions-Namen entsprechen.
-  → Generiere eine Slider-Frage pro Dimension (mindestens 4, maximal 6).
-  → Kurze, klare Fragen: "Wie gerne arbeitest du mit Software?" → Informatik
+  → ERZEUGE FÜR JEDE DIMENSION GENAU EINEN SLIDER (bei 4 Dimensionen → 4 Slider, bei 3 → 3). Keine Dimension auslassen, keine doppelten pro Dimension.
+  → Optional: 1–2 zusätzliche "Mini-Persönlichkeits-Slider" ohne sliderDimensionId (nur für Flavour, keine Scores), falls Platz. Maximum gesamt: 6 Slider.
+  → Fragen sollen OPEN-ENDED und NICHT berufsspezifisch sein. Beispiele: "Wie gerne arbeitest du mit den Händen?" (Handwerk), "Wie wohl fühlst du dich, wenn du anderen hilfst?" (Soziales), "Wie gerne tüftelst du an technischen Problemen?" (Technik).
+  → Formuliere so, dass verschiedene Dimensionen unterschiedlich klingen — keine bloße Wort-Variation des Dimensions-Namens.
 
 Vorletzte Seite: check_ergebnis
   Props: {
@@ -159,6 +205,128 @@ WICHTIG:
 • Keine ALL CAPS, normale Groß-/Kleinschreibung.
 • Sprich Bewerber:innen freundlich und persönlich an.`;
 
+// ─── Image extraction (Step A) ───────────────────────────────────────────────
+// Runs BEFORE the main generation when images are attached. Uses a strict
+// low-temperature OCR/structure prompt so the creative generation pass (Step B)
+// works from reliable, locked-in ground-truth data instead of having to OCR
+// and generate at the same time.
+
+const EXTRACT_IMAGES_SYSTEM_PROMPT = `Du bist ein strenger OCR- und Struktur-Extraktor.
+Lies die angehängten Bilder und gib AUSSCHLIESSLICH valides JSON nach dem unten definierten Schema zurück.
+
+REGELN:
+• Liste JEDEN sichtbaren Eintrag. Paraphrasiere nicht, fasse nicht zusammen, lasse nichts weg.
+• Behalte Original-Schreibweise und Original-Kategorie-Namen exakt bei (Umlaute, Groß-/Kleinschreibung, Sonderzeichen).
+• Wenn ein Eintrag schwer lesbar ist: Best-Effort-Transkription, aber aufnehmen.
+• Bei Fragen mit Kategorie-Zuordnung in Klammern (z.B. "… (Elektrotechnik)" oder "… (Informatik/Software-Engineering)"): Text OHNE die Klammer in "text" speichern, die Kategorie(n) in "maps_to" als Array.
+• Kategorien in Bildern (z.B. "Gewerbliche Ausbildungsberufe", "Alle Studiengänge") werden als "categories" abgebildet. Studiengänge (Bachelor/Master etc.) gehören bevorzugt in "studiengaenge" — auch wenn sie gleichzeitig in einer Kategorie stehen.
+• Gib kein Markdown und keine Erklärung zurück. Nur JSON.
+
+SCHEMA:
+{
+  "categories": [{ "name": string, "items": string[] }],
+  "studiengaenge": string[],
+  "exampleQuestions": [{ "text": string, "maps_to": string[] }],
+  "hints": string
+}`;
+
+type Extracted = {
+  categories: Array<{ name: string; items: string[] }>;
+  studiengaenge: string[];
+  exampleQuestions: Array<{ text: string; maps_to: string[] }>;
+  hints: string;
+};
+
+function stripJsonFences(s: string): string {
+  let t = s.trim();
+  if (t.startsWith('```')) {
+    t = t.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?```\s*$/, '');
+  }
+  return t;
+}
+
+function coerceStringArray(v: unknown): string[] {
+  if (!Array.isArray(v)) return [];
+  return v.filter((x): x is string => typeof x === 'string' && x.trim().length > 0).map((x) => x.trim());
+}
+
+function coerceExtracted(raw: unknown): Extracted {
+  const r = (raw && typeof raw === 'object') ? raw as Record<string, unknown> : {};
+  const categories: Extracted['categories'] = Array.isArray(r.categories)
+    ? (r.categories as unknown[]).map((c) => {
+        const o = (c && typeof c === 'object') ? c as Record<string, unknown> : {};
+        return {
+          name: typeof o.name === 'string' ? o.name.trim() : '',
+          items: coerceStringArray(o.items),
+        };
+      }).filter((c) => c.name.length > 0)
+    : [];
+  const studiengaenge = coerceStringArray(r.studiengaenge);
+  const exampleQuestions: Extracted['exampleQuestions'] = Array.isArray(r.exampleQuestions)
+    ? (r.exampleQuestions as unknown[]).map((q) => {
+        const o = (q && typeof q === 'object') ? q as Record<string, unknown> : {};
+        return {
+          text: typeof o.text === 'string' ? o.text.trim() : '',
+          maps_to: coerceStringArray(o.maps_to),
+        };
+      }).filter((q) => q.text.length > 0)
+    : [];
+  const hints = typeof r.hints === 'string' ? r.hints.trim() : '';
+  return { categories, studiengaenge, exampleQuestions, hints };
+}
+
+async function extractFromImages(imageUrls: string[]): Promise<Extracted | null> {
+  if (imageUrls.length === 0) return null;
+  const userContent: Array<{ type: string; [key: string]: unknown }> = [
+    { type: 'text', text: 'Extrahiere die Inhalte der folgenden Bild(er) strikt nach Schema.' },
+  ];
+  for (const url of imageUrls) {
+    userContent.push({ type: 'image_url', image_url: { url } });
+  }
+  try {
+    const raw = await aiChat({
+      system: EXTRACT_IMAGES_SYSTEM_PROMPT,
+      user: userContent,
+      temperature: 0.1,
+      json: true,
+    });
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(stripJsonFences(raw));
+    } catch (e) {
+      console.warn('[generate-check:extract] JSON parse failed, first 200 chars:', raw.slice(0, 200), e);
+      return null;
+    }
+    const result = coerceExtracted(parsed);
+    const hasAnything = result.categories.length > 0
+      || result.studiengaenge.length > 0
+      || result.exampleQuestions.length > 0
+      || result.hints.length > 0;
+    if (!hasAnything) {
+      console.warn('[generate-check:extract] extraction returned empty payload');
+      return null;
+    }
+    return result;
+  } catch (err) {
+    console.warn('[generate-check:extract] AI call failed:', err instanceof Error ? err.message : err);
+    return null;
+  }
+}
+
+function dedupCaseInsensitive(values: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const raw of values) {
+    const v = raw?.trim();
+    if (!v) continue;
+    const key = v.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(v);
+  }
+  return out;
+}
+
 // ─── POST handler ─────────────────────────────────────────────────────────────
 export const maxDuration = 300;
 
@@ -180,11 +348,24 @@ export async function POST(req: NextRequest) {
       error: `Eingabe ungültig (${path}): ${issue?.message ?? 'unbekannter Validierungsfehler'}`,
     }, { status: 400 });
   }
-  const { berufe, studiengaenge, notes, cardCount } = parsedBody.data;
+  const { berufe, studiengaenge, notes, cardCount, imageUrls } = parsedBody.data;
 
   if (!isAiConfigured()) {
     return NextResponse.json({ error: 'KI-API-Schlüssel nicht konfiguriert' }, { status: 500 });
   }
+
+  // ── Step A: strict extraction from attached images (best-effort, optional)
+  const extracted = await extractFromImages(imageUrls);
+
+  // Merge manual input + extracted items (case-insensitive dedup, first-seen wins)
+  const mergedBerufe = dedupCaseInsensitive([
+    ...berufe,
+    ...(extracted?.categories.flatMap((c) => c.items) ?? []),
+  ]);
+  const mergedStudiengaenge = dedupCaseInsensitive([
+    ...studiengaenge,
+    ...(extracted?.studiengaenge ?? []),
+  ]);
 
   // Build company context
   const ctx: string[] = [];
@@ -193,20 +374,66 @@ export async function POST(req: NextRequest) {
   if (session.company.location) ctx.push(`Standort: ${session.company.location}`);
   if (session.company.description?.trim()) ctx.push(`Über uns: ${session.company.description.trim()}`);
 
-  const userMessage = [
+  // Render the extracted-from-images block verbatim into the Step B prompt so
+  // the model sees the ground truth as text (not just re-reads the images).
+  let extractedBlock = '';
+  if (extracted) {
+    const lines: string[] = ['=== Aus Bildern extrahiert (hohe Konfidenz — NUTZE DIESE DATEN) ==='];
+    if (extracted.categories.length > 0) {
+      lines.push('');
+      lines.push('Kategorien aus den Bildern (diese MÜSSEN als Dimensionen übernommen werden):');
+      for (const c of extracted.categories) {
+        lines.push(`• ${c.name}:`);
+        for (const item of c.items) lines.push(`    – ${item}`);
+      }
+    }
+    if (extracted.exampleQuestions.length > 0) {
+      lines.push('');
+      lines.push('Beispiel-Fragen aus den Bildern (ÜBERNIMM diese wörtlich oder sehr eng angelehnt als Swipe-Karten; scoren auf die jeweils in Klammern zugeordnete Kategorie/Dimension):');
+      for (const q of extracted.exampleQuestions) {
+        const mapStr = q.maps_to.length > 0 ? ` → ${q.maps_to.join(' / ')}` : ' → (keine explizite Zuordnung)';
+        lines.push(`• ${q.text}${mapStr}`);
+      }
+    }
+    if (extracted.hints) {
+      lines.push('');
+      lines.push(`Weitere Hinweise aus den Bildern: ${extracted.hints}`);
+    }
+    extractedBlock = lines.join('\n');
+  }
+
+  const userMessageText = [
     ctx.join('\n'),
     '',
-    `Erstelle einen Berufscheck für folgende Ausbildungsberufe:\n${berufe.map((b) => `- ${b}`).join('\n')}`,
-    studiengaenge.length > 0 ? `\nUnd folgende duale Studiengänge:\n${studiengaenge.map((s) => `- ${s}`).join('\n')}` : '',
+    mergedBerufe.length > 0
+      ? `Erstelle einen Berufscheck für folgende Ausbildungsberufe:\n${mergedBerufe.map((b) => `- ${b}`).join('\n')}`
+      : 'Erstelle einen Berufscheck. Die Liste der Berufe (und ggf. Studiengänge) entnimm bitte den mitgeschickten Bildern.',
+    mergedStudiengaenge.length > 0 ? `\nUnd folgende duale Studiengänge:\n${mergedStudiengaenge.map((s) => `- ${s}`).join('\n')}` : '',
     `\nAnzahl Swipe-Karten: ${cardCount}`,
     notes?.trim() ? `\nZusätzliche Hinweise: ${notes.trim()}` : '',
+    extractedBlock ? `\n${extractedBlock}` : '',
+    imageUrls.length > 0 && !extractedBlock
+      ? `\nEs sind ${imageUrls.length} Bild(er) angehängt — extrahiere daraus Berufe, Studiengänge und weitere Vorgaben (Dimensionen/Kategorien, Beispiel-Fragen, Tonalität).`
+      : '',
+    imageUrls.length > 0 && extractedBlock
+      ? `\nDie ${imageUrls.length} angehängten Bild(er) dienen als visuelle Gegenprobe — bei Widerspruch hat der Text oben Vorrang.`
+      : '',
   ].filter(Boolean).join('\n');
+
+  // Multimodal user content: text + optional image blocks.
+  // aiChat (ai-provider.ts) normalizes image_url → Anthropic's image format.
+  const userContent: Array<{ type: string; [key: string]: unknown }> = [
+    { type: 'text', text: userMessageText },
+  ];
+  for (const url of imageUrls) {
+    userContent.push({ type: 'image_url', image_url: { url } });
+  }
 
   let rawText: string;
   try {
     rawText = await aiChat({
       system: SYSTEM_PROMPT,
-      user: userMessage,
+      user: imageUrls.length > 0 ? userContent : userMessageText,
       temperature: 0.75,
       json: true,
     });
@@ -372,7 +599,7 @@ export async function POST(req: NextRequest) {
             const base = defaultLeadFields();
             // Splice the checkbox_group BEFORE the GDPR checkbox (= last entry).
             const interestOptions = ['Ausbildung'];
-            if (studiengaenge.length > 0) {
+            if (mergedStudiengaenge.length > 0) {
               interestOptions.push('Duales Studium', 'Beidem');
             }
             const interest = {

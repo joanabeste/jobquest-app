@@ -44,8 +44,8 @@ export default function SuccessPage({ company, primary, br, featuredQuests = [] 
               href={link.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 w-full py-3 font-semibold text-sm text-white"
-              style={{ borderRadius: br, background: primary }}
+              className="fp-btn flex items-center justify-center gap-2 w-full py-3 font-semibold text-sm"
+              style={{ borderRadius: br }}
             >
               {link.label} <ExternalLink size={14} />
             </a>

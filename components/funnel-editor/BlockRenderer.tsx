@@ -143,25 +143,98 @@ function SliderBlock({ nodeId, p, answers, onAnswer, onNext, primary, br, showNe
 }) {
   const min = n(p.sliderMin, 0);
   const max = n(p.sliderMax, 10);
+  const step = n(p.sliderStep, 1);
   const hasAnswer = answers[nodeId] !== undefined;
   const val = hasAnswer
     ? n(answers[nodeId], Math.floor((min + max) / 2))
     : Math.floor((min + max) / 2);
+  // Progress 0..1 along the track, used for both the filled gradient and the
+  // value-bubble horizontal position.
+  const progress = max === min ? 0 : (val - min) / (max - min);
+  const emojiMin = s(p.sliderEmojiMin, '');
+  const emojiMax = s(p.sliderEmojiMax, '');
   return (
-    <div className="px-2">
-      <input type="range" min={min} max={max} step={n(p.sliderStep, 1)} value={val}
-        onChange={(e) => onAnswer(nodeId, Number(e.target.value))}
-        className="w-full" style={{ accentColor: primary }} />
-      <div className="flex justify-between mt-2">
-        <span className="text-xs text-slate-400">{s(p.sliderLabelMin, String(min))}</span>
-        <span className="text-sm font-bold" style={{ color: primary }}>{val}</span>
-        <span className="text-xs text-slate-400">{s(p.sliderLabelMax, String(max))}</span>
+    <div className="pt-2 pb-1 select-none">
+      {/* Emoji/label row */}
+      <div className="flex items-center justify-between mb-3 text-[11px] text-slate-400">
+        <span className="flex items-center gap-1.5">
+          {emojiMin && <span className="text-lg" aria-hidden>{emojiMin}</span>}
+          <span className="font-medium">{s(p.sliderLabelMin, String(min))}</span>
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="font-medium">{s(p.sliderLabelMax, String(max))}</span>
+          {emojiMax && <span className="text-lg" aria-hidden>{emojiMax}</span>}
+        </span>
       </div>
+
+      {/* Track + thumb + value bubble */}
+      <div className="relative h-12 flex items-center">
+        {/* Background track */}
+        <div className="absolute left-0 right-0 h-2.5 rounded-full bg-slate-100" />
+        {/* Filled track (driven by value) */}
+        <div
+          className="absolute left-0 h-2.5 rounded-full transition-[width]"
+          style={{
+            width: `${progress * 100}%`,
+            background: `linear-gradient(90deg, ${primary}80, ${primary})`,
+          }}
+        />
+        {/* Value bubble, positioned above the thumb */}
+        <div
+          className="absolute -top-1 text-[11px] font-bold text-white px-2 py-0.5 rounded-full shadow-sm pointer-events-none"
+          style={{
+            left: `calc(${progress * 100}% - 16px)`,
+            background: primary,
+          }}
+        >
+          {val}
+        </div>
+        {/* The actual input — full-width, invisible thumb replaced via CSS below */}
+        <input
+          type="range"
+          min={min}
+          max={max}
+          step={step}
+          value={val}
+          onChange={(e) => onAnswer(nodeId, Number(e.target.value))}
+          className="bc-slider absolute inset-0 w-full h-full appearance-none bg-transparent cursor-pointer"
+          style={{ touchAction: 'none' }}
+        />
+      </div>
+
+      <style>{`
+        .bc-slider::-webkit-slider-thumb {
+          appearance: none;
+          -webkit-appearance: none;
+          width: 28px;
+          height: 28px;
+          border-radius: 9999px;
+          background: #fff;
+          border: 3px solid ${primary};
+          box-shadow: 0 4px 12px -2px rgba(0,0,0,.18);
+          cursor: grab;
+          transition: transform .12s ease-out;
+        }
+        .bc-slider::-webkit-slider-thumb:active { transform: scale(1.12); cursor: grabbing; }
+        .bc-slider::-moz-range-thumb {
+          width: 28px;
+          height: 28px;
+          border-radius: 9999px;
+          background: #fff;
+          border: 3px solid ${primary};
+          box-shadow: 0 4px 12px -2px rgba(0,0,0,.18);
+          cursor: grab;
+        }
+        .bc-slider::-moz-range-thumb:active { transform: scale(1.12); cursor: grabbing; }
+        .bc-slider:focus { outline: none; }
+        .bc-slider::-webkit-slider-runnable-track { background: transparent; }
+        .bc-slider::-moz-range-track { background: transparent; }
+      `}</style>
+
       {showNextButton && onNext && (
         <button
           onClick={() => { if (!hasAnswer) onAnswer(nodeId, val); onNext(); }}
-          className="fp-btn w-full mt-5 py-3 font-semibold text-sm"
-          style={{ borderRadius: br, background: primary, color: '#fff' }}
+          className="fp-btn w-full mt-6 py-3 font-semibold text-sm"
         >
           Weiter
         </button>
@@ -176,7 +249,8 @@ export function BlockRenderer({
   answers, firstName, onSetFirstName, onAnswer, onNext,
   onCapture, capturedVars,
   leadForm, setLeadForm, leadSubmitted, onLeadSubmit, onFormSubmit,
-  scores, dimensions,
+  scores, maxScores, dimensions,
+  buttonBg, buttonText,
   dialogVisible, onDialogAdvance,
   dialogInputInFooter,
 }: {
@@ -191,7 +265,10 @@ export function BlockRenderer({
   onLeadSubmit: (f: LeadForm, customFields?: Record<string, string>) => void;
   onFormSubmit: (headline: string, text: string, form: LeadForm) => void;
   scores: Record<string, number>;
+  maxScores?: Record<string, number>;
   dimensions: Dimension[];
+  buttonBg?: string;
+  buttonText?: string;
   dialogVisible: number;
   onDialogAdvance: (count: number) => void;
   dialogInputInFooter?: boolean;
@@ -234,9 +311,8 @@ export function BlockRenderer({
       const text   = s(p.text);
       const isSec  = s(p.variant, 'primary') === 'secondary';
       const cls    = isSec ? 'fp-btn-sec' : 'fp-btn';
-      const btnStyle = isSec
-        ? { borderRadius: br, border: `2px solid ${primary}`, color: primary }
-        : { borderRadius: br, background: primary, color: '#fff' };
+      // Use only the CD class — it already carries background, color, font and border.
+      const btnStyle = { borderRadius: br };
       return (
         <div className="px-5 py-3">
           {url ? (
@@ -335,7 +411,7 @@ export function BlockRenderer({
               <button
                 onClick={() => onNext()}
                 className="fp-btn w-full mt-2 py-3.5 font-semibold text-sm flex items-center justify-center gap-2"
-                style={{ borderRadius: br, background: primary, color: '#fff' }}
+                style={{ borderRadius: br }}
               >
                 {buttonText} <ChevronRight size={15} />
               </button>
@@ -628,7 +704,7 @@ export function BlockRenderer({
           </div>
           {!!fileUrl && (
             <a href={fileUrl} download={fileName} target="_blank" rel="noopener noreferrer"
-              className="fp-btn px-4 py-2 text-xs font-semibold flex-shrink-0" style={{ borderRadius: br, background: primary, color: '#fff' }}>
+              className="fp-btn px-4 py-2 text-xs font-semibold flex-shrink-0" style={{ borderRadius: br }}>
               {s(p.buttonText, 'Download')}
             </a>
           )}
@@ -699,17 +775,32 @@ export function BlockRenderer({
     // ── BerufsCheck blocks ────────────────────────────────────────────────────
     case 'check_intro': {
       const imageUrl = s(p.imageUrl);
+      // Support <accent>Traum-Ausbildung</accent> in the headline — renders as
+      // the CD accent/primary colour so intros feel branded without requiring
+      // inline styles from the author.
+      const rawHeadline = s(p.headline);
+      const accentedHeadline = rawHeadline.replace(
+        /<accent>([\s\S]*?)<\/accent>/g,
+        '<span class="fp-accent">$1</span>',
+      );
       return (
-        <div className="px-6 pt-12 pb-8 text-center min-h-[400px] flex flex-col justify-center">
+        <div className="px-6 pt-8 md:pt-14 pb-10 text-center min-h-[400px] flex flex-col justify-center max-w-md mx-auto">
           {!!imageUrl && (
-            <img src={imageUrl} alt="" className="w-full max-h-48 object-cover rounded-xl mb-6" />
+            <img src={imageUrl} alt="" className="w-full max-h-56 object-cover rounded-xl mb-8" />
           )}
-          <h1 className="fp-heading text-2xl font-bold mb-4 leading-tight" dangerouslySetInnerHTML={{ __html: sh(inlineHtml(s(p.headline))) }} />
-          <p className="text-sm text-slate-500 mb-10 leading-relaxed max-w-xs mx-auto">{s(p.subtext)}</p>
+          <h1
+            className="fp-heading text-3xl md:text-4xl font-bold mb-5 leading-tight tracking-tight"
+            dangerouslySetInnerHTML={{ __html: sh(inlineHtml(accentedHeadline)) }}
+          />
+          <p className="text-sm md:text-base text-slate-500 mb-10 leading-relaxed max-w-sm mx-auto">
+            {s(p.subtext)}
+          </p>
           <div>
-            <button onClick={() => onNext()}
-              className="w-full flex items-center justify-between px-6 py-4 font-semibold text-base text-white"
-              style={{ borderRadius: br, background: primary }}>
+            <button
+              onClick={() => onNext()}
+              className="fp-btn w-full flex items-center justify-between px-6 py-4 font-semibold text-base"
+              style={{ borderRadius: br }}
+            >
               <span>{s(p.buttonText, 'Berufscheck starten')}</span>
               <ChevronRight size={20} />
             </button>
@@ -729,7 +820,7 @@ export function BlockRenderer({
             style={{ borderRadius: br, fontSize: '16px' }} />
           <button onClick={() => onNext()} disabled={!firstName.trim()}
             className="fp-btn w-full mt-4 py-3 font-semibold text-sm disabled:opacity-50"
-            style={{ borderRadius: br, background: primary, color: '#fff' }}>
+            style={{ borderRadius: br }}>
             {s(p.buttonText, 'Weiter')}
           </button>
         </div>
@@ -843,7 +934,7 @@ export function BlockRenderer({
             onClick={() => onNext()}
             disabled={checked.length === 0}
             className="fp-btn w-full mt-4 py-3 font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{ borderRadius: br, background: primary, color: '#fff' }}
+            style={{ borderRadius: br }}
           >
             Weiter
           </button>
@@ -870,8 +961,11 @@ export function BlockRenderer({
           groups={(p.groups as ErgebnisGroup[] | undefined) ?? []}
           dimensions={dimensions}
           scores={scores}
+          maxScores={maxScores}
           answers={answers}
           primary={primary}
+          buttonBg={buttonBg}
+          buttonText={buttonText}
           br={br}
           onNext={onNext}
           continueLabel={s(p.continueLabel, 'Weiter')}

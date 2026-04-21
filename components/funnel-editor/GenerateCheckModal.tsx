@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { X, Sparkles, Plus, Globe, Loader2, ArrowDownToLine, Wand2 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { X, Sparkles, Plus, Globe, Loader2, ArrowDownToLine, Wand2, Upload, Trash2, Image as ImageIcon } from 'lucide-react';
 import type { FunnelPage } from '@/lib/funnel-types';
-import type { Dimension } from '@/lib/types';
+import type { Dimension, MediaAsset } from '@/lib/types';
+import MediaLibrary, { uploadToMediaLibrary } from '@/components/shared/MediaLibrary';
 
 type Tab = 'generate' | 'import' | 'refine';
 
@@ -43,6 +44,30 @@ export default function GenerateCheckModal({ onGenerate, onClose, showHeyflowImp
   const [importInfo, setImportInfo] = useState<string | null>(null);
   const [loadingStep, setLoadingStep] = useState(0);
   const [loadingProgress, setLoadingProgress] = useState(0);
+  const [images, setImages] = useState<MediaAsset[]>([]);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [libraryOpen, setLibraryOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  async function handleImageUpload(file: File) {
+    setUploadingImage(true);
+    setError('');
+    try {
+      const asset = await uploadToMediaLibrary(file, { preserveFormat: true });
+      setImages((prev) => [...prev, asset]);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Upload fehlgeschlagen');
+    } finally {
+      setUploadingImage(false);
+    }
+  }
+
+  function pickFromLibrary(url: string) {
+    setImages((prev) => prev.some((i) => i.url === url)
+      ? prev
+      : [...prev, { id: url, companyId: '', url, filename: url.split('/').pop() ?? 'asset', createdAt: '' }]);
+    setLibraryOpen(false);
+  }
 
   useEffect(() => {
     if (!loading) return;
@@ -150,7 +175,7 @@ export default function GenerateCheckModal({ onGenerate, onClose, showHeyflowImp
   }
 
   async function handleGenerate() {
-    if (berufe.length === 0 || loading) return;
+    if ((berufe.length === 0 && images.length === 0) || loading) return;
     setLoading(true);
     setError('');
     try {
@@ -161,6 +186,7 @@ export default function GenerateCheckModal({ onGenerate, onClose, showHeyflowImp
           berufe,
           studiengaenge: studiengaenge.length > 0 ? studiengaenge : undefined,
           notes: notes.trim() || undefined,
+          imageUrls: images.length > 0 ? images.map((img) => img.url) : undefined,
         }),
       });
       const data = await res.json() as { pages?: FunnelPage[]; dimensions?: Dimension[]; error?: string };
@@ -239,7 +265,7 @@ export default function GenerateCheckModal({ onGenerate, onClose, showHeyflowImp
             <div className="text-center">
               <p className="text-sm font-medium text-slate-700 transition-all duration-500">{LOADING_STEPS[loadingStep]}</p>
               <p className="text-xs text-slate-400 mt-1">
-                {tab === 'refine' ? 'Check wird angepasst…' : tab === 'import' ? 'Prototyp wird konvertiert…' : `${berufe.length} Berufe · ${studiengaenge.length} Studiengange`}
+                {tab === 'refine' ? 'Check wird angepasst…' : tab === 'import' ? 'Prototyp wird konvertiert…' : `${berufe.length} Berufe · ${studiengaenge.length} Studiengange${images.length > 0 ? ` · ${images.length} Bild${images.length === 1 ? '' : 'er'}` : ''}`}
               </p>
             </div>
             <div className="flex gap-1.5">
@@ -429,6 +455,70 @@ export default function GenerateCheckModal({ onGenerate, onClose, showHeyflowImp
                 />
               </div>
 
+              {/* Bilder / Anhänge */}
+              <div>
+                <label className="block text-xs font-medium text-slate-500 mb-1.5">
+                  Bilder & Vorlagen <span className="text-slate-300">(optional)</span>
+                </label>
+                <p className="text-[11px] text-slate-400 mb-2">
+                  Die KI liest die Bilder (z.B. Excel-Screenshots mit Berufen, Frage-Vorlagen) und übernimmt Berufe, Studiengänge und weitere Vorgaben daraus.
+                </p>
+
+                {images.length > 0 && (
+                  <div className="grid grid-cols-3 gap-2 mb-2">
+                    {images.map((img) => (
+                      <div key={img.id} className="relative rounded-lg overflow-hidden border border-slate-200 aspect-square group">
+                        <img src={img.url} alt={img.filename} className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => setImages((prev) => prev.filter((i) => i.id !== img.id))}
+                          className="absolute top-1 right-1 p-1 rounded bg-white/90 text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <Trash2 size={11} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) handleImageUpload(f);
+                    e.target.value = '';
+                  }}
+                />
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingImage}
+                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-dashed border-slate-300 text-xs text-slate-600 hover:bg-slate-50 hover:border-violet-400 transition-colors disabled:opacity-60"
+                  >
+                    {uploadingImage ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
+                    {uploadingImage ? 'Wird hochgeladen…' : 'Hochladen'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLibraryOpen(true)}
+                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-dashed border-slate-300 text-xs text-slate-600 hover:bg-slate-50 hover:border-violet-400 transition-colors"
+                  >
+                    <ImageIcon size={13} />
+                    Aus Mediathek
+                  </button>
+                </div>
+              </div>
+
+              <MediaLibrary
+                open={libraryOpen}
+                onClose={() => setLibraryOpen(false)}
+                onSelect={pickFromLibrary}
+              />
+
               {error && <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>}
             </div>
             )}
@@ -456,7 +546,7 @@ export default function GenerateCheckModal({ onGenerate, onClose, showHeyflowImp
               ) : (
                 <button
                   onClick={handleGenerate}
-                  disabled={berufe.length === 0}
+                  disabled={berufe.length === 0 && images.length === 0}
                   className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-violet-600 text-white rounded-xl hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   <Sparkles size={14} /> Generieren

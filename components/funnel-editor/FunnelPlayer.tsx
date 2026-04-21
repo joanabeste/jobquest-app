@@ -9,7 +9,7 @@
 import { useState, useRef, useMemo, useEffect } from 'react';
 import { FunnelDoc, LayoutNode, BlockNode } from '@/lib/funnel-types';
 import { Company, Dimension } from '@/lib/types';
-import { flatBlocks, isSubmitPage, computeScores } from '@/lib/funnel-utils';
+import { flatBlocks, isSubmitPage, computeScores, computeMaxScores } from '@/lib/funnel-utils';
 import { analyticsStorage } from '@/lib/storage';
 import { useCorporateDesign } from '@/lib/use-corporate-design';
 import { useFavicon } from '@/lib/use-favicon';
@@ -150,7 +150,7 @@ export default function FunnelPlayer({ doc, company, contentDbId, onPageChange }
     });
   }, [doc.contentType, contentDbId]);
 
-  const { primary, br, css } = useCorporateDesign(company);
+  const { primary, br, css, buttonBg, buttonText } = useCorporateDesign(company);
   useFavicon(company.corporateDesign?.faviconUrl);
 
   // ── Scores (memoized – only recompute when answers or pages change) ─────────
@@ -158,6 +158,10 @@ export default function FunnelPlayer({ doc, company, contentDbId, onPageChange }
     () => computeScores(doc.pages, answers),
     [doc.pages, answers],
   );
+  // Precompute the theoretical max per dimension so result bars can be
+  // normalised per-dimension (not against the winner), preventing
+  // "Duales Studium 100%" when that dim only has one swipe card.
+  const maxScores = useMemo(() => computeMaxScores(doc.pages), [doc.pages]);
 
   // ── Navigation ───────────────────────────────────────────────────────────────
   function scrollTop() {
@@ -299,6 +303,16 @@ export default function FunnelPlayer({ doc, company, contentDbId, onPageChange }
 
   const blocks        = flatBlocks(currentPage.nodes);
   const submitPage    = isSubmitPage(currentPage.nodes);
+  // Result pages get a wider layout on desktop so the suggestions grid has
+  // room to breathe. All other pages stay at the mobile-first narrow width.
+  const isWidePage    = blocks.some((b) => b.type === 'check_ergebnis');
+  // Three-phase stepper for the Berufscheck: Fragen → Matching → Berufe.
+  // 0 = Fragen (intro + questions), 1 = Matching (results shown), 2 = Berufe (lead form)
+  const checkPhase = doc.contentType === 'check'
+    ? (blocks.some((b) => b.type === 'check_lead') ? 2
+      : blocks.some((b) => b.type === 'check_ergebnis') ? 1
+      : 0)
+    : -1;
   const spinnerBlock  = blocks.find((bl) => bl.type === 'quest_spinner');
   // avatar block removed
 
@@ -381,7 +395,10 @@ export default function FunnelPlayer({ doc, company, contentDbId, onPageChange }
     onLeadSubmit: handleLeadSubmit,
     onFormSubmit: handleFormSubmit,
     scores,
+    maxScores,
     dimensions,
+    buttonBg,
+    buttonText,
     dialogVisible,
     onDialogAdvance: (count: number) => setDialogVisible(count),
     dialogInputInFooter: hasDialogInput,
@@ -417,7 +434,6 @@ export default function FunnelPlayer({ doc, company, contentDbId, onPageChange }
             </span>
             <div className="flex-1 flex items-center justify-center min-w-0 px-2">
               {company.logo ? (
-                 
                 <img src={company.logo} alt={company.name} className="h-8 max-w-[160px] object-contain flex-shrink-0" />
               ) : (
                 <p className="text-sm font-semibold text-slate-900 truncate">{company.name}</p>
@@ -427,20 +443,30 @@ export default function FunnelPlayer({ doc, company, contentDbId, onPageChange }
               <span className="text-[11px] text-slate-400 leading-tight text-center">🎉<br/><span className="hidden sm:inline">Ende</span></span>
             </span>
           </div>
-        ) : (
-          /* Default header */
-          <div className="px-4 pt-3 pb-2 flex items-center gap-3">
-            {!completed && pageIndex > 0 && doc.contentType === 'check' && (
+        ) : doc.contentType === 'check' ? (
+          /* Berufscheck header: centered logo + three-phase stepper */
+          <div className="relative px-4 pt-3 pb-3">
+            {!completed && pageIndex > 0 && (
               <button
                 onClick={goBack}
                 aria-label="Zurück"
-                className="p-1 -ml-1 text-slate-400 hover:text-slate-700 transition-colors flex-shrink-0"
+                className="absolute left-3 top-3 p-1.5 text-slate-400 hover:text-slate-700 transition-colors"
               >
                 <ChevronLeft size={18} />
               </button>
             )}
+            <div className="flex items-center justify-center">
+              {company.logo ? (
+                <img src={company.logo} alt={company.name} className="h-10 md:h-11 w-auto max-w-[180px] object-contain" />
+              ) : (
+                <p className="text-base font-semibold text-slate-900 truncate max-w-[60vw]">{company.name}</p>
+              )}
+            </div>
+          </div>
+        ) : (
+          /* Default header (other content types) */
+          <div className="px-4 pt-3 pb-2 flex items-center gap-3">
             {company.logo ? (
-
               <img src={company.logo} alt={company.name} className="h-7 w-auto max-w-[120px] rounded-lg object-contain flex-shrink-0" />
             ) : (
               <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white font-bold text-sm fp-btn flex-shrink-0">
@@ -453,7 +479,10 @@ export default function FunnelPlayer({ doc, company, contentDbId, onPageChange }
             )}
           </div>
         )}
-        {!completed && (
+        {!completed && doc.contentType === 'check' && blocks.some((bl) => bl.type === 'check_intro') && (
+          <PhaseStepper phase={checkPhase} primary={primary} />
+        )}
+        {!completed && !(doc.contentType === 'check' && blocks.some((bl) => bl.type === 'check_intro')) && (
           <div className="h-1 bg-slate-100">
             <div className="h-full transition-all duration-500 ease-out" style={{ width: `${progress * 100}%`, background: primary }} />
           </div>
@@ -472,7 +501,7 @@ export default function FunnelPlayer({ doc, company, contentDbId, onPageChange }
 
       {/* ── Content ────────────────────────────────────────────────────────── */}
       <main
-        className={`max-w-lg mx-auto w-full ${doc.contentType === 'check' ? 'pb-6' : 'pb-24'}`}
+        className={`${isWidePage ? 'max-w-lg md:max-w-5xl' : 'max-w-lg'} mx-auto w-full ${doc.contentType === 'check' ? 'pb-6' : 'pb-24'}`}
         style={{
           transition: 'opacity 250ms ease, transform 250ms ease',
           opacity: pageTransition === 'fading-out' ? 0 : 1,
@@ -573,7 +602,7 @@ export default function FunnelPlayer({ doc, company, contentDbId, onPageChange }
                   }}
                   disabled={!weiterEnabled}
                   className="fp-btn flex-1 py-3.5 font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                  style={{ borderRadius: br, background: primary, color: '#fff' }}
+                  style={{ borderRadius: br }}
                 >
                   {quizNeedsCheck
                     ? <><CheckCircle size={15} /> Überprüfen</>
@@ -585,6 +614,53 @@ export default function FunnelPlayer({ doc, company, contentDbId, onPageChange }
         </div>
       )}
 
+    </div>
+  );
+}
+
+// ── Three-phase stepper shown in the Berufscheck header ────────────────────
+const CHECK_PHASES = ['Fragen', 'Matching', 'Berufe'] as const;
+
+function PhaseStepper({ phase, primary }: { phase: number; primary: string }) {
+  return (
+    <div className="px-4 pb-3 pt-1">
+      <div className="flex items-center max-w-sm mx-auto">
+        {CHECK_PHASES.map((label, i) => {
+          const isActive = i === phase;
+          const isDone = i < phase;
+          const isLast = i === CHECK_PHASES.length - 1;
+          return (
+            <div key={label} className="flex items-center flex-1 last:flex-none">
+              <div className="flex flex-col items-center">
+                <div
+                  className="w-6 h-6 rounded-full flex items-center justify-center transition-colors"
+                  style={{
+                    background: isActive || isDone ? primary : '#e2e8f0',
+                    boxShadow: isActive ? `0 0 0 3px ${primary}33` : undefined,
+                  }}
+                >
+                  {isDone && (
+                    <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M2 6l3 3 5-6" />
+                    </svg>
+                  )}
+                  {isActive && <span className="w-2 h-2 rounded-full bg-white" />}
+                </div>
+                <span
+                  className="mt-1 text-[10px] font-medium whitespace-nowrap"
+                  style={{ color: isActive ? primary : isDone ? '#475569' : '#94a3b8' }}
+                >
+                  {label}
+                </span>
+              </div>
+              {!isLast && (
+                <div className="flex-1 h-0.5 mx-1 md:mx-2 -mt-4 rounded-full transition-colors"
+                  style={{ background: i < phase ? primary : '#e2e8f0' }} />
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

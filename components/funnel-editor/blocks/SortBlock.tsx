@@ -122,7 +122,7 @@ export default function SortBlock({ question, items: rawItems, showFeedback, fee
         <button
           onClick={confirm}
           className="w-full fp-btn py-3 font-semibold text-sm"
-          style={{ borderRadius: br, background: primary, color: '#fff' }}
+          style={{ borderRadius: br }}
         >
           Reihenfolge bestätigen
         </button>
@@ -130,7 +130,7 @@ export default function SortBlock({ question, items: rawItems, showFeedback, fee
         <button
           onClick={onNext}
           className="w-full fp-btn py-3 font-semibold text-sm flex items-center justify-center gap-2"
-          style={{ borderRadius: br, background: primary, color: '#fff' }}
+          style={{ borderRadius: br }}
         >
           Weiter <ArrowRight size={16} />
         </button>

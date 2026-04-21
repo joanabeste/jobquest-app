@@ -130,6 +130,14 @@ export interface CorporateDesign {
   bodyFontWeight?: number;         // Schriftgewicht Fließtext (300–700, default: 400)
   bodyTextTransform?: 'none' | 'uppercase'; // Großschreibung Fließtext (default: none)
   bodyLetterSpacing?: number;      // Buchstabenabstand Fließtext in em*1000 (-50 bis 200, default: 0)
+  // ── Button (optional; wenn leer, wird primaryColor / bodyFont verwendet)
+  buttonColor?: string;            // Button-Hintergrund (default: primaryColor)
+  buttonTextColor?: string;        // Button-Textfarbe (default: #fff)
+  buttonFontName?: string;         // Schriftart im Button (default: bodyFontName)
+  buttonFontCustomName?: string;
+  buttonFontData?: string;
+  buttonFontSize?: number;         // Schriftgröße Button in px (default: bodyFontSize)
+  buttonFontWeight?: number;       // Schriftgewicht Button (300–800, default: 600)
 }
 
 export const DEFAULT_CORPORATE_DESIGN: CorporateDesign = {

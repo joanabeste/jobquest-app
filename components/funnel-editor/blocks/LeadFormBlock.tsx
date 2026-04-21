@@ -133,7 +133,7 @@ export default function LeadFormBlock({ props: p, company, br, primary, leadForm
       </div>
       <button onClick={handleSubmit} disabled={!canSubmit}
         className="fp-btn w-full mt-4 py-3.5 font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-        style={{ borderRadius: br, background: primary, color: '#fff' }}>
+        style={{ borderRadius: br }}>
         {s(p.buttonText, 'Abschicken')}
       </button>
 

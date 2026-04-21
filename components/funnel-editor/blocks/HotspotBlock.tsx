@@ -119,7 +119,7 @@ export default function HotspotBlock({ imageUrl, hotspots, requireAll, doneText,
         <button
           onClick={onNext}
           className="w-full fp-btn py-3 font-semibold text-sm flex items-center justify-center gap-2"
-          style={{ borderRadius: br, background: primary, color: '#fff' }}
+          style={{ borderRadius: br }}
         >
           {doneText}
           {/* ArrowRight imported inline to avoid adding to main bundle */}

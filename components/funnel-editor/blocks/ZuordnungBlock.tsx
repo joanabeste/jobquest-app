@@ -221,7 +221,7 @@ export default function ZuordnungBlock({
           onClick={handleConfirm}
           disabled={!allMatched}
           className="w-full fp-btn py-3 font-semibold text-sm disabled:opacity-40 disabled:cursor-not-allowed"
-          style={{ borderRadius: br, background: primary, color: '#fff' }}
+          style={{ borderRadius: br }}
         >
           Zuordnung bestätigen
         </button>
@@ -229,7 +229,7 @@ export default function ZuordnungBlock({
         <button
           onClick={onNext}
           className="w-full fp-btn py-3 font-semibold text-sm flex items-center justify-center gap-2"
-          style={{ borderRadius: br, background: primary, color: '#fff' }}
+          style={{ borderRadius: br }}
         >
           Weiter <ArrowRight size={16} />
         </button>
