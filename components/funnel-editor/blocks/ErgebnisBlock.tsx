@@ -336,11 +336,14 @@ function MobileAccordion({ groups, dimensions, scores, maxScores, primary, br }:
           aria-modal="true"
         >
           <div
-            className="bg-white w-full sm:max-w-lg max-h-[85vh] overflow-y-auto shadow-2xl rounded-t-2xl sm:rounded-2xl"
-            style={{ borderRadius: br }}
+            className="bg-white w-full sm:max-w-lg max-h-[88vh] min-h-[55vh] sm:min-h-0 overflow-y-auto shadow-2xl rounded-t-2xl sm:rounded-2xl flex flex-col"
+            style={{
+              borderRadius: br,
+              paddingBottom: 'max(env(safe-area-inset-bottom), 0px)',
+            }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="relative">
+            <div className="relative flex-shrink-0">
               {modalSug.imageUrl ? (
                 <img src={modalSug.imageUrl} alt="" className="w-full aspect-[16/9] object-cover" />
               ) : (
@@ -360,7 +363,9 @@ function MobileAccordion({ groups, dimensions, scores, maxScores, primary, br }:
                 <X size={18} />
               </button>
             </div>
-            <div className="p-5">
+            {/* Content: flex-col + justify-center lets short descriptions float
+                toward the middle of the min-height instead of hugging the top. */}
+            <div className="p-5 pb-6 flex-1 flex flex-col justify-center">
               <h3 className="fp-heading text-xl font-bold mb-3">{modalSug.title}</h3>
               {modalSug.description && (
                 <p className="text-sm text-slate-600 leading-relaxed mb-4">{modalSug.description}</p>

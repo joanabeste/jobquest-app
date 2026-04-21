@@ -153,24 +153,40 @@ function SliderBlock({ nodeId, p, answers, onAnswer, onNext, primary, showNextBu
   const progress = max === min ? 0 : (val - min) / (max - min);
   const emojiMin = s(p.sliderEmojiMin, '');
   const emojiMax = s(p.sliderEmojiMax, '');
+  const labelMin = s(p.sliderLabelMin, String(min));
+  const labelMax = s(p.sliderLabelMax, String(max));
+  // Heuristic: bipolar scale if both labels are filled AND neither side uses
+  // the classic unipolar "Gar nicht / Sehr gerne/viel" pairing. On bipolar
+  // scales the numeric bubble is meaningless ("5" on Lieber allein ↔ Team is
+  // just noise), so we hide it.
+  const UNIPOLAR_WORDS = /\b(gar nicht|sehr gerne|sehr gern|sehr viel|wenig|stark|schwach)\b/i;
+  const isBipolar = !!labelMin && !!labelMax
+    && labelMin !== String(min) && labelMax !== String(max)
+    && !(UNIPOLAR_WORDS.test(labelMin) || UNIPOLAR_WORDS.test(labelMax));
+  // Tendency highlight: past the mid-point (±5% tolerance) the leaning pole
+  // gets bold; dead-center stays neutral.
+  const leaning: 'left' | 'right' | 'center' = progress < 0.45 ? 'left' : progress > 0.55 ? 'right' : 'center';
   return (
     <div className="pt-2 pb-1 select-none">
-      {/* Emoji/label row */}
-      <div className="flex items-center justify-between mb-3 text-[11px] text-slate-400">
-        <span className="flex items-center gap-1.5">
-          {emojiMin && <span className="text-lg" aria-hidden>{emojiMin}</span>}
-          <span className="font-medium">{s(p.sliderLabelMin, String(min))}</span>
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="font-medium">{s(p.sliderLabelMax, String(max))}</span>
-          {emojiMax && <span className="text-lg" aria-hidden>{emojiMax}</span>}
-        </span>
+      {/* Pole columns: emoji stacked above label for clearer anchoring */}
+      <div className="grid grid-cols-[1fr_auto_1fr] gap-3 items-end mb-3">
+        <div className={`flex flex-col items-start gap-1 text-left transition-colors ${leaning === 'left' ? 'text-slate-900' : 'text-slate-400'}`}>
+          {emojiMin && <span className="text-2xl leading-none" aria-hidden>{emojiMin}</span>}
+          <span className={`text-[11px] md:text-xs leading-snug ${leaning === 'left' ? 'font-semibold' : 'font-medium'}`}>{labelMin}</span>
+        </div>
+        <div className="text-[10px] font-bold tracking-widest uppercase text-slate-300 self-end pb-1">oder</div>
+        <div className={`flex flex-col items-end gap-1 text-right transition-colors ${leaning === 'right' ? 'text-slate-900' : 'text-slate-400'}`}>
+          {emojiMax && <span className="text-2xl leading-none" aria-hidden>{emojiMax}</span>}
+          <span className={`text-[11px] md:text-xs leading-snug ${leaning === 'right' ? 'font-semibold' : 'font-medium'}`}>{labelMax}</span>
+        </div>
       </div>
 
-      {/* Track + thumb + value bubble */}
+      {/* Track + thumb + (optional) value bubble */}
       <div className="relative h-12 flex items-center">
         {/* Background track */}
         <div className="absolute left-0 right-0 h-2.5 rounded-full bg-slate-100" />
+        {/* Mid-point tick, pure orientation cue */}
+        <div className="absolute w-0.5 h-4 bg-slate-300 rounded-sm pointer-events-none" style={{ left: 'calc(50% - 1px)' }} />
         {/* Filled track (driven by value) */}
         <div
           className="absolute left-0 h-2.5 rounded-full transition-[width]"
@@ -179,16 +195,19 @@ function SliderBlock({ nodeId, p, answers, onAnswer, onNext, primary, showNextBu
             background: `linear-gradient(90deg, ${primary}80, ${primary})`,
           }}
         />
-        {/* Value bubble, positioned above the thumb */}
-        <div
-          className="absolute -top-1 text-[11px] font-bold text-white px-2 py-0.5 rounded-full shadow-sm pointer-events-none"
-          style={{
-            left: `calc(${progress * 100}% - 16px)`,
-            background: primary,
-          }}
-        >
-          {val}
-        </div>
+        {/* Value bubble — only on unipolar (intensity) scales. On bipolar scales
+            a number on a Likert-style preference slider is noise, so we hide it. */}
+        {!isBipolar && (
+          <div
+            className="absolute -top-1 text-[11px] font-bold text-white px-2 py-0.5 rounded-full shadow-sm pointer-events-none"
+            style={{
+              left: `calc(${progress * 100}% - 16px)`,
+              background: primary,
+            }}
+          >
+            {val}
+          </div>
+        )}
         {/* The actual input — full-width, invisible thumb replaced via CSS below */}
         <input
           type="range"
