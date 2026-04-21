@@ -26,7 +26,7 @@ function shuffle<T>(arr: T[]): T[] {
 
 export default function ZuordnungBlock({
   question, pairs: rawPairs, shuffleRight, showFeedback, feedbackText,
-  primary, br, nodeId, answers, onAnswer, onNext,
+  primary: _primary, br, nodeId, answers, onAnswer, onNext,
 }: {
   question: string;
   pairs: ZuordnungPair[];

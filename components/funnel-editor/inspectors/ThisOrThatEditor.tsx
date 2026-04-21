@@ -55,7 +55,7 @@ export function ThisOrThatEditor({ props, onChange, variables = [] }: {
           onChange={(e) => onChange({ allowSkip: e.target.checked })}
           className="accent-violet-600"
         />
-        <span className="text-xs text-slate-700">„Überspringen"-Button anzeigen</span>
+        <span className="text-xs text-slate-700">&bdquo;Überspringen&ldquo;-Button anzeigen</span>
       </label>
 
       {missingImages && (

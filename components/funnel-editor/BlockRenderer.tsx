@@ -132,14 +132,13 @@ export function StyledBlock({ node, sharedProps }: {
 }
 
 // ─── Shared slider UI (used by check_frage slider + check_selbst) ─────────────
-function SliderBlock({ nodeId, p, answers, onAnswer, onNext, primary, br, showNextButton = true }: {
+function SliderBlock({ nodeId, p, answers, onAnswer, onNext, primary, showNextButton = true }: {
   nodeId: string;
   p: Record<string, unknown>;
   answers: Record<string, unknown>;
   onAnswer: (id: string, val: unknown) => void;
   onNext?: () => void;
   primary: string;
-  br: string;
   showNextButton?: boolean;
 }) {
   const min = n(p.sliderMin, 0);
@@ -837,7 +836,7 @@ export function BlockRenderer({
         return (
           <div className="fp-card bg-white shadow-sm mx-4 my-3 p-6">
             <h2 className="fp-heading text-xl font-bold mb-6" dangerouslySetInnerHTML={{ __html: sh(inlineHtml(s(p.question))) }} />
-            <SliderBlock nodeId={node.id} p={p} answers={answers} onAnswer={onAnswer} onNext={onNext} primary={primary} br={br} />
+            <SliderBlock nodeId={node.id} p={p} answers={answers} onAnswer={onAnswer} onNext={onNext} primary={primary} />
           </div>
         );
       }
@@ -910,7 +909,7 @@ export function BlockRenderer({
         <div className="fp-card bg-white shadow-sm mx-4 my-3 p-6">
           <h2 className="fp-heading text-xl font-bold mb-2" dangerouslySetInnerHTML={{ __html: sh(inlineHtml(s(p.question))) }} />
           {b(p.description) && <p className="text-sm text-slate-500 mb-5">{s(p.description)}</p>}
-          <SliderBlock nodeId={node.id} p={p} answers={answers} onAnswer={onAnswer} onNext={onNext} primary={primary} br={br} />
+          <SliderBlock nodeId={node.id} p={p} answers={answers} onAnswer={onAnswer} onNext={onNext} primary={primary} />
         </div>
       );
 
