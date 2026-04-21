@@ -65,6 +65,16 @@ export default function DashboardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [company]);
 
+  // If the initial defaultTab was picked from DEFAULT_PLAN (before company
+  // loaded) but the company's real plan doesn't allow that content type,
+  // switch to the first actually-visible tab. Also handles live plan changes.
+  useEffect(() => {
+    const isActiveVisible = visibleConfigs.some(([cfg]) => cfg.key === activeTab);
+    if (!isActiveVisible && visibleConfigs.length > 0) {
+      setActiveTab(visibleConfigs[0][0].key);
+    }
+  }, [visibleConfigs, activeTab]);
+
   useEffect(() => { setSearch(''); }, [activeTab]);
 
   // ── Create / quota ────────────────────────────────────────────────────────
