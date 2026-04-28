@@ -6,7 +6,9 @@ import { aiChat, isAiConfigured, AiError } from '@/lib/ai-provider';
 const RefineSchema = z.object({
   pages: z.array(z.record(z.string(), z.unknown())),
   dimensions: z.array(z.record(z.string(), z.unknown())).optional(),
-  instructions: z.string().min(1).max(4000),
+  // Bis 16 000 Zeichen — realistische Refine-Anweisungen mit vielen
+  // Detailpunkten passen damit problemlos.
+  instructions: z.string().min(1).max(16000),
 });
 
 const SYSTEM_PROMPT = `Du bist ein Experte fur interaktive Berufschecks. Dir wird ein bestehender Berufscheck als JSON gegeben (pages + dimensions) und Anderungswunsche vom Nutzer.
@@ -43,7 +45,11 @@ export async function POST(req: NextRequest) {
   }
   const parsed = RefineSchema.safeParse(raw);
   if (!parsed.success) {
-    return NextResponse.json({ error: 'validation_error' }, { status: 400 });
+    const issue = parsed.error.issues[0];
+    const path = issue?.path.join('.') || 'input';
+    return NextResponse.json({
+      error: `Eingabe ungültig (${path}): ${issue?.message ?? 'unbekannter Validierungsfehler'}`,
+    }, { status: 400 });
   }
 
   const content = JSON.stringify({ dimensions: parsed.data.dimensions ?? [], pages: parsed.data.pages }, null, 2);
