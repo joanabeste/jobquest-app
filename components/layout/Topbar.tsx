@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   LayoutDashboard, Users, LogOut, ChevronDown,
@@ -12,7 +12,6 @@ import { useState, useRef, useEffect } from 'react';
 export default function Topbar() {
   const { company, currentMember, logout, can, isImpersonating, stopImpersonation } = useAuth();
   const pathname = usePathname();
-  const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -26,10 +25,16 @@ export default function Topbar() {
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
-  function handleLogout() {
+  async function handleLogout() {
     setMenuOpen(false);
-    logout();
-    router.push('/login');
+    // logout() löscht serverseitig die Cookies + räumt den AuthContext-State auf.
+    // Wir awaiten das, damit kein nachgelagertes Component mehr mit alten
+    // Cookies fetcht und 401-Toasts zeigt.
+    await logout();
+    // Harter Reload statt router.push: räumt React-Tree, Suspense-Cache und
+    // laufende fetches komplett ab — sonst bleiben Dashboard-Listen mounted
+    // und triggern „Inhalte konnten nicht geladen werden" auf den 401ern.
+    window.location.assign('/login');
   }
 
   const navItems = [
