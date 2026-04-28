@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getSession, unauthorized } from '@/lib/api-auth';
 import { aiChat, isAiConfigured, AiError } from '@/lib/ai-provider';
+import { diversifyDecisionIcons } from '@/lib/decision-icon-picker';
 
 // Hard caps to limit prompt-injection blast-radius and OpenAI cost.
 // Image URLs must be HTTPS and bounded in count; the model will only ever
@@ -165,20 +166,39 @@ quest_decision
   → emoji: PFLICHT — JEDE Option in einem quest_decision MUSS ein UNTERSCHIEDLICHES
     Icon haben. Nutze NIE zweimal dasselbe Icon im selben Block, auch nicht zweimal
     ThumbsDown oder zweimal XCircle.
-    Wähle das Icon passend zum INHALT der Antwort, nicht nur zu "richtig/falsch":
-      • Aktion mit Händen / Eingreifen → Hand, HandHelping
-      • Reden / Nachfragen → MessageCircle, MessageSquare
-      • Beobachten / Abwarten → Eye, Clock
-      • Wegschauen / Ignorieren → Ban, EyeOff
-      • Sicherheit/Schützen → Shield, ShieldCheck
-      • Hilfe holen → Phone, Users, Bell
-      • Selbst entscheiden / Stoppen → StopCircle, Hand
-      • Gefährlich / Falsch → AlertTriangle, OctagonAlert
-      • Zustimmen / Klingt gut → ThumbsUp, CheckCircle, Smile
-      • Ablehnen → ThumbsDown, XCircle (nur EINMAL pro Block!)
-      • Geld / Einkauf → Wallet, ShoppingCart, Receipt
-      • Zeit / Warten → Clock, Hourglass, Timer
-      • Erklären / Lehren → Lightbulb, BookOpen
+    REGEL: Icon richtet sich nach dem INHALT der Antwort, NICHT nach "richtig/falsch".
+    Bevor du XCircle/ThumbsDown vergibst, prüfe IMMER, ob ein inhaltsbezogenes
+    Icon passt — das ist fast immer der Fall:
+      • "Musik laut aufdrehen / Lied / Radio"   → Music2
+      • "Lautstärke runter / leise"             → VolumeX (laut: Volume2)
+      • "Käse zurücklegen / einkaufen / Wagen"  → ShoppingCart
+      • "Bezahlen / Geld zurückgeben"           → Wallet (oder Receipt für Beleg)
+      • "Anrufen / Notruf / Telefonieren"       → Phone
+      • "Team holen / Kolleg:in fragen"         → Users
+      • "Pflaster / Verband / Wunde"            → HeartPulse
+      • "Medikament / Tablette geben"           → Pill
+      • "Kochen / Essen reichen / Mahlzeit"     → Utensils
+      • "Kaffee / Tee anbieten"                 → Coffee
+      • "Notiz machen / dokumentieren"          → Clipboard / ClipboardCheck
+      • "Idee vorschlagen / Tipp geben"         → Lightbulb
+      • "Erklären / Buch / lernen"              → BookOpen
+      • "Aktion mit Händen / Eingreifen"        → Hand, HandHelping
+      • "Reden / Nachfragen / Gespräch"         → MessageCircle, MessageSquare
+      • "Beobachten / Abwarten"                 → Eye, Clock
+      • "Wegschauen / Ignorieren"               → EyeOff, Ban
+      • "Sicherheit/Schützen"                   → ShieldCheck (Gefahr: AlertTriangle)
+      • "Hilfe holen / Bescheid geben"          → Phone, Bell
+      • "Stoppen / sofort eingreifen"           → StopCircle
+      • "Gefahr / fahrlässig"                   → AlertTriangle, OctagonAlert
+      • "Zustimmen / Klingt gut"                → ThumbsUp, CheckCircle, Smile
+      • "Glücklich / Freude"                    → Smile, Sparkles
+      • "Traurig / enttäuscht"                  → Frown
+      • "Suchen / nachsehen / prüfen"           → Search
+      • "Ablehnen / nein sagen"                 → ThumbsDown, XCircle, Ban (nur EINMAL pro Block!)
+    NEGATIV-ICONS (XCircle, ThumbsDown, AlertTriangle, OctagonAlert, Ban, EyeOff,
+    StopCircle) sind RESERVE — vergib sie erst, wenn keines der oben gelisteten
+    Inhalts-Icons passt. Eine Option "Musik laut aufdrehen" mit isWrong=true
+    bekommt Music2, NICHT XCircle.
     Allowlist (nur diese Icon-Namen — keine Erfindungen wie "DangerSign"):
     Briefcase, Star, Heart, Zap, Target, Users, Clock, Globe, Shield, ShieldCheck,
     Lightbulb, Rocket, TrendingUp, Award, CheckCircle, XCircle, ThumbsUp, ThumbsDown,
@@ -186,7 +206,8 @@ quest_decision
     MessageSquare, Phone, Mail, Clipboard, ClipboardCheck, Search, Settings, Flag,
     Bookmark, StopCircle, Ban, OctagonAlert, Hand, ShieldX, ShieldAlert,
     Eye, EyeOff, Bell, Hourglass, Timer, Wallet, ShoppingCart, Receipt, BookOpen,
-    Sparkles, HeartPulse, HeartHandshake, Handshake, Cross, Pill
+    Sparkles, HeartPulse, HeartHandshake, Handshake, Cross, Pill,
+    Music2, Volume2, VolumeX, Utensils
 
 BRANCHING-MECHANISMUS — ZWEI Arten von nextPageIndex, beide nötig:
 
@@ -377,7 +398,7 @@ const DEFAULT_LEAD_FIELDS = [
   { type: 'email',    label: 'E-Mail',   placeholder: 'E-Mail-Adresse',   required: true,  variable: 'email'      },
   { type: 'tel',      label: 'Telefon',  placeholder: 'Telefonnummer',    required: false, variable: 'telefon'    },
   { type: 'checkbox', label: 'Ich kann mir vorstellen, in diesem Bereich ein Praktikum zu machen.', required: false, variable: 'praktikum' },
-  { type: 'checkbox', label: 'Ich stimme zu, dass <a href="@datenschutzUrl" target="_blank">@companyName</a> meine Daten gemäß <a href="@datenschutzUrl" target="_blank">Datenschutzerklärung</a> verarbeitet. <a href="@impressumUrl" target="_blank">Impressum</a>', required: true, variable: 'datenschutz' },
+  { type: 'checkbox', label: 'Ich stimme zu, dass <a href="@datenschutzUrl" target="_blank">@companyName</a> meine Daten gemäß <a href="@datenschutzUrl" target="_blank">Datenschutzerklärung</a> verarbeitet. Weitere Informationen findest du in unserem <a href="@impressumUrl" target="_blank">Impressum</a>.', required: true, variable: 'datenschutz' },
 ];
 
 /**
@@ -571,43 +592,5 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ pages });
 }
 
-// ─── Decision-Icon Diversifier ────────────────────────────────────────────────
-/**
- * Stellt sicher, dass innerhalb eines quest_decision JEDE Option ein anderes
- * Icon hat. Wenn die KI mehrere Optionen mit demselben Icon erzeugt (z.B.
- * zweimal ThumbsDown), werden die Folge-Optionen auf passende Alternativen
- * aus dem gleichen Pool umgemappt.
- */
-const ICON_POOLS = {
-  // negativ/ablehnend: nicht-eingreifen, Konsequenz, gefährlich
-  negative: ['XCircle', 'ThumbsDown', 'AlertTriangle', 'OctagonAlert', 'StopCircle', 'Ban', 'Frown', 'EyeOff', 'ShieldX', 'AlertCircle'],
-  // positiv/zustimmend: helfen, lösen, schützen
-  positive: ['CheckCircle', 'ThumbsUp', 'Smile', 'Heart', 'Sparkles', 'ShieldCheck', 'HandHelping', 'Star', 'Award'],
-  // neutral / Aktion / Tätigkeit
-  neutral: ['MessageCircle', 'MessageSquare', 'Hand', 'Eye', 'Clock', 'Hourglass', 'Lightbulb', 'BookOpen', 'Phone', 'Bell', 'HelpCircle', 'ClipboardCheck', 'Search', 'Wallet', 'ShoppingCart', 'Receipt'],
-} as const;
-
-function poolFor(icon: string): readonly string[] | null {
-  if (ICON_POOLS.negative.includes(icon as never)) return ICON_POOLS.negative;
-  if (ICON_POOLS.positive.includes(icon as never)) return ICON_POOLS.positive;
-  if (ICON_POOLS.neutral.includes(icon as never)) return ICON_POOLS.neutral;
-  return null;
-}
-
-function diversifyDecisionIcons<T extends { emoji?: string; isWrong?: boolean }>(options: T[]): T[] {
-  const used = new Set<string>();
-  return options.map((opt) => {
-    const original = opt.emoji;
-    if (!original) return opt;
-    if (!used.has(original)) {
-      used.add(original);
-      return opt;
-    }
-    // Duplikat: alternativen Pool wählen — wenn isWrong → negativ, sonst neutral.
-    const pool = poolFor(original) ?? (opt.isWrong ? ICON_POOLS.negative : ICON_POOLS.neutral);
-    const alt = pool.find((c) => !used.has(c));
-    if (!alt) return opt; // kein freies Icon mehr — Original behalten
-    used.add(alt);
-    return { ...opt, emoji: alt };
-  });
-}
+// Decision-Icon-Diversifier wird aus lib/decision-icon-picker importiert
+// (Keyword-basiert, geteilt mit refine + import-heyflow).

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getSession, unauthorized } from '@/lib/api-auth';
 import { aiChat, isAiConfigured, AiError } from '@/lib/ai-provider';
+import { diversifyDecisionIcons } from '@/lib/decision-icon-picker';
 
 const ImportSchema = z.object({
   url: z.string().url().startsWith('https://'),
@@ -169,14 +170,21 @@ quest_decision
   → isWrong: true wenn objektiv falsch/gefährlich. Bei Branching immer false.
   → emoji: PFLICHT — JEDE Option in einem quest_decision MUSS ein UNTERSCHIEDLICHES
     Icon haben. Niemals dasselbe Icon (z.B. zweimal ThumbsDown) in einem Block.
-    Wähle das Icon passend zum INHALT, nicht nur zu "richtig/falsch":
+    REGEL: Icon nach INHALT der Antwort, NICHT nach "richtig/falsch".
+    Bevor du XCircle/ThumbsDown vergibst, prüfe ob ein inhaltsbezogenes Icon passt:
+      "Musik laut/Lied/Radio" → Music2  ·  "leise/Ruhe" → VolumeX  ·  "laut" → Volume2
+      "Käse/Wagen/einkaufen" → ShoppingCart  ·  "bezahlen" → Wallet  ·  "Beleg" → Receipt
+      "anrufen/Notruf" → Phone  ·  "Team holen" → Users  ·  "Bescheid geben" → Bell
+      "Pflaster/Verband" → HeartPulse  ·  "Tablette/Medikament" → Pill
+      "kochen/Essen reichen" → Utensils  ·  "Kaffee/Tee" → Coffee
+      "Notiz/dokumentieren" → Clipboard  ·  "Idee/Tipp" → Lightbulb  ·  "lernen/Buch" → BookOpen
       Hände/Eingreifen → Hand, HandHelping  ·  Reden → MessageCircle, MessageSquare
-      Beobachten → Eye, Clock  ·  Wegschauen → Ban, EyeOff  ·  Schützen → Shield, ShieldCheck
-      Hilfe holen → Phone, Users, Bell  ·  Stoppen → StopCircle, Hand
-      Gefährlich → AlertTriangle, OctagonAlert  ·  Zustimmen → ThumbsUp, CheckCircle
-      Ablehnen → ThumbsDown, XCircle (nur EINMAL pro Block!)
-      Geld → Wallet, ShoppingCart, Receipt  ·  Zeit → Clock, Hourglass, Timer
-      Erklären → Lightbulb, BookOpen
+      Beobachten → Eye, Clock  ·  Wegschauen → EyeOff, Ban  ·  Schützen → ShieldCheck
+      Stoppen → StopCircle  ·  Gefahr → AlertTriangle, OctagonAlert
+      Zustimmen → ThumbsUp, CheckCircle, Smile  ·  Ablehnen → ThumbsDown, XCircle (max 1×)
+      Suchen/prüfen → Search  ·  Zeit/warten → Clock, Hourglass
+    NEGATIV-ICONS sind RESERVE — eine Option "Musik laut aufdrehen" mit isWrong=true
+    bekommt Music2, NICHT XCircle.
     Allowlist (KEINE Erfindungen wie "DangerSign"):
     Briefcase, Star, Heart, Zap, Target, Users, Clock, Globe, Shield, ShieldCheck,
     Lightbulb, Rocket, TrendingUp, Award, CheckCircle, XCircle, ThumbsUp, ThumbsDown,
@@ -184,8 +192,9 @@ quest_decision
     MessageSquare, Phone, Mail, Clipboard, ClipboardCheck, Search, Settings, Flag,
     Bookmark, StopCircle, Ban, OctagonAlert, Hand, ShieldX, ShieldAlert,
     Eye, EyeOff, Bell, Hourglass, Timer, Wallet, ShoppingCart, Receipt, BookOpen,
-    Sparkles, HeartPulse, HeartHandshake, Handshake, Cross, Pill
-    Wenn unsicher: lieber CheckCircle / XCircle / AlertTriangle nehmen.
+    Sparkles, HeartPulse, HeartHandshake, Handshake, Cross, Pill,
+    Music2, Volume2, VolumeX, Utensils
+    Wenn unsicher: lieber ein neutrales Inhalts-Icon (Search, Eye, MessageCircle) als XCircle.
 
 quest_quiz
   Props: { question: string, options: [{ id: "UUID", text: string, correct: boolean, feedback: string }] }
@@ -260,7 +269,7 @@ const DEFAULT_LEAD_FIELDS = [
   { type: 'email',    label: 'E-Mail',   placeholder: 'E-Mail-Adresse',   required: true,  variable: 'email'      },
   { type: 'tel',      label: 'Telefon',  placeholder: 'Telefonnummer',    required: false, variable: 'telefon'    },
   { type: 'checkbox', label: 'Ich kann mir vorstellen, in diesem Bereich ein Praktikum zu machen.', required: false, variable: 'praktikum' },
-  { type: 'checkbox', label: 'Ich stimme zu, dass <a href="@datenschutzUrl" target="_blank">@companyName</a> meine Daten gemäß <a href="@datenschutzUrl" target="_blank">Datenschutzerklärung</a> verarbeitet. <a href="@impressumUrl" target="_blank">Impressum</a>', required: true, variable: 'datenschutz' },
+  { type: 'checkbox', label: 'Ich stimme zu, dass <a href="@datenschutzUrl" target="_blank">@companyName</a> meine Daten gemäß <a href="@datenschutzUrl" target="_blank">Datenschutzerklärung</a> verarbeitet. Weitere Informationen findest du in unserem <a href="@impressumUrl" target="_blank">Impressum</a>.', required: true, variable: 'datenschutz' },
 ];
 
 // AI generation can take 60-120s for complex conversions
@@ -442,37 +451,6 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json({ beruf: aiResult.beruf ?? '', pages });
-}
-
-// ─── Decision-Icon Diversifier ───────────────────────────────────────────────
-const ICON_POOLS = {
-  negative: ['XCircle', 'ThumbsDown', 'AlertTriangle', 'OctagonAlert', 'StopCircle', 'Ban', 'Frown', 'EyeOff', 'ShieldX', 'AlertCircle'],
-  positive: ['CheckCircle', 'ThumbsUp', 'Smile', 'Heart', 'Sparkles', 'ShieldCheck', 'HandHelping', 'Star', 'Award'],
-  neutral: ['MessageCircle', 'MessageSquare', 'Hand', 'Eye', 'Clock', 'Hourglass', 'Lightbulb', 'BookOpen', 'Phone', 'Bell', 'HelpCircle', 'ClipboardCheck', 'Search', 'Wallet', 'ShoppingCart', 'Receipt'],
-} as const;
-
-function poolFor(icon: string): readonly string[] | null {
-  if (ICON_POOLS.negative.includes(icon as never)) return ICON_POOLS.negative;
-  if (ICON_POOLS.positive.includes(icon as never)) return ICON_POOLS.positive;
-  if (ICON_POOLS.neutral.includes(icon as never)) return ICON_POOLS.neutral;
-  return null;
-}
-
-function diversifyDecisionIcons<T extends { emoji?: string; isWrong?: boolean }>(options: T[]): T[] {
-  const used = new Set<string>();
-  return options.map((opt) => {
-    const original = opt.emoji;
-    if (!original) return opt;
-    if (!used.has(original)) {
-      used.add(original);
-      return opt;
-    }
-    const pool = poolFor(original) ?? (opt.isWrong ? ICON_POOLS.negative : ICON_POOLS.neutral);
-    const alt = pool.find((c) => !used.has(c));
-    if (!alt) return opt;
-    used.add(alt);
-    return { ...opt, emoji: alt };
-  });
 }
 
 // ─── Dedup helper ────────────────────────────────────────────────────────────
