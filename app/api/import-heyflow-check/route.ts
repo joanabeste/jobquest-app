@@ -50,10 +50,35 @@ Seite 1: check_swipe_deck
     "cards": [...]
   }
   → Konvertiere JEDE Szenario-Frage aus dem Heyflow in eine Swipe-Karte.
-  → WICHTIG: JEDE Dimension muss in mindestens 2 Karten vorkommen! Keine 0%-Gruppen im Ergebnis.
-  → Jede Karte: { "text": "Szenario-Text...", "optionPositive": { "label": "Klingt gut", "emoji": "👍", "scores": { "Dimensionsname": 2 } }, "optionNeutral": { "label": "Geht so", "emoji": "😐", "scores": {} }, "optionNegative": { "label": "Eher nicht", "emoji": "👎", "scores": {} } }
-  → scores: Dimensions-NAMEN als Keys, Punkte 1-3 als Werte.
-  → SWIPE-FORMAT — Pflicht: Jede Karte muss eine hypothetische Aufgabe / ein offenes Szenario sein, das mit „klingt gut" / „eher nicht" (= ja/nein) beantwortbar ist. KEINE Erzählungen, in denen der User die Handlung schon ausführt. Beginne mit „Du sollst …", „Jemand bittet dich …", „Stell dir vor, du …" — nie mit „Du bleibst …", „Du hilfst …", „Du tröstest …". Wenn eine Heyflow-Quelle eine Aussage im Präsens enthält ("Du bleibst bei deiner Oma"), formuliere sie um in eine Aufgabe ("Du sollst den ganzen Nachmittag bei deiner Oma bleiben").
+  → WICHTIG: JEDE Dimension muss in mindestens 2 Karten vorkommen — keine 0 %-Gruppen im Ergebnis.
+
+  ── SCHEMA pro Karte ──────────────────────────────────────────────────
+  {
+    "text": "<ein Satz nach Format-Regeln unten>",
+    "optionPositive": { "label": "Klingt gut", "emoji": "👍", "scores": { "<DIMENSION>": <1-3> } },
+    "optionNeutral":  { "label": "Geht so",    "emoji": "😐", "scores": {} },
+    "optionNegative": { "label": "Eher nicht", "emoji": "👎", "scores": {} }
+  }
+  scores-Keys = exakter Dimensionsname.
+
+  ── FORMAT pro Kartentext (PFLICHT — alle Punkte erfüllen) ───────────
+  1. Genau EIN Satz, 8–18 Wörter, eine einzige Aufgabe.
+  2. Hypothetisch — der User TUT die Handlung NICHT bereits. Erlaubte Satzanfänge: „Du sollst …", „Stell dir vor, du …", „Jemand bittet dich, …", „Du hast die Wahl: …".
+     VERBOTEN als Satzanfang: „Du bleibst …", „Du hilfst …", „Du tröstest …", „Du machst …", „Du gehst …" (vollendete Handlung im Präsens).
+  3. Konkret + sinnlich (Werkzeuge, Mengen, Zeitanker), nicht abstrakt.
+  4. Setting: Alltag (Schule, Freizeit, Familie, Hobby, Praktikum). NIEMALS Berufsname im Text.
+  5. Echter Trade-off — 👎 muss für eine andere valide Stärke stehen, nicht für moralisches Versagen.
+
+  Wenn eine Heyflow-Quelle das Format verletzt (z. B. Präsens-Erzählung „Du bleibst bei deiner Oma"), formuliere sie UM, anstatt sie 1:1 zu übernehmen:
+    Quelle: „Du tröstest deinen kleinen Bruder, der weint."
+    → Karte: „Stell dir vor, dein kleiner Bruder weint und du sollst ihn beruhigen."
+    Quelle: „Du hilfst deiner Oma beim Aufstehen."
+    → Karte: „Du sollst den ganzen Nachmittag deine Oma nach einem Sturz begleiten."
+
+  ── SCHLECHT-Beispiele (nicht generieren) ────────────────────────────
+  ❌ „Du tröstest deinen weinenden Bruder." → vollendete Handlung
+  ❌ „Wie gerne hilfst du anderen?" → Frage statt Situation
+  ❌ „Du arbeitest als Pflegekraft." → Berufsname im Text
 
 4–6 Seiten check_selbst (Selbsteinschatzung — eine Page pro Slider):
   Props: {

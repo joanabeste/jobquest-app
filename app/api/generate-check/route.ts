@@ -125,12 +125,12 @@ Gesamt-Länge angepeilt: 9–13 Seiten (bei 4 Dimensionen typisch 11).
 
 Seite 0: check_intro
   Props: { headline: string, subtext: string, imageUrl: "", buttonText: "Berufscheck starten" }
-  → headline: Eine prägnante Einladung mit EINEM farbig hervorgehobenen Schlagwort in <accent>…</accent>-Tags.
-    Format: "<Einleitung> <accent><Schlagwort></accent> <Ausklang>."
-    Beispiele:
-      • "Lass uns deine <accent>Traum-Ausbildung</accent> finden."
-      • "Finde den Beruf, der <accent>wirklich zu dir</accent> passt."
-      • "Entdecke deinen <accent>Weg zu uns</accent>."
+  → headline: STANDARD ist exakt: "Lass uns deine <accent>Traum-Ausbildung</accent> finden."
+    → Diese Default-Headline IMMER verwenden, außer der Nutzer-Kontext legt eine spezifischere Formulierung klar nahe (z. B. wenn nur Studiengänge oder eine sehr spezifische Branche/Zielgruppe vorgegeben sind).
+    → Falls abgewichen wird, gilt das Format: "<Einleitung> <accent><Schlagwort></accent> <Ausklang>."
+      Beispiele für Ausnahmefälle:
+        • "Finde den Beruf, der <accent>wirklich zu dir</accent> passt."
+        • "Entdecke deinen <accent>Weg zu uns</accent>."
     → Genau EIN Accent-Abschnitt (2–4 Wörter). Rest der Headline ohne Formatierung.
     → Kein Fragezeichen, keine ALL-CAPS.
   → subtext: Ein einziger Satz, ca. 10–15 Wörter. Erwähnt die Dauer ("3 Minuten"), was der User bekommt.
@@ -162,28 +162,67 @@ Seite 2 (oder 1 wenn keine Studiengänge):
     "allowSkip": true,
     "cards": [ ... ]
   }
-  → Generiere genau cardCount Karten.
-  → WICHTIG: JEDE Dimension muss in mindestens 2 Karten mit VOLLER Punktzahl (3 Punkte bei optionPositive oder optionNegative bei Reverse-Coded Items) vorkommen. Keine Dimension darf strukturell unterrepräsentiert sein.
-  → GLEICHGEWICHT: Verteile die cardCount Karten gleichmäßig. Bei 10 Karten / 4 Dimensionen = 2–3 pro Dimension als Top-Wahl.
-  → Jede Karte: { "text": "Du sollst …", "optionPositive": { "label": "Klingt gut", "emoji": "👍", "scores": {...} }, "optionNeutral": { "label": "Geht so", "emoji": "😐", "scores": {...} }, "optionNegative": { "label": "Eher nicht", "emoji": "👎", "scores": {...} } }
-  → scores-Maps: Dimensions-NAMEN als Keys, integer Punkte 1-3. Nur die Dimension(en) reinschreiben, die wirklich passen.
-  → REVERSE-CODED ITEMS (Pflicht: 1–2 von cardCount):
-    Bei diesen Karten gibt BEIDE extreme Optionen Punkte auf VERSCHIEDENE Dimensionen — nicht nur optionPositive.
-    Beispiel: "Du sollst 8 Stunden konzentriert an einer Aufgabe sitzen."
-      → optionPositive +3 Analytik/Ausdauer, optionNegative +3 Abwechslung/Aktion.
-    Beispiel: "Am Samstag hilfst du jemandem bei einem langen Projekt — keine Pause."
-      → optionPositive +3 Soziales, optionNegative +2 Unabhängigkeit.
-    Das verhindert das "positive wischen"-Problem.
-  → SOCIAL-DESIRABILITY-FALLE vermeiden: Formuliere KEINE Karten, bei denen "optionPositive" offensichtlich die moralisch "bessere" Antwort ist. Beispiel SCHLECHT: "Deine Oma bittet dich um Hilfe." (jeder sagt "Klingt gut"). STATT: konkretes Szenario mit echtem Trade-off.
-  → SWIPE-FORMAT — Pflicht: JEDE Karte muss eine HYPOTHETISCHE Aufgabe / ein offenes Szenario sein, das der User klar mit „klingt gut" oder „eher nicht" (= ja/nein) beantworten kann. KEINE Erzählungen, in denen der User die Handlung schon AUSFÜHRT — solche Sätze setzen die Antwort voraus und sind nicht swipebar.
-    SCHLECHT: "Deine Oma ist nach einem Sturz unsicher. Du bleibst den ganzen Nachmittag bei ihr, redest mit ihr und hilfst beim Aufstehen." (Mehrteilige Erzählung im Präsens — der User TUT es bereits, kann es nicht ablehnen ohne sich schlecht zu fühlen.)
-    SCHLECHT: "Du tröstest deinen weinenden Bruder." (gleiche Falle, vollendete Handlung.)
-    GUT: "Du sollst den ganzen Nachmittag eine Verwandte nach einem Sturz begleiten und mehrfach beim Aufstehen helfen." (Aufgabe → 👍/👎 möglich.)
-    GUT: "Du sollst 8 Stunden konzentriert an einer einzigen Aufgabe sitzen."
-    GUT: "Ein Freund bittet dich um Hilfe bei einer Aufgabe, die du eigentlich nicht magst." (offene Bitte, beide Reaktionen authentisch.)
-    Faustregel: Beginne mit „Du sollst …", „Jemand bittet dich …", „Stell dir vor, du …" — nie mit „Du bleibst …", „Du hilfst …", „Du tröstest …".
-  → Text: konkret aus Schule/Freizeit/Familie ("Nach dem Unterricht sitzt du 2 Stunden am Tablet, um ein Video zu schneiden"), NIEMALS Berufsnamen.
-  → Wenn im User-Prompt konkrete Beispiel-Fragen aus Bildern stehen, übernimm sie sinngemäß (und scoren auf die in maps_to genannten Kategorien).
+
+  ── SCHEMA pro Karte ──────────────────────────────────────────────────
+  {
+    "text": "<ein Satz nach Format-Regeln unten>",
+    "optionPositive": { "label": "Klingt gut", "emoji": "👍", "scores": { "<DIMENSION>": <1-3> } },
+    "optionNeutral":  { "label": "Geht so",    "emoji": "😐", "scores": {} },
+    "optionNegative": { "label": "Eher nicht", "emoji": "👎", "scores": { "<DIMENSION>": <1-3> } }
+  }
+  → scores-Keys = exakter Dimensionsname. Nur passende Dimensionen eintragen.
+  → optionNeutral hat fast immer leeres scores-{} (gibt höchstens 0–1 Punkte als Tendenz).
+
+  ── ANZAHL & BALANCE ────────────────────────────────────────────────
+  → Genau cardCount Karten.
+  → JEDE Dimension bekommt min. 2 Karten mit VOLLTREFFER (3 Punkte) — bei reverse-coded zählt auch optionNegative=3 als Volltreffer.
+  → Gleichmäßig verteilen: 10 Karten / 4 Dim = 2–3 pro Dim. Keine Dim darf strukturell unterbesetzt sein.
+
+  ── FORMAT pro Kartentext (PFLICHT — alle Punkte erfüllen) ───────────
+  1. Genau EIN Satz, 8–18 Wörter, eine einzige Aufgabe (kein „und außerdem …").
+  2. Hypothetisch — der User TUT die Handlung NICHT bereits. Erlaubte Satzanfänge:
+     • „Du sollst …"
+     • „Stell dir vor, du …"
+     • „Jemand bittet dich, …"
+     • „Du hast die Wahl: …"
+     VERBOTEN als Satzanfang (= vollendete Handlung): „Du bleibst …", „Du hilfst …", „Du tröstest …", „Du machst …", „Du gehst …".
+  3. Konkret + sinnlich: Werkzeuge, Mengen, Zeitanker, sichtbare Details. KEIN abstraktes „Du sollst kreativ sein", sondern „Du sollst aus drei Holzresten ohne Anleitung etwas Brauchbares bauen."
+  4. Setting: Alltag (Schule, Freizeit, Familie, Freundeskreis, WG, Hobby, Praktikum, Nebenjob). NIEMALS Berufsname im Text.
+  5. Echter Trade-off: 👎 muss für eine andere VALIDE Stärke stehen (Ruhe, Konzentration, Selbstständigkeit, Detailliebe …) — nicht für moralisches Versagen.
+  6. Tonalität neutral-einladend, kein Imperativ-Druck („Du musst …", „Hilf jetzt …" sind tabu).
+
+  GUT-BEISPIELE (alle Format-Punkte erfüllt):
+  • „Du sollst eine Stunde alleine an einer Tabelle sitzen und Zahlen auf Tippfehler prüfen."
+  • „Stell dir vor, du erklärst 5 fremden Leuten, wie ein Geländewagen funktioniert."
+  • „Jemand bittet dich, ein kaputtes Möbelstück ohne Anleitung wieder zusammenzubauen."
+  • „Du sollst 3 Stunden draußen bei Regen Setzlinge ins Beet pflanzen."
+  • „Du sollst den ganzen Nachmittag eine Verwandte nach einem Sturz begleiten und mehrfach beim Aufstehen helfen."
+
+  SCHLECHT-BEISPIELE (NICHT generieren):
+  ❌ „Du bleibst den Nachmittag bei deiner Oma und hilfst beim Aufstehen." → vollendete Handlung im Präsens, 👎 wirkt wie Verweigerung.
+  ❌ „Du tröstest deinen weinenden Bruder." → gleiche Falle.
+  ❌ „Wie gerne hilfst du anderen?" → Frage statt Situation, primed sozial erwünscht.
+  ❌ „Du arbeitest als KFZ-Mechaniker an einer Bremse." → Berufsname → User antwortet nach Identität, nicht nach Vorliebe.
+  ❌ „Deine Oma bittet dich um Hilfe." → jeder sagt 👍, kein Trade-off.
+  ❌ „Du sollst rechnen, telefonieren UND eine Mail schreiben — alles parallel." → Mehrfach-Aufgabe.
+
+  ── REVERSE-CODED (Pflicht: 1–2 von cardCount) ────────────────────────
+  Beide Extreme geben Volltreffer-Punkte auf UNTERSCHIEDLICHE Dimensionen. Verhindert das „alles 👍 wischen"-Problem.
+  Beispiel: „Du sollst 8 Stunden konzentriert an einer einzigen Aufgabe sitzen."
+    → 👍 +3 Analytik/Ausdauer, 👎 +3 Abwechslung/Aktion.
+  Beispiel: „Am Samstag sollst du einer Freundin 6 Stunden bei einem Projekt helfen — keine Pause."
+    → 👍 +3 Soziales, 👎 +2 Unabhängigkeit.
+
+  ── SELF-CHECK pro Karte (alle ✓ vor dem Speichern) ────────────────────
+  ✓ Ein Satz, 8–18 Wörter, eine Aufgabe?
+  ✓ Hypothetisch (User tut es nicht bereits)?
+  ✓ Konkrete Tätigkeit, sinnlich anfassbar?
+  ✓ Setting Alltag, kein Berufsname?
+  ✓ 👎 ohne moralisches Schlechtgefühl möglich?
+  ✓ Mind. 30 % der User würden zögern oder klar 👎 wählen? (sonst Karte zu offensichtlich → Social-Desirability-Bias)
+
+  ── Bilder-Übernahme ──────────────────────────────────────────────────
+  Wenn im User-Prompt konkrete Beispiel-Fragen aus Bildern stehen, übernimm sie SINNGEMÄSS — formuliere sie ggf. um, damit sie obiges Format (hypothetisch, ein Satz, kein Berufsname) erfüllen. Scoring auf die in "maps_to" genannten Dimensionen.
 
 OPTIONAL: 1–2 Seiten check_this_or_that (Visual A/B — NUR bei klar visueller Dichotomie):
   Props: {
@@ -560,10 +599,41 @@ export async function POST(req: NextRequest) {
     predefinedBlock = lines.join('\n');
   }
 
+  // Ausbildungsberufe aus dem Firmenprofil — werden IMMER mitgeliefert,
+  // damit die KI sie als suggestions im check_ergebnis übernimmt. Pendant
+  // zum Pattern in generate-quest und import-heyflow-check.
+  const companyJobs = session.company.successPage?.jobs ?? [];
+  let companyJobsBlock = '';
+  if (companyJobs.length > 0) {
+    const grouped = new Map<string, string[]>();
+    for (const j of companyJobs) {
+      if (!j.title) continue;
+      const key = j.group?.trim() || '__ungrouped__';
+      const arr = grouped.get(key) ?? [];
+      arr.push(j.title);
+      grouped.set(key, arr);
+    }
+    const lines: string[] = [
+      '=== AUSBILDUNGSBERUFE DES UNTERNEHMENS — PFLICHT für check_ergebnis.suggestions ===',
+      'ALLE genannten Berufe MÜSSEN als groups[].suggestions[] im check_ergebnis-Block auftauchen,',
+      'mit "title" EXAKT wie unten geschrieben (inklusive (m/w/d) und Klammern).',
+      'Erfinde KEINE eigenen Berufe für die Suggestions — nutze NUR diese Liste.',
+      'Bei der Group-Zuordnung: Wenn ein Beruf einer Gruppe zugeordnet ist, übernimm den Gruppennamen 1:1 als Dimension UND als requiresDimensionIds des Suggestion. Berufe ohne Gruppe ordnest du der inhaltlich passendsten Dimension zu.',
+      '',
+    ];
+    for (const [g, jobs] of grouped) {
+      const label = g === '__ungrouped__' ? '(ohne Gruppe — bitte zuordnen)' : g;
+      lines.push(`• ${label}:`);
+      for (const j of jobs) lines.push(`    – ${j}`);
+    }
+    companyJobsBlock = lines.join('\n');
+  }
+
   const userMessageText = [
     ctx.join('\n'),
     '',
     predefinedBlock ? `\n${predefinedBlock}\n` : '',
+    companyJobsBlock ? `\n${companyJobsBlock}\n` : '',
     mergedBerufe.length > 0
       ? `Erstelle einen Berufscheck für folgende Ausbildungsberufe:\n${mergedBerufe.map((b) => `- ${b}`).join('\n')}`
       : 'Erstelle einen Berufscheck. Die Liste der Berufe (und ggf. Studiengänge) entnimm bitte den mitgeschickten Bildern.',
@@ -840,12 +910,89 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Safety-Net: Sicherstellen, dass JEDER Beruf aus dem Firmenprofil als
+  // Suggestion im check_ergebnis auftaucht. Wenn die KI welche ausgelassen
+  // oder falsch benannt hat, ergänzen wir sie hier serverseitig.
+  ensureCompanyJobsInResults(splitPages, companyJobs);
+
   // Auto-Titel aus der check_intro-Headline ableiten — der erste Block der
   // ersten Seite enthält i.d.R. die headline mit <accent>-Tags. Wir strippen
   // die Tags und nehmen den Rohtext als sprechenden Titel für Dashboard/Slug.
   const title = extractCheckTitle(splitPages);
 
   return NextResponse.json({ pages: splitPages, dimensions, title });
+}
+
+interface ResultGroup {
+  id?: string;
+  label?: string;
+  dimensionIds?: string[];
+  suggestions?: Array<{ id?: string; title?: string; description?: string; imageUrl?: string; requiresDimensionIds?: string[]; links?: Array<{ label?: string; url?: string }> }>;
+  [key: string]: unknown;
+}
+
+function ensureCompanyJobsInResults(
+  pages: { nodes: { kind: string; type?: string; props?: Record<string, unknown> }[] }[],
+  companyJobs: Array<{ id?: string; title: string; url?: string; group?: string }>,
+) {
+  if (companyJobs.length === 0) return;
+
+  // Finde den check_ergebnis-Block.
+  let ergebnisProps: Record<string, unknown> | undefined;
+  for (const page of pages) {
+    for (const node of page.nodes) {
+      if (node.kind === 'block' && node.type === 'check_ergebnis') {
+        ergebnisProps = node.props;
+        break;
+      }
+    }
+    if (ergebnisProps) break;
+  }
+  if (!ergebnisProps) return;
+
+  const groups = (ergebnisProps.groups as ResultGroup[] | undefined) ?? [];
+  if (groups.length === 0) return;
+
+  // Welche Suggestion-Titel existieren bereits (case-insensitive)?
+  const existingTitles = new Set<string>();
+  for (const g of groups) {
+    for (const s of g.suggestions ?? []) {
+      if (s?.title) existingTitles.add(s.title.toLowerCase().trim());
+    }
+  }
+
+  // Vor-aufbau: label → group, dimensionId → group (für Fallback-Suche).
+  const groupByLabel = new Map<string, ResultGroup>();
+  for (const g of groups) {
+    if (g.label) groupByLabel.set(g.label.toLowerCase().trim(), g);
+  }
+
+  for (const j of companyJobs) {
+    if (!j.title) continue;
+    const key = j.title.toLowerCase().trim();
+    if (existingTitles.has(key)) continue;
+
+    // Ziel-Gruppe finden: zuerst per Label-Match, sonst erste Gruppe als Fallback.
+    let target: ResultGroup | undefined;
+    if (j.group) {
+      target = groupByLabel.get(j.group.toLowerCase().trim());
+    }
+    if (!target) target = groups[0];
+    if (!target) continue;
+
+    // Suggestion anhängen mit leerem requiresDimensionIds → wird in der
+    // Group-Render-Filterung immer durchgereicht (top-N egal).
+    if (!Array.isArray(target.suggestions)) target.suggestions = [];
+    target.suggestions.push({
+      id: crypto.randomUUID(),
+      title: j.title,
+      description: '',
+      imageUrl: '',
+      requiresDimensionIds: [],
+      links: j.url ? [{ label: 'Mehr erfahren', url: j.url }] : [],
+    });
+    existingTitles.add(key);
+  }
 }
 
 function extractCheckTitle(pages: { nodes: { kind: string; type?: string; props?: Record<string, unknown> }[] }[]): string | undefined {
