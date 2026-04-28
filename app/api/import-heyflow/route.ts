@@ -67,6 +67,13 @@ WICHTIG – KONVERTIERUNGSREGELN:
   • Erklärt eine Feedback-Seite etwas, das dem Nutzer schon klar ist? → KÜRZEN oder STREICHEN.
   • Macht der Spielweg in Worten Sinn ("Erst sehe ich Paul → dann entscheide ich → dann erfahre ich, ob es richtig war")? Wenn nein, neu sortieren.
 
+(L4) NARRATOR DARF KEINE USER-AKTIONEN VORWEGNEHMEN.
+  Center-Lines (position:"center") und alle Erzähler-Texte beschreiben NUR Szene und neutrale Übergänge — sie schreiben dem User NIE eine Handlung, Haltung oder Reaktion vor.
+  FALSCH (so NICHT): "Du setzt dich ruhig neben Paul und fragst ihn, wie sein Tag war." → das ist eine Wahl, die der User treffen muss, kein Erzähler-Setup.
+  FALSCH: "Du reagierst freundlich auf die Anweisung." / "Du hörst geduldig zu." / "Du hilfst sofort."
+  RICHTIG: "Paul sitzt nachdenklich auf der Couch." / "Im Aufenthaltsraum ist es ruhig." / "Eine Stunde später, im Wohnzimmer."
+  WENN auf eine Szene ein Lob-/Feedback-Dialog folgt ("Super!", "Gut gemacht, @vorname!", "Klasse Wahl"), MUSS dazwischen eine quest_decision stehen, in der der User die Aktion selbst gewählt hat. Niemals: Narrator "Du machst X" → Feedback "Super, X war richtig". IMMER: Setup (neutral) → quest_decision (Wahl) → quest_dialog (Feedback bezogen auf die Wahl).
+
 ═══════════════════════════════════════════════════════
   STRUKTUR (FESTER EINSTIEG + KONVERTIERTER INHALT + FESTER ABSCHLUSS)
 ═══════════════════════════════════════════════════════
