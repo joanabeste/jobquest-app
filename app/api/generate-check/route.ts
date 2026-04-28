@@ -817,22 +817,31 @@ export async function POST(req: NextRequest) {
         }
 
         if (block.type === 'check_ergebnis' && Array.isArray(props.groups)) {
-          props.groups = (props.groups as Array<Record<string, unknown>>).map((g) => ({
-            ...g,
-            id: crypto.randomUUID(),
-            dimensionIds: resolveDimList(g.dimensionIds),
-            visibleIf: resolveVisibleIf(g.visibleIf as { sourceBlockIndex?: number; optionIndex?: number[] }),
-            suggestions: Array.isArray(g.suggestions)
-              ? (g.suggestions as Array<Record<string, unknown>>).map((sug) => ({
-                ...sug,
-                id: crypto.randomUUID(),
-                requiresDimensionIds: resolveDimList(sug.requiresDimensionIds),
-                links: Array.isArray(sug.links)
-                  ? (sug.links as Array<Record<string, unknown>>).map((l) => ({ ...l, id: crypto.randomUUID() }))
-                  : [],
-              }))
-              : [],
-          }));
+          props.groups = (props.groups as Array<Record<string, unknown>>).map((g) => {
+            const groupDimIds = resolveDimList(g.dimensionIds);
+            // Clamp suggestion.requiresDimensionIds auf die Gruppen-eigenen
+            // Dims. Sonst filtert ErgebnisBlock alle Suggestions raus, sobald
+            // die KI fremde Dims aus anderen Gruppen referenziert (im neuen
+            // 1-Gruppe-1-Dim-Modell ist top eine Single-Dim-Menge, every()
+            // schlägt dann fehl).
+            const groupDimSet = new Set(groupDimIds);
+            return {
+              ...g,
+              id: crypto.randomUUID(),
+              dimensionIds: groupDimIds,
+              visibleIf: resolveVisibleIf(g.visibleIf as { sourceBlockIndex?: number; optionIndex?: number[] }),
+              suggestions: Array.isArray(g.suggestions)
+                ? (g.suggestions as Array<Record<string, unknown>>).map((sug) => ({
+                  ...sug,
+                  id: crypto.randomUUID(),
+                  requiresDimensionIds: resolveDimList(sug.requiresDimensionIds).filter((d) => groupDimSet.has(d)),
+                  links: Array.isArray(sug.links)
+                    ? (sug.links as Array<Record<string, unknown>>).map((l) => ({ ...l, id: crypto.randomUUID() }))
+                    : [],
+                }))
+                : [],
+            };
+          });
         }
 
         // check_lead: inject default fields + optional checkbox_group
@@ -953,12 +962,17 @@ function ensureCompanyJobsInResults(
   const groups = (ergebnisProps.groups as ResultGroup[] | undefined) ?? [];
   if (groups.length === 0) return;
 
-  // Welche Suggestion-Titel existieren bereits (case-insensitive)?
-  const existingTitles = new Set<string>();
+  // Per-Gruppen-Dedup: ein Title darf parallel in mehreren Gruppen stehen,
+  // soll aber innerhalb einer Gruppe nur einmal vorkommen. Globale Dedup
+  // hat verhindert, dass ein in der falschen Gruppe einsortierter Job
+  // zusätzlich in seiner Ziel-Gruppe landet.
+  const titlesByGroup = new Map<ResultGroup, Set<string>>();
   for (const g of groups) {
+    const set = new Set<string>();
     for (const s of g.suggestions ?? []) {
-      if (s?.title) existingTitles.add(s.title.toLowerCase().trim());
+      if (s?.title) set.add(s.title.toLowerCase().trim());
     }
+    titlesByGroup.set(g, set);
   }
 
   // Vor-aufbau: label → group, dimensionId → group (für Fallback-Suche).
@@ -970,7 +984,6 @@ function ensureCompanyJobsInResults(
   for (const j of companyJobs) {
     if (!j.title) continue;
     const key = j.title.toLowerCase().trim();
-    if (existingTitles.has(key)) continue;
 
     // Ziel-Gruppe finden: zuerst per Label-Match, sonst erste Gruppe als Fallback.
     let target: ResultGroup | undefined;
@@ -979,6 +992,9 @@ function ensureCompanyJobsInResults(
     }
     if (!target) target = groups[0];
     if (!target) continue;
+
+    const targetTitles = titlesByGroup.get(target)!;
+    if (targetTitles.has(key)) continue;
 
     // Suggestion anhängen mit leerem requiresDimensionIds → wird in der
     // Group-Render-Filterung immer durchgereicht (top-N egal).
@@ -991,7 +1007,7 @@ function ensureCompanyJobsInResults(
       requiresDimensionIds: [],
       links: j.url ? [{ label: 'Mehr erfahren', url: j.url }] : [],
     });
-    existingTitles.add(key);
+    targetTitles.add(key);
   }
 }
 
