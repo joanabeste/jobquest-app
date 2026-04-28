@@ -58,7 +58,7 @@ export function useCorporateDesign(company: Company) {
     `.fp-card{border-radius:${br}}`,
     `.fp-opt{border-radius:${br};border:2px solid #e2e8f0;transition:border-color 0.15s,background 0.15s}`,
     `.fp-opt:hover:not(:disabled){border-color:${primary};background:${primary}0d;cursor:pointer}`,
-    `.fp-heading{color:${design.headingColor ?? '#0f172a'};font-family:${headingFont};font-size:${hSize}px;font-weight:${hWeight};text-transform:${hTransform};letter-spacing:${hLetter}em;hyphens:auto;-webkit-hyphens:auto;overflow-wrap:break-word;hyphenate-limit-chars:14 5 5;-webkit-hyphenate-limit-chars:14 5 5;-webkit-hyphenate-limit-before:5;-webkit-hyphenate-limit-after:5}`,
+    `.fp-heading{color:${design.headingColor ?? '#0f172a'};font-family:${headingFont};font-size:${hSize}px;font-weight:${hWeight};text-transform:${hTransform};letter-spacing:${hLetter}em;hyphens:auto;-webkit-hyphens:auto;overflow-wrap:break-word;hyphenate-limit-chars:16 7 5;-webkit-hyphenate-limit-chars:16 7 5;-webkit-hyphenate-limit-before:7;-webkit-hyphenate-limit-after:5}`,
     `.fp-accent{color:${accent}}`,
     `.fp-check{accent-color:${primary}}`,
     `input:focus,textarea:focus,select:focus{border-color:${primary}!important;outline:none}`,

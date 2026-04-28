@@ -71,16 +71,21 @@ export default function GenerateQuestModal({ onGenerate, onClose, showHeyflowImp
     setLoadingStep(0);
     setLoadingProgress(0);
 
+    // Steps cyclen statt einfrieren — bleibt aber in der späteren Hälfte
+    // (ab Index 5: „Letzte Feinheiten…" / „Letzter Feinschliff…"), damit es
+    // nicht wirkt, als würde die Story von vorn generiert.
     const stepInterval = setInterval(() => {
-      setLoadingStep((s) => Math.min(s + 1, LOADING_STEPS.length - 1));
+      setLoadingStep((s) => s >= LOADING_STEPS.length - 1 ? 5 : s + 1);
     }, 7000);
 
     const progressInterval = setInterval(() => {
       setLoadingProgress((p) => {
-        // Slow down as it approaches 90% – actual completion sets it to 100
-        if (p >= 90) return p;
-        const increment = p < 40 ? 4 : p < 70 ? 2 : 0.8;
-        return Math.min(p + increment, 90);
+        if (p < 40) return Math.min(p + 4, 90);
+        if (p < 70) return Math.min(p + 2, 90);
+        if (p < 90) return Math.min(p + 0.8, 90);
+        // Asymptotischer Crawl Richtung 99 — User sieht immer Bewegung,
+        // 100 % bleibt dem echten API-Response vorbehalten.
+        return Math.min(p + (99 - p) * 0.02, 99);
       });
     }, 300);
 
@@ -243,6 +248,12 @@ export default function GenerateQuestModal({ onGenerate, onClose, showHeyflowImp
                   style={{ background: i <= loadingStep ? '#7c3aed' : '#e2e8f0' }}
                 />
               ))}
+            </div>
+
+            {/* Geduld-Hinweis */}
+            <div className="text-[11px] text-slate-500 text-center bg-slate-50 rounded-lg px-3 py-2 leading-relaxed">
+              Das kann ein paar Minuten dauern. Bitte schließe dieses Fenster nicht
+              — sonst geht die Generierung verloren.
             </div>
           </div>
         ) : (

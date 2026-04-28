@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { ChevronRight } from 'lucide-react';
 import { applyVars } from '@/lib/funnel-variables';
 import { LeadFieldDef } from '@/lib/funnel-types';
 import { Company } from '@/lib/types';
@@ -201,24 +202,25 @@ export default function LeadFormBlock({ props: p, company, br, primary, leadForm
         const sections = hasGroups
           ? [...groups.map((g) => ({ group: g, items: jobs.filter((j) => j.group === g) })), ...(() => { const ug = jobs.filter((j) => !j.group); return ug.length > 0 ? [{ group: '', items: ug }] : []; })()]
           : [{ group: '', items: jobs }];
+        const renderJob = (job: typeof jobs[0]) => job.url ? (
+          <a key={job.id} href={job.url} target="_blank" rel="noopener noreferrer"
+            className="flex items-center justify-between bg-white border border-slate-200 px-4 py-3 text-sm font-medium text-slate-800 hover:border-slate-300 hover:bg-slate-50 transition-colors group"
+            style={{ borderRadius: br }}>
+            {job.title}
+            <ChevronRight size={15} className="text-slate-400 group-hover:text-slate-600" />
+          </a>
+        ) : (
+          <div key={job.id} className="bg-white border border-slate-200 px-4 py-3 text-sm font-medium text-slate-800" style={{ borderRadius: br }}>
+            {job.title}
+          </div>
+        );
         return (
           <div className="mt-6 pt-5 border-t border-slate-100">
-            <p className="text-sm font-semibold text-slate-700 mb-3">{company.successPage.jobsHeadline || 'Unsere Ausbildungsberufe'}</p>
+            <h3 className="text-sm font-semibold text-slate-700 mb-3">{company.successPage.jobsHeadline || 'Unsere Ausbildungsberufe'}</h3>
             {sections.map(({ group, items }) => (
-              <div key={group || '__ungrouped'} className="mb-3 last:mb-0">
-                {group && <p className="text-xs font-semibold uppercase tracking-wide mb-1.5" style={{ color: primary }}>{group}</p>}
-                <div className="flex flex-col gap-1">
-                  {items.map((job) => (
-                    <div key={job.id} className="flex items-center gap-2 text-xs text-slate-600">
-                      <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: primary }} />
-                      {job.url ? (
-                        <a href={job.url} target="_blank" rel="noopener noreferrer" className="hover:underline">{job.title}</a>
-                      ) : (
-                        <span>{job.title}</span>
-                      )}
-                    </div>
-                  ))}
-                </div>
+              <div key={group || '__ungrouped'} className="mb-4 last:mb-0">
+                {group && <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: primary }}>{group}</p>}
+                <div className="flex flex-col gap-1.5">{items.map(renderJob)}</div>
               </div>
             ))}
           </div>
