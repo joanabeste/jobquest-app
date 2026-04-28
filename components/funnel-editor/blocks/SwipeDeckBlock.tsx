@@ -246,21 +246,21 @@ export default function SwipeDeckBlock({ nodeId, props, answers, onAnswer, onNex
       <div className="flex items-center justify-center gap-3">
         <button
           onClick={() => commit('neg')}
-          aria-label={card.optionNegative?.label || 'Eher nicht'}
+          aria-label={card.optionNegative?.label || 'Nein'}
           className="w-12 h-12 rounded-full border-2 border-rose-200 text-rose-500 hover:bg-rose-50 active:scale-95 flex items-center justify-center transition-all"
         >
           <ThumbsDown size={18} />
         </button>
         <button
           onClick={() => commit('neu')}
-          aria-label={card.optionNeutral?.label || 'Geht so'}
+          aria-label={card.optionNeutral?.label || 'Vielleicht'}
           className="w-11 h-11 rounded-full border-2 border-slate-200 text-slate-500 hover:bg-slate-50 active:scale-95 flex items-center justify-center transition-all"
         >
           <Meh size={16} />
         </button>
         <button
           onClick={() => commit('pos')}
-          aria-label={card.optionPositive?.label || 'Klingt gut'}
+          aria-label={card.optionPositive?.label || 'Ja'}
           className="w-12 h-12 rounded-full border-2 border-emerald-200 text-emerald-500 hover:bg-emerald-50 active:scale-95 flex items-center justify-center transition-all"
         >
           <ThumbsUp size={18} />

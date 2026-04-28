@@ -201,16 +201,16 @@ export function getDefaultProps(type: FunnelBlockType): Record<string, unknown> 
     case 'check_frage':         return { frageType: 'single_choice', question: 'Frage?', options: [{ id: uid(), text: 'Option A', scores: {} }], allowSkip: false };
     case 'check_ergebnisfrage': return { question: 'Ergebnisfrage?', options: [{ id: uid(), text: 'Option A', scores: {} }] };
     case 'check_swipe_deck':    return {
-      question: 'Wie gefällt dir das?',
+      question: 'Wisch dich durch die Fragen',
       allowSkip: true,
       cards: [
         {
           id: uid(),
-          text: 'Du sollst eine Maschine reparieren.',
+          text: 'Würdest du eine Maschine reparieren?',
           imageUrl: '',
-          optionPositive: { label: 'Klingt gut', emoji: '👍', scores: {} },
-          optionNeutral:  { label: 'Geht so',    emoji: '😐', scores: {} },
-          optionNegative: { label: 'Eher nicht', emoji: '👎', scores: {} },
+          optionPositive: { label: 'Ja',         emoji: '👍', scores: {} },
+          optionNeutral:  { label: 'Vielleicht', emoji: '😐', scores: {} },
+          optionNegative: { label: 'Nein',       emoji: '👎', scores: {} },
         },
       ],
     };
@@ -255,7 +255,7 @@ export const DEFAULT_BLOCK_PROPS: Record<FunnelBlockType, Record<string, unknown
   check_ergebnisfrage: { question: 'Ergebnisfrage?', options: [] },
   check_selbst:        { question: 'Wie schätzt du dich ein?', sliderMin: 0, sliderMax: 10, sliderStep: 1, sliderLabelMin: 'Gar nicht', sliderLabelMax: 'Sehr' },
   check_statements:    { question: 'Was trifft auf dich zu?', statements: [] },
-  check_swipe_deck:    { question: 'Swipe dich durch die Szenarien', allowSkip: true, cards: [] },
+  check_swipe_deck:    { question: 'Wisch dich durch die Fragen', allowSkip: true, cards: [] },
   check_this_or_that:  { question: 'Was ist eher dein Vibe?', allowSkip: false, optionA: { id: 'A', imageUrl: '', label: 'Option A', scores: {} }, optionB: { id: 'B', imageUrl: '', label: 'Option B', scores: {} } },
   check_lead:          { headline: 'Interessiert?', subtext: 'Hinterlasse deine Kontaktdaten – wir melden uns bei dir.', buttonText: 'Jetzt bewerben', privacyText: 'Ich stimme zu, dass @companyName meine Daten speichert und mich kontaktiert.', thankYouHeadline: 'Vielen Dank!', thankYouText: 'Wir melden uns bei dir.', thankYouButtonText: '', thankYouButtonUrl: '', fields: [] },
   check_ergebnis:      { headline: 'Dein Ergebnis, @firstName!', subtext: 'Basierend auf deinen Antworten.', layout: 'simple', showDimensionBars: true, groups: [] },

@@ -3,6 +3,10 @@ import { z } from 'zod';
 import { getSession, unauthorized } from '@/lib/api-auth';
 import { defaultLeadFields } from '@/lib/lead-field-defaults';
 import { aiChat, isAiConfigured, AiError } from '@/lib/ai-provider';
+import { createAdminClient } from '@/lib/supabase/admin';
+
+// Max Mediathek-Bilder, die multimodal ans LLM gehen (Token-Cap).
+const MAX_MEDIA_LIBRARY_IMAGES = 30;
 
 // ─── Input schema ─────────────────────────────────────────────────────────────
 const GenerateCheckSchema = z.object({
@@ -61,7 +65,7 @@ DIESE REGELN SIND WICHTIGER ALS ALLES, WAS DANACH KOMMT:
 
 (R3) REVERSE-CODED ITEMS
   • Mindestens 1–2 Swipe-Karten pro Check müssen REVERSE-CODED sein: "optionPositive zu wählen" soll Dimension X stärken, "optionNegative zu wählen" soll Dimension Y stärken — beides gültige Charakter-Signale.
-  • Beispiel: "Du sollst 8 Stunden konzentriert an einer einzigen Aufgabe sitzen." → "Klingt gut" +3 Analytik/Ausdauer; "Eher nicht" +2 Abwechslung/Aktion.
+  • Beispiel: "Würdest du 8 Stunden konzentriert an einer einzigen Aufgabe sitzen?" → JA +3 Analytik/Ausdauer; NEIN +2 Abwechslung/Aktion.
   • Das verhindert, dass User durch stumpfes "alles positiv wischen" den Check aushebeln.
 
 (R4) KONKRETE ALLTAGSSZENARIEN
@@ -158,7 +162,7 @@ Seite 1 — NUR wenn studiengaenge nicht-leer ist:
 Seite 2 (oder 1 wenn keine Studiengänge):
   check_swipe_deck
   Props: {
-    "question": "Wisch dich durch die Szenarien",
+    "question": "Wisch dich durch die Fragen",
     "allowSkip": true,
     "cards": [ ... ]
   }
@@ -166,9 +170,9 @@ Seite 2 (oder 1 wenn keine Studiengänge):
   ── SCHEMA pro Karte ──────────────────────────────────────────────────
   {
     "text": "<ein Satz nach Format-Regeln unten>",
-    "optionPositive": { "label": "Klingt gut", "emoji": "👍", "scores": { "<DIMENSION>": <1-3> } },
-    "optionNeutral":  { "label": "Geht so",    "emoji": "😐", "scores": {} },
-    "optionNegative": { "label": "Eher nicht", "emoji": "👎", "scores": { "<DIMENSION>": <1-3> } }
+    "optionPositive": { "label": "Ja",         "emoji": "👍", "scores": { "<DIMENSION>": <1-3> } },
+    "optionNeutral":  { "label": "Vielleicht", "emoji": "😐", "scores": {} },
+    "optionNegative": { "label": "Nein",       "emoji": "👎", "scores": { "<DIMENSION>": <1-3> } }
   }
   → scores-Keys = exakter Dimensionsname. Nur passende Dimensionen eintragen.
   → optionNeutral hat fast immer leeres scores-{} (gibt höchstens 0–1 Punkte als Tendenz).
@@ -179,50 +183,54 @@ Seite 2 (oder 1 wenn keine Studiengänge):
   → Gleichmäßig verteilen: 10 Karten / 4 Dim = 2–3 pro Dim. Keine Dim darf strukturell unterbesetzt sein.
 
   ── FORMAT pro Kartentext (PFLICHT — alle Punkte erfüllen) ───────────
-  1. Genau EIN Satz, 8–18 Wörter, eine einzige Aufgabe (kein „und außerdem …").
-  2. Hypothetisch — der User TUT die Handlung NICHT bereits. Erlaubte Satzanfänge:
-     • „Du sollst …"
-     • „Stell dir vor, du …"
-     • „Jemand bittet dich, …"
-     • „Du hast die Wahl: …"
-     VERBOTEN als Satzanfang (= vollendete Handlung): „Du bleibst …", „Du hilfst …", „Du tröstest …", „Du machst …", „Du gehst …".
-  3. Konkret + sinnlich: Werkzeuge, Mengen, Zeitanker, sichtbare Details. KEIN abstraktes „Du sollst kreativ sein", sondern „Du sollst aus drei Holzresten ohne Anleitung etwas Brauchbares bauen."
+  1. Genau EIN Satz, 8–18 Wörter, eine einzige Aufgabe (kein „und außerdem …"), endet IMMER mit „?".
+  2. Eine **Ja/Nein-Entscheidungsfrage** — der User muss sie eindeutig mit JA oder NEIN beantworten können (👍 = Ja, 👎 = Nein). Erlaubte Satzanfänge (WHITELIST — nichts anderes):
+     • „Würdest du …?"
+     • „Hättest du Lust, …?"
+     • „Wärst du bereit, …?"
+     • „Klingt das nach dir: …?"
+     • „Hast du Bock, …?"
+     VERBOTEN: Aussage-Sätze ohne „?" („Du sollst …", „Du machst …", „Du bleibst …"), Skala-Fragen („Wie gerne …?", „Wie sehr …?"), Mehrfach-Wahl-Fragen („Was lieber: A oder B?"), abstrakte Charakter-Fragen („Magst du Menschen?", „Bist du kreativ?").
+  3. Konkret + sinnlich: Werkzeuge, Mengen, Zeitanker, sichtbare Details. KEIN abstraktes „Würdest du gerne kreativ sein?", sondern „Würdest du aus drei Holzresten ohne Anleitung etwas Brauchbares bauen?"
   4. Setting: Alltag (Schule, Freizeit, Familie, Freundeskreis, WG, Hobby, Praktikum, Nebenjob). NIEMALS Berufsname im Text.
-  5. Echter Trade-off: 👎 muss für eine andere VALIDE Stärke stehen (Ruhe, Konzentration, Selbstständigkeit, Detailliebe …) — nicht für moralisches Versagen.
-  6. Tonalität neutral-einladend, kein Imperativ-Druck („Du musst …", „Hilf jetzt …" sind tabu).
+  5. Echter Trade-off: NEIN muss für eine andere VALIDE Stärke stehen (Ruhe, Konzentration, Selbstständigkeit, Detailliebe …) — nicht für moralisches Versagen.
+  6. Tonalität neutral-einladend, kein Imperativ-Druck und kein Social-Desirability-Köder („Würdest du gerne anderen helfen?" ist tabu — fast jeder sagt Ja).
 
   GUT-BEISPIELE (alle Format-Punkte erfüllt):
-  • „Du sollst eine Stunde alleine an einer Tabelle sitzen und Zahlen auf Tippfehler prüfen."
-  • „Stell dir vor, du erklärst 5 fremden Leuten, wie ein Geländewagen funktioniert."
-  • „Jemand bittet dich, ein kaputtes Möbelstück ohne Anleitung wieder zusammenzubauen."
-  • „Du sollst 3 Stunden draußen bei Regen Setzlinge ins Beet pflanzen."
-  • „Du sollst den ganzen Nachmittag eine Verwandte nach einem Sturz begleiten und mehrfach beim Aufstehen helfen."
+  • „Würdest du eine Stunde alleine an einer Tabelle sitzen und Zahlen auf Tippfehler prüfen?"
+  • „Hättest du Lust, 5 fremden Leuten zu erklären, wie ein Geländewagen funktioniert?"
+  • „Wärst du bereit, ein kaputtes Möbelstück ohne Anleitung wieder zusammenzubauen?"
+  • „Würdest du 3 Stunden draußen bei Regen Setzlinge ins Beet pflanzen?"
+  • „Würdest du den ganzen Nachmittag eine Verwandte nach einem Sturz begleiten und mehrfach beim Aufstehen helfen?"
 
   SCHLECHT-BEISPIELE (NICHT generieren):
-  ❌ „Du bleibst den Nachmittag bei deiner Oma und hilfst beim Aufstehen." → vollendete Handlung im Präsens, 👎 wirkt wie Verweigerung.
-  ❌ „Du tröstest deinen weinenden Bruder." → gleiche Falle.
-  ❌ „Wie gerne hilfst du anderen?" → Frage statt Situation, primed sozial erwünscht.
-  ❌ „Du arbeitest als KFZ-Mechaniker an einer Bremse." → Berufsname → User antwortet nach Identität, nicht nach Vorliebe.
-  ❌ „Deine Oma bittet dich um Hilfe." → jeder sagt 👍, kein Trade-off.
-  ❌ „Du sollst rechnen, telefonieren UND eine Mail schreiben — alles parallel." → Mehrfach-Aufgabe.
+  ❌ „Du bleibst den Nachmittag bei deiner Oma und hilfst beim Aufstehen." → Aussage statt Frage, kein „?", nicht Ja/Nein-beantwortbar.
+  ❌ „Du tröstest deinen weinenden Bruder." → gleiche Falle (Aussage).
+  ❌ „Wie gerne hilfst du anderen?" → Skala-Frage, kein klares Ja/Nein.
+  ❌ „Magst du Menschen?" → zu abstrakt, fast 100 % sagen Ja (Social-Desirability).
+  ❌ „Würdest du als KFZ-Mechaniker an einer Bremse arbeiten?" → Berufsname → User antwortet nach Identität, nicht nach Vorliebe.
+  ❌ „Würdest du deiner Oma helfen, wenn sie dich bittet?" → jeder sagt Ja, kein Trade-off.
+  ❌ „Würdest du rechnen, telefonieren UND eine Mail schreiben — alles parallel?" → Mehrfach-Aufgabe.
+  ❌ „Was lieber: alleine arbeiten oder im Team?" → Mehrfach-Wahl statt Ja/Nein.
 
   ── REVERSE-CODED (Pflicht: 1–2 von cardCount) ────────────────────────
   Beide Extreme geben Volltreffer-Punkte auf UNTERSCHIEDLICHE Dimensionen. Verhindert das „alles 👍 wischen"-Problem.
-  Beispiel: „Du sollst 8 Stunden konzentriert an einer einzigen Aufgabe sitzen."
-    → 👍 +3 Analytik/Ausdauer, 👎 +3 Abwechslung/Aktion.
-  Beispiel: „Am Samstag sollst du einer Freundin 6 Stunden bei einem Projekt helfen — keine Pause."
-    → 👍 +3 Soziales, 👎 +2 Unabhängigkeit.
+  Beispiel: „Würdest du 8 Stunden konzentriert an einer einzigen Aufgabe sitzen?"
+    → JA +3 Analytik/Ausdauer, NEIN +3 Abwechslung/Aktion.
+  Beispiel: „Würdest du am Samstag einer Freundin 6 Stunden bei einem Projekt helfen — ohne Pause?"
+    → JA +3 Soziales, NEIN +2 Unabhängigkeit.
 
   ── SELF-CHECK pro Karte (alle ✓ vor dem Speichern) ────────────────────
   ✓ Ein Satz, 8–18 Wörter, eine Aufgabe?
-  ✓ Hypothetisch (User tut es nicht bereits)?
+  ✓ Endet mit „?" und ist klar mit Ja oder Nein beantwortbar (keine Skala, keine Auswahl)?
+  ✓ Beginnt mit einem der Whitelist-Satzanfänge (Würdest du / Hättest du Lust / Wärst du bereit / Klingt das nach dir / Hast du Bock)?
   ✓ Konkrete Tätigkeit, sinnlich anfassbar?
   ✓ Setting Alltag, kein Berufsname?
-  ✓ 👎 ohne moralisches Schlechtgefühl möglich?
-  ✓ Mind. 30 % der User würden zögern oder klar 👎 wählen? (sonst Karte zu offensichtlich → Social-Desirability-Bias)
+  ✓ NEIN ohne moralisches Schlechtgefühl möglich?
+  ✓ Mind. 30 % der User würden zögern oder klar NEIN wählen? (sonst Karte zu offensichtlich → Social-Desirability-Bias)
 
   ── Bilder-Übernahme ──────────────────────────────────────────────────
-  Wenn im User-Prompt konkrete Beispiel-Fragen aus Bildern stehen, übernimm sie SINNGEMÄSS — formuliere sie ggf. um, damit sie obiges Format (hypothetisch, ein Satz, kein Berufsname) erfüllen. Scoring auf die in "maps_to" genannten Dimensionen.
+  Wenn im User-Prompt konkrete Beispiel-Fragen aus Bildern stehen, übernimm sie SINNGEMÄSS — formuliere sie ggf. um, damit sie obiges Format (Ja/Nein-Frage mit „?", Whitelist-Anfang, ein Satz, kein Berufsname) erfüllen. Scoring auf die in "maps_to" genannten Dimensionen.
 
 OPTIONAL: 1–2 Seiten check_this_or_that (Visual A/B — NUR bei klar visueller Dichotomie):
   Props: {
@@ -240,8 +248,12 @@ OPTIONAL: 1–2 Seiten check_this_or_that (Visual A/B — NUR bei klar visueller
     • Problemstil: "Strukturiert+Regeln" vs. "Kreativ+Frei", "Ein Problem tief" vs. "Viele Probleme parallel"
   → MAXIMAL 2 Blöcke pro Check.
   → POSITIONIERUNG: Zwischen Swipe-Deck und Slidern.
-  → imageUrl immer als "" lassen — der Nutzer lädt die Bilder später im Editor hoch.
-  → Label: Kurzer, konkreter Bild-Beschrieb (2–4 Wörter), z.B. "CNC-Maschine", "Programmier-Setup", "Kund:innen-Gespräch", "Lagerhalle".
+  → BILDER aus der Firmen-Mediathek (siehe Block "MEDIATHEK DER FIRMA" im User-Prompt + visuelle Inputs):
+     • Wenn dort ZWEI Bilder existieren, die ein klar GEGENSÄTZLICHES PAAR zu einer der Dichotomie-Kategorien bilden (z. B. ein Werkhalle-Foto + ein Büro-Foto), kopiere die EXAKTEN URLs aus der Liste in optionA.imageUrl bzw. optionB.imageUrl (verbatim, kein Verändern, kein Erfinden).
+     • Beide Optionen brauchen ein Bild ODER beide bleiben leer — nie nur eine Seite befüllen.
+     • Wenn kein passendes gegensätzliches Paar in der Mediathek existiert: imageUrl bei BEIDEN auf "" lassen — der Nutzer lädt die Bilder später im Editor hoch.
+     • NIEMALS eine URL erfinden, raten oder umformen. Nur exakte URLs aus der gelisteten Mediathek sind erlaubt.
+  → Label: Kurzer, konkreter Bild-Beschrieb (2–4 Wörter), z.B. "CNC-Maschine", "Programmier-Setup", "Kund:innen-Gespräch", "Lagerhalle". Wenn ein Mediathek-Bild gewählt wurde, beschreibe was darauf zu sehen ist.
   → Scores: JEWEILS 2 Punkte auf EINE Dimension pro Seite. Die zwei Optionen MÜSSEN gegensätzliche Dimensionen adressieren.
   → Wenn keine sinnvolle visuelle Dichotomie möglich (z.B. "Pflege" vs. "Soziales" — zu ähnlich), NICHT nutzen.
 
@@ -531,6 +543,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'KI-API-Schlüssel nicht konfiguriert' }, { status: 500 });
   }
 
+  // ── Mediathek der Firma laden (für visuelle Auswahl in check_this_or_that)
+  // Limit auf MAX_MEDIA_LIBRARY_IMAGES, neueste zuerst — deckelt Token-Kosten.
+  const mediaSupabase = createAdminClient();
+  const { data: mediaRows, error: mediaErr } = await mediaSupabase
+    .from('media_assets')
+    .select('id, url, filename')
+    .eq('company_id', session.company.id)
+    .order('created_at', { ascending: false })
+    .limit(MAX_MEDIA_LIBRARY_IMAGES);
+  if (mediaErr) {
+    console.error('[generate-check] mediathek fetch failed:', mediaErr);
+  }
+  const mediaAssets = (mediaRows ?? []) as Array<{ id: string; url: string; filename: string }>;
+  const allowedMediaUrls = new Set(mediaAssets.map((m) => m.url));
+
   // ── Step A: strict extraction from attached images (best-effort, optional)
   const extracted = await extractFromImages(imageUrls);
 
@@ -629,6 +656,23 @@ export async function POST(req: NextRequest) {
     companyJobsBlock = lines.join('\n');
   }
 
+  // Mediathek-Bilder als Block für den User-Prompt (URL + Filename als Referenz,
+  // damit die KI die exakte URL in optionA/B.imageUrl kopieren kann).
+  let mediaLibraryBlock = '';
+  if (mediaAssets.length > 0) {
+    const lines: string[] = [
+      '=== MEDIATHEK DER FIRMA — Bilder für check_this_or_that zur Auswahl ===',
+      `${mediaAssets.length} Bild(er) aus der Mediathek folgen am Ende dieser Nachricht als visuelle Inputs (in der Reihenfolge der Liste unten).`,
+      'Wenn du in einem check_this_or_that-Block ein passendes GEGENSÄTZLICHES PAAR findest, kopiere die EXAKTE URL aus der Liste in optionA.imageUrl bzw. optionB.imageUrl. Sonst beide leer ("") lassen.',
+      'Erfinde NIEMALS eine URL — nur exakte URLs aus dieser Liste sind erlaubt.',
+      '',
+    ];
+    mediaAssets.forEach((m, i) => {
+      lines.push(`[Bild ${i + 1}] "${m.filename}" → ${m.url}`);
+    });
+    mediaLibraryBlock = lines.join('\n');
+  }
+
   const userMessageText = [
     ctx.join('\n'),
     '',
@@ -647,22 +691,31 @@ export async function POST(req: NextRequest) {
     imageUrls.length > 0 && extractedBlock
       ? `\nDie ${imageUrls.length} angehängten Bild(er) dienen als visuelle Gegenprobe — bei Widerspruch hat der Text oben Vorrang.`
       : '',
+    mediaLibraryBlock ? `\n${mediaLibraryBlock}` : '',
   ].filter(Boolean).join('\n');
 
   // Multimodal user content: text + optional image blocks.
   // aiChat (ai-provider.ts) normalizes image_url → Anthropic's image format.
+  // Reihenfolge der Bilder: erst die User-Upload-imageUrls (Berufe-Extraktion),
+  // dann die Mediathek-Bilder (für check_this_or_that). Muss zur Listen-Reihenfolge
+  // im mediaLibraryBlock passen, damit die KI Index → URL korrekt mappt.
   const userContent: Array<{ type: string; [key: string]: unknown }> = [
     { type: 'text', text: userMessageText },
   ];
   for (const url of imageUrls) {
     userContent.push({ type: 'image_url', image_url: { url } });
   }
+  for (const m of mediaAssets) {
+    userContent.push({ type: 'image_url', image_url: { url: m.url } });
+  }
+
+  const useMultimodal = imageUrls.length > 0 || mediaAssets.length > 0;
 
   let rawText: string;
   try {
     rawText = await aiChat({
       system: SYSTEM_PROMPT,
-      user: imageUrls.length > 0 ? userContent : userMessageText,
+      user: useMultimodal ? userContent : userMessageText,
       temperature: 0.75,
       json: true,
     });
@@ -797,15 +850,30 @@ export async function POST(req: NextRequest) {
         if (block.type === 'check_this_or_that') {
           const resolveOpt = (raw: unknown, side: 'A' | 'B') => {
             const o = (raw && typeof raw === 'object') ? raw as Record<string, unknown> : {};
+            const rawUrl = typeof o.imageUrl === 'string' ? o.imageUrl.trim() : '';
+            // Anti-Halluzination: nur leere URL oder URL aus der Mediathek der Firma erlaubt.
+            const safeUrl = rawUrl === '' || allowedMediaUrls.has(rawUrl) ? rawUrl : '';
+            if (rawUrl !== '' && safeUrl === '') {
+              console.warn('[generate-check] dropped non-mediathek imageUrl:', rawUrl.slice(0, 120));
+            }
             return {
               id: side,
-              imageUrl: typeof o.imageUrl === 'string' ? o.imageUrl : '',
+              imageUrl: safeUrl,
               label: typeof o.label === 'string' ? o.label : `Option ${side}`,
               scores: resolveScoreMap(o.scores),
             };
           };
-          props.optionA = resolveOpt(props.optionA, 'A');
-          props.optionB = resolveOpt(props.optionB, 'B');
+          const a = resolveOpt(props.optionA, 'A');
+          const b = resolveOpt(props.optionB, 'B');
+          // Beide Optionen brauchen ein Bild ODER beide bleiben leer — kein
+          // halbes Befüllen (wirkt im Player kaputt: eine Seite zeigt Foto, die
+          // andere nur einen Buchstaben-Platzhalter).
+          if ((a.imageUrl === '') !== (b.imageUrl === '')) {
+            a.imageUrl = '';
+            b.imageUrl = '';
+          }
+          props.optionA = a;
+          props.optionB = b;
         }
 
         if (block.type === 'check_statements' && Array.isArray(props.statements)) {

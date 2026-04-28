@@ -45,7 +45,7 @@ Seite 0: check_intro
 
 Seite 1: check_swipe_deck
   Props: {
-    "question": "Wisch dich durch die Szenarien",
+    "question": "Wisch dich durch die Fragen",
     "allowSkip": true,
     "cards": [...]
   }
@@ -55,30 +55,31 @@ Seite 1: check_swipe_deck
   ── SCHEMA pro Karte ──────────────────────────────────────────────────
   {
     "text": "<ein Satz nach Format-Regeln unten>",
-    "optionPositive": { "label": "Klingt gut", "emoji": "👍", "scores": { "<DIMENSION>": <1-3> } },
-    "optionNeutral":  { "label": "Geht so",    "emoji": "😐", "scores": {} },
-    "optionNegative": { "label": "Eher nicht", "emoji": "👎", "scores": {} }
+    "optionPositive": { "label": "Ja",         "emoji": "👍", "scores": { "<DIMENSION>": <1-3> } },
+    "optionNeutral":  { "label": "Vielleicht", "emoji": "😐", "scores": {} },
+    "optionNegative": { "label": "Nein",       "emoji": "👎", "scores": {} }
   }
   scores-Keys = exakter Dimensionsname.
 
   ── FORMAT pro Kartentext (PFLICHT — alle Punkte erfüllen) ───────────
-  1. Genau EIN Satz, 8–18 Wörter, eine einzige Aufgabe.
-  2. Hypothetisch — der User TUT die Handlung NICHT bereits. Erlaubte Satzanfänge: „Du sollst …", „Stell dir vor, du …", „Jemand bittet dich, …", „Du hast die Wahl: …".
-     VERBOTEN als Satzanfang: „Du bleibst …", „Du hilfst …", „Du tröstest …", „Du machst …", „Du gehst …" (vollendete Handlung im Präsens).
+  1. Genau EIN Satz, 8–18 Wörter, eine einzige Aufgabe, endet IMMER mit „?".
+  2. Eine **Ja/Nein-Entscheidungsfrage** — eindeutig mit JA oder NEIN beantwortbar (👍 = Ja, 👎 = Nein). Erlaubte Satzanfänge (WHITELIST): „Würdest du …?", „Hättest du Lust, …?", „Wärst du bereit, …?", „Klingt das nach dir: …?", „Hast du Bock, …?".
+     VERBOTEN: Aussage-Sätze ohne „?" („Du sollst …", „Du machst …", „Du bleibst …"), Skala-Fragen („Wie gerne …?"), Mehrfach-Wahl, abstrakte Charakter-Fragen („Magst du Menschen?").
   3. Konkret + sinnlich (Werkzeuge, Mengen, Zeitanker), nicht abstrakt.
   4. Setting: Alltag (Schule, Freizeit, Familie, Hobby, Praktikum). NIEMALS Berufsname im Text.
-  5. Echter Trade-off — 👎 muss für eine andere valide Stärke stehen, nicht für moralisches Versagen.
+  5. Echter Trade-off — NEIN muss für eine andere valide Stärke stehen, nicht für moralisches Versagen.
 
-  Wenn eine Heyflow-Quelle das Format verletzt (z. B. Präsens-Erzählung „Du bleibst bei deiner Oma"), formuliere sie UM, anstatt sie 1:1 zu übernehmen:
+  Wenn eine Heyflow-Quelle das Format verletzt (z. B. Präsens-Erzählung „Du bleibst bei deiner Oma"), formuliere sie UM in eine Ja/Nein-Frage:
     Quelle: „Du tröstest deinen kleinen Bruder, der weint."
-    → Karte: „Stell dir vor, dein kleiner Bruder weint und du sollst ihn beruhigen."
+    → Karte: „Würdest du deinen kleinen Bruder beruhigen, wenn er weint?"
     Quelle: „Du hilfst deiner Oma beim Aufstehen."
-    → Karte: „Du sollst den ganzen Nachmittag deine Oma nach einem Sturz begleiten."
+    → Karte: „Würdest du den ganzen Nachmittag deine Oma nach einem Sturz begleiten?"
 
   ── SCHLECHT-Beispiele (nicht generieren) ────────────────────────────
-  ❌ „Du tröstest deinen weinenden Bruder." → vollendete Handlung
-  ❌ „Wie gerne hilfst du anderen?" → Frage statt Situation
-  ❌ „Du arbeitest als Pflegekraft." → Berufsname im Text
+  ❌ „Du tröstest deinen weinenden Bruder." → Aussage statt Frage, kein „?".
+  ❌ „Wie gerne hilfst du anderen?" → Skala-Frage, kein klares Ja/Nein.
+  ❌ „Magst du Menschen?" → zu abstrakt, fast 100 % sagen Ja (Social-Desirability).
+  ❌ „Würdest du als Pflegekraft arbeiten?" → Berufsname im Text.
 
 4–6 Seiten check_selbst (Selbsteinschatzung — eine Page pro Slider):
   Props: {
