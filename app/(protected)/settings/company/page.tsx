@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, FormEvent, useEffect, useRef } from 'react';
+import { useState, FormEvent, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { INDUSTRY_OPTIONS, CorporateDesign, DEFAULT_CORPORATE_DESIGN, SuccessPageConfig, DEFAULT_SUCCESS_PAGE, SuccessJob, SuccessLink } from '@/lib/types';
-import { Building2, Save, CheckCircle, Palette, Type, Globe, Upload, SlidersHorizontal, Link2, Trophy, Plus, X, ExternalLink, Sparkles, Image as ImageIcon, MousePointerClick } from 'lucide-react';
+import { Building2, Save, CheckCircle, Palette, Type, Globe, Upload, SlidersHorizontal, Link2, Trophy, Plus, X, ExternalLink, Sparkles, Image as ImageIcon, MousePointerClick, Pencil, Trash2, ChevronDown, ChevronRight, FolderInput, Folder } from 'lucide-react';
 import ImageCropModal from '@/components/shared/ImageCropModal';
 import MediaLibrary from '@/components/shared/MediaLibrary';
 import ImportFromWebsiteModal, { ExtractedProfile } from '@/components/company/ImportFromWebsiteModal';
@@ -585,38 +585,10 @@ export default function SettingsCompanyPage() {
                     <input type="text" className="input-field" value={successPage.jobsHeadline}
                       onChange={(e) => setSuccessPage((s) => ({ ...s, jobsHeadline: e.target.value }))} />
                   </div>
-                  <div className="space-y-2">
-                    {(() => {
-                      const groups = [...new Set(successPage.jobs.map((j) => j.group || '').filter(Boolean))];
-                      const ungrouped = successPage.jobs.filter((j) => !j.group);
-                      const grouped = groups.map((g) => ({ group: g, jobs: successPage.jobs.filter((j) => j.group === g) }));
-                      const sections = [...grouped, ...(ungrouped.length > 0 ? [{ group: '', jobs: ungrouped }] : [])];
-                      return sections.map(({ group, jobs: sectionJobs }) => (
-                        <div key={group || '__ungrouped'}>
-                          {group && (
-                            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mt-3 mb-1.5">{group}</p>
-                          )}
-                          {sectionJobs.map((job: SuccessJob) => (
-                            <div key={job.id} className="flex gap-1.5 mb-1.5">
-                              <input type="text" className="input-field flex-[2]" placeholder="Berufsbezeichnung"
-                                value={job.title} onChange={(e) => setSuccessPage((s) => ({ ...s, jobs: s.jobs.map((j) => j.id === job.id ? { ...j, title: e.target.value } : j) }))} />
-                              <input type="text" className="input-field flex-1" placeholder="Gruppe (optional)"
-                                value={job.group ?? ''} onChange={(e) => setSuccessPage((s) => ({ ...s, jobs: s.jobs.map((j) => j.id === job.id ? { ...j, group: e.target.value || undefined } : j) }))} />
-                              <button type="button" onClick={() => setSuccessPage((s) => ({ ...s, jobs: s.jobs.filter((j) => j.id !== job.id) }))}
-                                className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0">
-                                <X size={14} />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      ));
-                    })()}
-                    <button type="button"
-                      onClick={() => setSuccessPage((s) => ({ ...s, jobs: [...s.jobs, { id: crypto.randomUUID(), title: '' }] }))}
-                      className="flex items-center gap-1.5 text-sm text-violet-600 font-medium hover:text-violet-700 mt-1">
-                      <Plus size={15} /> Beruf hinzufugen
-                    </button>
-                  </div>
+                  <JobsGroupEditor
+                    jobs={successPage.jobs}
+                    setJobs={(updater) => setSuccessPage((s) => ({ ...s, jobs: typeof updater === 'function' ? updater(s.jobs) : updater }))}
+                  />
                 </>
               )}
             </div>
@@ -659,6 +631,305 @@ export default function SettingsCompanyPage() {
           </div>
         )}
       </form>
+    </div>
+  );
+}
+
+
+// ─── JobsGroupEditor ──────────────────────────────────────────────────────────
+// Gruppen-zentrische Pflege der Erfolgsseiten-Berufe. Datenmodell bleibt
+// die flache `SuccessJob[]` mit optionalem `group`-String pro Beruf —
+// das UI rendert daraus Sektionen pro distinktem Gruppennamen + eine
+// „Ohne Gruppe"-Sektion. Leere Draft-Gruppen leben nur lokal, bis ihnen
+// ein Beruf zugewiesen wurde.
+function JobsGroupEditor({ jobs, setJobs }: {
+  jobs: SuccessJob[];
+  setJobs: (updater: SuccessJob[] | ((prev: SuccessJob[]) => SuccessJob[])) => void;
+}) {
+  const [draftGroups, setDraftGroups] = useState<string[]>([]);
+  const [editingGroup, setEditingGroup] = useState<string | null>(null);
+  const [editingValue, setEditingValue] = useState('');
+  const [creatingGroup, setCreatingGroup] = useState(false);
+  const [newGroupName, setNewGroupName] = useState('');
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [movePopoverFor, setMovePopoverFor] = useState<string | null>(null);
+  const popoverRef = useRef<HTMLDivElement | null>(null);
+
+  // Schließen des Move-Popover bei Outside-Click.
+  useEffect(() => {
+    if (!movePopoverFor) return;
+    const onDocClick = (e: MouseEvent) => {
+      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
+        setMovePopoverFor(null);
+      }
+    };
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, [movePopoverFor]);
+
+  // Sektionen ableiten: persistierte Gruppen aus jobs + lokale Draft-Gruppen,
+  // die noch keinen Beruf haben. Reihenfolge: persistierte zuerst (in Reihen-
+  // folge des ersten Auftretens), dann Drafts, dann „Ohne Gruppe".
+  const persistedGroups = useMemo(() => {
+    const seen: string[] = [];
+    for (const j of jobs) {
+      if (j.group && !seen.includes(j.group)) seen.push(j.group);
+    }
+    return seen;
+  }, [jobs]);
+
+  // Draft-Gruppen, die mittlerweile mindestens einen Beruf haben, aus dem
+  // Draft-Set entfernen — sonst tauchen sie doppelt auf.
+  useEffect(() => {
+    if (draftGroups.length === 0) return;
+    const filtered = draftGroups.filter((g) => !persistedGroups.includes(g));
+    if (filtered.length !== draftGroups.length) setDraftGroups(filtered);
+  }, [persistedGroups, draftGroups]);
+
+  const allGroups = useMemo(() => [...persistedGroups, ...draftGroups], [persistedGroups, draftGroups]);
+  const ungrouped = useMemo(() => jobs.filter((j) => !j.group), [jobs]);
+
+  function setJobField(jobId: string, patch: Partial<SuccessJob>) {
+    setJobs((prev) => prev.map((j) => j.id === jobId ? { ...j, ...patch } : j));
+  }
+  function deleteJob(jobId: string) {
+    setJobs((prev) => prev.filter((j) => j.id !== jobId));
+  }
+  function addJob(group?: string) {
+    setJobs((prev) => [...prev, { id: crypto.randomUUID(), title: '', group }]);
+  }
+  function moveJob(jobId: string, target: string | undefined) {
+    setJobField(jobId, { group: target });
+    setMovePopoverFor(null);
+  }
+  function moveJobToNewGroup(jobId: string, name: string) {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    setJobField(jobId, { group: trimmed });
+    setMovePopoverFor(null);
+  }
+  function startRename(group: string) {
+    setEditingGroup(group);
+    setEditingValue(group);
+  }
+  function commitRename() {
+    if (!editingGroup) return;
+    const next = editingValue.trim();
+    if (!next || next === editingGroup) {
+      setEditingGroup(null);
+      return;
+    }
+    // Konflikt: Wenn der neue Name eine andere bestehende Gruppe ist, wirken
+    // wir wie ein Merge — alle Berufe der alten Gruppe wandern in die andere.
+    setJobs((prev) => prev.map((j) => j.group === editingGroup ? { ...j, group: next } : j));
+    // Falls die alte Gruppe ein Draft war, ggf. in den neuen Draft umbenennen.
+    setDraftGroups((prev) => prev.map((g) => g === editingGroup ? next : g));
+    setEditingGroup(null);
+  }
+  function dissolveGroup(group: string) {
+    const count = jobs.filter((j) => j.group === group).length;
+    const ok = window.confirm(
+      `Gruppe „${group}" auflösen?\n\nDie ${count} Beruf${count === 1 ? '' : 'e'} bleiben erhalten und wandern in „Ohne Gruppe".`,
+    );
+    if (!ok) return;
+    setJobs((prev) => prev.map((j) => j.group === group ? { ...j, group: undefined } : j));
+    setDraftGroups((prev) => prev.filter((g) => g !== group));
+  }
+  function toggleCollapsed(group: string) {
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(group)) next.delete(group); else next.add(group);
+      return next;
+    });
+  }
+  function commitNewGroup() {
+    const trimmed = newGroupName.trim();
+    if (!trimmed) {
+      setCreatingGroup(false);
+      setNewGroupName('');
+      return;
+    }
+    // Wenn die Gruppe schon existiert, einfach scrollen/aufklappen statt doppelt anzulegen.
+    if (!allGroups.includes(trimmed)) {
+      setDraftGroups((prev) => [...prev, trimmed]);
+    }
+    setCollapsed((prev) => { const next = new Set(prev); next.delete(trimmed); return next; });
+    setCreatingGroup(false);
+    setNewGroupName('');
+  }
+
+  function renderJobRow(job: SuccessJob) {
+    const popoverOpen = movePopoverFor === job.id;
+    return (
+      <div key={job.id} className="flex gap-1.5 mb-1.5 relative">
+        <input type="text" className="input-field flex-1" placeholder="Berufsbezeichnung"
+          value={job.title}
+          onChange={(e) => setJobField(job.id, { title: e.target.value })} />
+        <button type="button" title="Gruppe wechseln"
+          onClick={() => setMovePopoverFor(popoverOpen ? null : job.id)}
+          className="p-1.5 text-slate-400 hover:text-violet-600 hover:bg-violet-50 rounded-lg transition-colors flex-shrink-0 flex items-center gap-1 px-2 text-xs">
+          <FolderInput size={14} />
+          <span className="hidden sm:inline">{job.group || 'Ohne Gruppe'}</span>
+        </button>
+        <button type="button" onClick={() => deleteJob(job.id)}
+          className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0">
+          <X size={14} />
+        </button>
+        {popoverOpen && (
+          <div ref={popoverRef}
+            className="absolute right-12 top-full mt-1 z-20 w-64 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden">
+            <div className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400 border-b border-slate-100">
+              Verschieben nach
+            </div>
+            <div className="max-h-64 overflow-y-auto py-1">
+              <button type="button"
+                onClick={() => moveJob(job.id, undefined)}
+                className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-slate-50 transition-colors ${!job.group ? 'text-violet-600 font-medium' : 'text-slate-700'}`}>
+                <Folder size={14} className="text-slate-400" /> Ohne Gruppe
+              </button>
+              {allGroups.map((g) => (
+                <button key={g} type="button"
+                  onClick={() => moveJob(job.id, g)}
+                  className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-slate-50 transition-colors ${job.group === g ? 'text-violet-600 font-medium' : 'text-slate-700'}`}>
+                  <Folder size={14} className="text-slate-400" /> {g}
+                </button>
+              ))}
+              <NewGroupRow onSubmit={(name) => moveJobToNewGroup(job.id, name)} />
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  function renderGroupSection(group: string, sectionJobs: SuccessJob[], isDraft: boolean) {
+    const isCollapsed = collapsed.has(group);
+    const isEditing = editingGroup === group;
+    return (
+      <div key={`g:${group}`} className="border border-slate-200 rounded-xl bg-slate-50/40 overflow-hidden">
+        <div className="flex items-center justify-between px-3 py-2 bg-slate-50 border-b border-slate-200">
+          <button type="button" onClick={() => toggleCollapsed(group)}
+            className="flex items-center gap-1.5 flex-1 min-w-0 text-left">
+            {isCollapsed ? <ChevronRight size={15} className="text-slate-400 flex-shrink-0" /> : <ChevronDown size={15} className="text-slate-400 flex-shrink-0" />}
+            {isEditing ? (
+              <input autoFocus type="text" className="input-field !py-1 !text-sm flex-1"
+                value={editingValue}
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => setEditingValue(e.target.value)}
+                onBlur={commitRename}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') { e.preventDefault(); commitRename(); }
+                  else if (e.key === 'Escape') { e.preventDefault(); setEditingGroup(null); }
+                }} />
+            ) : (
+              <span className="font-medium text-sm text-slate-800 truncate">
+                {group} <span className="text-slate-400 font-normal">({sectionJobs.length})</span>
+                {isDraft && <span className="ml-2 text-[10px] uppercase tracking-wide text-amber-600">leer</span>}
+              </span>
+            )}
+          </button>
+          {!isEditing && (
+            <div className="flex items-center gap-1 flex-shrink-0">
+              <button type="button" title="Umbenennen"
+                onClick={() => startRename(group)}
+                className="p-1.5 text-slate-400 hover:text-violet-600 hover:bg-violet-50 rounded-lg transition-colors">
+                <Pencil size={13} />
+              </button>
+              <button type="button" title="Gruppe auflösen"
+                onClick={() => dissolveGroup(group)}
+                className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                <Trash2 size={13} />
+              </button>
+            </div>
+          )}
+        </div>
+        {!isCollapsed && (
+          <div className="px-3 py-2.5">
+            {sectionJobs.map(renderJobRow)}
+            <button type="button" onClick={() => addJob(group)}
+              className="flex items-center gap-1.5 text-xs text-violet-600 font-medium hover:text-violet-700 mt-1">
+              <Plus size={13} /> Beruf zu „{group}" hinzufügen
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {persistedGroups.map((g) => renderGroupSection(g, jobs.filter((j) => j.group === g), false))}
+      {draftGroups.map((g) => renderGroupSection(g, [], true))}
+
+      {/* Ohne Gruppe — immer sichtbar, auch wenn leer, damit der „+ Beruf hinzufügen"-Button erreichbar bleibt. */}
+      <div className="border border-dashed border-slate-200 rounded-xl bg-white overflow-hidden">
+        <div className="flex items-center px-3 py-2 border-b border-slate-200/60">
+          <Folder size={14} className="text-slate-400 mr-1.5" />
+          <span className="font-medium text-sm text-slate-600">
+            Ohne Gruppe <span className="text-slate-400 font-normal">({ungrouped.length})</span>
+          </span>
+        </div>
+        <div className="px-3 py-2.5">
+          {ungrouped.map(renderJobRow)}
+          <button type="button" onClick={() => addJob(undefined)}
+            className="flex items-center gap-1.5 text-xs text-violet-600 font-medium hover:text-violet-700 mt-1">
+            <Plus size={13} /> Beruf hinzufügen
+          </button>
+        </div>
+      </div>
+
+      {/* Neue Gruppe anlegen */}
+      {creatingGroup ? (
+        <div className="flex gap-2 items-center">
+          <input autoFocus type="text" className="input-field flex-1"
+            placeholder="Name der neuen Gruppe (z. B. Pflege & Soziales)"
+            value={newGroupName}
+            onChange={(e) => setNewGroupName(e.target.value)}
+            onBlur={commitNewGroup}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') { e.preventDefault(); commitNewGroup(); }
+              else if (e.key === 'Escape') { e.preventDefault(); setCreatingGroup(false); setNewGroupName(''); }
+            }} />
+        </div>
+      ) : (
+        <button type="button"
+          onClick={() => setCreatingGroup(true)}
+          className="flex items-center gap-1.5 text-sm text-violet-600 font-medium hover:text-violet-700">
+          <Plus size={15} /> Neue Gruppe anlegen
+        </button>
+      )}
+      {draftGroups.length > 0 && (
+        <p className="text-[11px] text-amber-600">
+          Hinweis: Leere Gruppen werden beim Speichern verworfen. Lege gleich einen Beruf an oder verschiebe einen vorhandenen Beruf hinein.
+        </p>
+      )}
+    </div>
+  );
+}
+
+// Inline-Eingabezeile innerhalb des Move-Popovers für „Neue Gruppe…".
+function NewGroupRow({ onSubmit }: { onSubmit: (name: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState('');
+  if (!open) {
+    return (
+      <button type="button"
+        onClick={() => setOpen(true)}
+        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left text-violet-600 hover:bg-violet-50 transition-colors border-t border-slate-100">
+        <Plus size={14} /> Neue Gruppe…
+      </button>
+    );
+  }
+  return (
+    <div className="px-3 py-2 border-t border-slate-100">
+      <input autoFocus type="text" className="input-field !py-1 !text-sm w-full"
+        placeholder="Gruppenname"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') { e.preventDefault(); onSubmit(value); setOpen(false); setValue(''); }
+          else if (e.key === 'Escape') { e.preventDefault(); setOpen(false); setValue(''); }
+        }} />
     </div>
   );
 }

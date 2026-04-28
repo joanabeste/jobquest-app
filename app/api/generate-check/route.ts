@@ -165,6 +165,13 @@ Seite 2 (oder 1 wenn keine Studiengänge):
       → optionPositive +3 Soziales, optionNegative +2 Unabhängigkeit.
     Das verhindert das "positive wischen"-Problem.
   → SOCIAL-DESIRABILITY-FALLE vermeiden: Formuliere KEINE Karten, bei denen "optionPositive" offensichtlich die moralisch "bessere" Antwort ist. Beispiel SCHLECHT: "Deine Oma bittet dich um Hilfe." (jeder sagt "Klingt gut"). STATT: konkretes Szenario mit echtem Trade-off.
+  → SWIPE-FORMAT — Pflicht: JEDE Karte muss eine HYPOTHETISCHE Aufgabe / ein offenes Szenario sein, das der User klar mit „klingt gut" oder „eher nicht" (= ja/nein) beantworten kann. KEINE Erzählungen, in denen der User die Handlung schon AUSFÜHRT — solche Sätze setzen die Antwort voraus und sind nicht swipebar.
+    SCHLECHT: "Deine Oma ist nach einem Sturz unsicher. Du bleibst den ganzen Nachmittag bei ihr, redest mit ihr und hilfst beim Aufstehen." (Mehrteilige Erzählung im Präsens — der User TUT es bereits, kann es nicht ablehnen ohne sich schlecht zu fühlen.)
+    SCHLECHT: "Du tröstest deinen weinenden Bruder." (gleiche Falle, vollendete Handlung.)
+    GUT: "Du sollst den ganzen Nachmittag eine Verwandte nach einem Sturz begleiten und mehrfach beim Aufstehen helfen." (Aufgabe → 👍/👎 möglich.)
+    GUT: "Du sollst 8 Stunden konzentriert an einer einzigen Aufgabe sitzen."
+    GUT: "Ein Freund bittet dich um Hilfe bei einer Aufgabe, die du eigentlich nicht magst." (offene Bitte, beide Reaktionen authentisch.)
+    Faustregel: Beginne mit „Du sollst …", „Jemand bittet dich …", „Stell dir vor, du …" — nie mit „Du bleibst …", „Du hilfst …", „Du tröstest …".
   → Text: konkret aus Schule/Freizeit/Familie ("Nach dem Unterricht sitzt du 2 Stunden am Tablet, um ein Video zu schneiden"), NIEMALS Berufsnamen.
   → Wenn im User-Prompt konkrete Beispiel-Fragen aus Bildern stehen, übernimm sie sinngemäß (und scoren auf die in maps_to genannten Kategorien).
 
@@ -209,7 +216,7 @@ OPTIONAL: 1 Werte-Frage als check_frage mit single_choice (direkt vor check_erge
 SWIPE-KARTEN vs. SELBST-SLIDER — wann was?
 • Swipe-Karten eignen sich für konkrete Szenarien mit spürbarer Präferenz ("Du öffnest einen elektrischen Schaltkasten — was denkst du?"). Binär/ternär, affektiv, schnell.
 • Slider (check_selbst) eignen sich für graduelle Selbsteinschätzungen zu einer generischen Fähigkeit/Neigung ("Wie gerne arbeitest du analytisch?"). Offen, kalibrierbar, nicht berufsspezifisch.
-→ Nutze den jeweils passenderen Typ. Wenn eine Dimension am besten über ein Szenario rüberkommt (z.B. Pflege → "Eine ältere Dame fällt und du hilfst auf"), dann Swipe-Karte. Wenn eine Dimension eine ruhigere Selbstreflexion braucht (z.B. "Mir fällt es leicht, komplexe Probleme zu analysieren" → Technik), dann Slider.
+→ Nutze den jeweils passenderen Typ. Wenn eine Dimension am besten über ein Szenario rüberkommt (z.B. Pflege → "Du sollst eine ältere Dame nach einem Sturz nach Hause begleiten"), dann Swipe-Karte. Wenn eine Dimension eine ruhigere Selbstreflexion braucht (z.B. "Mir fällt es leicht, komplexe Probleme zu analysieren" → Technik), dann Slider.
 → Vermeide Routine: nicht für jede Dimension stumpf "Wie gerne arbeitest du mit X?" wiederholen. Variiere Formulierungen.
 
 PRO-DIMENSION-SLIDER (check_selbst — Pflicht: GENAU 1 Slider pro Dimension):

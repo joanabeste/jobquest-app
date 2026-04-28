@@ -53,6 +53,7 @@ Seite 1: check_swipe_deck
   → WICHTIG: JEDE Dimension muss in mindestens 2 Karten vorkommen! Keine 0%-Gruppen im Ergebnis.
   → Jede Karte: { "text": "Szenario-Text...", "optionPositive": { "label": "Klingt gut", "emoji": "👍", "scores": { "Dimensionsname": 2 } }, "optionNeutral": { "label": "Geht so", "emoji": "😐", "scores": {} }, "optionNegative": { "label": "Eher nicht", "emoji": "👎", "scores": {} } }
   → scores: Dimensions-NAMEN als Keys, Punkte 1-3 als Werte.
+  → SWIPE-FORMAT — Pflicht: Jede Karte muss eine hypothetische Aufgabe / ein offenes Szenario sein, das mit „klingt gut" / „eher nicht" (= ja/nein) beantwortbar ist. KEINE Erzählungen, in denen der User die Handlung schon ausführt. Beginne mit „Du sollst …", „Jemand bittet dich …", „Stell dir vor, du …" — nie mit „Du bleibst …", „Du hilfst …", „Du tröstest …". Wenn eine Heyflow-Quelle eine Aussage im Präsens enthält ("Du bleibst bei deiner Oma"), formuliere sie um in eine Aufgabe ("Du sollst den ganzen Nachmittag bei deiner Oma bleiben").
 
 4–6 Seiten check_selbst (Selbsteinschatzung — eine Page pro Slider):
   Props: {
