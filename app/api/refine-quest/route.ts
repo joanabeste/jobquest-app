@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getSession, unauthorized } from '@/lib/api-auth';
 import { aiChat, isAiConfigured, AiError } from '@/lib/ai-provider';
-import { diversifyDecisionIcons } from '@/lib/decision-icon-picker';
+import { diversifyDecisionIconsInPages } from '@/lib/decision-icon-picker';
 
 const RefineSchema = z.object({
   pages: z.array(z.record(z.string(), z.unknown())),
@@ -92,24 +92,6 @@ export async function POST(req: NextRequest) {
   // Icon mehrfach im selben quest_decision-Block — Diversifier räumt das auf
   // (Keyword-Match aus Antwort-Text, Fallback auf neutralen Pool).
   return NextResponse.json({ pages: diversifyDecisionIconsInPages(result.pages) });
-}
-
-type LooseNode = { type?: unknown; props?: Record<string, unknown> } & Record<string, unknown>;
-type LoosePage = { nodes?: unknown } & Record<string, unknown>;
-
-function diversifyDecisionIconsInPages(pages: Array<Record<string, unknown>>): Array<Record<string, unknown>> {
-  return pages.map((page) => {
-    const p = page as LoosePage;
-    if (!Array.isArray(p.nodes)) return page;
-    const nodes = (p.nodes as LooseNode[]).map((node) => {
-      if (node?.type !== 'quest_decision') return node;
-      const props = node.props;
-      if (!props || !Array.isArray(props.options)) return node;
-      const diversified = diversifyDecisionIcons(props.options as Array<{ emoji?: string; isWrong?: boolean; text?: string }>);
-      return { ...node, props: { ...props, options: diversified } };
-    });
-    return { ...page, nodes };
-  });
 }
 
 /**

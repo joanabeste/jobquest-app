@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getSession, unauthorized } from '@/lib/api-auth';
 import { aiChat, isAiConfigured, AiError } from '@/lib/ai-provider';
-import { diversifyDecisionIcons } from '@/lib/decision-icon-picker';
+import { diversifyDecisionIcons, diversifyDecisionIconsInPages } from '@/lib/decision-icon-picker';
+import { runDialogPass } from '@/lib/dialog-pass';
+import type { FunnelPage } from '@/lib/funnel-types';
 
 // Hard caps to limit prompt-injection blast-radius and OpenAI cost.
 // Image URLs must be HTTPS and bounded in count; the model will only ever
@@ -595,7 +597,28 @@ export async function POST(req: NextRequest) {
     };
   });
 
-  return NextResponse.json({ pages });
+  // Zweiter KI-Pass: wandle abstrakte Szenen in Dialog+Decision-Kombis um,
+  // wo es dramaturgisch hilft. Fehler im Pass führen zu Fallback auf die
+  // Original-Pages — der User bekommt nie einen Fehler aus diesem Schritt.
+  const dialogPassEnabled = process.env.DIALOG_PASS_ENABLED !== 'false';
+  let finalPages: typeof pages = pages;
+  if (dialogPassEnabled) {
+    const result = await runDialogPass(pages as unknown as FunnelPage[], {
+      beruf,
+      companyName: session.company.name,
+    });
+    if (result.applied) {
+      // Pass kann neue Decision-Optionen oder ganze neue Decisions hinzufügen
+      // → Icon-Diversifizierung neu drüberlaufen.
+      finalPages = diversifyDecisionIconsInPages(
+        result.pages as unknown as Array<Record<string, unknown>>,
+      ) as unknown as typeof pages;
+    } else if (result.reason && result.reason !== 'disabled') {
+      console.warn('[generate-quest] dialog-pass skipped:', result.reason);
+    }
+  }
+
+  return NextResponse.json({ pages: finalPages });
 }
 
 // Decision-Icon-Diversifier wird aus lib/decision-icon-picker importiert

@@ -23,6 +23,9 @@ const LOADING_STEPS = [
   'Entscheidungen und Quiz werden generiert…',
   'Kontaktformular wird hinzugefügt…',
   'Letzte Feinheiten werden angepasst…',
+  'Charaktere lernen sprechen…',
+  'Dialoge werden lebendig gemacht…',
+  'Letzter Feinschliff…',
 ];
 
 export default function GenerateQuestModal({ onGenerate, onClose, showHeyflowImport, currentPages, companyJobs }: Props) {
@@ -70,7 +73,7 @@ export default function GenerateQuestModal({ onGenerate, onClose, showHeyflowImp
 
     const stepInterval = setInterval(() => {
       setLoadingStep((s) => Math.min(s + 1, LOADING_STEPS.length - 1));
-    }, 3500);
+    }, 7000);
 
     const progressInterval = setInterval(() => {
       setLoadingProgress((p) => {

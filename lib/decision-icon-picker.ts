@@ -139,3 +139,28 @@ export function diversifyDecisionIcons<T extends { emoji?: string; isWrong?: boo
     return { ...opt, emoji: alt };
   });
 }
+
+/**
+ * Wendet `diversifyDecisionIcons` auf alle quest_decision-Blöcke einer
+ * Pages-Liste an. Toleriert lose Page-Strukturen (Record<string, unknown>),
+ * weil Aufrufer KI-Output unbearbeitet durchschleifen.
+ *
+ * Geteilt von refine-quest, generate-quest und dialog-pass.
+ */
+type LooseNode = { type?: unknown; props?: Record<string, unknown> } & Record<string, unknown>;
+type LoosePage = { nodes?: unknown } & Record<string, unknown>;
+
+export function diversifyDecisionIconsInPages<P extends Record<string, unknown>>(pages: P[]): P[] {
+  return pages.map((page) => {
+    const p = page as LoosePage;
+    if (!Array.isArray(p.nodes)) return page;
+    const nodes = (p.nodes as LooseNode[]).map((node) => {
+      if (node?.type !== 'quest_decision') return node;
+      const props = node.props;
+      if (!props || !Array.isArray(props.options)) return node;
+      const diversified = diversifyDecisionIcons(props.options as Array<{ emoji?: string; isWrong?: boolean; text?: string }>);
+      return { ...node, props: { ...props, options: diversified } };
+    });
+    return { ...page, nodes } as P;
+  });
+}
