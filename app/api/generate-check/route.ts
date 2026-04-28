@@ -433,6 +433,21 @@ function dedupCaseInsensitive(values: string[]): string[] {
   return out;
 }
 
+/**
+ * Entfernt Quiz-Status-/Meta-Vokabeln aus KI-generierten Page-Namen, damit
+ * der Location-Hint im Player nur den Ort/die Situation zeigt. Greift, wenn
+ * die KI die Prompt-Regel ignoriert.
+ */
+const PAGE_NAME_STATUS_TOKENS = /\b(feedback|reaktion|reaction|konsequenz|consequence|falsch|wrong|korrekt|richtig|right|antwort|response|ergebnis|result|pfad|path)\s*[:\-—–]?\s*/gi;
+function sanitizePageName(raw: unknown, fallback: string): string {
+  const s = typeof raw === 'string' ? raw : '';
+  if (!s) return fallback;
+  let cleaned = s.replace(PAGE_NAME_STATUS_TOKENS, '').trim();
+  cleaned = cleaned.replace(/\s{2,}/g, ' ').replace(/^[\s\-–—:,.]+|[\s\-–—:,.]+$/g, '');
+  if (cleaned.length < 2) return fallback;
+  return cleaned;
+}
+
 // ─── POST handler ─────────────────────────────────────────────────────────────
 export const maxDuration = 300;
 
@@ -631,7 +646,7 @@ export async function POST(req: NextRequest) {
     const visibleIf = resolveVisibleIf(page.visibleIf);
     return {
       id: pageIds[pIdx],
-      name: page.name || `Seite ${pIdx + 1}`,
+      name: sanitizePageName(page.name, `Seite ${pIdx + 1}`),
       ...(visibleIf ? { visibleIf } : {}),
       nodes: page.blocks.map((block, bIdx) => {
         let props = { ...block.props };
@@ -773,7 +788,7 @@ export async function POST(req: NextRequest) {
         splitPages.push({
           ...(firstChunk ? page : {}),
           id: firstChunk ? page.id : crypto.randomUUID(),
-          name: page.name || 'Frage',
+          name: sanitizePageName(page.name, 'Frage'),
           nodes: bucket,
         });
         bucket = [];

@@ -286,9 +286,13 @@ SPRACHE & STIL:
 ALLGEMEIN:
 • Jede id: eindeutiger UUID-String (Format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
 • Keine Seiten-IDs generieren – nur IDs für Options und Dialog-Lines
-• Seitennamen = immer der Ort oder die Situation, z.B. "Schichtübergabe", "Frühstück", "Notfall", "Frau Lehmanns Zimmer".
-  NIEMALS technische Namen wie "Feedback", "Feedback Falsch", "Reaktion", "Konsequenz" oder "Seite 1".
-  Auch Feedback-/Reaktionsseiten bekommen den Ortsnamen, an dem man sich gerade befindet (z.B. weiterhin "Medikamentenausgabe" statt "Feedback Medikamente"). Max 4 Wörter.
+• SEITENNAMEN — DEFINITIV WICHTIG (Location-Hint im Header zeigt diesen Namen):
+  Der Name MUSS der Ort oder die konkrete Situation sein, an der der Spieler gerade steht.
+  Beispiele RICHTIG:  "Schichtübergabe", "Frühstück", "Notfall", "Frau Lehmanns Zimmer", "Medikamentenausgabe"
+  Beispiele FALSCH:  "Feedback Notfall Falsch", "Feedback", "Reaktion", "Konsequenz", "Antwort A", "Pfad B", "Korrekt", "Seite 1"
+  → Pfad-A- und Pfad-B-Folgeseiten nach einer Entscheidung NEHMEN denselben Ortsnamen wie die Auslöse-Seite (oder eine kleine Verfeinerung wie "Notfall – im Gang"). KEIN Quiz-Status im Namen.
+  → Auch Reaktions-/Erklär-Seiten der KI bekommen den Ortsnamen. Niemals "Feedback X" oder "X Falsch".
+  → Maximal 4 Wörter, keine Doppelpunkte, keine technischen Suffixe.
 
 ═══════════════════════════════════════════════════════
   AUSGABEFORMAT
@@ -333,6 +337,22 @@ const DEFAULT_LEAD_FIELDS = [
   { type: 'checkbox', label: 'Ich kann mir vorstellen, in diesem Bereich ein Praktikum zu machen.', required: false, variable: 'praktikum' },
   { type: 'checkbox', label: 'Ich stimme zu, dass <a href="@datenschutzUrl" target="_blank">@companyName</a> meine Daten gemäß <a href="@datenschutzUrl" target="_blank">Datenschutzerklärung</a> verarbeitet. <a href="@impressumUrl" target="_blank">Impressum</a>', required: true, variable: 'datenschutz' },
 ];
+
+/**
+ * Entfernt Quiz-Status-/Meta-Vokabeln aus KI-generierten Page-Namen, damit
+ * der Location-Hint im Player nur den Ort/die Situation zeigt. Greift, wenn
+ * die KI die Prompt-Regel ignoriert und Pfad-Folge-Seiten als
+ * "Feedback Notfall Falsch" o.ä. benennt.
+ */
+const PAGE_NAME_STATUS_TOKENS = /\b(feedback|reaktion|reaction|konsequenz|consequence|falsch|wrong|korrekt|richtig|right|antwort|response|ergebnis|result|pfad|path)\s*[:\-—–]?\s*/gi;
+function sanitizePageName(raw: unknown, fallback: string): string {
+  const s = typeof raw === 'string' ? raw : '';
+  if (!s) return fallback;
+  let cleaned = s.replace(PAGE_NAME_STATUS_TOKENS, '').trim();
+  cleaned = cleaned.replace(/\s{2,}/g, ' ').replace(/^[\s\-–—:,.]+|[\s\-–—:,.]+$/g, '');
+  if (cleaned.length < 2) return fallback;
+  return cleaned;
+}
 
 export const maxDuration = 300;
 
@@ -430,6 +450,10 @@ export async function POST(req: NextRequest) {
   }
   let imageBlockCounter = 0;
 
+  // Carry-over for sanitized fallbacks: wenn die KI für eine Pfad-Folge-Seite
+  // einen Quiz-Status-Namen geliefert hat, erbt sie den Ortsnamen der
+  // unmittelbaren Vorgänger-Seite (bei Pfad A/B passt das semantisch).
+  let lastValidPageName = 'Weiter';
   const pages = parsed.pages.map((page, pIdx) => {
     const pageNextId = typeof page.nextPageIndex === 'number' && pageIds[page.nextPageIndex]
       ? pageIds[page.nextPageIndex]
@@ -438,9 +462,12 @@ export async function POST(req: NextRequest) {
     // Page 0 always hides location hint; respect AI output for other pages
     const hideHint = pIdx === 0 || page.hideLocationHint === true;
 
+    const cleanName = sanitizePageName(page.name, lastValidPageName);
+    lastValidPageName = cleanName;
+
     return {
       id: pageIds[pIdx],
-      name: page.name,
+      name: cleanName,
       ...(pageNextId ? { nextPageId: pageNextId } : {}),
       ...(hideHint ? { hideLocationHint: true } : {}),
       nodes: page.blocks.map((block) => {
