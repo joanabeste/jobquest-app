@@ -7,7 +7,7 @@
  */
 
 import { useState, useRef, useMemo, useEffect } from 'react';
-import { FunnelDoc, LayoutNode, BlockNode } from '@/lib/funnel-types';
+import { FunnelDoc, FunnelPage, LayoutNode, BlockNode } from '@/lib/funnel-types';
 import { Company, Dimension } from '@/lib/types';
 import { flatBlocks, isSubmitPage, computeScores, computeMaxScores } from '@/lib/funnel-utils';
 import { analyticsStorage } from '@/lib/storage';
@@ -24,6 +24,66 @@ interface Props {
   /** Feuert bei Mount + jedem Seitenwechsel. Genutzt z.B. vom Review-Flow,
    *  um Kommentare an die aktuelle Seite zu hängen. */
   onPageChange?: (pageId: string, pageName: string, pageIndex: number) => void;
+}
+
+// ─── Recap-Helpers ────────────────────────────────────────────────────────────
+// Block-Typen, die als „Kontext" für die nachfolgende Decision-Page gelten.
+const CONTEXT_BLOCK_TYPES = new Set(['quest_scene', 'quest_dialog', 'quest_info']);
+
+function collectPageBlocks(page: FunnelPage): BlockNode[] {
+  const out: BlockNode[] = [];
+  for (const node of page.nodes) {
+    if (node.kind === 'layout') {
+      for (const col of (node as LayoutNode).columns) {
+        for (const cn of col.nodes) out.push(cn as BlockNode);
+      }
+    } else {
+      out.push(node as BlockNode);
+    }
+  }
+  return out;
+}
+
+function stripHtmlToText(html: string): string {
+  return html.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function truncateRecap(txt: string, max = 160): string {
+  if (txt.length <= max) return txt;
+  const cut = txt.slice(0, max);
+  const lastSpace = cut.lastIndexOf(' ');
+  const base = lastSpace > 80 ? cut.slice(0, lastSpace) : cut;
+  return base.replace(/[.,;:!?\-–—]+$/, '') + '…';
+}
+
+function extractRecapFromBlock(blk: BlockNode): string | undefined {
+  if (blk.type === 'quest_dialog') {
+    const lines = (blk.props.lines as { speaker?: string; text?: string }[] | undefined) || [];
+    for (let li = lines.length - 1; li >= 0; li--) {
+      const text = stripHtmlToText(String(lines[li]?.text ?? ''));
+      if (!text) continue;
+      const speaker = String(lines[li]?.speaker ?? '').trim();
+      return truncateRecap(speaker ? `${speaker}: „${text}"` : text);
+    }
+    return undefined;
+  }
+  if (blk.type === 'quest_scene') {
+    const description = stripHtmlToText(String(blk.props.description ?? ''));
+    if (description) return truncateRecap(description);
+    const subtext = stripHtmlToText(String(blk.props.subtext ?? ''));
+    if (subtext) return truncateRecap(subtext);
+    const title = stripHtmlToText(String(blk.props.title ?? ''));
+    if (title) return truncateRecap(title);
+    return undefined;
+  }
+  if (blk.type === 'quest_info') {
+    const text = stripHtmlToText(String(blk.props.text ?? ''));
+    if (text) return truncateRecap(text);
+    const title = stripHtmlToText(String(blk.props.title ?? ''));
+    if (title) return truncateRecap(title);
+    return undefined;
+  }
+  return undefined;
 }
 
 // ─── Main player ──────────────────────────────────────────────────────────────
@@ -336,23 +396,10 @@ export default function FunnelPlayer({ doc, company, contentDbId, onPageChange }
   // Wortbeitrag der Story-Person wirkt statt wie eine UI-Box.
   // Muss vor jedem early return stehen (rules-of-hooks).
   const lastDialogSpeaker = useMemo(() => {
-    const collectBlocks = (page: FunnelDoc['pages'][number]): BlockNode[] => {
-      const out: BlockNode[] = [];
-      for (const node of page.nodes) {
-        if (node.kind === 'layout') {
-          for (const col of (node as LayoutNode).columns) {
-            for (const cn of col.nodes) out.push(cn as BlockNode);
-          }
-        } else {
-          out.push(node as BlockNode);
-        }
-      }
-      return out;
-    };
     for (let pi = pageIndex; pi >= 0; pi--) {
       const page = doc.pages[pi];
       if (!page) continue;
-      const blocks = collectBlocks(page);
+      const blocks = collectPageBlocks(page);
       for (let bi = blocks.length - 1; bi >= 0; bi--) {
         const blk = blocks[bi];
         if (blk.type === 'quest_dialog') {
@@ -362,6 +409,30 @@ export default function FunnelPlayer({ doc, company, contentDbId, onPageChange }
             if (sp && sp.trim()) return sp.trim();
           }
         }
+      }
+    }
+    return undefined;
+  }, [pageIndex, doc.pages]);
+
+  // Auto-Recap des Kontexts der vorherigen Page — wird vor quest_decision
+  // angezeigt, damit der User beim Antworten nicht zurückspringen muss, um
+  // die Situation noch einmal nachzulesen. Greift nur, wenn die aktuelle Page
+  // eine Decision enthält UND keinen eigenen Kontext-Block (Scene/Dialog/Info)
+  // mitbringt — sonst stünde der Kontext doppelt auf der Seite.
+  const previousPageRecap = useMemo<string | undefined>(() => {
+    const currentPageDoc = doc.pages[pageIndex];
+    if (!currentPageDoc) return undefined;
+    const currentBlocks = collectPageBlocks(currentPageDoc);
+    if (!currentBlocks.some((b) => b.type === 'quest_decision')) return undefined;
+    if (currentBlocks.some((b) => CONTEXT_BLOCK_TYPES.has(b.type))) return undefined;
+
+    for (let pi = pageIndex - 1; pi >= 0; pi--) {
+      const page = doc.pages[pi];
+      if (!page) continue;
+      const blocks = collectPageBlocks(page);
+      for (let bi = blocks.length - 1; bi >= 0; bi--) {
+        const recap = extractRecapFromBlock(blocks[bi]);
+        if (recap) return recap;
       }
     }
     return undefined;
@@ -475,6 +546,7 @@ export default function FunnelPlayer({ doc, company, contentDbId, onPageChange }
     onDialogAdvance: (count: number) => setDialogVisible(count),
     dialogInputInFooter: hasDialogInput,
     lastDialogSpeaker,
+    previousPageRecap,
   };
 
   return (

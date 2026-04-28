@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ArrowRight, FileDown, Check, X, ChevronRight } from 'lucide-react';
+import { ArrowRight, FileDown, Check, X, ChevronRight, MessageCircle } from 'lucide-react';
 import { BlockNode } from '@/lib/funnel-types';
 import { applyVars, stripNamePlaceholder } from '@/lib/funnel-variables';
 import { Company, Dimension } from '@/lib/types';
@@ -323,6 +323,7 @@ export function BlockRenderer({
   dialogVisible, onDialogAdvance,
   dialogInputInFooter,
   lastDialogSpeaker,
+  previousPageRecap,
 }: {
   node: BlockNode; company: Company; primary: string; br: string;
   answers: Record<string, unknown>; firstName: string;
@@ -345,6 +346,7 @@ export function BlockRenderer({
   onDialogAdvance: (count: number) => void;
   dialogInputInFooter?: boolean;
   lastDialogSpeaker?: string;
+  previousPageRecap?: string;
 }) {
   const p = node.props;
   const varsMap = {
@@ -532,6 +534,12 @@ export function BlockRenderer({
 
       return (
         <div className="mx-4 my-3">
+          {previousPageRecap && (
+            <div className="mb-2 flex items-start gap-2 px-3 py-2 bg-slate-100 rounded-xl">
+              <MessageCircle size={12} className="flex-shrink-0 mt-0.5 text-slate-400" />
+              <span className="text-xs italic leading-relaxed text-slate-600">{si(previousPageRecap)}</span>
+            </div>
+          )}
           <div className="bg-white rounded-2xl shadow-sm p-5 mb-3">
             <p className="text-base font-semibold text-slate-800 text-center leading-snug" dangerouslySetInnerHTML={{ __html: sh(inlineHtml(si(p.question))) }} />
           </div>
