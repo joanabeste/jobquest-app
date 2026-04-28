@@ -19,13 +19,45 @@ WICHTIG – KONVERTIERUNGSREGELN:
   Eine Kollegin oder Ausbilderin erklärt im Gespräch, was richtig war und warum. Der Nutzer kann per choices reagieren (z.B. "Verstanden!", "Gut zu wissen!").
   KEIN reiner Textblock — immer als Dialog mit einer Figur!
 • WANDLE Multiple-Choice-Fragen mit richtig/falsch-Bewertung in quest_quiz um: Formuliere klare Fragen mit feedback für jede Option.
-• MANCHE Entscheidungen passen besser als quest_dialog MIT choices statt als quest_decision:
-  → Wenn eine Kollegin oder Ausbilderin eine Anweisung gibt und der Nutzer reagieren soll ("Okay, mache ich!" / "Kurze Frage dazu…")
-  → Wenn es ein lockeres Gespräch ist, in dem der Nutzer eine Haltung zeigt
-  → quest_decision nur für echte Situationsentscheidungen mit Konsequenzen/Branching
-• WANDLE echte Entscheidungsszenarien (mit spürbaren Konsequenzen) in quest_decision um: Zwei Optionen mit Branching.
+• WANDLE echte Entscheidungsszenarien (mit spürbaren Konsequenzen) in quest_decision um: 2–3 Optionen mit Branching/Reactions.
 • BEHALTE die Story-Struktur, Reihenfolge und alle Texte/Szenarien bei – optimiere nur die Darstellung.
 • Nutze @vorname überall, wo der Prototyp den Namen des Nutzers verwendet.
+
+═══════════════════════════════════════════════════════
+  ABSOLUTE LOGIK-REGELN — KEINE DOPPELUNGEN
+═══════════════════════════════════════════════════════
+
+(L1) EINE SITUATION = EINE INTERAKTION
+  Pro Szenario im Prototyp gibt es GENAU EINE Entscheidungs- oder Quizinteraktion.
+  Niemals dieselbe Frage zweimal hintereinander stellen — auch nicht in unterschiedlicher Form.
+
+  FALSCH (so NICHT machen):
+    Seite N:   quest_dialog "Paul wirkt traurig. Was würdest du tun?" + 2 choices
+    Seite N+1: quest_decision "Paul sitzt still, wie reagierst du?" + 3 Optionen
+    → Das ist die GLEICHE Frage zweimal. Der User klickt zweimal das Gleiche.
+
+  RICHTIG:
+    Seite N:   quest_dialog (Setup, Kontext, KEINE choices, oder choices nur als Reaktion auf eine Anweisung der Kollegin)
+    Seite N+1: quest_decision (eine echte Wahl mit Konsequenzen, Branching)
+    Seite N+2: quest_dialog (Feedback der Kollegin auf die Wahl, mit "Verstanden!"-choice)
+
+(L2) DIALOG-CHOICES vs. DECISION — KLARE TRENNUNG
+  • quest_dialog.choices: NUR für REAKTIONEN auf eine Aussage/Anweisung der Kollegin.
+    Beispiele: "Okay, mache ich!", "Klingt gut.", "Kurze Frage dazu…", "Verstanden!"
+    Diese choices haben KEINE Konsequenzen — sie sind nur Gesprächs-Acks.
+  • quest_decision: für jede SITUATIVE WAHL mit Konsequenzen.
+    Beispiele: "Wie reagierst du auf Pauls Stimmung?", "Schützt du den Bewohner sofort oder schaust du nur zu?"
+    Diese Wahlen haben Branching (verschiedene targetPageId) und reactions.
+
+  WENN eine Frage im Prototyp eine echte Wahl ist → quest_decision, KEIN Dialog-Choice davor mit derselben Frage.
+  WENN eine Frage im Prototyp nur Gesprächs-Smalltalk ist → quest_dialog mit choices, KEIN nachfolgender quest_decision.
+
+(L3) STORY-FLUSS-PRÜFUNG
+  Lies vor der Ausgabe deine Seiten in Reihenfolge durch und prüfe:
+  • Stellt eine Seite eine Frage, die die nächste Seite nochmal stellt? → ZUSAMMENLEGEN.
+  • Folgt nach einer quest_decision sofort eine zweite quest_decision zur selben Situation? → ZUSAMMENLEGEN.
+  • Erklärt eine Feedback-Seite etwas, das dem Nutzer schon klar ist? → KÜRZEN oder STREICHEN.
+  • Macht der Spielweg in Worten Sinn ("Erst sehe ich Paul → dann entscheide ich → dann erfahre ich, ob es richtig war")? Wenn nein, neu sortieren.
 
 ═══════════════════════════════════════════════════════
   STRUKTUR (FESTER EINSTIEG + KONVERTIERTER INHALT + FESTER ABSCHLUSS)
@@ -53,10 +85,10 @@ Seite 3: quest_scene → Ort und heutige Aufgaben: Wo bin ich? Was steht heute a
 ── KONVERTIERTER INHALT (Seiten 4 bis N-3) ──────────────────────────
 Konvertiere hier JEDEN einzelnen Inhalt aus dem Heyflow-Prototyp:
 
-• Für JEDE Situation/Szenario im Heyflow:
-  1. quest_scene oder quest_dialog als Einstieg/Kontext
-  2. quest_decision oder quest_quiz als Interaktion
-  3. quest_dialog oder quest_scene als Feedback/Konsequenz
+• Für JEDE Situation/Szenario im Heyflow GENAU EIN Drei-Seiten-Pattern:
+  1. quest_scene ODER quest_dialog als Einstieg/Kontext (KEINE choices, wenn die nächste Seite eine Entscheidung ist!)
+  2. quest_decision ODER quest_quiz als Interaktion (genau eine pro Situation)
+  3. quest_dialog ODER quest_scene als Feedback/Konsequenz (kurz, mit "Verstanden!"-choice)
 
 • Mindestens 2 quest_decision MIT BRANCHING (zwei verschiedene Pfade):
   → Jeder Pfad MINDESTENS 2 Seiten lang
@@ -64,7 +96,10 @@ Konvertiere hier JEDEN einzelnen Inhalt aus dem Heyflow-Prototyp:
 
 • Mindestens 2 quest_quiz (Wissens-/Verhaltensfragen)
 
-• Mindestens 3 quest_dialog mit choices (interaktive Gespräche)
+• quest_dialog mit choices ist OPTIONAL — nur dort einsetzen, wo es ein
+  echtes Gespräch ist (z.B. Kollegin gibt Anweisung, Nutzer reagiert).
+  KEINE Pflicht-Anzahl. Lieber WENIGER Dialog-Choices als Doppelungen
+  mit dem nachfolgenden quest_decision.
 
 • Füge quest_zuordnung oder quest_hotspot ein, wenn der Inhalt es hergibt
 
@@ -327,6 +362,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'KI-Antwort ungültig.' }, { status: 502 });
   }
 
+  // ── Pre-pass: dedupe consecutive same-question interactions ───────────────
+  // Wenn das Modell trotz Prompt-Regel zwei aufeinanderfolgende Pages mit
+  // derselben Entscheidungs-/Quizfrage produziert, droppen wir die zweite.
+  // Defense in Depth gegen "Dialog mit choices + Decision mit derselben
+  // Frage"-Doppelung.
+  aiResult.pages = dedupeConsecutiveInteractions(aiResult.pages);
+
   // ── Post-processing (same logic as generate-quest) ─────────────────────────
   const pageIds = aiResult.pages.map(() => crypto.randomUUID());
 
@@ -376,4 +418,98 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json({ beruf: aiResult.beruf ?? '', pages });
+}
+
+// ─── Dedup helper ────────────────────────────────────────────────────────────
+
+interface DedupePage {
+  name: string;
+  nextPageIndex?: number;
+  hideLocationHint?: boolean;
+  blocks: Array<{ type: string; props: Record<string, unknown> }>;
+}
+
+const STOP_WORDS = new Set([
+  'wie','was','ist','der','die','das','dem','den','des','ein','eine','einen','und','oder','aber','dass','wenn','würdest','tust','reagierst','jetzt','tun','machst','machen','du','er','sie','es','auf','mit','bei','zu','in','im','für','vor','an','nach',
+]);
+
+function normalizeQuestion(s: unknown): string {
+  if (typeof s !== 'string') return '';
+  return s
+    .toLowerCase()
+    .replace(/@\w+/g, '')          // @vorname raus
+    .replace(/[^\w\säöüß]/g, ' ')  // Satzzeichen
+    .split(/\s+/)
+    .filter((w) => w.length > 2 && !STOP_WORDS.has(w))
+    .sort()
+    .join(' ');
+}
+
+/** Sehr ähnliche Fragen erkennen — Jaccard-Ähnlichkeit über Token-Sets. */
+function similar(a: string, b: string, threshold = 0.6): boolean {
+  if (!a || !b) return false;
+  const aSet = new Set(a.split(' '));
+  const bSet = new Set(b.split(' '));
+  let intersection = 0;
+  aSet.forEach((t) => { if (bSet.has(t)) intersection++; });
+  const union = aSet.size + bSet.size - intersection;
+  if (union === 0) return false;
+  return intersection / union >= threshold;
+}
+
+function pageInteractionQuestion(page: DedupePage): string {
+  for (const block of page.blocks ?? []) {
+    if (block.type === 'quest_decision' || block.type === 'quest_quiz') {
+      return normalizeQuestion(block.props?.question);
+    }
+    if (block.type === 'quest_dialog') {
+      const choices = block.props?.choices;
+      if (Array.isArray(choices) && choices.length > 0) {
+        // Letzte Sprecher-Zeile als Frage interpretieren (Modell stellt
+        // typischerweise dort die Wahl-Frage).
+        const lines = block.props?.lines;
+        if (Array.isArray(lines)) {
+          const last = [...lines].reverse().find((l) =>
+            l && typeof l === 'object' && typeof (l as { text?: unknown }).text === 'string',
+          ) as { text?: string } | undefined;
+          return normalizeQuestion(last?.text);
+        }
+      }
+    }
+  }
+  return '';
+}
+
+/**
+ * Erkennt aufeinanderfolgende Pages, die dieselbe Entscheidungsfrage stellen,
+ * und entfernt die schwächere (= dialog-with-choices vor decision wird gedropt,
+ * sonst die zweite). Greift, wenn die KI die L1-Regel ignoriert.
+ */
+function dedupeConsecutiveInteractions(pages: DedupePage[]): DedupePage[] {
+  const out: DedupePage[] = [];
+  for (let i = 0; i < pages.length; i++) {
+    const cur = pages[i];
+    const next = pages[i + 1];
+    const curQ = pageInteractionQuestion(cur);
+    const nextQ = next ? pageInteractionQuestion(next) : '';
+    if (curQ && nextQ && similar(curQ, nextQ)) {
+      // Beide stellen dieselbe Frage. Wir behalten quest_decision/quest_quiz
+      // (echte Wahl mit Konsequenzen) und droppen den dialog-mit-choices.
+      const curIsDecision = cur.blocks.some((b) => b.type === 'quest_decision' || b.type === 'quest_quiz');
+      if (curIsDecision) {
+        out.push(cur);
+        i++; // skip next
+      } else {
+        // cur ist dialog-with-choices, next ist decision → dialog droppen,
+        // aber Setup-Lines des Dialogs erhalten wir nicht — der next.dialog
+        // ist meist sowieso reicher. Skip cur, push next im nächsten Loop.
+        // Wir loggen für Debug.
+        console.warn('[import-heyflow] Doppelte Frage erkannt, entferne dialog-mit-choices:', curQ.slice(0, 60));
+        // Kein push — fahren mit next fort.
+      }
+    } else {
+      out.push(cur);
+    }
+  }
+  return out;
 }

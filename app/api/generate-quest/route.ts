@@ -24,6 +24,19 @@ WICHTIG – STORY-KOHÄRENZ:
 • Entscheidungen haben spürbare Konsequenzen – die Story entwickelt sich konsistent.
 • Kein Szenenbruch ohne Überleitung. Wenn die Situation wechselt, erkläre kurz warum.
 
+LOGIK-REGELN — KEINE DOPPELUNGEN:
+(L1) EINE SITUATION = EINE INTERAKTION. Pro Szenario gibt es GENAU EINE Entscheidung oder Quizfrage. Niemals dieselbe Frage zweimal hintereinander stellen.
+  FALSCH: Seite N quest_dialog "Wie reagierst du?" mit 2 choices, Seite N+1 quest_decision "Wie reagierst du?" mit 3 Optionen → das ist die GLEICHE Frage doppelt.
+  RICHTIG: Seite N quest_dialog (Setup ohne choices oder mit reinen Gesprächs-Acks), Seite N+1 quest_decision (eine echte Wahl mit Branching), Seite N+2 quest_dialog (Feedback mit "Verstanden!"-choice).
+(L2) DIALOG-CHOICES vs. DECISION — klare Trennung:
+  quest_dialog.choices = nur für REAKTIONEN auf eine Aussage der Kollegin ("Okay, mache ich!", "Verstanden!"). KEINE Konsequenzen, KEIN Branching.
+  quest_decision = jede situative Wahl mit Konsequenzen. Branching, Reactions, IsWrong.
+  Wenn eine Frage eine echte Wahl ist → quest_decision, KEIN Dialog-Choice davor mit derselben Frage.
+(L3) STORY-FLUSS-PRÜFUNG vor der Ausgabe:
+  • Stellt eine Seite eine Frage, die die nächste nochmal stellt? → ZUSAMMENLEGEN.
+  • Folgt nach einer quest_decision sofort eine zweite quest_decision zur selben Situation? → ZUSAMMENLEGEN.
+  • Macht der Spielweg in Worten Sinn? ("Erst sehe ich Paul → dann entscheide ich → dann erfahre ich, ob es richtig war"). Wenn nein, neu sortieren.
+
 ═══════════════════════════════════════════════════════
   STRUKTUR (FESTER EINSTIEG + PFLICHTINHALT + FESTER ABSCHLUSS)
 ═══════════════════════════════════════════════════════
