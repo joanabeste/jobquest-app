@@ -22,6 +22,13 @@ WICHTIG – KONVERTIERUNGSREGELN:
 • WANDLE echte Entscheidungsszenarien (mit spürbaren Konsequenzen) in quest_decision um: 2–3 Optionen mit Branching/Reactions.
 • BEHALTE die Story-Struktur, Reihenfolge und alle Texte/Szenarien bei – optimiere nur die Darstellung.
 • Nutze @vorname überall, wo der Prototyp den Namen des Nutzers verwendet.
+• WICHTIG zum @vorname-Platzhalter im Heyflow-Quelltext: Wenn im Prototyp
+  ein Text wie "Richtig, @vorname! Weiter geht's zur Kasse…" steht, ist das
+  ein UNERSETZTER Platzhalter aus dem Heyflow-Bug. Übernimm den Text NICHT
+  so wörtlich, sondern formuliere natürlich um — entweder mit @vorname als
+  echter Variable oder ohne Anrede ("Weiter geht's zur Kasse…"). NIEMALS
+  Roh-Strings wie "@vorname" mit Komma + Leerzeichen drumherum stehenlassen,
+  als wäre der Platzhalter gewünschter Text.
 
 ═══════════════════════════════════════════════════════
   ABSOLUTE LOGIK-REGELN — KEINE DOPPELUNGEN

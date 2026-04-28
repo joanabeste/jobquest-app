@@ -55,6 +55,26 @@ export async function sendInviteEmail({
 
 
 // ─── Lead-E-Mails senden (Bestätigung + Benachrichtigung) ────────────────────
+
+/**
+ * Wandelt einen Plain-Text-Body in HTML um: \n → <br>, doppeltes \n → Absatz,
+ * HTML-Sonderzeichen escapen. Damit landen Zeilenumbrüche aus text-Mode-Bodies
+ * sichtbar im HTML-Mail-Output (sonst werden \n vom Mail-Client geschluckt).
+ */
+function textBodyToHtml(text: string): string {
+  const escaped = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+  return escaped.replace(/\n/g, '<br>');
+}
+
+function buildHtmlBody(body: string, mode: EmailConfig['confirmationBodyMode']): string {
+  // visual mode = WYSIWYG → bereits HTML; html mode = manuell → bereits HTML.
+  if (mode !== 'text') return body;
+  return `<div style="white-space:normal;font-family:Arial,sans-serif;line-height:1.5;">${textBodyToHtml(body)}</div>`;
+}
+
 export async function sendLeadEmails({
   emailConfig,
   vars,
@@ -75,7 +95,9 @@ export async function sendLeadEmails({
       from,
       to: vars.email,
       subject: applyVars(emailConfig.confirmationSubject, vars),
-      html: body, // visual mode produces HTML; raw HTML mode is also HTML
+      html: buildHtmlBody(body, emailConfig.confirmationBodyMode),
+      // Plain-text-Fallback für Mail-Clients ohne HTML-Render.
+      ...(emailConfig.confirmationBodyMode === 'text' ? { text: body } : {}),
       attachments,
     });
   }
@@ -87,7 +109,8 @@ export async function sendLeadEmails({
       from,
       to: emailConfig.notificationRecipient,
       subject: applyVars(emailConfig.notificationSubject, vars),
-      html: body, // visual mode produces HTML; raw HTML mode is also HTML
+      html: buildHtmlBody(body, emailConfig.notificationBodyMode),
+      ...(emailConfig.notificationBodyMode === 'text' ? { text: body } : {}),
     });
   }
 }

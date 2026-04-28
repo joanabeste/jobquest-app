@@ -737,7 +737,9 @@ export function BlockRenderer({
     }
 
     case 'quest_spinner':
-      return <SpinnerBlock text={s(p.text)} doneText={s(p.doneText)} primary={primary} onNext={() => onNext()} duration={n(p.duration, 2400)} />;
+      // si() ersetzt @vorname / @companyName u.a. — sonst würden die Vars als
+      // Roh-Text wie "Richtig, @vorname!" auf dem Bildschirm landen.
+      return <SpinnerBlock text={si(p.text)} doneText={si(p.doneText)} primary={primary} onNext={() => onNext()} duration={n(p.duration, 2400)} />;
 
     case 'quest_rating':
       return (

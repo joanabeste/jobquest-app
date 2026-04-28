@@ -105,10 +105,19 @@ export function createSubmitLeadHandler<T extends LeadBase>(
             await Promise.race([
               sendLeadEmails({
                 emailConfig,
-                // customFields first so system-vars (firstName, email …)
-                // nicht überschrieben werden können durch einen zufällig
-                // gleich benannten customField-Key.
+                // Reihenfolge: bekannte Custom-Field-Defaults → echte
+                // customFields → System-Vars. Damit:
+                //  • bleiben Templates wie @interessierteBerufe nicht als
+                //    Roh-Platzhalter stehen, wenn der User nichts ausgewählt
+                //    hat (Default '' greift).
+                //  • System-Vars (firstName, email …) gewinnen immer gegen
+                //    zufällig gleich benannte customField-Keys.
                 vars: {
+                  // Bekannte optionale Custom-Felder, die in DEFAULT_EMAIL_CONFIG
+                  // Templates referenziert werden:
+                  interessierteBerufe: '',
+                  praktikum: '',
+                  // Evtl. von der Form überschrieben:
                   ...(lead.customFields ?? {}),
                   firstName: lead.firstName,
                   lastName: lead.lastName,
