@@ -21,6 +21,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { useCorporateDesign } from '@/lib/use-corporate-design';
 import { careerCheckStorage } from '@/lib/storage';
+import { slugify } from '@/lib/utils';
 import type { Dimension } from '@/lib/types';
 import { CIContext } from '@/lib/ci-context';
 import { FunnelEditorContext } from './FunnelEditorContext';
@@ -40,6 +41,17 @@ const CONTENT_TYPE_TO_ENTITY: Record<FunnelContentType, EntityType> = {
   check: 'career_check',
   form: 'form_page',
 };
+
+/**
+ * Erkennt, ob der Slug noch der generische Default aus dem createDefault-
+ * Schritt ist (z.B. "neue-jobquest-a7x9k2", "neuer-berufscheck-pq8m4z",
+ * "neues-formular-..."). Wenn ja: Auto-Slug nach KI-Generierung darf
+ * eingreifen. Wenn der User den Slug bereits angepasst hat, fassen wir
+ * ihn nicht an.
+ */
+function isDefaultSlug(slug: string): boolean {
+  return /^(neue-jobquest|neuer-berufscheck|neues-formular)(-|$)/.test(slug);
+}
 const CONTENT_TYPE_TO_PREFIX: Record<FunnelContentType, string> = {
   quest: '/jobquest',
   check: '/berufscheck',
@@ -376,6 +388,43 @@ function FunnelEditorInner({
   }
 
   // ── AI generation ───────────────────────────────────────────────────────────
+
+  /**
+   * Setzt den Slug auf den slugifizierten Titel — fire-and-forget.
+   * Bei Konflikt hängt der Server (oder hier die Fallback-Logik) ein zufälliges
+   * Suffix an, sodass die Aktion immer erfolgreich ist. Fehler werden geloggt,
+   * aber nicht propagiert — der Generierungs-Flow soll dadurch nicht blockieren.
+   */
+  async function autoUpdateSlug(rawTitle: string) {
+    const base = slugify(rawTitle).slice(0, 60);
+    if (!base) return;
+    const entityType = CONTENT_TYPE_TO_ENTITY[contentType];
+    async function tryUpdate(candidate: string): Promise<{ ok: boolean; slug?: string }> {
+      try {
+        const res = await fetch('/api/slugs/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ entityId: doc.contentId, entityType, newSlug: candidate }),
+        });
+        if (res.ok) {
+          const data = await res.json().catch(() => ({}));
+          return { ok: true, slug: (data as { slug?: string }).slug ?? candidate };
+        }
+        return { ok: false };
+      } catch {
+        return { ok: false };
+      }
+    }
+    let result = await tryUpdate(base);
+    if (!result.ok) {
+      // Wahrscheinlich Slug-Konflikt → Random-Suffix anhängen.
+      const suffix = Math.random().toString(36).slice(2, 8);
+      result = await tryUpdate(`${base}-${suffix}`.slice(0, 60));
+    }
+    if (result.ok && result.slug) onSlugChange?.(result.slug);
+    else console.warn('[FunnelEditor] Auto-Slug-Update fehlgeschlagen für', base);
+  }
+
   function handleGenerateQuest(pages: FunnelPage[], jobTitle: string) {
     const next = { ...doc, pages };
     push(next);
@@ -383,7 +432,14 @@ function FunnelEditorInner({
     setActivePageId(pages[0]?.id ?? '');
     setSelectedNodeId(null);
     setShowGenerateModal(false);
-    if (jobTitle) onTitleChange(jobTitle);
+    if (jobTitle) {
+      onTitleChange(jobTitle);
+      // Auto-Slug nur, wenn der Slug noch der generische Default aus dem
+      // createDefault-Schritt ist. Wir erkennen das daran, dass er mit
+      // "neue-jobquest", "neuer-berufscheck" o.ä. anfängt — bei manuell
+      // umbenannten Slugs greifen wir nicht ein.
+      if (isDefaultSlug(slug)) void autoUpdateSlug(jobTitle);
+    }
   }
 
   async function handleGenerateCheck(pages: FunnelPage[], dimensionList: Dimension[], checkTitle: string) {
@@ -400,6 +456,7 @@ function FunnelEditorInner({
     } else if (checkTitle) {
       onTitleChange(checkTitle);
     }
+    if (checkTitle && isDefaultSlug(slug)) void autoUpdateSlug(checkTitle);
   }
 
   // ── selected node ───────────────────────────────────────────────────────────

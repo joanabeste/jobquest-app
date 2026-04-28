@@ -210,12 +210,12 @@ export default function SlugEditor({
           disabled={saving}
         />
         {checking && <Loader2 className="w-3.5 h-3.5 text-slate-400 animate-spin shrink-0" />}
-        {!checking && available && (
-          <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-        )}
         {!checking && available === false && (
           <AlertCircle className="w-3.5 h-3.5 text-red-500 shrink-0" />
         )}
+        {/* Kein expliziter "verfügbar"-Haken mehr — der Save-Button rechts wird
+            automatisch aktiv/farbig, sobald available === true. Zwei nebeneinander
+            stehende grüne Haken (Validierung + Speichern) wirkten wie ein Bug. */}
         <button
           type="button"
           onClick={handleSave}
