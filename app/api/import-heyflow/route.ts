@@ -160,14 +160,31 @@ quest_dialog
 quest_decision
   Props: { question: string, options: [{ id: "UUID", text: string, emoji: string, reaction: string, isWrong?: boolean, nextPageIndex?: number }] }
   → Für echte Entscheidungssituationen. 2–3 Optionen.
-  → question: Konkrete Situation mit Handlungsdruck, nicht abstrakt.
+  → question: KURZ und prägnant — maximal 8–12 Wörter, EIN Satz. Die Frage ist die
+    Headline im Player und wirkt bei langen Sätzen erschlagen. Beispiele:
+      GUT: "Wie reagierst du, @vorname?"  /  "Was machst du jetzt?"
+      SCHLECHT: "Luisa legt einen teuren Käse in den Wagen, der nicht auf dem
+                 Einkaufszettel steht. Wie reagierst du, @vorname?"
+    Setup/Kontext gehört in eine vorgelagerte quest_scene (description-Feld).
   → isWrong: true wenn objektiv falsch/gefährlich. Bei Branching immer false.
-  → emoji: NUR Icon-Namen aus dieser Liste (KEINE Erfindungen wie "DangerSign"):
-    Briefcase, Star, Heart, Zap, Target, Users, Clock, Globe, Shield, Lightbulb,
-    Rocket, TrendingUp, Award, CheckCircle, XCircle, ThumbsUp, ThumbsDown,
-    Coffee, Smile, AlertTriangle, HelpCircle, MessageCircle, Phone, Mail,
-    Clipboard, Search, Settings, Flag, Bookmark,
-    StopCircle, Ban, OctagonAlert, Hand, ShieldX, ShieldAlert
+  → emoji: PFLICHT — JEDE Option in einem quest_decision MUSS ein UNTERSCHIEDLICHES
+    Icon haben. Niemals dasselbe Icon (z.B. zweimal ThumbsDown) in einem Block.
+    Wähle das Icon passend zum INHALT, nicht nur zu "richtig/falsch":
+      Hände/Eingreifen → Hand, HandHelping  ·  Reden → MessageCircle, MessageSquare
+      Beobachten → Eye, Clock  ·  Wegschauen → Ban, EyeOff  ·  Schützen → Shield, ShieldCheck
+      Hilfe holen → Phone, Users, Bell  ·  Stoppen → StopCircle, Hand
+      Gefährlich → AlertTriangle, OctagonAlert  ·  Zustimmen → ThumbsUp, CheckCircle
+      Ablehnen → ThumbsDown, XCircle (nur EINMAL pro Block!)
+      Geld → Wallet, ShoppingCart, Receipt  ·  Zeit → Clock, Hourglass, Timer
+      Erklären → Lightbulb, BookOpen
+    Allowlist (KEINE Erfindungen wie "DangerSign"):
+    Briefcase, Star, Heart, Zap, Target, Users, Clock, Globe, Shield, ShieldCheck,
+    Lightbulb, Rocket, TrendingUp, Award, CheckCircle, XCircle, ThumbsUp, ThumbsDown,
+    Coffee, Smile, Frown, AlertTriangle, AlertCircle, HelpCircle, MessageCircle,
+    MessageSquare, Phone, Mail, Clipboard, ClipboardCheck, Search, Settings, Flag,
+    Bookmark, StopCircle, Ban, OctagonAlert, Hand, ShieldX, ShieldAlert,
+    Eye, EyeOff, Bell, Hourglass, Timer, Wallet, ShoppingCart, Receipt, BookOpen,
+    Sparkles, HeartPulse, HeartHandshake, Handshake, Cross, Pill
     Wenn unsicher: lieber CheckCircle / XCircle / AlertTriangle nehmen.
 
 quest_quiz
@@ -400,16 +417,15 @@ export async function POST(req: NextRequest) {
         let props = block.props;
 
         // Resolve nextPageIndex in quest_decision options → targetPageId
+        // + Duplikat-Icons auflockern, damit jede Option visuell unterscheidbar ist.
         if (block.type === 'quest_decision' && Array.isArray(props.options)) {
-          props = {
-            ...props,
-            options: (props.options as RawOption[]).map(({ nextPageIndex, ...rest }) => {
-              if (typeof nextPageIndex === 'number' && pageIds[nextPageIndex]) {
-                return { ...rest, targetPageId: pageIds[nextPageIndex] };
-              }
-              return rest;
-            }),
-          };
+          const resolved = (props.options as RawOption[]).map(({ nextPageIndex, ...rest }) => {
+            if (typeof nextPageIndex === 'number' && pageIds[nextPageIndex]) {
+              return { ...rest, targetPageId: pageIds[nextPageIndex] };
+            }
+            return rest;
+          });
+          props = { ...props, options: diversifyDecisionIcons(resolved) };
         }
 
         // Inject default lead fields when AI leaves fields empty
@@ -431,6 +447,37 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json({ beruf: aiResult.beruf ?? '', pages });
+}
+
+// ─── Decision-Icon Diversifier ───────────────────────────────────────────────
+const ICON_POOLS = {
+  negative: ['XCircle', 'ThumbsDown', 'AlertTriangle', 'OctagonAlert', 'StopCircle', 'Ban', 'Frown', 'EyeOff', 'ShieldX', 'AlertCircle'],
+  positive: ['CheckCircle', 'ThumbsUp', 'Smile', 'Heart', 'Sparkles', 'ShieldCheck', 'HandHelping', 'Star', 'Award'],
+  neutral: ['MessageCircle', 'MessageSquare', 'Hand', 'Eye', 'Clock', 'Hourglass', 'Lightbulb', 'BookOpen', 'Phone', 'Bell', 'HelpCircle', 'ClipboardCheck', 'Search', 'Wallet', 'ShoppingCart', 'Receipt'],
+} as const;
+
+function poolFor(icon: string): readonly string[] | null {
+  if (ICON_POOLS.negative.includes(icon as never)) return ICON_POOLS.negative;
+  if (ICON_POOLS.positive.includes(icon as never)) return ICON_POOLS.positive;
+  if (ICON_POOLS.neutral.includes(icon as never)) return ICON_POOLS.neutral;
+  return null;
+}
+
+function diversifyDecisionIcons<T extends { emoji?: string; isWrong?: boolean }>(options: T[]): T[] {
+  const used = new Set<string>();
+  return options.map((opt) => {
+    const original = opt.emoji;
+    if (!original) return opt;
+    if (!used.has(original)) {
+      used.add(original);
+      return opt;
+    }
+    const pool = poolFor(original) ?? (opt.isWrong ? ICON_POOLS.negative : ICON_POOLS.neutral);
+    const alt = pool.find((c) => !used.has(c));
+    if (!alt) return opt;
+    used.add(alt);
+    return { ...opt, emoji: alt };
+  });
 }
 
 // ─── Dedup helper ────────────────────────────────────────────────────────────

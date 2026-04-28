@@ -6,6 +6,7 @@ import {
   // People & Social
   Users, User, UserCheck, UserPlus, UserMinus, UserCog, UserX, Contact,
   Heart, Handshake, Baby, HeartHandshake, PersonStanding, Accessibility,
+  HandHelping,
   // Actions & Navigation
   ArrowRight, ArrowLeft, ArrowUp, ArrowDown, ArrowUpRight, ArrowDownRight,
   ChevronRight, ChevronLeft, ChevronUp, ChevronDown,
@@ -61,7 +62,7 @@ import {
   // Weather
   CloudLightning, CloudDrizzle, CloudFog, Wind, Umbrella, Rainbow,
   // Misc
-  Rocket, Target, Eye, Lock, Unlock, Key, KeyRound, Package, PackageCheck, PackageOpen,
+  Rocket, Target, Eye, EyeOff, Lock, Unlock, Key, KeyRound, Package, PackageCheck, PackageOpen,
   Box, Boxes, Layers, Grid, Grid3X3, List, LayoutGrid,
   Puzzle, Dice1, Dice5, Hash, AtSign, Percent, Sigma, Infinity,
   Cog, Filter, Funnel, Recycle, Trash, Trash2, Tag, Tags, Ticket,
@@ -78,7 +79,7 @@ export const DECISION_ICONS: Record<string, LucideIcon> = {
   Mail, MailOpen, Phone, PhoneCall, MessageCircle, MessageSquare, MessagesSquare, Send, Inbox, Archive,
   // People & Social
   Users, User, UserCheck, UserPlus, UserMinus, UserCog, UserX, Contact,
-  Heart, Handshake, Baby, HeartHandshake, PersonStanding, Accessibility,
+  Heart, Handshake, Baby, HeartHandshake, PersonStanding, Accessibility, HandHelping,
   // Actions
   ArrowRight, ArrowLeft, ArrowUp, ArrowDown, ArrowUpRight, ArrowDownRight,
   ChevronRight, ChevronLeft, ChevronUp, ChevronDown,
@@ -134,7 +135,7 @@ export const DECISION_ICONS: Record<string, LucideIcon> = {
   // Weather
   CloudLightning, CloudDrizzle, CloudFog, Wind, Umbrella, Rainbow,
   // Misc
-  Rocket, Target, Eye, Lock, Unlock, Key, KeyRound, Package, PackageCheck, PackageOpen,
+  Rocket, Target, Eye, EyeOff, Lock, Unlock, Key, KeyRound, Package, PackageCheck, PackageOpen,
   Box, Boxes, Layers, Grid, Grid3X3, List, LayoutGrid,
   Puzzle, Dice1, Dice5, Hash, AtSign, Percent, Sigma, Infinity,
   Cog, Filter, Funnel, Recycle, Trash, Trash2, Tag, Tags, Ticket,
