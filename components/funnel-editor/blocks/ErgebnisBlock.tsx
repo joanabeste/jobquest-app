@@ -288,9 +288,16 @@ function MobileAccordion({ groups, dimensions, scores, maxScores, primary, br, m
             .filter((id) => dimensions.some((d) => d.id === id))
             .sort((a, b) => (scores[b] ?? 0) - (scores[a] ?? 0));
           const top = new Set(sorted.slice(0, topN));
+          const groupDimSet = new Set(g.dimensionIds);
+          // Fallback wenn dimensions[] (noch) leer ist oder keine Group-Dim
+          // auflöst: ALLE group-eigenen Dims als "Top" werten, sonst werden
+          // legitime Berufe weggefiltert (Race-Condition beim Async-Load der
+          // dimensions in FunnelPlayer, oder ID-Drift in Alt-Checks).
+          const effectiveTop = top.size > 0 ? top : groupDimSet;
           const matching = g.suggestions.filter((sug) => {
-            if (!sug.requiresDimensionIds || sug.requiresDimensionIds.length === 0) return true;
-            return sug.requiresDimensionIds.every((d) => top.has(d));
+            const reqs = (sug.requiresDimensionIds ?? []).filter((d) => groupDimSet.has(d));
+            if (reqs.length === 0) return true;
+            return reqs.every((d) => effectiveTop.has(d));
           });
 
           return (
@@ -496,10 +503,20 @@ function GroupSuggestions({ group, dimensions, scores, primary, br, markedIds, o
     .filter((id) => dimensions.some((d) => d.id === id))
     .sort((a, b) => (scores[b] ?? 0) - (scores[a] ?? 0));
   const top = new Set(sorted.slice(0, topN));
+  const groupDimSet = new Set(group.dimensionIds);
+  // Fallback wenn keine Group-Dim in dimensions[] auflösbar ist (Daten-Drift
+  // zwischen funnel_doc und career_checks.dimensions, oder dimensions wird
+  // gerade noch async geladen): wir akzeptieren dann ALLE group-eigenen Dims
+  // als "Top", damit die Berufe trotzdem erscheinen — sortieren ohne Score
+  // ist besser als gar nichts zu zeigen.
+  const effectiveTop = top.size > 0 ? top : groupDimSet;
 
   const matching = group.suggestions.filter((sug) => {
-    if (!sug.requiresDimensionIds || sug.requiresDimensionIds.length === 0) return true;
-    return sug.requiresDimensionIds.every((d) => top.has(d));
+    // Cross-Group-Referenzen aus Alt-Daten ausklammern: nur Reqs prüfen,
+    // die auch zur eigenen Gruppe gehören.
+    const reqs = (sug.requiresDimensionIds ?? []).filter((d) => groupDimSet.has(d));
+    if (reqs.length === 0) return true;
+    return reqs.every((d) => effectiveTop.has(d));
   });
 
   const [openSug, setOpenSug] = useState<ErgebnisSuggestion | null>(null);
