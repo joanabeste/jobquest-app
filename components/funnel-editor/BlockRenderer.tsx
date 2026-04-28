@@ -108,50 +108,36 @@ function RatingBlock({ question, emoji, count, nodeId, answers, onAnswer }: {
   );
 }
 
-// ─── Reaction-Bubble: shows typing indicator first, then the reaction text as
-// a chat bubble from the last known dialog speaker (or a neutral "Tipp"
-// figure). Used after a quest_decision has been answered.
-function ReactionBubble({ text, isWrong, speaker, primary }: {
+// ─── Reaction-Box: neutrales Auflöse-Feedback nach einer quest_decision.
+// Bewusst KEINE Sprechblase und KEIN Avatar — der Text gehört dem System,
+// nicht einer Story-Figur, sonst wirkt das Feedback wie eine Aussage des
+// Bewohners/Klienten.
+function ReactionBubble({ text, isWrong, primary }: {
   text: string;
   isWrong: boolean;
-  speaker: string;
   primary: string;
 }) {
   const [revealed, setRevealed] = useState(false);
   useEffect(() => {
-    const t = setTimeout(() => setRevealed(true), 700);
+    const t = setTimeout(() => setRevealed(true), 350);
     return () => clearTimeout(t);
   }, []);
+  if (!revealed) return null;
 
-  const accent  = isWrong ? '#dc2626' : primary;
-  const initial = speaker.charAt(0).toUpperCase() || '?';
-
+  const accent = isWrong ? '#dc2626' : primary;
   return (
-    <div className="mt-4 flex gap-3" style={{ animation: 'fadeSlideIn 0.3s ease-out' }}>
-      <div
-        className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center font-bold text-white text-sm"
-        style={{ background: accent }}
-      >
-        <span>{initial}</span>
+    <div
+      className={`mt-3 flex items-start gap-2.5 px-4 py-3 rounded-xl ${isWrong ? 'bg-red-50' : 'bg-slate-50'}`}
+      style={{ animation: 'fadeSlideIn 0.25s ease-out', borderLeft: `3px solid ${accent}` }}
+    >
+      <div className="flex-shrink-0 mt-0.5">
+        {isWrong
+          ? <X size={16} style={{ color: accent }} />
+          : <Check size={16} style={{ color: accent }} />}
       </div>
-      {!revealed ? (
-        <div className="bg-slate-100 rounded-2xl px-4 py-3 flex items-center gap-1.5">
-          {[0, 1, 2].map((i) => (
-            <span
-              key={i}
-              className="w-2 h-2 rounded-full bg-slate-400 animate-bounce"
-              style={{ animationDelay: `${i * 150}ms`, animationDuration: '900ms' }}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="max-w-[78%] flex flex-col" style={{ animation: 'fadeSlideIn 0.25s ease-out' }}>
-          <p className="text-[11px] text-slate-400 mb-1">{speaker}</p>
-          <div className={`px-3 py-2.5 rounded-2xl text-sm leading-relaxed ${isWrong ? 'bg-red-50 text-red-800' : 'bg-slate-100 text-slate-700'}`}>
-            {text}
-          </div>
-        </div>
-      )}
+      <p className={`text-sm leading-relaxed ${isWrong ? 'text-red-800' : 'text-slate-700'}`}>
+        {text}
+      </p>
     </div>
   );
 }
@@ -579,7 +565,6 @@ export function BlockRenderer({
             <ReactionBubble
               text={si(selectedOpt.reaction)}
               isWrong={isWrong}
-              speaker={lastDialogSpeaker || 'Tipp'}
               primary={primary}
             />
           )}
