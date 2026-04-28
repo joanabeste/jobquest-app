@@ -535,9 +535,9 @@ export function BlockRenderer({
       return (
         <div className="mx-4 my-3">
           {previousPageRecap && (
-            <div className="mb-2 flex items-start gap-2 px-3 py-2 bg-slate-100 rounded-xl">
-              <MessageCircle size={12} className="flex-shrink-0 mt-0.5 text-slate-400" />
-              <span className="text-xs italic leading-relaxed text-slate-600">{si(previousPageRecap)}</span>
+            <div className="mb-2 flex items-start gap-2 px-3.5 py-2.5 bg-slate-100 rounded-xl">
+              <MessageCircle size={14} className="flex-shrink-0 mt-0.5 text-slate-400" />
+              <span className="text-sm leading-relaxed text-slate-600">{si(previousPageRecap)}</span>
             </div>
           )}
           <div className="bg-white rounded-2xl shadow-sm p-5 mb-3">

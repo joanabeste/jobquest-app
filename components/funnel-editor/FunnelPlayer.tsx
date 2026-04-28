@@ -48,9 +48,16 @@ function stripHtmlToText(html: string): string {
   return html.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
-function truncateRecap(txt: string, max = 160): string {
+function truncateRecap(txt: string, max = 280): string {
   if (txt.length <= max) return txt;
   const cut = txt.slice(0, max);
+  // Bevorzugt am letzten vollständigen Satzende abschneiden, damit der Recap
+  // nicht mitten im Satz hängt.
+  const sentenceMatch = cut.match(/^([\s\S]*[.!?])(?:\s|$)/);
+  if (sentenceMatch && sentenceMatch[1].length >= 40) {
+    return sentenceMatch[1].trim();
+  }
+  // Fallback: an Wortgrenze mit Auslassungszeichen.
   const lastSpace = cut.lastIndexOf(' ');
   const base = lastSpace > 80 ? cut.slice(0, lastSpace) : cut;
   return base.replace(/[.,;:!?\-–—]+$/, '') + '…';
