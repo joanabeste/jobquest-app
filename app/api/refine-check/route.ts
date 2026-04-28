@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
 
   let rawText: string;
   try {
-    rawText = await aiChat({ system: SYSTEM_PROMPT, user: userMessage, temperature: 0.7, json: true });
+    rawText = await aiChat({ system: SYSTEM_PROMPT, user: userMessage, temperature: 0.4, json: true });
   } catch (err) {
     console.error('[refine-check] AI error:', err);
     const msg = err instanceof AiError ? err.message : 'KI-Anfrage fehlgeschlagen.';
@@ -65,17 +65,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: msg }, { status });
   }
 
-  let jsonText = rawText.trim();
-  if (jsonText.startsWith('```')) {
-    jsonText = jsonText.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?```\s*$/, '');
-  }
-
   let result: { dimensions?: Array<Record<string, unknown>>; pages: Array<Record<string, unknown>> };
   try {
-    result = JSON.parse(jsonText);
-  } catch {
-    console.error('[refine-check] JSON parse failed, length=', rawText.length);
-    return NextResponse.json({ error: 'KI-Antwort ungultig.' }, { status: 502 });
+    result = JSON.parse(extractJsonObject(rawText));
+  } catch (err) {
+    console.error(
+      '[refine-check] JSON parse failed, length=', rawText.length,
+      'first200:', rawText.slice(0, 200),
+      'last200:', rawText.slice(-200),
+      err,
+    );
+    return NextResponse.json({
+      error: 'KI-Antwort konnte nicht verarbeitet werden — vermutlich zu viele Änderungen auf einmal. Bitte teile deine Anweisungen in kleinere Schritte.',
+    }, { status: 502 });
   }
 
   if (!result.pages?.length) {
@@ -83,4 +85,14 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({ pages: result.pages, dimensions: result.dimensions ?? parsed.data.dimensions });
+}
+
+function extractJsonObject(raw: string): string {
+  const trimmed = raw.trim();
+  const fenced = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+  if (fenced) return fenced[1].trim();
+  const first = trimmed.indexOf('{');
+  const last = trimmed.lastIndexOf('}');
+  if (first !== -1 && last > first) return trimmed.slice(first, last + 1);
+  return trimmed;
 }
