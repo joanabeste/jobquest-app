@@ -52,6 +52,13 @@ const CONTENT_TYPE_TO_ENTITY: Record<FunnelContentType, EntityType> = {
 function isDefaultSlug(slug: string): boolean {
   return /^(neue-jobquest|neuer-berufscheck|neues-formular)(-|$)/.test(slug);
 }
+
+// Pendant zu isDefaultSlug für den Titel — schützt manuell vergebene Titel
+// vor Überschreiben durch KI-Generierung. Quelle: lib/dashboard/contentTypes.ts.
+function isDefaultTitle(title: string): boolean {
+  const t = title.trim();
+  return t === 'Neue JobQuest' || t === 'Neuer Berufscheck' || t === 'Neues Formular';
+}
 const CONTENT_TYPE_TO_PREFIX: Record<FunnelContentType, string> = {
   quest: '/jobquest',
   check: '/berufscheck',
@@ -433,11 +440,10 @@ function FunnelEditorInner({
     setSelectedNodeId(null);
     setShowGenerateModal(false);
     if (jobTitle) {
-      onTitleChange(jobTitle);
-      // Auto-Slug nur, wenn der Slug noch der generische Default aus dem
-      // createDefault-Schritt ist. Wir erkennen das daran, dass er mit
-      // "neue-jobquest", "neuer-berufscheck" o.ä. anfängt — bei manuell
-      // umbenannten Slugs greifen wir nicht ein.
+      // Titel und Slug nur überschreiben, solange sie noch der generische
+      // Default aus dem createDefault-Schritt sind — manuell vergebene Werte
+      // bleiben unangetastet.
+      if (isDefaultTitle(title)) onTitleChange(jobTitle);
       if (isDefaultSlug(slug)) void autoUpdateSlug(jobTitle);
     }
   }
@@ -451,10 +457,13 @@ function FunnelEditorInner({
     setShowGenerateCheckModal(false);
     // Push generated dimensions onto the parent CareerCheck row + refresh local cache.
     setDimensions(dimensionList);
+    // Titel nur weiterreichen/überschreiben, wenn er noch generischer Default
+    // ist — sonst respektieren wir den manuell vergebenen Titel.
+    const titleToApply = checkTitle && isDefaultTitle(title) ? checkTitle : undefined;
     if (onAIGeneratedDimensions) {
-      try { await onAIGeneratedDimensions(dimensionList, checkTitle); } catch (e) { console.error('[FunnelEditor] persist dimensions failed', e); }
-    } else if (checkTitle) {
-      onTitleChange(checkTitle);
+      try { await onAIGeneratedDimensions(dimensionList, titleToApply); } catch (e) { console.error('[FunnelEditor] persist dimensions failed', e); }
+    } else if (titleToApply) {
+      onTitleChange(titleToApply);
     }
     if (checkTitle && isDefaultSlug(slug)) void autoUpdateSlug(checkTitle);
   }
