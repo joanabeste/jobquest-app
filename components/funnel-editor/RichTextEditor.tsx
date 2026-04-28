@@ -55,7 +55,6 @@ function wrapVarsInHtml(html: string, variables: VariableDef[]): string {
   });
   const targets: Text[] = [];
   let n: Node | null;
-  // eslint-disable-next-line no-cond-assign
   while ((n = walker.nextNode())) targets.push(n as Text);
   for (const text of targets) {
     const str = text.textContent ?? '';
@@ -64,7 +63,6 @@ function wrapVarsInHtml(html: string, variables: VariableDef[]): string {
     const frag = document.createDocumentFragment();
     let last = 0;
     let m: RegExpExecArray | null;
-    // eslint-disable-next-line no-cond-assign
     while ((m = re.exec(str))) {
       if (m.index > last) frag.appendChild(document.createTextNode(str.slice(last, m.index)));
       const chip = document.createElement('span');

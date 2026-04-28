@@ -308,7 +308,7 @@ export function BlockRenderer({
   markedSuggestions, onToggleMarkedSuggestion,
   dialogVisible, onDialogAdvance,
   dialogInputInFooter,
-  lastDialogSpeaker,
+  lastDialogSpeaker: _lastDialogSpeaker,
   previousPageRecap,
 }: {
   node: BlockNode; company: Company; primary: string; br: string;

@@ -850,7 +850,7 @@ function JobsGroupEditor({ jobs, setJobs }: {
             {sectionJobs.map(renderJobRow)}
             <button type="button" onClick={() => addJob(group)}
               className="flex items-center gap-1.5 text-xs text-violet-600 font-medium hover:text-violet-700 mt-1">
-              <Plus size={13} /> Beruf zu „{group}" hinzufügen
+              <Plus size={13} /> Beruf zu „{group}&ldquo; hinzufügen
             </button>
           </div>
         )}

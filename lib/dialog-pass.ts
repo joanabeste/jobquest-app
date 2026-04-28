@@ -129,15 +129,6 @@ Antworte NUR mit validem JSON, kein Markdown:
 const UUID_REGEX = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 const UuidString = z.string().regex(UUID_REGEX, 'erwartet UUID v4');
 
-const PassOptionSchema = z.object({
-  id: UuidString,
-  text: z.string(),
-  emoji: z.string().optional(),
-  reaction: z.string().optional(),
-  isWrong: z.boolean().optional(),
-  targetPageId: UuidString.optional(),
-}).passthrough();
-
 const PassNodeSchema = z.object({
   id: UuidString,
   kind: z.literal('block'),
