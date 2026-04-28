@@ -4,7 +4,7 @@ import { getSession, unauthorized } from '@/lib/api-auth';
 import { INDUSTRY_OPTIONS, ROLE_PERMISSIONS } from '@/lib/types';
 import { FONT_OPTIONS } from '@/lib/fonts';
 import { aiChat, isAiConfigured } from '@/lib/ai-provider';
-import { safeFetch, isSafePublicUrl } from '@/lib/safe-fetch';
+import { safeFetch, safeFetchDetailed, isSafePublicUrl, type SafeFetchFailReason } from '@/lib/safe-fetch';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 const MEDIA_BUCKET = 'quest-media';
@@ -13,9 +13,13 @@ export const runtime = 'nodejs';
 export const maxDuration = 60;
 
 const FONT_WHITELIST = FONT_OPTIONS.map((f) => f.value);
-const MAX_HTML_BYTES = 1_000_000;
+const MAX_HTML_BYTES = 3_000_000;
 const MAX_IMAGE_BYTES = 500_000;
-const FETCH_TIMEOUT_MS = 10_000;
+const FETCH_TIMEOUT_MS = 20_000;
+// Enterprise WAFs (Cloudflare Bot Fight, Akamai Bot Manager) block or challenge
+// the default JobQuestBot UA. Corporate sites we want to import from all allow
+// a regular Chrome-desktop fingerprint through.
+const BROWSER_USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
 const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml', 'image/webp', 'image/x-icon', 'image/vnd.microsoft.icon'];
 
 // Hostname/IP validation + redirect-safe fetching live in lib/safe-fetch.ts.
@@ -26,7 +30,7 @@ async function fetchWithLimit(
   url: string,
   maxBytes: number,
 ): Promise<{ buffer: Buffer; contentType: string } | null> {
-  const res = await safeFetch(url, { maxBytes, timeoutMs: FETCH_TIMEOUT_MS });
+  const res = await safeFetch(url, { maxBytes, timeoutMs: FETCH_TIMEOUT_MS, userAgent: BROWSER_USER_AGENT });
   if (!res) return null;
   return { buffer: res.buffer, contentType: res.contentType };
 }
@@ -253,7 +257,20 @@ interface AiResult {
   };
 }
 
-async function callAi(extracted: Extracted, sourceUrl: string): Promise<AiResult | null> {
+function extractJsonObject(raw: string): string {
+  const trimmed = raw.trim();
+  // Strip ```json ... ``` or ``` ... ``` fences that Claude sometimes adds.
+  const fenced = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+  if (fenced) return fenced[1].trim();
+  // Otherwise cut to the first '{' and the matching last '}' — tolerates
+  // stray leading/trailing prose.
+  const first = trimmed.indexOf('{');
+  const last = trimmed.lastIndexOf('}');
+  if (first !== -1 && last > first) return trimmed.slice(first, last + 1);
+  return trimmed;
+}
+
+async function callAi(extracted: Extracted, sourceUrl: string): Promise<{ ok: true; value: AiResult } | { ok: false; error: string }> {
   const systemPrompt = `Du bist ein Assistent, der Firmenprofil-Felder aus Roh-Daten einer Firmenwebsite extrahiert.
 Antworte AUSSCHLIESSLICH mit validem JSON ohne Markdown, kein Text davor oder danach.
 
@@ -288,18 +305,26 @@ Wähle Werte ausschließlich aus den gegebenen Kandidaten. Wenn nichts passt, gi
     colorCandidates: extracted.colorCandidates,
   }, null, 2);
 
+  let raw: string;
   try {
-    const raw = await aiChat({
+    raw = await aiChat({
       system: systemPrompt,
       user: userPayload,
       temperature: 0.2,
       json: true,
       model: process.env.AI_PROVIDER === 'openai' ? 'gpt-4o-mini' : undefined,
     });
-    return JSON.parse(raw) as AiResult;
   } catch (err) {
-    console.error('[extract-company] AI error:', err);
-    return null;
+    console.error('[extract-company] AI call failed:', err);
+    const msg = err instanceof Error ? err.message : 'Unbekannter Fehler beim KI-Aufruf.';
+    return { ok: false, error: msg };
+  }
+
+  try {
+    return { ok: true, value: JSON.parse(extractJsonObject(raw)) as AiResult };
+  } catch (err) {
+    console.error('[extract-company] AI returned non-JSON payload:', raw.slice(0, 500), err);
+    return { ok: false, error: 'KI-Antwort war kein gültiges JSON.' };
   }
 }
 
@@ -331,6 +356,26 @@ function sanitizeText(value: unknown, max = 1000): string | undefined {
   return t ? t.slice(0, max) : undefined;
 }
 
+function describeFetchFailure(reason: SafeFetchFailReason, status?: number): string {
+  switch (reason) {
+    case 'timeout':
+      return 'Website hat nicht rechtzeitig geantwortet (Timeout). Eventuell blockiert die Seite automatisierte Abrufe.';
+    case 'too-large':
+      return `Website ist zu groß (> ${Math.round(MAX_HTML_BYTES / 1_000_000)} MB). Bitte gib die URL einer spezifischeren Seite an.`;
+    case 'non-2xx':
+      return `Website liefert Fehlercode${status ? ` ${status}` : ''}. Eventuell wird der Zugriff blockiert.`;
+    case 'too-many-redirects':
+      return 'Website leitet zu oft weiter.';
+    case 'blocked-host':
+      return 'Ziel-URL ist nicht erreichbar (interne Adresse oder gesperrter Host).';
+    case 'invalid-url':
+      return 'Ungültige URL.';
+    case 'network':
+    default:
+      return 'Website konnte nicht erreicht werden (Netzwerkfehler).';
+  }
+}
+
 export async function POST(req: NextRequest) {
   const session = await getSession();
   if (!session) return unauthorized();
@@ -354,9 +399,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'KI-API-Schlüssel nicht konfiguriert' }, { status: 500 });
   }
 
-  const fetched = await fetchWithLimit(url.toString(), MAX_HTML_BYTES);
-  if (!fetched) {
-    return NextResponse.json({ error: 'Website konnte nicht geladen werden (Timeout oder zu groß).' }, { status: 502 });
+  const fetched = await safeFetchDetailed(url.toString(), {
+    maxBytes: MAX_HTML_BYTES,
+    timeoutMs: FETCH_TIMEOUT_MS,
+    userAgent: BROWSER_USER_AGENT,
+  });
+  if (!fetched.ok) {
+    return NextResponse.json({ error: describeFetchFailure(fetched.reason, fetched.status) }, { status: 502 });
   }
   if (!fetched.contentType.toLowerCase().includes('html')) {
     return NextResponse.json({ error: 'URL liefert kein HTML.' }, { status: 400 });
@@ -374,10 +423,11 @@ export async function POST(req: NextRequest) {
   }
   extracted.colorCandidates = rankColors(extracted.colorCounts);
 
-  const ai = await callAi(extracted, url.toString());
-  if (!ai) {
-    return NextResponse.json({ error: 'KI-Analyse fehlgeschlagen.' }, { status: 502 });
+  const aiResult = await callAi(extracted, url.toString());
+  if (!aiResult.ok) {
+    return NextResponse.json({ error: `KI-Analyse fehlgeschlagen: ${aiResult.error}` }, { status: 502 });
   }
+  const ai = aiResult.value;
 
   // Download logo + favicon and persist them as media assets so they show up
   // in the global library and can be re-used. Falls back to inline data URLs

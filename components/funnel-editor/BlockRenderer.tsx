@@ -6,6 +6,7 @@ import { BlockNode } from '@/lib/funnel-types';
 import { applyVars, stripNamePlaceholder } from '@/lib/funnel-variables';
 import { Company, Dimension } from '@/lib/types';
 import { DECISION_ICONS, isIconName, isUnknownIconName } from '@/lib/decision-icons';
+import { diversifyDecisionIcons } from '@/lib/decision-icon-picker';
 import { SKIP_ANSWER } from '@/lib/funnel-utils';
 import { s, n, b, sh, inlineHtml } from './blocks/helpers';
 import DialogBlock, { type DialogLine } from './blocks/DialogBlock';
@@ -102,6 +103,54 @@ function RatingBlock({ question, emoji, count, nodeId, answers, onAnswer }: {
       </div>
       {selected && (
         <p className="text-center text-sm text-slate-500 mt-3">{selected} von {count}</p>
+      )}
+    </div>
+  );
+}
+
+// ─── Reaction-Bubble: shows typing indicator first, then the reaction text as
+// a chat bubble from the last known dialog speaker (or a neutral "Tipp"
+// figure). Used after a quest_decision has been answered.
+function ReactionBubble({ text, isWrong, speaker, primary }: {
+  text: string;
+  isWrong: boolean;
+  speaker: string;
+  primary: string;
+}) {
+  const [revealed, setRevealed] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setRevealed(true), 700);
+    return () => clearTimeout(t);
+  }, []);
+
+  const accent  = isWrong ? '#dc2626' : primary;
+  const initial = speaker.charAt(0).toUpperCase() || '?';
+
+  return (
+    <div className="mt-4 flex gap-3" style={{ animation: 'fadeSlideIn 0.3s ease-out' }}>
+      <div
+        className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center font-bold text-white text-sm"
+        style={{ background: accent }}
+      >
+        <span>{initial}</span>
+      </div>
+      {!revealed ? (
+        <div className="bg-slate-100 rounded-2xl px-4 py-3 flex items-center gap-1.5">
+          {[0, 1, 2].map((i) => (
+            <span
+              key={i}
+              className="w-2 h-2 rounded-full bg-slate-400 animate-bounce"
+              style={{ animationDelay: `${i * 150}ms`, animationDuration: '900ms' }}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="max-w-[78%] flex flex-col" style={{ animation: 'fadeSlideIn 0.25s ease-out' }}>
+          <p className="text-[11px] text-slate-400 mb-1">{speaker}</p>
+          <div className={`px-3 py-2.5 rounded-2xl text-sm leading-relaxed ${isWrong ? 'bg-red-50 text-red-800' : 'bg-slate-100 text-slate-700'}`}>
+            {text}
+          </div>
+        </div>
       )}
     </div>
   );
@@ -273,6 +322,7 @@ export function BlockRenderer({
   markedSuggestions, onToggleMarkedSuggestion,
   dialogVisible, onDialogAdvance,
   dialogInputInFooter,
+  lastDialogSpeaker,
 }: {
   node: BlockNode; company: Company; primary: string; br: string;
   answers: Record<string, unknown>; firstName: string;
@@ -294,6 +344,7 @@ export function BlockRenderer({
   dialogVisible: number;
   onDialogAdvance: (count: number) => void;
   dialogInputInFooter?: boolean;
+  lastDialogSpeaker?: string;
 }) {
   const p = node.props;
   const varsMap = {
@@ -471,12 +522,13 @@ export function BlockRenderer({
     }
 
     case 'quest_decision': {
-      const opts        = (p.options as { id: string; text: string; reaction?: string; targetPageId?: string; emoji?: string; isWrong?: boolean }[]) || [];
+      const rawOpts     = (p.options as { id: string; text: string; reaction?: string; targetPageId?: string; emoji?: string; isWrong?: boolean }[]) || [];
+      // Render-seitiges Auto-Icon-Filling: stellt sicher, dass auch ältere Funnels
+      // ohne von der KI gesetzte Icons den einheitlichen Karten-Stil bekommen.
+      const opts        = diversifyDecisionIcons(rawOpts);
       const selected    = answers[node.id] as string | undefined;
       const selectedOpt = opts.find((o) => o.id === selected);
-      const hasEmojis   = opts.some((o) => o.emoji);
       const isWrong     = !!selectedOpt?.isWrong;
-      const accentColor = isWrong ? '#dc2626' : primary;
 
       return (
         <div className="mx-4 my-3">
@@ -484,69 +536,44 @@ export function BlockRenderer({
             <p className="text-base font-semibold text-slate-800 text-center leading-snug" dangerouslySetInnerHTML={{ __html: sh(inlineHtml(si(p.question))) }} />
           </div>
 
-          {hasEmojis ? (
-            <div className="space-y-2">
-              {opts.map((o) => {
-                const isSelected = selected === o.id;
-                const IconComp   = isIconName(o.emoji) ? DECISION_ICONS[o.emoji] : null;
-                const optAccent  = isSelected && o.isWrong ? '#dc2626' : primary;
-                return (
-                  <button
-                    key={o.id}
-                    onClick={() => { if (!selected) onAnswer(node.id, o.id); }}
-                    disabled={!!selected}
-                    className="fp-card bg-white shadow-sm w-full px-4 py-3.5 flex items-center gap-3 text-left transition-all duration-200 hover:shadow-md active:scale-[0.98]"
-                    style={isSelected ? { borderColor: optAccent, background: `${optAccent}08` } : {}}>
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: `${isSelected ? optAccent : primary}15` }}>
-                      {IconComp
-                        ? <IconComp size={20} style={{ color: isSelected ? optAccent : primary }} />
-                        : (o.emoji && !isUnknownIconName(o.emoji))
-                          ? <span className="text-xl leading-none">{o.emoji}</span>
-                          : null
-                      }
+          <div className="space-y-2">
+            {opts.map((o) => {
+              const isSelected = selected === o.id;
+              const IconComp   = isIconName(o.emoji) ? DECISION_ICONS[o.emoji] : null;
+              const optAccent  = isSelected && o.isWrong ? '#dc2626' : primary;
+              return (
+                <button
+                  key={o.id}
+                  onClick={() => { if (!selected) onAnswer(node.id, o.id); }}
+                  disabled={!!selected}
+                  className="fp-card bg-white shadow-sm w-full px-4 py-3.5 flex items-center gap-3 text-left transition-all duration-200 hover:shadow-md active:scale-[0.98]"
+                  style={isSelected ? { borderColor: optAccent, background: `${optAccent}08` } : {}}>
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: `${isSelected ? optAccent : primary}15` }}>
+                    {IconComp
+                      ? <IconComp size={20} style={{ color: isSelected ? optAccent : primary }} />
+                      : (o.emoji && !isUnknownIconName(o.emoji))
+                        ? <span className="text-xl leading-none">{o.emoji}</span>
+                        : null
+                    }
+                  </div>
+                  <span className="text-sm font-medium text-slate-700 leading-snug flex-1">{o.text}</span>
+                  {isSelected && (
+                    <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: optAccent }}>
+                      {o.isWrong ? <X size={11} className="text-white" /> : <Check size={11} className="text-white" />}
                     </div>
-                    <span className="text-sm font-medium text-slate-700 leading-snug flex-1">{o.text}</span>
-                    {isSelected && (
-                      <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: optAccent }}>
-                        {o.isWrong ? <X size={11} className="text-white" /> : <Check size={11} className="text-white" />}
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="fp-card bg-white shadow-sm p-2 space-y-1.5">
-              {opts.map((o) => {
-                const isSelected = selected === o.id;
-                const optAccent  = isSelected && o.isWrong ? '#dc2626' : primary;
-                return (
-                  <button key={o.id} onClick={() => { if (!selected) onAnswer(node.id, o.id); }}
-                    disabled={!!selected}
-                    className="w-full text-left fp-opt flex items-center gap-2 px-4 py-3 text-sm"
-                    style={isSelected ? { borderColor: optAccent, background: `${optAccent}18` } : {}}>
-                    <ChevronRight size={14} className="flex-shrink-0 text-slate-400" />
-                    {o.text}
-                  </button>
-                );
-              })}
-            </div>
-          )}
+                  )}
+                </button>
+              );
+            })}
+          </div>
 
           {selectedOpt?.reaction && (
-            <div className={`mt-4 rounded-xl shadow-sm overflow-hidden ${isWrong ? 'bg-red-50' : 'bg-white'}`} style={{ borderLeft: `4px solid ${accentColor}` }}>
-              <div className="px-4 py-4 flex items-start gap-3">
-                <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5" style={{ background: `${accentColor}20` }}>
-                  {isWrong ? <X size={14} style={{ color: accentColor }} /> : <Check size={14} style={{ color: accentColor }} />}
-                </div>
-                <div className="flex-1">
-                  {isWrong && (
-                    <p className="text-xs font-semibold text-red-700 mb-1">Keine gute Wahl</p>
-                  )}
-                  <p className={`text-sm leading-relaxed ${isWrong ? 'text-red-800' : 'text-slate-700'}`}>{selectedOpt.reaction}</p>
-                </div>
-              </div>
-            </div>
+            <ReactionBubble
+              text={si(selectedOpt.reaction)}
+              isWrong={isWrong}
+              speaker={lastDialogSpeaker || 'Tipp'}
+              primary={primary}
+            />
           )}
         </div>
       );
@@ -796,7 +823,7 @@ export function BlockRenderer({
     case 'quest_lead':
       return leadSubmitted
         ? <CompletionScreen company={company} headline={s(p.thankYouHeadline, 'Vielen Dank!')} text={s(p.thankYouText)} primary={primary} buttonText={s(p.thankYouButtonText)} buttonUrl={s(p.thankYouButtonUrl)} />
-        : <LeadFormBlock props={p} company={company} br={br} primary={primary} leadForm={leadForm} setLeadForm={setLeadForm} onSubmit={(form, cf) => onLeadSubmit(form, cf)} />;
+        : <LeadFormBlock props={p} company={company} br={br} primary={primary} leadForm={leadForm} setLeadForm={setLeadForm} onSubmit={(form, cf) => onLeadSubmit(form, cf)} firstName={firstName} capturedVars={capturedVars} />;
 
     // ── BerufsCheck blocks ────────────────────────────────────────────────────
     case 'check_intro': {
@@ -991,7 +1018,7 @@ export function BlockRenderer({
     case 'check_lead':
       return leadSubmitted
         ? <CompletionScreen company={company} headline={s(p.thankYouHeadline, 'Vielen Dank!')} text={s(p.thankYouText)} primary={primary} buttonText={s(p.thankYouButtonText)} buttonUrl={s(p.thankYouButtonUrl)} />
-        : <LeadFormBlock props={p} company={company} br={br} primary={primary} leadForm={leadForm} setLeadForm={setLeadForm} onSubmit={(form, cf) => onLeadSubmit(form, cf)} markedSuggestions={markedSuggestions} />;
+        : <LeadFormBlock props={p} company={company} br={br} primary={primary} leadForm={leadForm} setLeadForm={setLeadForm} onSubmit={(form, cf) => onLeadSubmit(form, cf)} markedSuggestions={markedSuggestions} firstName={firstName} capturedVars={capturedVars} />;
 
     case 'check_ergebnis': {
       const rawHeadline = s(p.headline, 'Dein Ergebnis!');
@@ -1106,6 +1133,8 @@ export function BlockRenderer({
             leadForm={leadForm}
             setLeadForm={setLeadForm}
             onSubmit={(form) => onFormSubmit(s(p.thankYouHeadline, 'Vielen Dank!'), s(p.thankYouText), form)}
+            firstName={firstName}
+            capturedVars={capturedVars}
           />;
 
     default:

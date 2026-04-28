@@ -40,11 +40,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     ? `Erlebe einen virtuellen Arbeitstag bei ${company.name}. ${company.description.slice(0, 140)}`
     : `Erlebe einen virtuellen Arbeitstag als ${questRow.title} bei ${company.name}.`;
 
-  const favicon = company.corporateDesign?.faviconUrl;
+  const favicon = company.corporateDesign?.faviconUrl ?? company.logo;
   return {
     title,
     description,
-    ...(favicon ? { icons: { icon: favicon } } : {}),
+    ...(favicon ? { icons: { icon: favicon, shortcut: favicon, apple: favicon } } : {}),
     openGraph: {
       title,
       description,

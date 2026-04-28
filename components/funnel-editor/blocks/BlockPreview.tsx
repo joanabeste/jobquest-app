@@ -516,7 +516,7 @@ export default function BlockPreview({ node, onUpdate }: {
     }
 
     case 'quest_dialog': {
-      const lines = (p.lines as { id: string; speaker: string; text: string; position?: string }[]) || [];
+      const lines = (p.lines as { id: string; speaker: string; text: string; imageUrl?: string; position?: string }[]) || [];
       return (
         <div className="py-4 space-y-3">
           {lines.slice(0, 3).map((l) => (
@@ -531,7 +531,12 @@ export default function BlockPreview({ node, onUpdate }: {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-[11px] text-slate-400 mb-1">{l.speaker}</p>
-                  <div className="bg-slate-100 rounded-2xl px-3 py-2.5 text-sm text-slate-700">{l.text || '…'}</div>
+                  {!!l.imageUrl && (
+                    <img src={l.imageUrl} alt="" className="w-full rounded-2xl mb-1.5 max-h-44 object-cover shadow-sm" />
+                  )}
+                  {(!!l.text || !l.imageUrl) && (
+                    <div className="bg-slate-100 rounded-2xl px-3 py-2.5 text-sm text-slate-700">{l.text || '…'}</div>
+                  )}
                 </div>
               </div>
             )

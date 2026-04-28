@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import { applyVars } from '@/lib/funnel-variables';
 import { LeadFieldDef } from '@/lib/funnel-types';
 import { Company } from '@/lib/types';
-import { s, b, sh } from './helpers';
+import { s, sh } from './helpers';
 
 export interface LeadForm { firstName: string; lastName: string; email: string; phone: string; gdpr: boolean; }
 export const emptyLead: LeadForm = { firstName: '', lastName: '', email: '', phone: '', gdpr: false };
@@ -19,13 +19,15 @@ function withMwd(title: string): string {
 
 const MARKED_FIELD_ID = '__marked_suggestions__';
 
-export default function LeadFormBlock({ props: p, company, br, primary, leadForm, setLeadForm: _setLeadForm, onSubmit, markedSuggestions }: {
+export default function LeadFormBlock({ props: p, company, br, primary, leadForm, setLeadForm: _setLeadForm, onSubmit, markedSuggestions, firstName, capturedVars }: {
   props: Record<string, unknown>; company: Company; br: string; primary: string;
   leadForm: LeadForm; setLeadForm?: (f: LeadForm) => void;
   onSubmit: (form: LeadForm, customFields?: Record<string, string>) => void;
   /** Berufe, die der User auf der Ergebnis-Seite gemerkt hat. Werden als
    *  vorausgewähltes checkbox_group-Feld ganz oben im Formular angezeigt. */
   markedSuggestions?: Array<{ id: string; title: string }>;
+  firstName?: string;
+  capturedVars?: Record<string, string>;
 }) {
   const rawFields = (p.fields as LeadFieldDef[]) ?? [];
   // If no custom fields defined, fall back to standard field set with DSGVO checkbox
@@ -35,7 +37,7 @@ export default function LeadFormBlock({ props: p, company, br, primary, leadForm
     { id: 'default_email',       type: 'email',    label: 'E-Mail',         placeholder: 'E-Mail-Adresse',  required: true,  variable: 'email'       },
     { id: 'default_telefon',     type: 'tel',      label: 'Telefon',        placeholder: 'Telefonnummer',   required: false, variable: 'telefon'     },
     { id: 'default_praktikum',   type: 'checkbox', label: 'Ich kann mir vorstellen, in diesem Bereich ein Praktikum zu machen.', required: false, variable: 'praktikum' },
-    { id: 'default_datenschutz', type: 'checkbox', label: 'Ich stimme zu, dass <a href="@datenschutzUrl" target="_blank" rel="noopener noreferrer">@companyName</a> meine Daten zum Zweck der Kontaktaufnahme speichert und verarbeitet. <a href="@impressumUrl" target="_blank" rel="noopener noreferrer">Impressum</a>', required: true, variable: 'datenschutz' },
+    { id: 'default_datenschutz', type: 'checkbox', label: 'Ich stimme zu, dass <a href="@datenschutzUrl" target="_blank" rel="noopener noreferrer">@companyName</a> meine Daten gemäß <a href="@datenschutzUrl" target="_blank" rel="noopener noreferrer">Datenschutzerklärung</a> verarbeitet. Weitere Informationen findest du in unserem <a href="@impressumUrl" target="_blank" rel="noopener noreferrer">Impressum</a>.', required: true, variable: 'datenschutz' },
   ];
   const useFields = true;
   // Synthetisches "Interessierte Berufe"-Feld vor den normalen Feldern einfügen,
@@ -65,7 +67,11 @@ export default function LeadFormBlock({ props: p, company, br, primary, leadForm
     companyName:    company.name,
     datenschutzUrl: company.privacyUrl ?? '',
     impressumUrl:   company.imprintUrl ?? '',
+    ...(firstName ? { firstName, vorname: firstName } : {}),
+    ...(capturedVars ?? {}),
   };
+  const headlineText = applyVars(s(p.headline), varsMap);
+  const subtextText  = applyVars(s(p.subtext),  varsMap);
   const setVal = (id: string, val: string) => setVals((prev) => ({ ...prev, [id]: val }));
 
   const emailField = fieldsWithMarked.find((f) => f.type === 'email');
@@ -106,8 +112,8 @@ export default function LeadFormBlock({ props: p, company, br, primary, leadForm
 
   return (
     <div className="fp-card bg-white shadow-sm mx-4 my-3 p-6">
-      <h2 className="fp-heading text-lg font-bold mb-1 break-words">{s(p.headline)}</h2>
-      {b(p.subtext) && <p className="text-slate-500 text-sm mb-4">{s(p.subtext)}</p>}
+      <h2 className="fp-heading text-lg font-bold mb-1 break-words">{headlineText}</h2>
+      {!!subtextText && <p className="text-slate-500 text-sm mb-4">{subtextText}</p>}
       <div className="space-y-3 mt-3">
         {fieldsWithMarked.map((f) => {
           if (f.type === 'checkbox') {

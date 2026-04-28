@@ -58,7 +58,7 @@ export function useCorporateDesign(company: Company) {
     `.fp-card{border-radius:${br}}`,
     `.fp-opt{border-radius:${br};border:2px solid #e2e8f0;transition:border-color 0.15s,background 0.15s}`,
     `.fp-opt:hover:not(:disabled){border-color:${primary};background:${primary}0d;cursor:pointer}`,
-    `.fp-heading{color:${design.headingColor ?? '#0f172a'};font-family:${headingFont};font-size:${hSize}px;font-weight:${hWeight};text-transform:${hTransform};letter-spacing:${hLetter}em}`,
+    `.fp-heading{color:${design.headingColor ?? '#0f172a'};font-family:${headingFont};font-size:${hSize}px;font-weight:${hWeight};text-transform:${hTransform};letter-spacing:${hLetter}em;hyphens:auto;-webkit-hyphens:auto;overflow-wrap:break-word;hyphenate-limit-chars:8 4 4}`,
     `.fp-accent{color:${accent}}`,
     `.fp-check{accent-color:${primary}}`,
     `input:focus,textarea:focus,select:focus{border-color:${primary}!important;outline:none}`,

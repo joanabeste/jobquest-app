@@ -17,13 +17,26 @@ import { isIP } from 'node:net';
  * too many redirects). Callers must treat null as "untrusted source unreachable".
  */
 
-const MAX_REDIRECTS = 3;
+const MAX_REDIRECTS = 5;
 
 export type SafeFetchResult = {
   buffer: Buffer;
   contentType: string;
   finalUrl: string;
 };
+
+export type SafeFetchFailReason =
+  | 'invalid-url'
+  | 'blocked-host'
+  | 'timeout'
+  | 'network'
+  | 'non-2xx'
+  | 'too-large'
+  | 'too-many-redirects';
+
+export type SafeFetchDetailed =
+  | { ok: true; buffer: Buffer; contentType: string; finalUrl: string }
+  | { ok: false; reason: SafeFetchFailReason; status?: number };
 
 export type SafeFetchOptions = {
   maxBytes: number;
@@ -130,26 +143,27 @@ async function readBodyWithLimit(
   return Buffer.concat(chunks);
 }
 
-export async function safeFetch(
+export async function safeFetchDetailed(
   rawUrl: string,
   opts: SafeFetchOptions,
-): Promise<SafeFetchResult | null> {
+): Promise<SafeFetchDetailed> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), opts.timeoutMs);
+  let timedOut = false;
+  const timeout = setTimeout(() => { timedOut = true; controller.abort(); }, opts.timeoutMs);
 
   try {
     let current: URL;
     try {
       current = validateUrl(rawUrl);
     } catch {
-      return null;
+      return { ok: false, reason: 'invalid-url' };
     }
 
     for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
       try {
         await assertPublicHost(current.hostname);
       } catch {
-        return null;
+        return { ok: false, reason: 'blocked-host' };
       }
 
       let res: Response;
@@ -157,49 +171,60 @@ export async function safeFetch(
         res = await fetch(current.toString(), {
           headers: {
             'User-Agent': opts.userAgent ?? 'JobQuestBot/1.0 (+https://jobquest.app)',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+            'Accept-Language': 'de-DE,de;q=0.9,en;q=0.8',
           },
           signal: controller.signal,
           redirect: 'manual',
         });
       } catch {
-        return null;
+        return { ok: false, reason: timedOut ? 'timeout' : 'network' };
       }
 
       // Manual redirect handling: re-validate the next hop.
       if (res.status >= 300 && res.status < 400) {
         const location = res.headers.get('location');
-        if (!location) return null;
+        if (!location) return { ok: false, reason: 'non-2xx', status: res.status };
         try {
           current = new URL(location, current);
           if (current.protocol !== 'http:' && current.protocol !== 'https:') {
-            return null;
+            return { ok: false, reason: 'blocked-host' };
           }
         } catch {
-          return null;
+          return { ok: false, reason: 'invalid-url' };
         }
         continue;
       }
 
-      if (!res.ok) return null;
+      if (!res.ok) return { ok: false, reason: 'non-2xx', status: res.status };
 
       // Optional: respect declared content-length to short-circuit huge bodies.
       const declared = Number(res.headers.get('content-length') ?? '0');
-      if (declared && declared > opts.maxBytes) return null;
+      if (declared && declared > opts.maxBytes) return { ok: false, reason: 'too-large' };
 
       const buffer = await readBodyWithLimit(res, opts.maxBytes);
-      if (!buffer) return null;
+      if (!buffer) return { ok: false, reason: 'too-large' };
 
       return {
+        ok: true,
         buffer,
         contentType: res.headers.get('content-type') ?? '',
         finalUrl: current.toString(),
       };
     }
 
-    return null; // too many redirects
+    return { ok: false, reason: 'too-many-redirects' };
   } finally {
     clearTimeout(timeout);
   }
+}
+
+export async function safeFetch(
+  rawUrl: string,
+  opts: SafeFetchOptions,
+): Promise<SafeFetchResult | null> {
+  const res = await safeFetchDetailed(rawUrl, opts);
+  return res.ok ? { buffer: res.buffer, contentType: res.contentType, finalUrl: res.finalUrl } : null;
 }
 
 /** Public-URL pre-check for callers that only need the validation, not the fetch. */

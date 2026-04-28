@@ -417,6 +417,41 @@ export default function FunnelPlayer({ doc, company, contentDbId, onPageChange }
     ? (dialogBlock.props.input as { placeholder?: string; captures?: string; followUpText?: string } | undefined)
     : undefined;
 
+  // Letzte Dialog-Figur aus dem bisher gesehenen Funnel-Verlauf — wird für die
+  // Reaction-Bubble nach quest_decision verwendet, damit das Feedback wie ein
+  // Wortbeitrag der Story-Person wirkt statt wie eine UI-Box.
+  const lastDialogSpeaker = useMemo(() => {
+    const collectBlocks = (page: FunnelDoc['pages'][number]): BlockNode[] => {
+      const out: BlockNode[] = [];
+      for (const node of page.nodes) {
+        if (node.kind === 'layout') {
+          for (const col of (node as LayoutNode).columns) {
+            for (const cn of col.nodes) out.push(cn as BlockNode);
+          }
+        } else {
+          out.push(node as BlockNode);
+        }
+      }
+      return out;
+    };
+    for (let pi = pageIndex; pi >= 0; pi--) {
+      const page = doc.pages[pi];
+      if (!page) continue;
+      const blocks = collectBlocks(page);
+      for (let bi = blocks.length - 1; bi >= 0; bi--) {
+        const blk = blocks[bi];
+        if (blk.type === 'quest_dialog') {
+          const lines = (blk.props.lines as { speaker?: string }[] | undefined) || [];
+          for (let li = lines.length - 1; li >= 0; li--) {
+            const sp = lines[li]?.speaker;
+            if (sp && sp.trim()) return sp.trim();
+          }
+        }
+      }
+    }
+    return undefined;
+  }, [pageIndex, doc.pages]);
+
   const sharedBlockProps = {
     company, primary, br,
     answers, firstName,
@@ -438,6 +473,7 @@ export default function FunnelPlayer({ doc, company, contentDbId, onPageChange }
     dialogVisible,
     onDialogAdvance: (count: number) => setDialogVisible(count),
     dialogInputInFooter: hasDialogInput,
+    lastDialogSpeaker,
   };
 
   return (
