@@ -680,7 +680,7 @@ function FunnelEditorInner({
       <GenerateQuestModal
         onGenerate={handleGenerateQuest}
         onClose={() => setShowGenerateModal(false)}
-        showHeyflowImport={!!company?.features?.heyflowImport}
+        showHeyflowImport={true}
         currentPages={doc.pages.length > 0 ? doc.pages : undefined}
         companyJobs={company?.successPage?.jobs?.map((j) => j.title).filter(Boolean)}
       />
@@ -689,7 +689,7 @@ function FunnelEditorInner({
       <GenerateCheckModal
         onGenerate={handleGenerateCheck}
         onClose={() => setShowGenerateCheckModal(false)}
-        showHeyflowImport={!!company?.features?.heyflowImport}
+        showHeyflowImport={true}
         currentPages={doc.pages.length > 0 ? doc.pages : undefined}
         currentDimensions={dimensions.length > 0 ? dimensions : undefined}
         companyJobs={company?.successPage?.jobs?.map((j) => j.title).filter(Boolean)}

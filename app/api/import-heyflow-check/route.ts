@@ -104,10 +104,6 @@ export async function POST(req: NextRequest) {
   const session = await getSession();
   if (!session) return unauthorized();
 
-  if (!session.company.features?.heyflowImport) {
-    return NextResponse.json({ error: 'Feature nicht freigeschaltet' }, { status: 403 });
-  }
-
   let raw: unknown;
   try { raw = await req.json(); } catch {
     return NextResponse.json({ error: 'invalid_json' }, { status: 400 });
