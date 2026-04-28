@@ -24,6 +24,7 @@ CREATE INDEX IF NOT EXISTS funnel_comments_doc_idx    ON public.funnel_comments 
 CREATE INDEX IF NOT EXISTS funnel_comments_parent_idx ON public.funnel_comments (parent_id);
 CREATE INDEX IF NOT EXISTS funnel_comments_company_idx ON public.funnel_comments (company_id);
 
+DROP TRIGGER IF EXISTS set_updated_at ON public.funnel_comments;
 CREATE TRIGGER set_updated_at BEFORE UPDATE ON public.funnel_comments
   FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
