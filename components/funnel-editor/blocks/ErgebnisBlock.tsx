@@ -351,9 +351,6 @@ function MobileAccordion({ groups, dimensions, scores, maxScores, primary, br, m
                           )}
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-semibold text-slate-900 leading-snug">{withMwd(sug.title)}</p>
-                            {sug.description && (
-                              <p className="text-[11px] text-slate-500 leading-snug line-clamp-1 mt-0.5">{sug.description}</p>
-                            )}
                           </div>
                           <ChevronDown size={14} className="flex-shrink-0 text-slate-300 -rotate-90" />
                         </button>
@@ -570,9 +567,6 @@ function GroupSuggestions({ group, dimensions, scores, primary, br, markedIds, o
               <p className="text-sm md:text-base font-semibold text-slate-900 leading-snug mb-1 line-clamp-2">
                 {withMwd(sug.title)}
               </p>
-              {sug.description && (
-                <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">{sug.description}</p>
-              )}
               <span
                 className="mt-2 inline-flex items-center gap-1 text-xs font-medium group-hover:gap-1.5 transition-all"
                 style={{ color: primary }}
