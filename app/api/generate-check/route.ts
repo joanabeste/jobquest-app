@@ -545,17 +545,24 @@ export async function POST(req: NextRequest) {
 
   // ── Mediathek der Firma laden (für visuelle Auswahl in check_this_or_that)
   // Limit auf MAX_MEDIA_LIBRARY_IMAGES, neueste zuerst — deckelt Token-Kosten.
+  // Nur von Claude unterstützte MIME-Typen (jpeg/png/gif/webp). HEIC/SVG/AVIF/BMP
+  // würden sonst zum 400 "file format invalid or unsupported" führen.
+  const SUPPORTED_VISION_MIME = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
   const mediaSupabase = createAdminClient();
   const { data: mediaRows, error: mediaErr } = await mediaSupabase
     .from('media_assets')
-    .select('id, url, filename')
+    .select('id, url, filename, mime_type')
     .eq('company_id', session.company.id)
+    .in('mime_type', SUPPORTED_VISION_MIME)
     .order('created_at', { ascending: false })
     .limit(MAX_MEDIA_LIBRARY_IMAGES);
   if (mediaErr) {
     console.error('[generate-check] mediathek fetch failed:', mediaErr);
   }
-  const mediaAssets = (mediaRows ?? []) as Array<{ id: string; url: string; filename: string }>;
+  // Defensive Nachfilterung: alte Rows haben evtl. Großbuchstaben oder NULL.
+  const mediaAssets = ((mediaRows ?? []) as Array<{ id: string; url: string; filename: string; mime_type: string | null }>)
+    .filter((m) => typeof m.mime_type === 'string' && SUPPORTED_VISION_MIME.includes(m.mime_type.toLowerCase()))
+    .map((m) => ({ id: m.id, url: m.url, filename: m.filename }));
   const allowedMediaUrls = new Set(mediaAssets.map((m) => m.url));
 
   // ── Step A: strict extraction from attached images (best-effort, optional)
