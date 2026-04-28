@@ -17,6 +17,16 @@ const GenerateCheckSchema = z.object({
     .max(10)
     .optional()
     .default([]),
+  // Vorgegebene Dimensionen aus dem Firmenprofil (Job-Gruppen). Wenn gesetzt,
+  // muss die KI EXAKT diese Dimensionsnamen + Beruf→Dimension-Mapping
+  // übernehmen — keine eigenen Berufsfelder erfinden.
+  predefinedDimensions: z
+    .array(z.object({
+      name: z.string().min(1).max(120),
+      berufe: z.array(z.string().min(1).max(200)).default([]),
+    }))
+    .max(8)
+    .optional(),
 }).refine((v) => v.berufe.length > 0 || v.imageUrls.length > 0, {
   message: 'Bitte mindestens einen Beruf eingeben oder ein Bild hochladen.',
   path: ['berufe'],
@@ -476,7 +486,7 @@ export async function POST(req: NextRequest) {
       error: `Eingabe ungültig (${path}): ${issue?.message ?? 'unbekannter Validierungsfehler'}`,
     }, { status: 400 });
   }
-  const { berufe, studiengaenge, notes, cardCount, imageUrls } = parsedBody.data;
+  const { berufe, studiengaenge, notes, cardCount, imageUrls, predefinedDimensions } = parsedBody.data;
 
   if (!isAiConfigured()) {
     return NextResponse.json({ error: 'KI-API-Schlüssel nicht konfiguriert' }, { status: 500 });
@@ -530,9 +540,30 @@ export async function POST(req: NextRequest) {
     extractedBlock = lines.join('\n');
   }
 
+  // Wenn der Aufrufer Gruppen aus dem Firmenprofil mitschickt, formulieren
+  // wir daraus eine verbindliche Vorgabe — die KI darf diese Gruppennamen
+  // nicht umbenennen oder eigene erfinden.
+  let predefinedBlock = '';
+  if (predefinedDimensions && predefinedDimensions.length > 0) {
+    const lines: string[] = [
+      '=== VORGEGEBENE DIMENSIONEN (aus dem Firmenprofil — VERBINDLICH) ===',
+      'Verwende EXAKT diese Dimensionsnamen — KEINE umbenennen, KEINE neuen erfinden, KEINE zusammenfassen oder splitten.',
+      'Die genannten Berufe gehören VERPFLICHTEND zur jeweils zugeordneten Dimension (Ergebnis-Gruppe + Score-Map).',
+      '',
+    ];
+    for (const d of predefinedDimensions) {
+      lines.push(`• ${d.name}:`);
+      for (const b of d.berufe) lines.push(`    – ${b}`);
+    }
+    lines.push('');
+    lines.push('Berufe, die nicht in dieser Liste auftauchen, ordnest du der inhaltlich passendsten der oben genannten Dimensionen zu — KEINE neue Dimension dafür anlegen.');
+    predefinedBlock = lines.join('\n');
+  }
+
   const userMessageText = [
     ctx.join('\n'),
     '',
+    predefinedBlock ? `\n${predefinedBlock}\n` : '',
     mergedBerufe.length > 0
       ? `Erstelle einen Berufscheck für folgende Ausbildungsberufe:\n${mergedBerufe.map((b) => `- ${b}`).join('\n')}`
       : 'Erstelle einen Berufscheck. Die Liste der Berufe (und ggf. Studiengänge) entnimm bitte den mitgeschickten Bildern.',

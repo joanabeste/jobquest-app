@@ -8,13 +8,18 @@ import MediaLibrary, { uploadToMediaLibrary } from '@/components/shared/MediaLib
 
 type Tab = 'generate' | 'import' | 'refine';
 
+interface CompanyJobInput {
+  title: string;
+  group?: string;
+}
+
 interface Props {
   onGenerate: (pages: FunnelPage[], dimensions: Dimension[], title: string) => void;
   onClose: () => void;
   showHeyflowImport?: boolean;
   currentPages?: FunnelPage[];
   currentDimensions?: Dimension[];
-  companyJobs?: string[];
+  companyJobs?: CompanyJobInput[];
 }
 
 const LOADING_STEPS = [
@@ -179,6 +184,22 @@ export default function GenerateCheckModal({ onGenerate, onClose, showHeyflowImp
     setLoading(true);
     setError('');
     try {
+      // Wenn Firmen-Berufe mit Gruppen vorliegen UND der User mindestens
+      // einen davon als Beruf ausgewählt hat, leiten wir daraus verbindliche
+      // Dimensionen (Gruppennamen) inkl. Beruf→Dimension-Mapping ab. Die KI
+      // soll diese Gruppen exakt übernehmen statt eigene zu erfinden.
+      const predefinedDimensions = (() => {
+        if (!companyJobs || companyJobs.length === 0) return undefined;
+        const selected = companyJobs.filter((j) => j.group && berufe.includes(j.title));
+        if (selected.length === 0) return undefined;
+        const map = new Map<string, string[]>();
+        for (const j of selected) {
+          const arr = map.get(j.group!) ?? [];
+          arr.push(j.title);
+          map.set(j.group!, arr);
+        }
+        return Array.from(map.entries()).map(([name, jobs]) => ({ name, berufe: jobs }));
+      })();
       const res = await fetch('/api/generate-check', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -187,6 +208,7 @@ export default function GenerateCheckModal({ onGenerate, onClose, showHeyflowImp
           studiengaenge: studiengaenge.length > 0 ? studiengaenge : undefined,
           notes: notes.trim() || undefined,
           imageUrls: images.length > 0 ? images.map((img) => img.url) : undefined,
+          predefinedDimensions,
         }),
       });
       const data = await res.json() as { pages?: FunnelPage[]; dimensions?: Dimension[]; title?: string; error?: string };
@@ -373,10 +395,14 @@ export default function GenerateCheckModal({ onGenerate, onClose, showHeyflowImp
                 {companyJobs && companyJobs.length > 0 && berufe.length === 0 && (
                   <button
                     type="button"
-                    onClick={() => setBerufe(companyJobs.filter((j) => !berufe.includes(j)))}
+                    onClick={() => setBerufe(companyJobs.map((j) => j.title).filter((t) => !berufe.includes(t)))}
                     className="w-full mb-2 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-xl border border-dashed border-violet-300 text-violet-600 bg-violet-50/40 hover:bg-violet-50 transition-colors"
                   >
-                    <Sparkles size={12} /> {companyJobs.length} Berufe aus Firmenprofil ubernehmen
+                    <Sparkles size={12} /> {companyJobs.length} Berufe aus Firmenprofil übernehmen
+                    {(() => {
+                      const groups = new Set(companyJobs.map((j) => j.group).filter(Boolean) as string[]);
+                      return groups.size > 0 ? <span className="text-violet-400">({groups.size} Gruppen)</span> : null;
+                    })()}
                   </button>
                 )}
                 <div className="flex gap-1">

@@ -805,8 +805,10 @@ function JobsGroupEditor({ jobs, setJobs }: {
   function renderGroupSection(group: string, sectionJobs: SuccessJob[], isDraft: boolean) {
     const isCollapsed = collapsed.has(group);
     const isEditing = editingGroup === group;
+    const containsOpenPopover = movePopoverFor !== null && sectionJobs.some((j) => j.id === movePopoverFor);
     return (
-      <div key={`g:${group}`} className="border border-slate-200 rounded-xl bg-slate-50/40">
+      <div key={`g:${group}`} className="border border-slate-200 rounded-xl bg-slate-50/40 relative"
+        style={containsOpenPopover ? { zIndex: 50 } : undefined}>
         <div className="flex items-center justify-between px-3 py-2 bg-slate-50 border-b border-slate-200 rounded-t-xl">
           <button type="button" onClick={() => toggleCollapsed(group)}
             className="flex items-center gap-1.5 flex-1 min-w-0 text-left">
@@ -862,7 +864,8 @@ function JobsGroupEditor({ jobs, setJobs }: {
       {draftGroups.map((g) => renderGroupSection(g, [], true))}
 
       {/* Ohne Gruppe — immer sichtbar, auch wenn leer, damit der „+ Beruf hinzufügen"-Button erreichbar bleibt. */}
-      <div className="border border-dashed border-slate-200 rounded-xl bg-white">
+      <div className="border border-dashed border-slate-200 rounded-xl bg-white relative"
+        style={(movePopoverFor !== null && ungrouped.some((j) => j.id === movePopoverFor)) ? { zIndex: 50 } : undefined}>
         <div className="flex items-center px-3 py-2 border-b border-slate-200/60 rounded-t-xl">
           <Folder size={14} className="text-slate-400 mr-1.5" />
           <span className="font-medium text-sm text-slate-600">
