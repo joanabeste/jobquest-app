@@ -142,11 +142,11 @@ export default function GenerateCheckModal({ onGenerate, onClose, showHeyflowImp
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pages: currentPages, dimensions: currentDimensions, instructions: refineInstructions.trim() }),
       });
-      const data = await res.json() as { pages?: FunnelPage[]; dimensions?: Dimension[]; error?: string };
+      const data = await res.json() as { pages?: FunnelPage[]; dimensions?: Dimension[]; title?: string; error?: string };
       if (!res.ok) throw new Error(data.error ?? 'Unbekannter Fehler');
       if (!data.pages?.length) throw new Error('KI hat keinen vollstandigen Check generiert.');
       setLoadingProgress(100);
-      setTimeout(() => onGenerate(data.pages!, data.dimensions ?? currentDimensions ?? [], 'Berufscheck'), 400);
+      setTimeout(() => onGenerate(data.pages!, data.dimensions ?? currentDimensions ?? [], data.title ?? 'Berufscheck'), 400);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Fehler beim Anpassen');
       setLoading(false);
@@ -163,11 +163,11 @@ export default function GenerateCheckModal({ onGenerate, onClose, showHeyflowImp
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: heyflowUrl.trim() }),
       });
-      const data = await res.json() as { pages?: FunnelPage[]; dimensions?: Dimension[]; error?: string };
+      const data = await res.json() as { pages?: FunnelPage[]; dimensions?: Dimension[]; title?: string; error?: string };
       if (!res.ok) throw new Error(data.error ?? 'Unbekannter Fehler');
       if (!data.pages?.length || !data.dimensions?.length) throw new Error('KI hat keinen vollstandigen Check generiert.');
       setLoadingProgress(100);
-      setTimeout(() => onGenerate(data.pages!, data.dimensions!, 'Berufscheck'), 400);
+      setTimeout(() => onGenerate(data.pages!, data.dimensions!, data.title ?? 'Berufscheck'), 400);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Fehler beim Import');
       setLoading(false);
@@ -189,11 +189,11 @@ export default function GenerateCheckModal({ onGenerate, onClose, showHeyflowImp
           imageUrls: images.length > 0 ? images.map((img) => img.url) : undefined,
         }),
       });
-      const data = await res.json() as { pages?: FunnelPage[]; dimensions?: Dimension[]; error?: string };
+      const data = await res.json() as { pages?: FunnelPage[]; dimensions?: Dimension[]; title?: string; error?: string };
       if (!res.ok) throw new Error(data.error ?? 'Unbekannter Fehler');
       if (!data.pages?.length || !data.dimensions?.length) throw new Error('KI hat keinen vollständigen Check generiert.');
       setLoadingProgress(100);
-      const title = 'Berufscheck';
+      const title = data.title ?? 'Berufscheck';
       setTimeout(() => onGenerate(data.pages!, data.dimensions!, title), 400);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Fehler beim Generieren');

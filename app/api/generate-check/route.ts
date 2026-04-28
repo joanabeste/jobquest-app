@@ -809,5 +809,28 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ pages: splitPages, dimensions });
+  // Auto-Titel aus der check_intro-Headline ableiten — der erste Block der
+  // ersten Seite enthält i.d.R. die headline mit <accent>-Tags. Wir strippen
+  // die Tags und nehmen den Rohtext als sprechenden Titel für Dashboard/Slug.
+  const title = extractCheckTitle(splitPages);
+
+  return NextResponse.json({ pages: splitPages, dimensions, title });
+}
+
+function extractCheckTitle(pages: { nodes: { kind: string; type?: string; props?: Record<string, unknown> }[] }[]): string | undefined {
+  for (const page of pages) {
+    for (const node of page.nodes) {
+      if (node.kind !== 'block' || node.type !== 'check_intro') continue;
+      const raw = String(node.props?.headline ?? '').trim();
+      if (!raw) continue;
+      const stripped = raw
+        .replace(/<\/?accent>/gi, '')
+        .replace(/<[^>]+>/g, '')
+        .replace(/\s+/g, ' ')
+        .replace(/\.\s*$/, '')
+        .trim();
+      if (stripped.length >= 3) return stripped;
+    }
+  }
+  return undefined;
 }
