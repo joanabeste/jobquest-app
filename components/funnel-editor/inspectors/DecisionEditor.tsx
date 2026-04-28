@@ -26,7 +26,7 @@ export function DecisionEditor({ props, onChange, pages, variables = [] }: {
 
   return (
     <div className="space-y-3">
-      <Field label="Frage"><VarInput value={(props.question as string) ?? ''} onChange={(v) => onChange({ question: v })} variables={variables} /></Field>
+      <Field label="Frage"><VarInput html value={(props.question as string) ?? ''} onChange={(v) => onChange({ question: v })} variables={variables} /></Field>
       <div>
         <div className="flex items-center justify-between mb-2">
           <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Optionen</p>

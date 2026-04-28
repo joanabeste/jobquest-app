@@ -64,7 +64,7 @@ export function FrageEditor({ props, onChange, variables = [] }: { props: Record
           <option value="slider">Slider</option>
         </select>
       </Field>
-      <Field label="Frage"><VarInput value={(props.question as string) ?? ''} onChange={(v) => onChange({ question: v })} variables={variables} /></Field>
+      <Field label="Frage"><VarInput html value={(props.question as string) ?? ''} onChange={(v) => onChange({ question: v })} variables={variables} /></Field>
       {frageType === 'single_choice' ? (
         <div>
           <div className="flex items-center justify-between mb-2">
@@ -107,7 +107,7 @@ export function ErgebnisfrageEditor({ props, onChange, variables = [] }: { props
   const options = (props.options as { id: string; text: string; scores: Record<string, number> }[]) ?? [];
   return (
     <div className="space-y-3">
-      <Field label="Frage"><VarInput value={(props.question as string) ?? ''} onChange={(v) => onChange({ question: v })} variables={variables} /></Field>
+      <Field label="Frage"><VarInput html value={(props.question as string) ?? ''} onChange={(v) => onChange({ question: v })} variables={variables} /></Field>
       <div>
         <div className="flex items-center justify-between mb-2">
           <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Optionen</p>

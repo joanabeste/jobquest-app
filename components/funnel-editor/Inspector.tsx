@@ -298,7 +298,7 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars }: {
             </select>
           </Field>
           <Field label="Text">
-            <VarInput value={(props.text as string) ?? ''} onChange={(v) => onChange({ text: v })}
+            <VarInput html value={(props.text as string) ?? ''} onChange={(v) => onChange({ text: v })}
               className="input-field text-sm" placeholder="Überschrift…" variables={availableVars} />
           </Field>
         </div>
@@ -365,10 +365,10 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars }: {
       return (
         <div className="space-y-3">
           <ImageUploadField value={(props.imageUrl as string) ?? ''} onChange={(v) => onChange({ imageUrl: v })} label="Bild" />
-          <Field label="Titel"><VarInput value={(props.title as string) ?? ''} onChange={(v) => onChange({ title: v })} className="input-field text-sm" placeholder="Willkommen bei …" variables={availableVars} /></Field>
+          <Field label="Titel"><VarInput html value={(props.title as string) ?? ''} onChange={(v) => onChange({ title: v })} className="input-field text-sm" placeholder="Willkommen bei …" variables={availableVars} /></Field>
           <Field label="Einleitungstext"><VarInput value={(props.subtext as string) ?? ''} onChange={(v) => onChange({ subtext: v })} className="input-field text-sm" placeholder="Erlebe virtuell einen typischen Arbeitstag als:" variables={availableVars} /></Field>
           <Field label="Jobtitel"><input value={(props.accentText as string) ?? ''} onChange={(e) => onChange({ accentText: e.target.value })} className="input-field text-sm" placeholder="z. B. Pflegefachkraft (m/w/d)" /><p className="text-[10px] text-slate-400 mt-1">Wird farbig hervorgehoben</p></Field>
-          <Field label="Beschreibung"><VarTextarea value={(props.description as string) ?? ''} onChange={(v) => onChange({ description: v })} rows={3} variables={availableVars} /></Field>
+          <Field label="Beschreibung"><VarTextarea html value={(props.description as string) ?? ''} onChange={(v) => onChange({ description: v })} rows={3} variables={availableVars} /></Field>
           <Field label="Button-Text"><input value={(props.buttonText as string) ?? ''} onChange={(e) => onChange({ buttonText: e.target.value })} className="input-field text-sm" placeholder="Alles klar, verstanden!" /></Field>
         </div>
       );
@@ -391,7 +391,7 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars }: {
     case 'quest_info':
       return (
         <div className="space-y-3">
-          <Field label="Titel"><VarInput value={(props.title as string) ?? ''} onChange={(v) => onChange({ title: v })} className="input-field text-sm" variables={availableVars} /></Field>
+          <Field label="Titel"><VarInput html value={(props.title as string) ?? ''} onChange={(v) => onChange({ title: v })} className="input-field text-sm" variables={availableVars} /></Field>
           <Field label="Text (Rich Text)">
             <RichTextEditor value={(props.text as string) ?? ''} onChange={(html) => onChange({ text: html })} variables={availableVars} />
           </Field>
@@ -457,7 +457,7 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars }: {
     case 'quest_rating':
       return (
         <div className="space-y-3">
-          <Field label="Frage"><VarInput value={(props.question as string) ?? ''} onChange={(v) => onChange({ question: v })} className="input-field text-sm" variables={availableVars} /></Field>
+          <Field label="Frage"><VarInput html value={(props.question as string) ?? ''} onChange={(v) => onChange({ question: v })} className="input-field text-sm" variables={availableVars} /></Field>
           <Section label="Erweitert" collapsible defaultOpen={false}>
             <Field label="Emoji"><input value={(props.emoji as string) ?? '⭐'} onChange={(e) => onChange({ emoji: e.target.value })} className="input-field text-sm w-20" placeholder="⭐" /></Field>
             <NumberInput label="Anzahl (1–10)" value={(props.count as number) ?? 5} onChange={(v) => onChange({ count: Math.min(10, Math.max(1, v)) })} />
@@ -483,10 +483,10 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars }: {
       return (
         <div className="space-y-3">
           <Field label="Überschrift">
-            <VarInput value={(props.headline as string) ?? ''} onChange={(v) => onChange({ headline: v })} className="input-field text-sm" variables={availableVars} />
+            <VarInput html value={(props.headline as string) ?? ''} onChange={(v) => onChange({ headline: v })} className="input-field text-sm" variables={availableVars} />
           </Field>
           <Field label="Untertext">
-            <VarTextarea value={(props.subtext as string) ?? ''} onChange={(v) => onChange({ subtext: v })} rows={2} variables={availableVars} />
+            <VarTextarea html value={(props.subtext as string) ?? ''} onChange={(v) => onChange({ subtext: v })} rows={2} variables={availableVars} />
           </Field>
           <Section label="Verhalten" collapsible defaultOpen={true}>
             <Field label="Button-Text">
@@ -523,8 +523,8 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars }: {
       return (
         <div className="space-y-3">
           <ImageUploadField value={(props.imageUrl as string) ?? ''} onChange={(v) => onChange({ imageUrl: v })} label="Bild" />
-          <Field label="Überschrift"><VarInput value={(props.headline as string) ?? ''} onChange={(v) => onChange({ headline: v })} className="input-field text-sm" variables={availableVars} /></Field>
-          <Field label="Untertext"><VarTextarea value={(props.subtext as string) ?? ''} onChange={(v) => onChange({ subtext: v })} rows={2} variables={availableVars} /></Field>
+          <Field label="Überschrift"><VarInput html value={(props.headline as string) ?? ''} onChange={(v) => onChange({ headline: v })} className="input-field text-sm" variables={availableVars} /></Field>
+          <Field label="Untertext"><VarTextarea html value={(props.subtext as string) ?? ''} onChange={(v) => onChange({ subtext: v })} rows={2} variables={availableVars} /></Field>
           <Section label="Verhalten" collapsible defaultOpen={true}>
             <Field label="Button-Text"><input value={(props.buttonText as string) ?? ''} onChange={(e) => onChange({ buttonText: e.target.value })} className="input-field text-sm" /></Field>
           </Section>
@@ -534,7 +534,7 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars }: {
     case 'check_vorname':
       return (
         <div className="space-y-3">
-          <Field label="Frage"><VarInput value={(props.question as string) ?? ''} onChange={(v) => onChange({ question: v })} className="input-field text-sm" variables={availableVars} /></Field>
+          <Field label="Frage"><VarInput html value={(props.question as string) ?? ''} onChange={(v) => onChange({ question: v })} className="input-field text-sm" variables={availableVars} /></Field>
           <Section label="Verhalten" collapsible defaultOpen={true}>
             <Field label="Button-Text"><input value={(props.buttonText as string) ?? ''} onChange={(e) => onChange({ buttonText: e.target.value })} className="input-field text-sm" /></Field>
           </Section>
@@ -559,7 +559,7 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars }: {
     case 'check_selbst':
       return (
         <div className="space-y-3">
-          <Field label="Frage"><VarInput value={(props.question as string) ?? ''} onChange={(v) => onChange({ question: v })} className="input-field text-sm" variables={availableVars} /></Field>
+          <Field label="Frage"><VarInput html value={(props.question as string) ?? ''} onChange={(v) => onChange({ question: v })} className="input-field text-sm" variables={availableVars} /></Field>
           <Field label="Beschreibung"><VarTextarea value={(props.description as string) ?? ''} onChange={(v) => onChange({ description: v })} rows={2} variables={availableVars} /></Field>
           <div className="grid grid-cols-2 gap-2">
             <NumberInput label="Min" value={(props.sliderMin as number) ?? 0} onChange={(v) => onChange({ sliderMin: v })} />
@@ -574,7 +574,7 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars }: {
       const stmts = (props.statements as Array<{ id: string; text: string; dimensionId?: string; points?: number }>) ?? [];
       return (
         <div className="space-y-3">
-          <Field label="Frage"><VarInput value={(props.question as string) ?? ''} onChange={(v) => onChange({ question: v })} className="input-field text-sm" variables={availableVars} /></Field>
+          <Field label="Frage"><VarInput html value={(props.question as string) ?? ''} onChange={(v) => onChange({ question: v })} className="input-field text-sm" variables={availableVars} /></Field>
           <div>
             <label className="label">Aussagen</label>
             <div className="space-y-2">
@@ -629,7 +629,7 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars }: {
     case 'check_lead':
       return (
         <div className="space-y-3">
-          <Field label="Überschrift"><VarInput value={(props.headline as string) ?? ''} onChange={(v) => onChange({ headline: v })} className="input-field text-sm" variables={availableVars} /></Field>
+          <Field label="Überschrift"><VarInput html value={(props.headline as string) ?? ''} onChange={(v) => onChange({ headline: v })} className="input-field text-sm" variables={availableVars} /></Field>
           <Field label="Untertext"><VarTextarea value={(props.subtext as string) ?? ''} onChange={(v) => onChange({ subtext: v })} rows={2} variables={availableVars} /></Field>
           <Section label="Verhalten" collapsible defaultOpen={true}>
             <Field label="Button-Text"><input value={(props.buttonText as string) ?? ''} onChange={(e) => onChange({ buttonText: e.target.value })} className="input-field text-sm" /></Field>
@@ -669,7 +669,7 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars }: {
     case 'check_ergebnis':
       return (
         <div className="space-y-3">
-          <Field label="Überschrift"><VarInput value={(props.headline as string) ?? ''} onChange={(v) => onChange({ headline: v })} variables={availableVars} /></Field>
+          <Field label="Überschrift"><VarInput html value={(props.headline as string) ?? ''} onChange={(v) => onChange({ headline: v })} variables={availableVars} /></Field>
           <Field label="Untertext"><VarTextarea value={(props.subtext as string) ?? ''} onChange={(v) => onChange({ subtext: v })} rows={2} variables={availableVars} /></Field>
           <ErgebnisGroupsEditor props={props} onChange={onChange} pages={pages} />
         </div>
@@ -680,8 +680,8 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars }: {
       return (
         <div className="space-y-3">
           <ImageUploadField value={(props.imageUrl as string) ?? ''} onChange={(v) => onChange({ imageUrl: v })} label="Hintergrundbild" />
-          <Field label="Überschrift"><VarInput value={(props.headline as string) ?? ''} onChange={(v) => onChange({ headline: v })} className="input-field text-sm" variables={availableVars} /></Field>
-          <Field label="Untertext"><VarTextarea value={(props.subtext as string) ?? ''} onChange={(v) => onChange({ subtext: v })} rows={2} variables={availableVars} /></Field>
+          <Field label="Überschrift"><VarInput html value={(props.headline as string) ?? ''} onChange={(v) => onChange({ headline: v })} className="input-field text-sm" variables={availableVars} /></Field>
+          <Field label="Untertext"><VarTextarea html value={(props.subtext as string) ?? ''} onChange={(v) => onChange({ subtext: v })} rows={2} variables={availableVars} /></Field>
           <Section label="Verhalten" collapsible defaultOpen={true}>
             <Field label="Button-Text"><input value={(props.ctaText as string) ?? ''} onChange={(e) => onChange({ ctaText: e.target.value })} className="input-field text-sm" /></Field>
           </Section>
@@ -691,7 +691,7 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars }: {
     case 'form_text':
       return (
         <div className="space-y-3">
-          <Field label="Überschrift (optional)"><VarInput value={(props.headline as string) ?? ''} onChange={(v) => onChange({ headline: v })} className="input-field text-sm" variables={availableVars} /></Field>
+          <Field label="Überschrift (optional)"><VarInput html value={(props.headline as string) ?? ''} onChange={(v) => onChange({ headline: v })} className="input-field text-sm" variables={availableVars} /></Field>
           <Field label="Text (Rich Text)">
             <RichTextEditor value={(props.content as string) ?? ''} onChange={(html) => onChange({ content: html })} variables={availableVars} />
           </Field>
@@ -727,10 +727,10 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars }: {
       return (
         <div className="space-y-3">
           <Field label="Überschrift">
-            <VarInput value={(props.headline as string) ?? ''} onChange={(v) => onChange({ headline: v })} className="input-field text-sm" variables={availableVars} />
+            <VarInput html value={(props.headline as string) ?? ''} onChange={(v) => onChange({ headline: v })} className="input-field text-sm" variables={availableVars} />
           </Field>
           <Field label="Untertext">
-            <VarTextarea value={(props.subtext as string) ?? ''} onChange={(v) => onChange({ subtext: v })} rows={2} variables={availableVars} />
+            <VarTextarea html value={(props.subtext as string) ?? ''} onChange={(v) => onChange({ subtext: v })} rows={2} variables={availableVars} />
           </Field>
           <Section label="Verhalten" collapsible defaultOpen={true}>
             <Field label="Button-Text">

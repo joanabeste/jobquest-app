@@ -33,6 +33,7 @@ export function ThisOrThatEditor({ props, onChange, variables = [] }: {
     <div className="space-y-3">
       <Field label="Frage">
         <VarInput
+          html
           value={(props.question as string) ?? ''}
           onChange={(v) => onChange({ question: v })}
           variables={variables}

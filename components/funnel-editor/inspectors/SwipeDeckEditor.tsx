@@ -33,10 +33,10 @@ export function SwipeDeckEditor({ props, onChange, variables = [] }: {
     onChange({
       cards: [...cards, {
         id: uid(),
-        text: 'Neues Szenario',
-        optionPositive: { label: 'Klingt gut', emoji: '👍', scores: {} },
-        optionNeutral:  { label: 'Geht so',    emoji: '😐', scores: {} },
-        optionNegative: { label: 'Eher nicht', emoji: '👎', scores: {} },
+        text: 'Würdest du …?',
+        optionPositive: { label: 'Ja',         emoji: '👍', scores: {} },
+        optionNeutral:  { label: 'Vielleicht', emoji: '😐', scores: {} },
+        optionNegative: { label: 'Nein',       emoji: '👎', scores: {} },
       }],
     });
   }
@@ -47,7 +47,7 @@ export function SwipeDeckEditor({ props, onChange, variables = [] }: {
   return (
     <div className="space-y-3">
       <Field label="Header (optional)">
-        <VarInput value={(props.question as string) ?? ''} onChange={(v) => onChange({ question: v })} variables={variables} />
+        <VarInput html value={(props.question as string) ?? ''} onChange={(v) => onChange({ question: v })} variables={variables} />
       </Field>
 
       <label className="flex items-center gap-2 cursor-pointer">
@@ -90,19 +90,19 @@ export function SwipeDeckEditor({ props, onChange, variables = [] }: {
                 />
 
                 <OptionEditor
-                  label="👍 Klingt gut"
+                  label="👍 Ja"
                   color="emerald"
                   option={card.optionPositive}
                   onChange={(o) => patchCard(card.id, { optionPositive: o })}
                 />
                 <OptionEditor
-                  label="😐 Geht so"
+                  label="😐 Vielleicht"
                   color="slate"
                   option={card.optionNeutral}
                   onChange={(o) => patchCard(card.id, { optionNeutral: o })}
                 />
                 <OptionEditor
-                  label="👎 Eher nicht"
+                  label="👎 Nein"
                   color="rose"
                   option={card.optionNegative}
                   onChange={(o) => patchCard(card.id, { optionNegative: o })}

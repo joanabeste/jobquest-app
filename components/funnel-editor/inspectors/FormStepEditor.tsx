@@ -28,7 +28,7 @@ export function FormStepEditor({ props, onChange, variables = [] }: { props: Rec
 
   return (
     <div className="space-y-3">
-      <Field label="Schritt-Titel"><VarInput value={(props.title as string) ?? ''} onChange={(v) => onChange({ title: v })} variables={variables} /></Field>
+      <Field label="Schritt-Titel"><VarInput html value={(props.title as string) ?? ''} onChange={(v) => onChange({ title: v })} variables={variables} /></Field>
       <Field label="Beschreibung"><VarTextarea value={(props.description as string) ?? ''} onChange={(v) => onChange({ description: v })} rows={2} className="input-field text-sm resize-none" variables={variables} /></Field>
       <div>
         <div className="flex items-center justify-between mb-2">

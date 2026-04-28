@@ -12,6 +12,7 @@
 import { useRef, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import type { VariableDef } from '@/lib/funnel-variables';
+import { htmlToPlainText, setPlainText } from '@/lib/rich-text';
 
 // Re-export for backwards compatibility
 export type { VariableDef };
@@ -110,7 +111,7 @@ function VarDropdown({
 
 // ─── VarInput (single-line) ───────────────────────────────────────────────────
 export function VarInput({
-  value, onChange, placeholder, type = 'text', variables = [], className,
+  value, onChange, placeholder, type = 'text', variables = [], className, html = false,
 }: {
   value: string;
   onChange: (v: string) => void;
@@ -118,10 +119,18 @@ export function VarInput({
   type?: string;
   variables?: VariableDef[];
   className?: string;
+  /** When true, treat `value` as HTML: display its plain text and merge edits
+   *  back into the original markup so inline formatting is preserved. */
+  html?: boolean;
 }) {
   const ref = useRef<HTMLInputElement>(null);
+  const displayValue = html ? htmlToPlainText(value) : value;
+  const handlePlainChange = useCallback(
+    (next: string) => onChange(html ? setPlainText(value, next, displayValue) : next),
+    [onChange, html, value, displayValue],
+  );
   const { showPicker, dropdownPos, filtered, handleChange, insertVar, dismiss } =
-    useVarMention(value, onChange, ref as React.RefObject<HTMLInputElement | HTMLTextAreaElement>, variables);
+    useVarMention(displayValue, handlePlainChange, ref as React.RefObject<HTMLInputElement | HTMLTextAreaElement>, variables);
 
   return (
     <div className="relative">
@@ -129,7 +138,7 @@ export function VarInput({
         ref={ref}
         type={type}
         className={className ?? 'input-field'}
-        value={value}
+        value={displayValue}
         onChange={handleChange}
         onBlur={dismiss}
         onKeyDown={(e) => { if (e.key === 'Escape') dismiss(); }}
@@ -144,7 +153,7 @@ export function VarInput({
 
 // ─── VarTextarea (multi-line) ─────────────────────────────────────────────────
 export function VarTextarea({
-  value, onChange, placeholder, rows = 6, variables = [], className, mono = false,
+  value, onChange, placeholder, rows = 6, variables = [], className, mono = false, html = false,
 }: {
   value: string;
   onChange: (v: string) => void;
@@ -153,10 +162,16 @@ export function VarTextarea({
   variables?: VariableDef[];
   className?: string;
   mono?: boolean;
+  html?: boolean;
 }) {
   const ref = useRef<HTMLTextAreaElement>(null);
+  const displayValue = html ? htmlToPlainText(value) : value;
+  const handlePlainChange = useCallback(
+    (next: string) => onChange(html ? setPlainText(value, next, displayValue) : next),
+    [onChange, html, value, displayValue],
+  );
   const { showPicker, dropdownPos, filtered, handleChange, insertVar, dismiss } =
-    useVarMention(value, onChange, ref as React.RefObject<HTMLInputElement | HTMLTextAreaElement>, variables);
+    useVarMention(displayValue, handlePlainChange, ref as React.RefObject<HTMLInputElement | HTMLTextAreaElement>, variables);
 
   return (
     <div className="relative">
@@ -164,7 +179,7 @@ export function VarTextarea({
         ref={ref}
         className={className ?? `input-field leading-relaxed resize-none ${mono ? 'font-mono text-xs' : 'text-sm'}`}
         rows={rows}
-        value={value}
+        value={displayValue}
         onChange={handleChange}
         onBlur={dismiss}
         onKeyDown={(e) => { if (e.key === 'Escape') dismiss(); }}
