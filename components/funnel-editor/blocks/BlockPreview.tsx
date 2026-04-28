@@ -20,7 +20,7 @@ import { BlockNode, LeadFieldDef } from '@/lib/funnel-types';
 import { useCi } from '@/lib/ci-context';
 import { useFunnelEditorCtx } from '../FunnelEditorContext';
 import InlineLeadFields from '../InlineLeadFields';
-import { DECISION_ICONS, isIconName } from '@/lib/decision-icons';
+import { DECISION_ICONS, isIconName, isUnknownIconName } from '@/lib/decision-icons';
 
 // Custom extension: adds fontSize + fontWeight attributes to textStyle mark
 const FontSizeWeight = Extension.create({
@@ -556,11 +556,17 @@ export default function BlockPreview({ node, onUpdate }: {
             <div className={`grid gap-3 ${opts.length === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
               {opts.map((o) => {
                 const IconComp = isIconName(o.emoji) ? DECISION_ICONS[o.emoji] : null;
+                // Unbekannte PascalCase-Strings (z.B. KI hat "StopCircle" geschrieben,
+                // ist aber nicht registriert) gar nicht rendern — sonst stünde der
+                // nackte Name als Text in der Karte.
+                const showEmoji = !IconComp && o.emoji && !isUnknownIconName(o.emoji);
                 return (
                   <div key={o.id} className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col items-center gap-2.5 text-center shadow-sm">
                     {IconComp
                       ? <IconComp size={28} className="text-violet-500" />
-                      : <span className="text-3xl leading-none">{o.emoji}</span>
+                      : showEmoji
+                        ? <span className="text-3xl leading-none">{o.emoji}</span>
+                        : null
                     }
                     <span className="text-xs font-medium text-slate-700 leading-tight">{o.text || 'Option'}</span>
                   </div>

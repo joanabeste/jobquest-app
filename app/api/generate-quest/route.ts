@@ -153,11 +153,14 @@ quest_decision
     Bei Branching-Decisions IMMER false (beide Pfade sind valide).
   → reaction: Kurze, ermutigende Konsequenz (1-2 Sätze). Immer positiv und motivierend formulieren.
     Bei isWrong: freundlich erklären, nicht tadeln ("Das wäre nicht ideal, weil..." statt "Das ist falsch!").
-  → emoji: NUR Icon-Namen aus dieser Liste (kein Emoji-Zeichen wie 🚨 oder 👍):
+  → emoji: NUR Icon-Namen aus dieser Liste (kein Emoji-Zeichen wie 🚨 oder 👍, KEINE
+    Erfindungen wie "DangerSign" oder "Warning"):
     Briefcase, Star, Heart, Zap, Target, Users, Clock, Globe, Shield, Lightbulb,
     Rocket, TrendingUp, Award, CheckCircle, XCircle, ThumbsUp, ThumbsDown,
     Coffee, Smile, AlertTriangle, HelpCircle, MessageCircle, Phone, Mail,
-    Clipboard, Search, Settings, Flag, Bookmark
+    Clipboard, Search, Settings, Flag, Bookmark,
+    StopCircle, Ban, OctagonAlert, Hand, ShieldX, ShieldAlert
+    Wenn unsicher: lieber CheckCircle / XCircle / AlertTriangle nehmen.
 
 BRANCHING-MECHANISMUS — ZWEI Arten von nextPageIndex, beide nötig:
 

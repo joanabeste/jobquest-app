@@ -10,6 +10,7 @@ import {
   ArrowRight, ArrowLeft, ArrowUp, ArrowDown, ArrowUpRight, ArrowDownRight,
   ChevronRight, ChevronLeft, ChevronUp, ChevronDown,
   ThumbsUp, ThumbsDown, Check, CheckCircle, CheckCheck, XCircle, X as XIcon,
+  StopCircle, Ban, OctagonAlert, OctagonX, CircleSlash, Hand, ShieldX,
   // Time & Planning
   Clock, Clock1, Clock12, Timer, Hourglass, Calendar, CalendarDays, CalendarCheck, CalendarClock,
   AlarmClock, Watch,
@@ -82,6 +83,7 @@ export const DECISION_ICONS: Record<string, LucideIcon> = {
   ArrowRight, ArrowLeft, ArrowUp, ArrowDown, ArrowUpRight, ArrowDownRight,
   ChevronRight, ChevronLeft, ChevronUp, ChevronDown,
   ThumbsUp, ThumbsDown, Check, CheckCircle, CheckCheck, XCircle, X: XIcon,
+  StopCircle, Ban, OctagonAlert, OctagonX, CircleSlash, Hand, ShieldX,
   // Time & Planning
   Clock, Clock1, Clock12, Timer, Hourglass, Calendar, CalendarDays, CalendarCheck, CalendarClock,
   AlarmClock, Watch,
@@ -161,4 +163,18 @@ export function isIconName(value: string | undefined): value is string {
 export function isEmoji(value: string | undefined): boolean {
   if (!value) return false;
   return !(value in DECISION_ICONS);
+}
+
+/**
+ * True wenn der Wert wie ein PascalCase-Icon-Name aussieht (z.B. "StopCircle"),
+ * aber nicht in DECISION_ICONS registriert ist. Solche Werte sollen NICHT als
+ * roher Text gerendert werden — die KI liefert sie manchmal in Halluzinationen
+ * oder mit veränderter Schreibweise.
+ */
+export function isUnknownIconName(value: string | undefined): boolean {
+  if (!value) return false;
+  if (value in DECISION_ICONS) return false;
+  // PascalCase: Großbuchstabe zu Beginn, mindestens ein weiterer Großbuchstabe
+  // im Wort, keine Leerzeichen/Sonderzeichen außer Buchstaben.
+  return /^[A-Z][a-zA-Z]*[A-Z][a-zA-Z]*$/.test(value);
 }

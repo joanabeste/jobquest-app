@@ -5,7 +5,7 @@ import { ArrowRight, FileDown, Check, X, ChevronRight } from 'lucide-react';
 import { BlockNode } from '@/lib/funnel-types';
 import { applyVars, stripNamePlaceholder } from '@/lib/funnel-variables';
 import { Company, Dimension } from '@/lib/types';
-import { DECISION_ICONS, isIconName } from '@/lib/decision-icons';
+import { DECISION_ICONS, isIconName, isUnknownIconName } from '@/lib/decision-icons';
 import { SKIP_ANSWER } from '@/lib/funnel-utils';
 import { s, n, b, sh, inlineHtml } from './blocks/helpers';
 import DialogBlock, { type DialogLine } from './blocks/DialogBlock';
@@ -500,7 +500,9 @@ export function BlockRenderer({
                     <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: `${isSelected ? optAccent : primary}15` }}>
                       {IconComp
                         ? <IconComp size={20} style={{ color: isSelected ? optAccent : primary }} />
-                        : <span className="text-xl leading-none">{o.emoji}</span>
+                        : (o.emoji && !isUnknownIconName(o.emoji))
+                          ? <span className="text-xl leading-none">{o.emoji}</span>
+                          : null
                       }
                     </div>
                     <span className="text-sm font-medium text-slate-700 leading-snug flex-1">{o.text}</span>

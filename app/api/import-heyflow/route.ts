@@ -155,7 +155,13 @@ quest_decision
   → Für echte Entscheidungssituationen. 2–3 Optionen.
   → question: Konkrete Situation mit Handlungsdruck, nicht abstrakt.
   → isWrong: true wenn objektiv falsch/gefährlich. Bei Branching immer false.
-  → emoji: NUR Icon-Namen: Briefcase, Star, Heart, Zap, Target, Users, Clock, Globe, Shield, Lightbulb, Rocket, TrendingUp, Award, CheckCircle, XCircle, ThumbsUp, ThumbsDown, Coffee, Smile, AlertTriangle, HelpCircle, MessageCircle, Phone, Mail, Clipboard, Search, Settings, Flag, Bookmark
+  → emoji: NUR Icon-Namen aus dieser Liste (KEINE Erfindungen wie "DangerSign"):
+    Briefcase, Star, Heart, Zap, Target, Users, Clock, Globe, Shield, Lightbulb,
+    Rocket, TrendingUp, Award, CheckCircle, XCircle, ThumbsUp, ThumbsDown,
+    Coffee, Smile, AlertTriangle, HelpCircle, MessageCircle, Phone, Mail,
+    Clipboard, Search, Settings, Flag, Bookmark,
+    StopCircle, Ban, OctagonAlert, Hand, ShieldX, ShieldAlert
+    Wenn unsicher: lieber CheckCircle / XCircle / AlertTriangle nehmen.
 
 quest_quiz
   Props: { question: string, options: [{ id: "UUID", text: string, correct: boolean, feedback: string }] }
