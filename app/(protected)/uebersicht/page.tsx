@@ -471,36 +471,28 @@ export default function UebersichtPage() {
                       </button>
                     </div>
                   </div>
-                  <div className="px-3 pb-3 space-y-1.5">
+                  <div className="px-3 pb-3">
                     {effective ? (
-                      <>
-                        <div className="flex items-center gap-2">
-                          <img src={effective} alt="" className="h-8 w-14 object-cover rounded" />
-                          <span className="text-[11px] text-slate-500 truncate flex-1">
-                            {isOverride ? 'Eigenes Titelbild' : 'Aus Intro-Slide übernommen'}
-                          </span>
-                        </div>
-                        <div className="flex flex-wrap gap-1.5">
+                      <div className="flex flex-wrap gap-1.5">
+                        <button type="button"
+                          onClick={() => setCropper({ type: item.type, contentId: item.contentId, src: effective })}
+                          className="flex items-center gap-1 px-2.5 py-1 text-[11px] rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-violet-300 hover:text-violet-700 transition-colors">
+                          <Crop size={11} /> Zuschneiden
+                        </button>
+                        <button type="button"
+                          onClick={() => setMediaPickerFor({ type: item.type, contentId: item.contentId })}
+                          className="flex items-center gap-1 px-2.5 py-1 text-[11px] rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-violet-300 hover:text-violet-700 transition-colors">
+                          <ImageIcon size={11} /> {isOverride ? 'Anderes Bild' : 'Eigenes Bild'}
+                        </button>
+                        {isOverride && (
                           <button type="button"
-                            onClick={() => setCropper({ type: item.type, contentId: item.contentId, src: effective })}
-                            className="flex items-center gap-1 px-2.5 py-1 text-[11px] rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-violet-300 hover:text-violet-700 transition-colors">
-                            <Crop size={11} /> Zuschneiden
+                            onClick={() => updateCardImage(item.type, item.contentId, '')}
+                            title="Auf Intro-Bild zurücksetzen"
+                            className="flex items-center gap-1 px-2.5 py-1 text-[11px] rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 hover:border-amber-300 hover:text-amber-700 transition-colors">
+                            <RotateCcw size={11} /> Zurücksetzen
                           </button>
-                          <button type="button"
-                            onClick={() => setMediaPickerFor({ type: item.type, contentId: item.contentId })}
-                            className="flex items-center gap-1 px-2.5 py-1 text-[11px] rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-violet-300 hover:text-violet-700 transition-colors">
-                            <ImageIcon size={11} /> {isOverride ? 'Anderes Bild' : 'Eigenes Bild'}
-                          </button>
-                          {isOverride && (
-                            <button type="button"
-                              onClick={() => updateCardImage(item.type, item.contentId, '')}
-                              title="Auf Intro-Bild zurücksetzen"
-                              className="flex items-center gap-1 px-2.5 py-1 text-[11px] rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 hover:border-amber-300 hover:text-amber-700 transition-colors">
-                              <RotateCcw size={11} /> Zurücksetzen
-                            </button>
-                          )}
-                        </div>
-                      </>
+                        )}
+                      </div>
                     ) : (
                       <button type="button"
                         onClick={() => setMediaPickerFor({ type: item.type, contentId: item.contentId })}
