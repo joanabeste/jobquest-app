@@ -1,10 +1,12 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { X, Sparkles, Upload, Trash2, Image as ImageIcon, ArrowDownToLine, Wand2 } from 'lucide-react';
 import { FunnelPage } from '@/lib/funnel-types';
 import type { MediaAsset } from '@/lib/types';
 import MediaLibrary, { uploadToMediaLibrary } from '@/components/shared/MediaLibrary';
+import RefinePreviewModal from './RefinePreviewModal';
+import { diffFunnelDoc } from '@/lib/funnel-diff';
 
 type Tab = 'generate' | 'import' | 'refine';
 
@@ -43,6 +45,10 @@ export default function GenerateQuestModal({ onGenerate, onClose, showHeyflowImp
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [libraryOpen, setLibraryOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [refineResult, setRefineResult] = useState<{
+    pages: FunnelPage[];
+    changesSummary: string[];
+  } | null>(null);
 
   async function handleImageUpload(file: File) {
     setUploadingImage(true);
@@ -130,11 +136,22 @@ export default function GenerateQuestModal({ onGenerate, onClose, showHeyflowImp
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pages: currentPages, instructions: refineInstructions.trim() }),
       });
-      const data = await res.json() as { pages?: FunnelPage[]; error?: string };
+      const data = await res.json() as {
+        pages?: FunnelPage[];
+        changesSummary?: string[];
+        error?: string;
+      };
       if (!res.ok) throw new Error(data.error ?? 'Unbekannter Fehler');
       if (!data.pages?.length) throw new Error('Keine Seiten generiert');
       setLoadingProgress(100);
-      setTimeout(() => onGenerate(data.pages!, ''), 400);
+      // Show diff preview instead of applying immediately.
+      setTimeout(() => {
+        setRefineResult({
+          pages: data.pages!,
+          changesSummary: data.changesSummary ?? [],
+        });
+        setLoading(false);
+      }, 400);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Fehler beim Anpassen');
       setLoading(false);
@@ -160,6 +177,35 @@ export default function GenerateQuestModal({ onGenerate, onClose, showHeyflowImp
       setError(e instanceof Error ? e.message : 'Fehler beim Import');
       setLoading(false);
     }
+  }
+
+  const refineDiff = useMemo(() => {
+    if (!refineResult || !currentPages) return null;
+    return diffFunnelDoc(
+      { pages: currentPages, dimensions: [] },
+      { pages: refineResult.pages, dimensions: [] },
+    );
+  }, [refineResult, currentPages]);
+
+  if (refineResult && refineDiff && currentPages) {
+    return (
+      <RefinePreviewModal
+        prev={{ pages: currentPages, dimensions: [] }}
+        next={{ pages: refineResult.pages, dimensions: [] }}
+        instructions={refineInstructions}
+        changesSummary={refineResult.changesSummary}
+        diff={refineDiff}
+        onApply={(merged) => {
+          if (merged.warnings.length > 0) {
+            console.warn('[refine-quest] consistency warnings:', merged.warnings);
+          }
+          setRefineResult(null);
+          onGenerate(merged.pages, '');
+        }}
+        onBack={() => setRefineResult(null)}
+        onClose={() => { setRefineResult(null); onClose(); }}
+      />
+    );
   }
 
   return (

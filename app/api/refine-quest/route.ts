@@ -17,16 +17,19 @@ AUFGABE: Passe die bestehende Quest gemaess den Anderungswunschen an. Behalte al
 
 REGELN:
 • Andere NUR das, was der Nutzer wunscht — alles andere bleibt exakt gleich.
+• Bloecke, die nicht von der Anweisung betroffen sind, gibst du WORTGLEICH zurueck (gleiche props, gleiche Reihenfolge, gleiche style, gleiche IDs). Keine stilistischen Korrekturen, keine Umformulierungen, keine ungefragten Verbesserungen.
 • Behalte alle IDs (Seiten-IDs, Block-IDs, Options-IDs) bei, die nicht geandert werden.
 • Fur NEUE Seiten/Blocke/Optionen: Generiere neue UUIDs.
 • Behalte die bestehende Seitenstruktur, Branching-Logik und nextPageId bei.
 • Wenn der Nutzer neue Seiten will, fuge sie an der passenden Stelle ein.
 • Wenn der Nutzer Seiten loschen will, entferne sie und passe Branching an.
-• Antworte NUR mit validem JSON — kein Markdown, keine Erklarungen.
+• In "changesSummary": liste in 1-8 kurzen deutschen Bullet-Punkten genau die Aenderungen auf, die du vorsaetzlich vorgenommen hast. Eine pragnante Beschreibung pro Punkt (wo + was). Listet keine Punkte auf, an denen du nichts geaendert hast.
+• Antworte NUR mit validem JSON — kein Markdown, keine Erklarungen ausserhalb des JSON.
 
 AUSGABEFORMAT:
 {
-  "pages": [ ... ]   // Die vollstandige, angepasste Seitenliste
+  "pages": [ ... ],              // Die vollstandige, angepasste Seitenliste
+  "changesSummary": [ "..." ]    // Bullet-Liste der vorsaetzlichen Aenderungen, in deutscher Sprache
 }`;
 
 export const maxDuration = 300;
@@ -69,7 +72,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: msg }, { status });
   }
 
-  let result: { pages: Array<Record<string, unknown>> };
+  let result: { pages: Array<Record<string, unknown>>; changesSummary?: unknown };
   try {
     result = JSON.parse(extractJsonObject(rawText));
   } catch (err) {
@@ -88,10 +91,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'KI-Antwort unvollstandig.' }, { status: 502 });
   }
 
+  const changesSummary = Array.isArray(result.changesSummary)
+    ? result.changesSummary.filter((s): s is string => typeof s === 'string' && s.trim().length > 0).slice(0, 20)
+    : [];
+
   // Defense-in-Depth: das Modell vergibt trotz Prompt-Regel manchmal dasselbe
   // Icon mehrfach im selben quest_decision-Block — Diversifier räumt das auf
   // (Keyword-Match aus Antwort-Text, Fallback auf neutralen Pool).
-  return NextResponse.json({ pages: diversifyDecisionIconsInPages(result.pages) });
+  return NextResponse.json({
+    pages: diversifyDecisionIconsInPages(result.pages),
+    changesSummary,
+  });
 }
 
 /**
