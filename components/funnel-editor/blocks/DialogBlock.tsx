@@ -4,15 +4,40 @@ import { useState, useEffect } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { applyVars } from '@/lib/funnel-variables';
 
-export interface DialogLine { id: string; speaker: string; text: string; imageUrl?: string; position?: 'left' | 'right' | 'center'; }
+export interface DialogLine { id: string; speaker: string; text: string; imageUrl?: string; avatarUrl?: string; position?: 'left' | 'right' | 'center'; }
 interface DialogChoice { id: string; text: string; reaction?: string; }
 interface DialogInput { placeholder?: string; captures?: string; followUpText?: string; }
 
+// ─── Avatar (photo when avatarUrl is set, otherwise initial in primary-color circle) ───
+function Avatar({ speaker, primary, avatarUrl }: { speaker: string; primary: string; avatarUrl?: string }) {
+  if (avatarUrl) {
+    return (
+      <div className="w-10 h-10 rounded-full flex-shrink-0 mt-auto overflow-hidden bg-slate-200">
+        <img src={avatarUrl} alt={speaker || ''} className="w-full h-full object-cover" />
+      </div>
+    );
+  }
+  return (
+    <div
+      className="w-10 h-10 rounded-full flex-shrink-0 mt-auto overflow-hidden flex items-center justify-center font-bold text-white text-base"
+      style={{ background: primary }}
+    >
+      <span>{speaker?.charAt(0)?.toUpperCase() || '?'}</span>
+    </div>
+  );
+}
+
 // ─── Typing indicator (three bouncing dots) ───────────────────────────────────
-function TypingIndicator({ primary }: { primary: string }) {
+function TypingIndicator({ primary, avatarUrl, speaker }: { primary: string; avatarUrl?: string; speaker?: string }) {
   return (
     <div className="flex gap-3 px-5">
-      <div className="w-8 h-8 rounded-full flex-shrink-0" style={{ background: `${primary}30` }} />
+      {avatarUrl ? (
+        <div className="w-10 h-10 rounded-full flex-shrink-0 overflow-hidden bg-slate-200">
+          <img src={avatarUrl} alt={speaker || ''} className="w-full h-full object-cover" />
+        </div>
+      ) : (
+        <div className="w-10 h-10 rounded-full flex-shrink-0" style={{ background: `${primary}30` }} />
+      )}
       <div className="bg-slate-100 rounded-2xl px-4 py-3 flex items-center gap-1.5">
         {[0, 1, 2].map((i) => (
           <span
@@ -111,6 +136,17 @@ export default function DialogBlock({ lines, primary, visibleCount, onAdvance, f
   const showChoiceTyping = !!selectedChoiceId && !!selectedChoice?.reaction && !choiceReactionVisible;
   const followUpSpeaker = lines.filter(l => l.position !== 'right').at(-1) ?? lines[0];
 
+  // Resolve avatar for a given speaker name: prefer the line's own avatarUrl,
+  // otherwise reuse the most recent matching speaker's avatar in the same block.
+  function avatarFor(speaker: string, ownAvatar?: string): string | undefined {
+    if (ownAvatar) return ownAvatar;
+    if (!speaker) return undefined;
+    for (let i = lines.length - 1; i >= 0; i--) {
+      if (lines[i].speaker === speaker && lines[i].avatarUrl) return lines[i].avatarUrl;
+    }
+    return undefined;
+  }
+
   return (
     <div className="py-4 space-y-3">
       {visible.map((line, idx) => {
@@ -129,24 +165,22 @@ export default function DialogBlock({ lines, primary, visibleCount, onAdvance, f
           );
         }
 
+        const lineAvatar = avatarFor(line.speaker, line.avatarUrl);
         return (
           <div
             key={line.id}
             className={`flex gap-3 px-5 ${isRight ? 'flex-row-reverse' : ''}`}
             style={{ animation: idx === visibleCount - 1 ? 'fadeSlideIn 0.3s ease-out' : undefined }}
           >
-            <div className="w-8 h-8 rounded-full flex-shrink-0 mt-auto overflow-hidden flex items-center justify-center font-bold text-white text-sm"
-              style={{ background: primary }}>
-              <span>{line.speaker?.charAt(0) || '?'}</span>
-            </div>
+            <Avatar speaker={line.speaker} primary={primary} avatarUrl={lineAvatar} />
             <div className={`max-w-[78%] ${isRight ? 'items-end' : ''} flex flex-col`}>
-              <p className="text-[11px] text-slate-400 mb-1">{isRight && firstName ? firstName : line.speaker}</p>
+              <p className="text-[13px] font-medium text-slate-600 mb-1">{isRight && firstName ? firstName : line.speaker}</p>
               {!!line.imageUrl && (
 
                 <img src={line.imageUrl} alt="" className="w-full rounded-2xl mb-1.5 max-h-44 object-cover shadow-sm" />
               )}
               {!!line.text && (
-                <div className={`px-3 py-2.5 rounded-2xl text-sm leading-relaxed ${isRight ? 'text-white' : 'bg-slate-100 text-slate-700'}`}
+                <div className={`px-3.5 py-2.5 rounded-2xl text-[15px] leading-relaxed ${isRight ? 'text-white' : 'bg-slate-100 text-slate-700'}`}
                   style={isRight ? { background: primary } : {}}>
                   {line.text}
                 </div>
@@ -157,18 +191,21 @@ export default function DialogBlock({ lines, primary, visibleCount, onAdvance, f
       })}
 
       {/* Typing indicator for auto-advancing main lines */}
-      {!allLinesShown && typing && <TypingIndicator primary={primary} />}
+      {!allLinesShown && typing && (
+        <TypingIndicator
+          primary={primary}
+          avatarUrl={avatarFor(lines[visibleCount]?.speaker ?? '', lines[visibleCount]?.avatarUrl)}
+          speaker={lines[visibleCount]?.speaker}
+        />
+      )}
 
       {/* User's selected choice shown as right bubble */}
       {selectedChoice && (
         <div className="flex gap-3 px-5 flex-row-reverse" style={{ animation: 'fadeSlideIn 0.3s ease-out' }}>
-          <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 mt-auto text-white"
-            style={{ background: primary }}>
-            {firstName?.charAt(0) || 'I'}
-          </div>
+          <Avatar speaker={firstName || 'I'} primary={primary} />
           <div className="max-w-[78%] items-end flex flex-col">
-            <p className="text-[11px] text-slate-400 mb-1">{firstName || 'Ich'}</p>
-            <div className="px-3 py-2.5 rounded-2xl text-sm leading-relaxed text-white" style={{ background: primary }}>
+            <p className="text-[13px] font-medium text-slate-600 mb-1">{firstName || 'Ich'}</p>
+            <div className="px-3.5 py-2.5 rounded-2xl text-[15px] leading-relaxed text-white" style={{ background: primary }}>
               {selectedChoice.text}
             </div>
           </div>
@@ -176,18 +213,25 @@ export default function DialogBlock({ lines, primary, visibleCount, onAdvance, f
       )}
 
       {/* Typing indicator while waiting for reaction */}
-      {showChoiceTyping && <TypingIndicator primary={primary} />}
+      {showChoiceTyping && (
+        <TypingIndicator
+          primary={primary}
+          avatarUrl={avatarFor(followUpSpeaker?.speaker ?? '', followUpSpeaker?.avatarUrl)}
+          speaker={followUpSpeaker?.speaker}
+        />
+      )}
 
       {/* Reaction bubble after choice */}
       {choiceReactionVisible && selectedChoice?.reaction && (
         <div className="flex gap-3 px-5" style={{ animation: 'fadeSlideIn 0.3s ease-out' }}>
-          <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 mt-auto text-white"
-            style={{ background: primary }}>
-            {followUpSpeaker?.speaker?.charAt(0) || '?'}
-          </div>
+          <Avatar
+            speaker={followUpSpeaker?.speaker ?? ''}
+            primary={primary}
+            avatarUrl={avatarFor(followUpSpeaker?.speaker ?? '', followUpSpeaker?.avatarUrl)}
+          />
           <div className="max-w-[78%] flex flex-col">
-            <p className="text-[11px] text-slate-400 mb-1">{followUpSpeaker?.speaker || 'Sprecher'}</p>
-            <div className="bg-slate-100 px-3 py-2.5 rounded-2xl text-sm leading-relaxed text-slate-700">
+            <p className="text-[13px] font-medium text-slate-600 mb-1">{followUpSpeaker?.speaker || 'Sprecher'}</p>
+            <div className="bg-slate-100 px-3.5 py-2.5 rounded-2xl text-[15px] leading-relaxed text-slate-700">
               {selectedChoice.reaction}
             </div>
           </div>
@@ -197,12 +241,12 @@ export default function DialogBlock({ lines, primary, visibleCount, onAdvance, f
       {/* Choice buttons – appear after all lines are revealed */}
       {showChoiceButtons && (
         <div className="px-5 pt-2 space-y-2">
-          <p className="text-[11px] text-slate-400 text-center mb-1">Deine Antwort:</p>
+          <p className="text-xs text-slate-500 text-center mb-1">Deine Antwort:</p>
           {choices!.map((c) => (
             <button
               key={c.id}
               onClick={() => { if (nodeId && onAnswer) onAnswer(nodeId, c.id); }}
-              className="w-full text-left px-4 py-3 text-sm rounded-2xl border-2 transition-all hover:shadow-sm active:scale-[0.98] font-medium"
+              className="w-full text-left px-4 py-3 text-[15px] rounded-2xl border-2 transition-all hover:shadow-sm active:scale-[0.98] font-medium"
               style={{ borderColor: primary, color: primary, background: `${primary}08`, borderRadius: br ?? '12px' }}
             >
               {c.text}
@@ -240,13 +284,10 @@ export default function DialogBlock({ lines, primary, visibleCount, onAdvance, f
       {/* User's typed input shown as right bubble */}
       {inputSubmitted && (
         <div className="flex gap-3 px-5 flex-row-reverse" style={{ animation: 'fadeSlideIn 0.3s ease-out' }}>
-          <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 mt-auto text-white"
-            style={{ background: primary }}>
-            {(firstName || inputValue)?.charAt(0).toUpperCase() || 'I'}
-          </div>
+          <Avatar speaker={firstName || inputValue || 'I'} primary={primary} />
           <div className="max-w-[78%] items-end flex flex-col">
-            <p className="text-[11px] text-slate-400 mb-1">{firstName || 'Ich'}</p>
-            <div className="px-3 py-2.5 rounded-2xl text-sm leading-relaxed text-white" style={{ background: primary }}>
+            <p className="text-[13px] font-medium text-slate-600 mb-1">{firstName || 'Ich'}</p>
+            <div className="px-3.5 py-2.5 rounded-2xl text-[15px] leading-relaxed text-white" style={{ background: primary }}>
               {existingInputAnswer ?? inputValue}
             </div>
           </div>
@@ -255,19 +296,24 @@ export default function DialogBlock({ lines, primary, visibleCount, onAdvance, f
 
       {/* Typing indicator while waiting for follow-up after input */}
       {inputSubmitted && !!input?.followUpText && !inputFollowUpVisible && (
-        <TypingIndicator primary={primary} />
+        <TypingIndicator
+          primary={primary}
+          avatarUrl={avatarFor(followUpSpeaker?.speaker ?? '', followUpSpeaker?.avatarUrl)}
+          speaker={followUpSpeaker?.speaker}
+        />
       )}
 
       {/* Follow-up bubble after input submission */}
       {inputFollowUpVisible && input?.followUpText && (
         <div className="flex gap-3 px-5" style={{ animation: 'fadeSlideIn 0.3s ease-out' }}>
-          <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 mt-auto text-white"
-            style={{ background: primary }}>
-            {followUpSpeaker?.speaker?.charAt(0) || '?'}
-          </div>
+          <Avatar
+            speaker={followUpSpeaker?.speaker ?? ''}
+            primary={primary}
+            avatarUrl={avatarFor(followUpSpeaker?.speaker ?? '', followUpSpeaker?.avatarUrl)}
+          />
           <div className="max-w-[78%] flex flex-col">
-            <p className="text-[11px] text-slate-400 mb-1">{followUpSpeaker?.speaker || 'Sprecher'}</p>
-            <div className="bg-slate-100 px-3 py-2.5 rounded-2xl text-sm leading-relaxed text-slate-700">
+            <p className="text-[13px] font-medium text-slate-600 mb-1">{followUpSpeaker?.speaker || 'Sprecher'}</p>
+            <div className="bg-slate-100 px-3.5 py-2.5 rounded-2xl text-[15px] leading-relaxed text-slate-700">
               {applyVars(input.followUpText, {
                 ...(capturedVars ?? {}),
                 firstName: firstName || '',

@@ -516,7 +516,16 @@ export default function BlockPreview({ node, onUpdate }: {
     }
 
     case 'quest_dialog': {
-      const lines = (p.lines as { id: string; speaker: string; text: string; imageUrl?: string; position?: string }[]) || [];
+      const lines = (p.lines as { id: string; speaker: string; text: string; imageUrl?: string; avatarUrl?: string; position?: string }[]) || [];
+      // Resolve avatar by speaker for the preview too — same heuristic as the player.
+      const avatarFor = (speaker: string, ownAvatar?: string): string | undefined => {
+        if (ownAvatar) return ownAvatar;
+        if (!speaker) return undefined;
+        for (let i = lines.length - 1; i >= 0; i--) {
+          if (lines[i].speaker === speaker && lines[i].avatarUrl) return lines[i].avatarUrl;
+        }
+        return undefined;
+      };
       return (
         <div className="py-4 space-y-3">
           {lines.slice(0, 3).map((l) => (
@@ -526,16 +535,28 @@ export default function BlockPreview({ node, onUpdate }: {
               </div>
             ) : (
               <div key={l.id} className="flex items-start gap-3 px-5">
-                <div className="w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center flex-shrink-0 mt-auto">
-                  <span className="text-xs font-bold text-violet-600">{l.speaker?.[0]?.toUpperCase()}</span>
-                </div>
+                {(() => {
+                  const url = avatarFor(l.speaker, l.avatarUrl);
+                  if (url) {
+                    return (
+                      <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 mt-auto bg-slate-200">
+                        <img src={url} alt="" className="w-full h-full object-cover" />
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center flex-shrink-0 mt-auto">
+                      <span className="text-sm font-bold text-violet-600">{l.speaker?.[0]?.toUpperCase()}</span>
+                    </div>
+                  );
+                })()}
                 <div className="flex-1 min-w-0">
-                  <p className="text-[11px] text-slate-400 mb-1">{l.speaker}</p>
+                  <p className="text-[13px] font-medium text-slate-600 mb-1">{l.speaker}</p>
                   {!!l.imageUrl && (
                     <img src={l.imageUrl} alt="" className="w-full rounded-2xl mb-1.5 max-h-44 object-cover shadow-sm" />
                   )}
                   {(!!l.text || !l.imageUrl) && (
-                    <div className="bg-slate-100 rounded-2xl px-3 py-2.5 text-sm text-slate-700">{l.text || '…'}</div>
+                    <div className="bg-slate-100 rounded-2xl px-3.5 py-2.5 text-[15px] text-slate-700">{l.text || '…'}</div>
                   )}
                 </div>
               </div>

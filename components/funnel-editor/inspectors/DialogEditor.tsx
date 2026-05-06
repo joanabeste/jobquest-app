@@ -6,7 +6,7 @@ import { VarInput, VarTextarea } from '@/components/funnel-editor/VarInput';
 import type { VariableDef } from '@/lib/funnel-variables';
 import { slugifyVar } from '@/lib/funnel-variables';
 
-type DialogLineDef = { id: string; speaker: string; text: string; imageUrl?: string };
+type DialogLineDef = { id: string; speaker: string; text: string; imageUrl?: string; avatarUrl?: string };
 
 export function DialogEditor({ props, onChange, variables = [] }: { props: Record<string, unknown>; onChange: (p: Record<string, unknown>) => void; variables?: VariableDef[] }) {
   const lines = (props.lines as DialogLineDef[]) ?? [];
@@ -15,8 +15,31 @@ export function DialogEditor({ props, onChange, variables = [] }: { props: Recor
   const hasChoices = choices.length > 0;
   const hasInput = !!input;
 
+  // Returns the most recent avatarUrl used for a given speaker name in this
+  // block. Used to auto-fill the avatar when the user types a known speaker.
+  function previousAvatarFor(speaker: string, excludeId: string): string | undefined {
+    if (!speaker) return undefined;
+    for (let i = lines.length - 1; i >= 0; i--) {
+      const l = lines[i];
+      if (l.id !== excludeId && l.speaker === speaker && l.avatarUrl) return l.avatarUrl;
+    }
+    return undefined;
+  }
+
   function updateLine(id: string, patch: Partial<DialogLineDef>) {
-    onChange({ lines: lines.map((l) => l.id === id ? { ...l, ...patch } : l) });
+    onChange({
+      lines: lines.map((l) => {
+        if (l.id !== id) return l;
+        const merged = { ...l, ...patch };
+        // When the speaker name changes and no own avatar is set yet, inherit
+        // the avatar from the most recent line with the same speaker.
+        if (patch.speaker !== undefined && !merged.avatarUrl) {
+          const inherited = previousAvatarFor(merged.speaker, id);
+          if (inherited) merged.avatarUrl = inherited;
+        }
+        return merged;
+      }),
+    });
   }
   function updateChoice(i: number, patch: Partial<{ text: string; reaction: string }>) {
     onChange({ choices: choices.map((c, j) => j === i ? { ...c, ...patch } : c) });
@@ -28,7 +51,19 @@ export function DialogEditor({ props, onChange, variables = [] }: { props: Recor
       <div>
         <div className="flex items-center justify-between mb-2">
           <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Zeilen</p>
-          <button onClick={() => onChange({ lines: [...lines, { id: crypto.randomUUID(), speaker: 'Sprecher', text: '', imageUrl: '' }] })}
+          <button onClick={() => {
+            // Inherit avatar from the most recent line of the same speaker
+            // when a new line is added. Default speaker name "Sprecher" only
+            // matches if a previous line was already named "Sprecher".
+            const newSpeaker = 'Sprecher';
+            const inherited = previousAvatarFor(newSpeaker, '');
+            onChange({
+              lines: [
+                ...lines,
+                { id: crypto.randomUUID(), speaker: newSpeaker, text: '', imageUrl: '', avatarUrl: inherited ?? '' },
+              ],
+            });
+          }}
             className="flex items-center gap-1 text-[10px] text-violet-600 hover:text-violet-700 font-medium">
             <Plus size={11} /> Zeile
           </button>
@@ -36,7 +71,14 @@ export function DialogEditor({ props, onChange, variables = [] }: { props: Recor
         <div className="space-y-2">
           {lines.map((l, i) => (
             <div key={l.id} className="bg-slate-50 rounded-xl p-2 space-y-1.5">
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1.5">
+                {l.avatarUrl ? (
+                  <img src={l.avatarUrl} alt="" className="w-7 h-7 rounded-full object-cover flex-shrink-0 border border-slate-200" />
+                ) : (
+                  <div className="w-7 h-7 rounded-full bg-slate-200 flex items-center justify-center text-[11px] font-semibold text-slate-500 flex-shrink-0">
+                    {l.speaker?.charAt(0)?.toUpperCase() || '?'}
+                  </div>
+                )}
                 <input value={l.speaker} onChange={(e) => updateLine(l.id, { speaker: e.target.value })}
                   className="flex-1 mini-input" placeholder="Sprecher" />
                 <button onClick={() => onChange({ lines: lines.filter((_, idx) => idx !== i) })}
@@ -46,7 +88,8 @@ export function DialogEditor({ props, onChange, variables = [] }: { props: Recor
               </div>
               <VarTextarea value={l.text} onChange={(v) => updateLine(l.id, { text: v })}
                 rows={2} className="w-full mini-input resize-none" placeholder="Text…" variables={variables} />
-              <ImageUploadField label="Bild (optional)" value={l.imageUrl ?? ''} onChange={(v) => updateLine(l.id, { imageUrl: v })} />
+              <ImageUploadField label="Profilbild (optional)" value={l.avatarUrl ?? ''} onChange={(v) => updateLine(l.id, { avatarUrl: v })} />
+              <ImageUploadField label="Bild im Chat (optional)" value={l.imageUrl ?? ''} onChange={(v) => updateLine(l.id, { imageUrl: v })} />
             </div>
           ))}
         </div>
