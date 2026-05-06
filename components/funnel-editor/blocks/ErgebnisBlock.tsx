@@ -165,33 +165,53 @@ export default function ErgebnisBlock({
 
           {/* ── Desktop: tabs + bars + 3-col suggestions grid ── */}
           <div className="hidden md:block">
-            {visibleGroups.length > 1 && (
-              <div className="pb-2 mb-4">
-                <div className="flex gap-2 flex-wrap justify-center">
-                  {visibleGroups.map((g, i) => (
-                    <button
-                      key={g.id}
-                      type="button"
-                      onClick={() => setActiveTab(i)}
-                      className="px-5 py-2.5 rounded-full text-sm font-semibold whitespace-nowrap transition-all"
-                      style={i === activeTab
-                        ? { background: pillBg, color: pillText }
-                        : { background: '#f1f5f9', color: '#64748b' }}
-                    >
-                      {g.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
             {(() => {
-              const g = visibleGroups[Math.min(activeTab, visibleGroups.length - 1)];
-              if (!g) return null;
+              // Rank groups by match-percent so the strongest match opens first
+              // and tab labels show the score the user is reading them by.
+              const rankedDesktop = visibleGroups
+                .map((g) => ({ g, pct: groupMatchPct(g, scores, maxScores) }))
+                .sort((a, b) => b.pct - a.pct);
+              const activeIdx = Math.min(activeTab, rankedDesktop.length - 1);
+              const active = rankedDesktop[activeIdx];
               return (
-                <div key={g.id}>
-                  <GroupBars group={g} dimensions={dimensions} scores={scores} maxScores={maxScores} primary={primary} />
-                  <GroupSuggestions group={g} dimensions={dimensions} scores={scores} primary={primary} br={br} markedIds={markedIds} onToggleMarked={onToggleMarkedSuggestion} />
-                </div>
+                <>
+                  {rankedDesktop.length > 1 && (
+                    <div className="pb-2 mb-4">
+                      <div className="flex gap-2 flex-wrap justify-center">
+                        {rankedDesktop.map(({ g, pct }, i) => {
+                          const isActive = i === activeIdx;
+                          return (
+                            <button
+                              key={g.id}
+                              type="button"
+                              onClick={() => setActiveTab(i)}
+                              className="px-5 py-2.5 rounded-full text-sm font-semibold whitespace-nowrap transition-all flex items-center gap-2"
+                              style={isActive
+                                ? { background: pillBg, color: pillText }
+                                : { background: '#f1f5f9', color: '#64748b' }}
+                            >
+                              <span>{g.label}</span>
+                              <span
+                                className="text-xs font-bold px-2 py-0.5 rounded-full"
+                                style={isActive
+                                  ? { background: 'rgba(255,255,255,0.22)', color: pillText }
+                                  : { background: '#fff', color: pillBg }}
+                              >
+                                {pct}%
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                  {active && (
+                    <div key={active.g.id}>
+                      <GroupBars group={active.g} dimensions={dimensions} scores={scores} maxScores={maxScores} primary={primary} />
+                      <GroupSuggestions group={active.g} dimensions={dimensions} scores={scores} primary={primary} br={br} markedIds={markedIds} onToggleMarked={onToggleMarkedSuggestion} />
+                    </div>
+                  )}
+                </>
               );
             })()}
           </div>
@@ -219,6 +239,13 @@ function pctFor(score: number, dimId: string, maxScores?: Record<string, number>
   const dimMax = maxScores?.[dimId];
   const divisor = typeof dimMax === 'number' && dimMax > 0 ? dimMax : fallbackMax;
   return Math.max(0, Math.min(100, Math.round((score / divisor) * 100)));
+}
+
+/** Aggregate match-percent for a result group: sum of dim scores / sum of dim maxScores. */
+function groupMatchPct(g: ErgebnisGroup, scores: Record<string, number>, maxScores?: Record<string, number>): number {
+  const score = g.dimensionIds.reduce((a, id) => a + (scores[id] ?? 0), 0);
+  const max = g.dimensionIds.reduce((a, id) => a + (maxScores?.[id] ?? 0), 0);
+  return max > 0 ? Math.round((score / max) * 100) : 0;
 }
 
 function SimpleBars({ dimensions, scores, maxScores, primary }: { dimensions: Dimension[]; scores: Record<string, number>; maxScores?: Record<string, number>; primary: string }) {
@@ -258,13 +285,10 @@ function MobileAccordion({ groups, dimensions, scores, maxScores, primary, br, m
   markedIds?: Set<string>;
   onToggleMarked?: (id: string, title: string) => void;
 }) {
-  // Aggregate score per group = sum of its dimension scores. Max analogously.
-  const ranked = groups.map((g) => {
-    const groupScore = g.dimensionIds.reduce((a, id) => a + (scores[id] ?? 0), 0);
-    const groupMax = g.dimensionIds.reduce((a, id) => a + (maxScores?.[id] ?? 0), 0);
-    const pct = groupMax > 0 ? Math.round((groupScore / groupMax) * 100) : 0;
-    return { group: g, pct };
-  }).sort((a, b) => b.pct - a.pct);
+  // Aggregate match per group, sorted desc — top-match opens by default.
+  const ranked = groups
+    .map((g) => ({ group: g, pct: groupMatchPct(g, scores, maxScores) }))
+    .sort((a, b) => b.pct - a.pct);
 
   const topId = ranked[0]?.group.id;
   const [openId, setOpenId] = useState<string | null>(topId ?? null);
@@ -465,11 +489,28 @@ function AnimatedBar({ name, pct, color, delay }: { name: string; pct: number; c
 }
 
 function GroupBars({ group, dimensions, scores, maxScores, primary }: { group: ErgebnisGroup; dimensions: Dimension[]; scores: Record<string, number>; maxScores?: Record<string, number>; primary: string }) {
-  if (!group.showBars) return null;
+  // Treat undefined like true — Legacy-Gruppen aus Alt-Berufschecks haben das
+  // Flag nie gesetzt. Nur explizites `false` blendet die Bars aus.
+  const showBars = group.showBars ?? true;
+  if (!showBars) return null;
   const groupDims = dimensions.filter((d) => group.dimensionIds.includes(d.id));
   // Fallback when no per-dimension max is available: use the highest score seen.
   const globalMax = Math.max(...dimensions.map((d) => scores[d.id] ?? 0), 1);
-  if (groupDims.length === 0) return null;
+  // Wenn dimensions[] (noch) keine Group-Dim auflöst — z. B. async-Race beim
+  // Player-Mount oder ID-Drift zwischen funnel_doc und career_checks.dimensions
+  // — zeige zumindest den aggregierten Group-Match, damit der User die
+  // Auswertung nicht komplett verliert.
+  if (groupDims.length === 0) {
+    const pct = groupMatchPct(group, scores, maxScores);
+    return (
+      <div className="text-center mb-6 md:mb-8">
+        <p className="text-sm text-slate-500">
+          Übereinstimmung mit diesem Bereich:{' '}
+          <span className="font-bold text-base" style={{ color: primary }}>{pct}%</span>
+        </p>
+      </div>
+    );
+  }
   // Grid adapts: 1 bar → full width, 2 → 2 cols, ≥3 → 3 cols on desktop.
   const cols = groupDims.length === 1 ? 'md:grid-cols-1'
     : groupDims.length === 2 ? 'md:grid-cols-2'
