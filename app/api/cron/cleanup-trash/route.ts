@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 
-export const maxDuration = 300;
+// Hobby plan caps function duration at 60 s. Cleanup is just three DELETEs
+// indexed by deleted_at — well under that, even with thousands of rows.
+export const maxDuration = 60;
 
 const RETENTION_DAYS = 30;
 const TABLES = ['job_quests', 'career_checks', 'form_pages'] as const;
