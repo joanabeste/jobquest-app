@@ -64,6 +64,10 @@ async function chatOpenAI(options: AiChatOptions): Promise<string> {
     body: JSON.stringify({
       model,
       temperature: options.temperature ?? 0.7,
+      // Bei großen Refine-/Generate-Antworten muss das Output-Limit hoch sein,
+      // sonst kappt der Server mitten im JSON und JSON.parse failt mit
+      // unklarer Fehlermeldung. 16k ist GPT-4o-Maximum für Output-Tokens.
+      max_tokens: 16000,
       ...(options.json ? { response_format: { type: 'json_object' } } : {}),
       messages: [
         { role: 'system', content: options.system },
@@ -80,8 +84,20 @@ async function chatOpenAI(options: AiChatOptions): Promise<string> {
     throw new AiError(`OpenAI API-Fehler (${res.status}): ${errText.slice(0, 200)}`, 'api_error');
   }
 
-  const data = await res.json() as { choices?: Array<{ message: { content: string } }> };
-  return data.choices?.[0]?.message?.content ?? '';
+  const data = await res.json() as {
+    choices?: Array<{ message: { content: string }; finish_reason?: string }>;
+  };
+  const choice = data.choices?.[0];
+
+  // OpenAI signalisiert Truncation über finish_reason='length'. Wir spiegeln
+  // das auf den gleichen AiError-Code wie bei Anthropic, damit Aufrufer eine
+  // ehrliche Fehlermeldung statt der vagen JSON-Parse-Vermutung anzeigen.
+  if (choice?.finish_reason === 'length') {
+    console.error('[ai-provider:openai] response truncated (finish_reason=length)');
+    throw new AiError('KI-Antwort wurde abgeschnitten (zu lang). Bitte mit kurzerem Inhalt erneut versuchen.', 'truncated');
+  }
+
+  return choice?.message?.content ?? '';
 }
 
 async function chatAnthropic(options: AiChatOptions): Promise<string> {

@@ -4,6 +4,7 @@ import { getSession, unauthorized } from '@/lib/api-auth';
 import { INDUSTRY_OPTIONS, ROLE_PERMISSIONS } from '@/lib/types';
 import { FONT_OPTIONS } from '@/lib/fonts';
 import { aiChat, isAiConfigured } from '@/lib/ai-provider';
+import { extractJsonObject } from '@/lib/json-extract';
 import { safeFetch, safeFetchDetailed, isSafePublicUrl, type SafeFetchFailReason } from '@/lib/safe-fetch';
 import { createAdminClient } from '@/lib/supabase/admin';
 
@@ -255,19 +256,6 @@ interface AiResult {
     headingFontName?: string;
     bodyFontName?: string;
   };
-}
-
-function extractJsonObject(raw: string): string {
-  const trimmed = raw.trim();
-  // Strip ```json ... ``` or ``` ... ``` fences that Claude sometimes adds.
-  const fenced = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
-  if (fenced) return fenced[1].trim();
-  // Otherwise cut to the first '{' and the matching last '}' — tolerates
-  // stray leading/trailing prose.
-  const first = trimmed.indexOf('{');
-  const last = trimmed.lastIndexOf('}');
-  if (first !== -1 && last > first) return trimmed.slice(first, last + 1);
-  return trimmed;
 }
 
 async function callAi(extracted: Extracted, sourceUrl: string): Promise<{ ok: true; value: AiResult } | { ok: false; error: string }> {

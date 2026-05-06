@@ -14,6 +14,7 @@
 
 import { z } from 'zod';
 import { aiChat, AiError } from './ai-provider';
+import { extractJsonObject } from './json-extract';
 import type { FunnelPage, FunnelNode, BlockNode } from './funnel-types';
 
 // ─── Public API ──────────────────────────────────────────────────────────────
@@ -377,18 +378,6 @@ function detectCycle(pages: FunnelPage[], idIndex: Map<string, number>): { ok: t
     }
   }
   return { ok: true };
-}
-
-// ─── JSON-Extraktion (geteilt mit refine-quest) ──────────────────────────────
-
-function extractJsonObject(raw: string): string {
-  const trimmed = raw.trim();
-  const fenced = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
-  if (fenced) return fenced[1].trim();
-  const first = trimmed.indexOf('{');
-  const last = trimmed.lastIndexOf('}');
-  if (first !== -1 && last > first) return trimmed.slice(first, last + 1);
-  return trimmed;
 }
 
 // ─── Runner ──────────────────────────────────────────────────────────────────

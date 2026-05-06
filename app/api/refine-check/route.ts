@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { getSession, unauthorized } from '@/lib/api-auth';
 import { aiChat, isAiConfigured, AiError } from '@/lib/ai-provider';
 import { diversifyDecisionIcons } from '@/lib/decision-icon-picker';
+import { extractJsonObject } from '@/lib/json-extract';
 
 const RefineSchema = z.object({
   pages: z.array(z.record(z.string(), z.unknown())),
@@ -64,6 +65,11 @@ export async function POST(req: NextRequest) {
     rawText = await aiChat({ system: SYSTEM_PROMPT, user: userMessage, temperature: 0.4, json: true });
   } catch (err) {
     console.error('[refine-check] AI error:', err);
+    if (err instanceof AiError && err.code === 'truncated') {
+      return NextResponse.json({
+        error: 'KI-Antwort wurde abgeschnitten — der Berufscheck ist zu groß für eine einzige Anpassung. Bitte teile deine Änderungen in kleinere Schritte (z. B. nur eine Seite oder ein Thema pro Anpassung).',
+      }, { status: 502 });
+    }
     const msg = err instanceof AiError ? err.message : 'KI-Anfrage fehlgeschlagen.';
     const status = err instanceof AiError && err.code === 'rate_limit' ? 429 : 502;
     return NextResponse.json({ error: msg }, { status });
@@ -84,7 +90,7 @@ export async function POST(req: NextRequest) {
       err,
     );
     return NextResponse.json({
-      error: 'KI-Antwort konnte nicht verarbeitet werden — vermutlich zu viele Änderungen auf einmal. Bitte teile deine Anweisungen in kleinere Schritte.',
+      error: 'KI-Antwort konnte nicht als JSON verarbeitet werden. Bitte erneut versuchen oder die Anweisungen in kleinere Schritte teilen.',
     }, { status: 502 });
   }
 
@@ -123,12 +129,3 @@ function diversifyDecisionIconsInPages(pages: Array<Record<string, unknown>>): A
   });
 }
 
-function extractJsonObject(raw: string): string {
-  const trimmed = raw.trim();
-  const fenced = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
-  if (fenced) return fenced[1].trim();
-  const first = trimmed.indexOf('{');
-  const last = trimmed.lastIndexOf('}');
-  if (first !== -1 && last > first) return trimmed.slice(first, last + 1);
-  return trimmed;
-}
