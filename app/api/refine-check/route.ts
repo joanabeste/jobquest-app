@@ -18,16 +18,19 @@ AUFGABE: Passe den bestehenden Check gemaess den Anderungswunschen an. Behalte a
 
 REGELN:
 • Andere NUR das, was der Nutzer wunscht — alles andere bleibt exakt gleich.
+• Bloecke, die nicht von der Anweisung betroffen sind, gibst du WORTGLEICH zurueck (gleiche props, gleiche Reihenfolge, gleiche style, gleiche IDs). Keine stilistischen Korrekturen, keine Umformulierungen, keine ungefragten Verbesserungen.
 • Behalte alle IDs (Seiten-IDs, Block-IDs, Dimensions-IDs, Options-IDs) bei.
 • Fur NEUE Elemente: Generiere neue UUIDs.
 • Behalte Dimensions-IDs in scores, sliderDimensionId, dimensionIds konsistent.
 • Wenn neue Dimensionen hinzukommen: Generiere neue UUIDs dafur.
-• Antworte NUR mit validem JSON — kein Markdown, keine Erklarungen.
+• In "changesSummary": liste in 1-8 kurzen deutschen Bullet-Punkten genau die Aenderungen auf, die du vorsaetzlich vorgenommen hast. Eine pragnante Beschreibung pro Punkt (wo + was). Listet keine Punkte auf, an denen du nichts geaendert hast.
+• Antworte NUR mit validem JSON — kein Markdown, keine Erklarungen ausserhalb des JSON.
 
 AUSGABEFORMAT:
 {
-  "dimensions": [ ... ],   // Die vollstandige Dimensions-Liste (mit bestehenden IDs)
-  "pages": [ ... ]          // Die vollstandige, angepasste Seitenliste
+  "dimensions": [ ... ],         // Die vollstandige Dimensions-Liste (mit bestehenden IDs)
+  "pages": [ ... ],              // Die vollstandige, angepasste Seitenliste
+  "changesSummary": [ "..." ]    // Bullet-Liste der vorsaetzlichen Aenderungen, in deutscher Sprache
 }`;
 
 export const maxDuration = 300;
@@ -66,7 +69,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: msg }, { status });
   }
 
-  let result: { dimensions?: Array<Record<string, unknown>>; pages: Array<Record<string, unknown>> };
+  let result: {
+    dimensions?: Array<Record<string, unknown>>;
+    pages: Array<Record<string, unknown>>;
+    changesSummary?: unknown;
+  };
   try {
     result = JSON.parse(extractJsonObject(rawText));
   } catch (err) {
@@ -85,11 +92,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'KI-Antwort unvollstandig.' }, { status: 502 });
   }
 
+  const changesSummary = Array.isArray(result.changesSummary)
+    ? result.changesSummary.filter((s): s is string => typeof s === 'string' && s.trim().length > 0).slice(0, 20)
+    : [];
+
   // Defense-in-Depth gegen Duplikat-Icons in evtl. enthaltenen quest_decision-
   // Blöcken (Berufschecks nutzen primär check_*-Blöcke, der Pass läuft dort no-op).
   return NextResponse.json({
     pages: diversifyDecisionIconsInPages(result.pages),
     dimensions: result.dimensions ?? parsed.data.dimensions,
+    changesSummary,
   });
 }
 

@@ -1,10 +1,12 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { X, Sparkles, Plus, Globe, Loader2, ArrowDownToLine, Wand2, Upload, Trash2, Image as ImageIcon } from 'lucide-react';
 import type { FunnelPage } from '@/lib/funnel-types';
 import type { Dimension, MediaAsset } from '@/lib/types';
 import MediaLibrary, { uploadToMediaLibrary } from '@/components/shared/MediaLibrary';
+import RefinePreviewModal from './RefinePreviewModal';
+import { diffFunnelDoc } from '@/lib/funnel-diff';
 
 type Tab = 'generate' | 'import' | 'refine';
 
@@ -53,6 +55,11 @@ export default function GenerateCheckModal({ onGenerate, onClose, showHeyflowImp
   const [uploadingImage, setUploadingImage] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [refineResult, setRefineResult] = useState<{
+    pages: FunnelPage[];
+    dimensions: Dimension[];
+    changesSummary: string[];
+  } | null>(null);
 
   async function handleImageUpload(file: File) {
     setUploadingImage(true);
@@ -147,11 +154,26 @@ export default function GenerateCheckModal({ onGenerate, onClose, showHeyflowImp
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pages: currentPages, dimensions: currentDimensions, instructions: refineInstructions.trim() }),
       });
-      const data = await res.json() as { pages?: FunnelPage[]; dimensions?: Dimension[]; title?: string; error?: string };
+      const data = await res.json() as {
+        pages?: FunnelPage[];
+        dimensions?: Dimension[];
+        title?: string;
+        changesSummary?: string[];
+        error?: string;
+      };
       if (!res.ok) throw new Error(data.error ?? 'Unbekannter Fehler');
       if (!data.pages?.length) throw new Error('KI hat keinen vollstandigen Check generiert.');
       setLoadingProgress(100);
-      setTimeout(() => onGenerate(data.pages!, data.dimensions ?? currentDimensions ?? [], data.title ?? 'Berufscheck'), 400);
+      // Show diff preview instead of applying immediately. Loading screen
+      // disappears as soon as we have the preview ready to inspect.
+      setTimeout(() => {
+        setRefineResult({
+          pages: data.pages!,
+          dimensions: data.dimensions ?? currentDimensions ?? [],
+          changesSummary: data.changesSummary ?? [],
+        });
+        setLoading(false);
+      }, 400);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Fehler beim Anpassen');
       setLoading(false);
@@ -221,6 +243,37 @@ export default function GenerateCheckModal({ onGenerate, onClose, showHeyflowImp
       setError(e instanceof Error ? e.message : 'Fehler beim Generieren');
       setLoading(false);
     }
+  }
+
+  const refineDiff = useMemo(() => {
+    if (!refineResult || !currentPages) return null;
+    return diffFunnelDoc(
+      { pages: currentPages, dimensions: currentDimensions ?? [] },
+      { pages: refineResult.pages, dimensions: refineResult.dimensions },
+    );
+  }, [refineResult, currentPages, currentDimensions]);
+
+  if (refineResult && refineDiff && currentPages) {
+    return (
+      <RefinePreviewModal
+        prev={{ pages: currentPages, dimensions: currentDimensions ?? [] }}
+        next={{ pages: refineResult.pages, dimensions: refineResult.dimensions }}
+        instructions={refineInstructions}
+        changesSummary={refineResult.changesSummary}
+        diff={refineDiff}
+        onApply={(merged) => {
+          if (merged.warnings.length > 0) {
+            // surface as console warning; UI keeps it terse so the user
+            // doesn't get a confirm-prompt for known-handled cases
+            console.warn('[refine-check] consistency warnings:', merged.warnings);
+          }
+          setRefineResult(null);
+          onGenerate(merged.pages, merged.dimensions, 'Berufscheck');
+        }}
+        onBack={() => setRefineResult(null)}
+        onClose={() => { setRefineResult(null); onClose(); }}
+      />
+    );
   }
 
   return (
