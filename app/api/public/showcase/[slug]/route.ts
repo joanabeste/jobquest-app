@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { companyFromDb, questFromDb, careerCheckFromDb } from '@/lib/supabase/mappers';
+import { firstFunnelImage } from '@/lib/funnel-utils';
+import type { FunnelPage } from '@/lib/funnel-types';
 
 /** Public API: returns showcase data for a company slug (no auth required). */
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
@@ -34,16 +36,37 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ slu
   const qById = new Map(quests.map((q) => [q.id, q]));
   const cById = new Map(checks.map((c) => [c.id, c]));
 
+  // Resolve default card-image fallback (= first hero/intro image of the
+  // funnel_doc) for items without an explicit cardImage. One round-trip for
+  // all items shown on this showcase page.
+  const itemsNeedingDefault = company.showcase.items
+    .map((it) => {
+      const c = it.type === 'jobquest' ? qById.get(it.contentId) : cById.get(it.contentId);
+      return c && !c.cardImage ? it.contentId : null;
+    })
+    .filter((x): x is string => !!x);
+  const defaultImageById = new Map<string, string>();
+  if (itemsNeedingDefault.length > 0) {
+    const { data: docRows } = await supabase
+      .from('funnel_docs')
+      .select('content_id, pages')
+      .in('content_id', itemsNeedingDefault);
+    for (const row of docRows ?? []) {
+      const url = firstFunnelImage((row.pages as FunnelPage[]) ?? []);
+      if (url) defaultImageById.set(row.content_id as string, url);
+    }
+  }
+
   const items = company.showcase.items
     .map((it) => {
       if (it.type === 'jobquest') {
         const q = qById.get(it.contentId);
         if (!q) return null;
-        return { id: it.id, type: 'jobquest', title: q.title, slug: q.slug, cardImage: q.cardImage };
+        return { id: it.id, type: 'jobquest', title: q.title, slug: q.slug, cardImage: q.cardImage || defaultImageById.get(q.id) };
       }
       const c = cById.get(it.contentId);
       if (!c) return null;
-      return { id: it.id, type: 'berufscheck', title: c.title, slug: c.slug, cardImage: c.cardImage };
+      return { id: it.id, type: 'berufscheck', title: c.title, slug: c.slug, cardImage: c.cardImage || defaultImageById.get(c.id) };
     })
     .filter(Boolean);
 

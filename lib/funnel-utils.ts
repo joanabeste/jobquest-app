@@ -16,6 +16,33 @@ export function isSubmitPage(nodes: FunnelNode[]): boolean {
   );
 }
 
+/**
+ * Returns the first hero/intro image URL across all pages — used as the
+ * default Showcase card-image when the content has no explicit `cardImage`.
+ * Search order is intentional: the *intro* of each content type comes first
+ * (`quest_scene`, `check_intro`, `form_hero`), then any other block carrying
+ * an `imageUrl` (so a content without a hero block still has a fallback).
+ */
+export function firstFunnelImage(pages: FunnelPage[]): string | null {
+  const PRIORITY = new Set(['quest_scene', 'check_intro', 'form_hero']);
+  // First pass: priority blocks.
+  for (const p of pages) {
+    for (const b of flatBlocks(p.nodes)) {
+      if (!PRIORITY.has(b.type)) continue;
+      const url = (b.props as Record<string, unknown>)?.imageUrl;
+      if (typeof url === 'string' && url.trim()) return url;
+    }
+  }
+  // Second pass: any imageUrl on any block.
+  for (const p of pages) {
+    for (const b of flatBlocks(p.nodes)) {
+      const url = (b.props as Record<string, unknown>)?.imageUrl;
+      if (typeof url === 'string' && url.trim()) return url;
+    }
+  }
+  return null;
+}
+
 const s = (v: unknown, fallback = ''): string => (v != null ? String(v) : fallback);
 const n = (v: unknown, fallback = 0): number => (typeof v === 'number' ? v : fallback);
 

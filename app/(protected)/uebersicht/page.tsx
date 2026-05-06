@@ -11,9 +11,10 @@ import { slugify } from '@/lib/utils';
 import { getPublicUrl } from '@/lib/url';
 import {
   Globe, Save, ExternalLink, ChevronUp, ChevronDown,
-  Trash2, Plus, CheckCircle, Copy, Check, Image as ImageIcon, X,
+  Trash2, Plus, CheckCircle, Copy, Check, Image as ImageIcon, X, Crop, RotateCcw,
 } from 'lucide-react';
-import MediaLibrary from '@/components/shared/MediaLibrary';
+import MediaLibrary, { uploadToMediaLibrary } from '@/components/shared/MediaLibrary';
+import ImageCropModal from '@/components/shared/ImageCropModal';
 import ShareButton from '@/components/dashboard/ShareButton';
 
 export default function UebersichtPage() {
@@ -83,8 +84,35 @@ export default function UebersichtPage() {
     setCardImages(imgs);
   }, [quests, checks]);
 
+  // Default card-image fallbacks: first hero/intro image of the funnel_doc.
+  // Loaded once for all items missing an explicit cardImage so the editor
+  // can show "Aus Intro-Slide übernommen" thumbnails before the user picks.
+  const [defaultCardImages, setDefaultCardImages] = useState<Record<string, string>>({});
+  useEffect(() => {
+    const items = [
+      ...quests.filter((q) => !q.cardImage).map((q) => ({ contentId: q.id, contentType: 'quest' as const })),
+      ...checks.filter((c) => !c.cardImage).map((c) => ({ contentId: c.id, contentType: 'check' as const })),
+    ];
+    if (items.length === 0) { setDefaultCardImages({}); return; }
+    let cancelled = false;
+    fetch('/api/showcase/default-card-images', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items }),
+    })
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => { if (data && !cancelled) setDefaultCardImages(data.defaults ?? {}); })
+      .catch(() => { /* silent — editor still works without defaults */ });
+    return () => { cancelled = true; };
+  }, [quests, checks]);
+
   async function updateCardImage(type: 'jobquest' | 'berufscheck', contentId: string, imageUrl: string) {
-    setCardImages((prev) => ({ ...prev, [contentId]: imageUrl }));
+    setCardImages((prev) => {
+      const next = { ...prev };
+      if (imageUrl) next[contentId] = imageUrl;
+      else delete next[contentId];
+      return next;
+    });
     const endpoint = type === 'jobquest' ? 'quests' : 'career-checks';
     try {
       await fetch(`/api/${endpoint}/${contentId}`, {
@@ -96,6 +124,23 @@ export default function UebersichtPage() {
   }
 
   const [mediaPickerFor, setMediaPickerFor] = useState<{ type: 'jobquest' | 'berufscheck'; contentId: string } | null>(null);
+  const [cropper, setCropper] = useState<{
+    type: 'jobquest' | 'berufscheck'; contentId: string; src: string;
+  } | null>(null);
+
+  async function handleCropConfirm(base64: string) {
+    if (!cropper) return;
+    const { type, contentId } = cropper;
+    setCropper(null);
+    try {
+      const blob = await (await fetch(base64)).blob();
+      const asset = await uploadToMediaLibrary(blob, { filename: 'card.png' });
+      await updateCardImage(type, contentId, asset.url);
+    } catch (e) {
+      console.error('[uebersicht] card crop upload failed, using data URL', e);
+      await updateCardImage(type, contentId, base64);
+    }
+  }
 
   // Items not yet on the showcase, available to add
   const availableQuests = quests.filter(
@@ -391,12 +436,16 @@ export default function UebersichtPage() {
           <ul className="space-y-2">
             {config.items.map((item, idx) => {
               const meta = itemMeta.get(`${item.type}:${item.contentId}`);
+              const override = cardImages[item.contentId];
+              const fallback = defaultCardImages[item.contentId];
+              const effective = override || fallback;
+              const isOverride = !!override;
               return (
                 <li key={item.id}
                   className="border border-slate-200 rounded-xl overflow-hidden">
                   <div className="flex items-center gap-3 p-3">
-                    {cardImages[item.contentId] && (
-                      <img src={cardImages[item.contentId]} alt="" className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
+                    {effective && (
+                      <img src={effective} alt="" className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
                     )}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-slate-900 truncate">
@@ -422,14 +471,36 @@ export default function UebersichtPage() {
                       </button>
                     </div>
                   </div>
-                  <div className="px-3 pb-3">
-                    {cardImages[item.contentId] ? (
-                      <div className="flex items-center gap-2">
-                        <img src={cardImages[item.contentId]} alt="" className="h-8 w-14 object-cover rounded" />
-                        <span className="text-[11px] text-slate-500 truncate flex-1">{cardImages[item.contentId].split('/').pop()}</span>
-                        <button type="button" onClick={() => updateCardImage(item.type, item.contentId, '')}
-                          className="p-1 text-slate-400 hover:text-red-500"><X size={12} /></button>
-                      </div>
+                  <div className="px-3 pb-3 space-y-1.5">
+                    {effective ? (
+                      <>
+                        <div className="flex items-center gap-2">
+                          <img src={effective} alt="" className="h-8 w-14 object-cover rounded" />
+                          <span className="text-[11px] text-slate-500 truncate flex-1">
+                            {isOverride ? 'Eigenes Titelbild' : 'Aus Intro-Slide übernommen'}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          <button type="button"
+                            onClick={() => setCropper({ type: item.type, contentId: item.contentId, src: effective })}
+                            className="flex items-center gap-1 px-2.5 py-1 text-[11px] rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-violet-300 hover:text-violet-700 transition-colors">
+                            <Crop size={11} /> Zuschneiden
+                          </button>
+                          <button type="button"
+                            onClick={() => setMediaPickerFor({ type: item.type, contentId: item.contentId })}
+                            className="flex items-center gap-1 px-2.5 py-1 text-[11px] rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-violet-300 hover:text-violet-700 transition-colors">
+                            <ImageIcon size={11} /> {isOverride ? 'Anderes Bild' : 'Eigenes Bild'}
+                          </button>
+                          {isOverride && (
+                            <button type="button"
+                              onClick={() => updateCardImage(item.type, item.contentId, '')}
+                              title="Auf Intro-Bild zurücksetzen"
+                              className="flex items-center gap-1 px-2.5 py-1 text-[11px] rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 hover:border-amber-300 hover:text-amber-700 transition-colors">
+                              <RotateCcw size={11} /> Zurücksetzen
+                            </button>
+                          )}
+                        </div>
+                      </>
                     ) : (
                       <button type="button"
                         onClick={() => setMediaPickerFor({ type: item.type, contentId: item.contentId })}
@@ -484,6 +555,16 @@ export default function UebersichtPage() {
           }
         }}
       />
+
+      {cropper && (
+        <ImageCropModal
+          src={cropper.src}
+          aspect={16 / 9}
+          title="Titelbild zuschneiden"
+          onConfirm={handleCropConfirm}
+          onCancel={() => setCropper(null)}
+        />
+      )}
     </div>
   );
 }
