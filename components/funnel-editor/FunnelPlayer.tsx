@@ -712,6 +712,13 @@ export default function FunnelPlayer({ doc, company, contentDbId, onPageChange }
                   placeholder={dialogInputMeta?.placeholder ?? 'Deine Antwort…'}
                   className="flex-1 px-4 py-3 text-sm rounded-2xl border-2 bg-white outline-none transition-colors focus:border-violet-400"
                   style={{ borderColor: `${primary}40`, fontSize: '16px' }}
+                  name={dialogInputMeta?.captures === 'vorname' || dialogInputMeta?.captures === 'firstName' ? 'given-name' : 'response'}
+                  autoComplete={dialogInputMeta?.captures === 'vorname' || dialogInputMeta?.captures === 'firstName' ? 'given-name' : 'off'}
+                  autoCapitalize={dialogInputMeta?.captures === 'vorname' || dialogInputMeta?.captures === 'firstName' ? 'words' : 'sentences'}
+                  autoCorrect="off"
+                  spellCheck={false}
+                  data-form-type="other"
+                  data-lpignore="true"
                   autoFocus
                 />
                 <button

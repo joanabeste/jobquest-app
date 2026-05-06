@@ -267,6 +267,13 @@ export default function DialogBlock({ lines, primary, visibleCount, onAdvance, f
               placeholder={input?.placeholder ?? 'Deine Antwort…'}
               className="flex-1 px-4 py-2.5 text-sm rounded-2xl border-2 bg-white outline-none transition-colors focus:border-violet-400"
               style={{ borderColor: `${primary}40`, fontSize: '16px' }}
+              name={input?.captures === 'vorname' || input?.captures === 'firstName' ? 'given-name' : 'response'}
+              autoComplete={input?.captures === 'vorname' || input?.captures === 'firstName' ? 'given-name' : 'off'}
+              autoCapitalize={input?.captures === 'vorname' || input?.captures === 'firstName' ? 'words' : 'sentences'}
+              autoCorrect="off"
+              spellCheck={false}
+              data-form-type="other"
+              data-lpignore="true"
               autoFocus
             />
             <button
