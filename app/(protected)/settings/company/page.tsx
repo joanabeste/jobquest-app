@@ -4,7 +4,10 @@ import { useState, FormEvent, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { INDUSTRY_OPTIONS, CorporateDesign, DEFAULT_CORPORATE_DESIGN, SuccessPageConfig, DEFAULT_SUCCESS_PAGE, SuccessJob, SuccessLink } from '@/lib/types';
-import { Building2, Save, CheckCircle, Palette, Type, Globe, Upload, SlidersHorizontal, Link2, Trophy, Plus, X, ExternalLink, Sparkles, Image as ImageIcon, MousePointerClick, Pencil, Trash2, ChevronDown, ChevronRight, FolderInput, Folder } from 'lucide-react';
+import { Building2, Save, CheckCircle, Palette, Type, Globe, Upload, SlidersHorizontal, Link2, Trophy, Plus, X, ExternalLink, Sparkles, Image as ImageIcon, MousePointerClick, Pencil, Trash2, ChevronDown, ChevronRight, FolderInput, Folder, GripVertical } from 'lucide-react';
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import ImageCropModal from '@/components/shared/ImageCropModal';
 import MediaLibrary from '@/components/shared/MediaLibrary';
 import ImportFromWebsiteModal, { ExtractedProfile } from '@/components/company/ImportFromWebsiteModal';
@@ -654,6 +657,20 @@ function JobsGroupEditor({ jobs, setJobs }: {
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [movePopoverFor, setMovePopoverFor] = useState<string | null>(null);
   const popoverRef = useRef<HTMLDivElement | null>(null);
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+
+  // Reorder innerhalb einer Gruppen-Sektion. Da pro Sektion ein eigener
+  // DndContext gerendert wird, sind active/over garantiert in derselben Gruppe.
+  // arrayMove auf dem globalen `jobs`-Array reicht — andere Gruppen bleiben
+  // in ihrer relativen Reihenfolge erhalten.
+  function handleReorder(e: DragEndEvent) {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const oldIndex = jobs.findIndex((j) => j.id === active.id);
+    const newIndex = jobs.findIndex((j) => j.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+    setJobs(arrayMove(jobs, oldIndex, newIndex));
+  }
 
   // Schließen des Move-Popover bei Outside-Click.
   useEffect(() => {
@@ -759,46 +776,19 @@ function JobsGroupEditor({ jobs, setJobs }: {
   }
 
   function renderJobRow(job: SuccessJob) {
-    const popoverOpen = movePopoverFor === job.id;
     return (
-      <div key={job.id} className="flex gap-1.5 mb-1.5 relative">
-        <input type="text" className="input-field flex-1" placeholder="Berufsbezeichnung"
-          value={job.title}
-          onChange={(e) => setJobField(job.id, { title: e.target.value })} />
-        <button type="button" title="Gruppe wechseln"
-          onClick={() => setMovePopoverFor(popoverOpen ? null : job.id)}
-          className="p-1.5 text-slate-400 hover:text-violet-600 hover:bg-violet-50 rounded-lg transition-colors flex-shrink-0 flex items-center gap-1 px-2 text-xs">
-          <FolderInput size={14} />
-          <span className="hidden sm:inline">{job.group || 'Ohne Gruppe'}</span>
-        </button>
-        <button type="button" onClick={() => deleteJob(job.id)}
-          className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0">
-          <X size={14} />
-        </button>
-        {popoverOpen && (
-          <div ref={popoverRef}
-            className="absolute right-12 top-full mt-1 z-20 w-64 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden">
-            <div className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400 border-b border-slate-100">
-              Verschieben nach
-            </div>
-            <div className="max-h-64 overflow-y-auto py-1">
-              <button type="button"
-                onClick={() => moveJob(job.id, undefined)}
-                className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-slate-50 transition-colors ${!job.group ? 'text-violet-600 font-medium' : 'text-slate-700'}`}>
-                <Folder size={14} className="text-slate-400" /> Ohne Gruppe
-              </button>
-              {allGroups.map((g) => (
-                <button key={g} type="button"
-                  onClick={() => moveJob(job.id, g)}
-                  className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-slate-50 transition-colors ${job.group === g ? 'text-violet-600 font-medium' : 'text-slate-700'}`}>
-                  <Folder size={14} className="text-slate-400" /> {g}
-                </button>
-              ))}
-              <NewGroupRow onSubmit={(name) => moveJobToNewGroup(job.id, name)} />
-            </div>
-          </div>
-        )}
-      </div>
+      <SortableJobRow
+        key={job.id}
+        job={job}
+        allGroups={allGroups}
+        popoverOpen={movePopoverFor === job.id}
+        popoverRef={popoverRef}
+        onTogglePopover={() => setMovePopoverFor(movePopoverFor === job.id ? null : job.id)}
+        onSetField={(patch) => setJobField(job.id, patch)}
+        onDelete={() => deleteJob(job.id)}
+        onMove={(target) => moveJob(job.id, target)}
+        onMoveToNewGroup={(name) => moveJobToNewGroup(job.id, name)}
+      />
     );
   }
 
@@ -847,7 +837,11 @@ function JobsGroupEditor({ jobs, setJobs }: {
         </div>
         {!isCollapsed && (
           <div className="px-3 py-2.5">
-            {sectionJobs.map(renderJobRow)}
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleReorder}>
+              <SortableContext items={sectionJobs.map((j) => j.id)} strategy={verticalListSortingStrategy}>
+                {sectionJobs.map(renderJobRow)}
+              </SortableContext>
+            </DndContext>
             <button type="button" onClick={() => addJob(group)}
               className="flex items-center gap-1.5 text-xs text-violet-600 font-medium hover:text-violet-700 mt-1">
               <Plus size={13} /> Beruf zu „{group}&ldquo; hinzufügen
@@ -873,7 +867,11 @@ function JobsGroupEditor({ jobs, setJobs }: {
           </span>
         </div>
         <div className="px-3 py-2.5">
-          {ungrouped.map(renderJobRow)}
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleReorder}>
+            <SortableContext items={ungrouped.map((j) => j.id)} strategy={verticalListSortingStrategy}>
+              {ungrouped.map(renderJobRow)}
+            </SortableContext>
+          </DndContext>
           <button type="button" onClick={() => addJob(undefined)}
             className="flex items-center gap-1.5 text-xs text-violet-600 font-medium hover:text-violet-700 mt-1">
             <Plus size={13} /> Beruf hinzufügen
@@ -905,6 +903,77 @@ function JobsGroupEditor({ jobs, setJobs }: {
         <p className="text-[11px] text-amber-600">
           Hinweis: Leere Gruppen werden beim Speichern verworfen. Lege gleich einen Beruf an oder verschiebe einen vorhandenen Beruf hinein.
         </p>
+      )}
+    </div>
+  );
+}
+
+// Sortable-Row mit Drag-Handle, Titel-Input, Gruppe-wechseln-Popover und Löschen.
+// Wird pro Gruppen-Sektion innerhalb eines eigenen DndContext gerendert,
+// damit Sortierung gruppenintern bleibt.
+function SortableJobRow({
+  job, allGroups, popoverOpen, popoverRef,
+  onTogglePopover, onSetField, onDelete, onMove, onMoveToNewGroup,
+}: {
+  job: SuccessJob;
+  allGroups: string[];
+  popoverOpen: boolean;
+  popoverRef: React.MutableRefObject<HTMLDivElement | null>;
+  onTogglePopover: () => void;
+  onSetField: (patch: Partial<SuccessJob>) => void;
+  onDelete: () => void;
+  onMove: (target: string | undefined) => void;
+  onMoveToNewGroup: (name: string) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: job.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+  };
+  return (
+    <div ref={setNodeRef} style={style} className={`flex gap-1.5 mb-1.5 relative items-center ${isDragging ? 'z-50' : ''}`}>
+      <button type="button"
+        {...attributes} {...listeners}
+        title="Ziehen zum Sortieren"
+        className="p-1 text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing flex-shrink-0 touch-none">
+        <GripVertical size={14} />
+      </button>
+      <input type="text" className="input-field flex-1" placeholder="Berufsbezeichnung"
+        value={job.title}
+        onChange={(e) => onSetField({ title: e.target.value })} />
+      <button type="button" title="Gruppe wechseln"
+        onClick={onTogglePopover}
+        className="p-1.5 text-slate-400 hover:text-violet-600 hover:bg-violet-50 rounded-lg transition-colors flex-shrink-0 flex items-center gap-1 px-2 text-xs">
+        <FolderInput size={14} />
+        <span className="hidden sm:inline">{job.group || 'Ohne Gruppe'}</span>
+      </button>
+      <button type="button" onClick={onDelete}
+        className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0">
+        <X size={14} />
+      </button>
+      {popoverOpen && (
+        <div ref={popoverRef}
+          className="absolute right-12 top-full mt-1 z-20 w-64 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden">
+          <div className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400 border-b border-slate-100">
+            Verschieben nach
+          </div>
+          <div className="max-h-64 overflow-y-auto py-1">
+            <button type="button"
+              onClick={() => onMove(undefined)}
+              className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-slate-50 transition-colors ${!job.group ? 'text-violet-600 font-medium' : 'text-slate-700'}`}>
+              <Folder size={14} className="text-slate-400" /> Ohne Gruppe
+            </button>
+            {allGroups.map((g) => (
+              <button key={g} type="button"
+                onClick={() => onMove(g)}
+                className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-slate-50 transition-colors ${job.group === g ? 'text-violet-600 font-medium' : 'text-slate-700'}`}>
+                <Folder size={14} className="text-slate-400" /> {g}
+              </button>
+            ))}
+            <NewGroupRow onSubmit={onMoveToNewGroup} />
+          </div>
+        </div>
       )}
     </div>
   );
