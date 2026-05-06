@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { ChevronDown, ChevronRight, Plus, Minus, Pencil, Sparkles, Wand2, ArrowLeft, X, AlertTriangle } from 'lucide-react';
+import { ChevronDown, ChevronRight, Plus, Minus, Pencil, Sparkles, Wand2, ArrowLeft, ArrowRight, X, AlertTriangle } from 'lucide-react';
 import {
   applyDiffSelection,
   dependencies,
@@ -14,7 +14,8 @@ import {
   type BlockChange,
   type DimensionChange,
 } from '@/lib/funnel-diff';
-import type { FunnelPage } from '@/lib/funnel-types';
+import { wordDiff } from '@/lib/text-diff';
+import type { FunnelNode, FunnelPage } from '@/lib/funnel-types';
 import type { Dimension } from '@/lib/types';
 
 interface Props {
@@ -41,7 +42,17 @@ export default function RefinePreviewModal({
   const allIds = useMemo(() => selectableChangeIds(diff), [diff]);
   const [selection, setSelection] = useState<Set<ChangeId>>(() => new Set(allIds));
   const [expandedPages, setExpandedPages] = useState<Set<string>>(() => new Set(diff.pages.map((p) => p.id)));
-  const [expandedFields, setExpandedFields] = useState<Set<string>>(new Set());
+  const [expandedFields, setExpandedFields] = useState<Set<string>>(() => {
+    // Auto-expand all modified blocks so the inline diff is visible without
+    // an extra click. User can collapse if it gets too noisy.
+    const ids = new Set<string>();
+    for (const pc of diff.pages) {
+      if (pc.kind !== 'modified') continue;
+      for (const bc of pc.blocks) if (bc.kind === 'modified') ids.add(bc.id);
+      if (pc.metaChangeId) ids.add(pc.metaChangeId);
+    }
+    return ids;
+  });
 
   const totalChanges = allIds.length;
   const selectedCount = selection.size;
@@ -299,25 +310,35 @@ function PageChangeCard({
       {expanded && (
         <div className="px-3 pb-2.5 pt-1 space-y-1 border-t border-amber-100">
           {change.metaChangeId && (
-            <label className="flex items-start gap-2 px-2 py-1.5 rounded hover:bg-white/70 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={selection.has(change.metaChangeId)}
-                onChange={() => onToggle(change.metaChangeId!)}
-                className="mt-0.5 w-3.5 h-3.5 accent-violet-600"
-              />
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-slate-700">Seiten-Eigenschaften</p>
-                <div className="flex flex-wrap gap-1 mt-0.5">
-                  {change.metaFields.map((f) => (
-                    <span key={f} className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">{f}</span>
-                  ))}
-                  {change.orderChanged && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">Reihenfolge</span>
-                  )}
+            <div className="rounded">
+              <label className="flex items-start gap-2 px-2 py-1.5 hover:bg-white/70 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={selection.has(change.metaChangeId)}
+                  onChange={() => onToggle(change.metaChangeId!)}
+                  className="mt-0.5 w-3.5 h-3.5 accent-violet-600"
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-slate-700">Seiten-Eigenschaften</p>
+                  <div className="flex flex-wrap gap-1 mt-0.5">
+                    {change.metaFields.map((f) => (
+                      <span key={f} className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">{f}</span>
+                    ))}
+                    {change.orderChanged && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">Reihenfolge</span>
+                    )}
+                  </div>
                 </div>
+              </label>
+              <div className="px-2 pb-2 pl-9 space-y-1.5">
+                {change.metaFields.map((f) => (
+                  <FieldDiff key={f} field={f} beforeVal={readPageField(change.before, f)} afterVal={readPageField(change.after, f)} />
+                ))}
+                {change.orderChanged && (
+                  <ReorderDiff before={change.before} after={change.after} />
+                )}
               </div>
-            </label>
+            </div>
           )}
           {change.blocks.map((bc) => (
             <BlockChangeRow
@@ -396,7 +417,12 @@ function BlockChangeRow({
       {change.kind === 'modified' && expanded && (
         <div className="px-2 pb-2 pl-9 space-y-1.5">
           {change.fields.map((f) => (
-            <FieldDiff key={f} field={f} before={change.before} after={change.after} />
+            <FieldDiff
+              key={f}
+              field={f}
+              beforeVal={readBlockField(change.before, f)}
+              afterVal={readBlockField(change.after, f)}
+            />
           ))}
         </div>
       )}
@@ -406,25 +432,221 @@ function BlockChangeRow({
 
 // ─── Field-level before/after rendering ─────────────────────────────────────
 
-function FieldDiff({ field, before, after }: { field: string; before: import('@/lib/funnel-types').FunnelNode; after: import('@/lib/funnel-types').FunnelNode }) {
-  const beforeVal = readField(before, field);
-  const afterVal = readField(after, field);
+const STRING_INLINE_DIFF_LIMIT = 800;
+
+function FieldDiff({ field, beforeVal, afterVal }: { field: string; beforeVal: unknown; afterVal: unknown }) {
+  if (deepEqual(beforeVal, afterVal)) return null;
+
   return (
     <div className="text-[11px]">
-      <p className="font-medium text-slate-600 mb-0.5">{field}</p>
-      <div className="grid grid-cols-2 gap-1.5">
-        <div className="rounded bg-red-50 border border-red-100 px-2 py-1 text-slate-600 line-through decoration-red-300">
-          {renderValue(beforeVal)}
-        </div>
-        <div className="rounded bg-emerald-50 border border-emerald-100 px-2 py-1 text-slate-700">
-          {renderValue(afterVal)}
-        </div>
-      </div>
+      <p className="font-medium text-slate-600 mb-0.5">{prettyFieldName(field)}</p>
+      <FieldDiffBody beforeVal={beforeVal} afterVal={afterVal} />
     </div>
   );
 }
 
-function readField(node: import('@/lib/funnel-types').FunnelNode, field: string): unknown {
+function FieldDiffBody({ beforeVal, afterVal }: { beforeVal: unknown; afterVal: unknown }) {
+  // 1. Both strings → inline word diff (fallback to two-box for long ones).
+  if (typeof beforeVal === 'string' && typeof afterVal === 'string') {
+    if (beforeVal.length > STRING_INLINE_DIFF_LIMIT || afterVal.length > STRING_INLINE_DIFF_LIMIT) {
+      return <TwoBoxDiff before={beforeVal} after={afterVal} />;
+    }
+    return <InlineTextDiff before={beforeVal} after={afterVal} />;
+  }
+
+  // 2. One side string (added/cleared) → inline rendering with a single side.
+  if (typeof beforeVal === 'string' || typeof afterVal === 'string') {
+    return <InlineTextDiff before={typeof beforeVal === 'string' ? beforeVal : ''} after={typeof afterVal === 'string' ? afterVal : ''} />;
+  }
+
+  // 3. Both arrays → item-level diff.
+  if (Array.isArray(beforeVal) && Array.isArray(afterVal)) {
+    return <ListDiff before={beforeVal} after={afterVal} />;
+  }
+
+  // 4. Primitive → compact "X → Y".
+  if (isPrimitive(beforeVal) && isPrimitive(afterVal)) {
+    return <PrimitiveDiff before={beforeVal} after={afterVal} />;
+  }
+
+  // 5. Fallback: pretty JSON in two boxes.
+  return <TwoBoxDiff before={prettyJson(beforeVal)} after={prettyJson(afterVal)} />;
+}
+
+function InlineTextDiff({ before, after }: { before: string; after: string }) {
+  const tokens = wordDiff(before, after);
+  return (
+    <p className="rounded border border-slate-200 bg-slate-50 px-2 py-1 text-slate-700 whitespace-pre-wrap break-words leading-snug">
+      {tokens.map((t, i) => {
+        if (t.type === 'common') return <span key={i}>{t.text}</span>;
+        if (t.type === 'remove') {
+          return <span key={i} className="bg-red-100 text-red-800 line-through decoration-red-400/60 rounded px-0.5">{t.text}</span>;
+        }
+        return <span key={i} className="bg-emerald-100 text-emerald-800 rounded px-0.5">{t.text}</span>;
+      })}
+    </p>
+  );
+}
+
+interface IdLike { id?: unknown }
+function hasIds(arr: unknown[]): arr is Array<Record<string, unknown> & IdLike> {
+  if (arr.length === 0) return false;
+  return arr.every((x) => x && typeof x === 'object' && !Array.isArray(x) && typeof (x as IdLike).id === 'string');
+}
+
+function ListDiff({ before, after }: { before: unknown[]; after: unknown[] }) {
+  // ID-based matching when possible (options, statements, cards, …).
+  if (hasIds(before) && hasIds(after)) {
+    const byId = new Map<string, { before?: Record<string, unknown>; after?: Record<string, unknown> }>();
+    for (const item of before) {
+      const id = String(item.id);
+      byId.set(id, { ...(byId.get(id) ?? {}), before: item });
+    }
+    for (const item of after) {
+      const id = String(item.id);
+      byId.set(id, { ...(byId.get(id) ?? {}), after: item });
+    }
+
+    type Row = { id: string; status: 'added' | 'removed' | 'modified' | 'unchanged'; label: string };
+    const rows: Row[] = [];
+    for (const [id, entry] of byId) {
+      if (entry.before && !entry.after) rows.push({ id, status: 'removed', label: itemLabel(entry.before) });
+      else if (!entry.before && entry.after) rows.push({ id, status: 'added', label: itemLabel(entry.after) });
+      else if (entry.before && entry.after) {
+        const same = deepEqual(entry.before, entry.after);
+        rows.push({ id, status: same ? 'unchanged' : 'modified', label: itemLabel(entry.after) });
+      }
+    }
+    const changed = rows.filter((r): r is Row & { status: 'added' | 'removed' | 'modified' } => r.status !== 'unchanged');
+    const unchanged = rows.length - changed.length;
+
+    return (
+      <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1.5 space-y-1">
+        {changed.length === 0 ? (
+          <p className="text-[11px] text-slate-500 italic">Reihenfolge oder Inhalt geändert (keine ID-Änderungen erkannt).</p>
+        ) : (
+          changed.map((row) => (
+            <ListDiffRow
+              key={row.id}
+              status={row.status}
+              label={row.label}
+              before={row.status === 'modified' ? byId.get(row.id)?.before : undefined}
+              after={row.status === 'modified' ? byId.get(row.id)?.after : undefined}
+            />
+          ))
+        )}
+        {unchanged > 0 && (
+          <p className="text-[10px] text-slate-400">… und {unchanged} {unchanged === 1 ? 'Eintrag' : 'Einträge'} unverändert</p>
+        )}
+      </div>
+    );
+  }
+
+  // Position-based fallback for primitive arrays.
+  const max = Math.max(before.length, after.length);
+  return (
+    <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1.5 space-y-0.5">
+      {Array.from({ length: max }, (_, i) => {
+        const b = before[i];
+        const a = after[i];
+        if (deepEqual(b, a)) return null;
+        return (
+          <div key={i} className="flex items-baseline gap-1.5 text-[11px]">
+            <span className="text-slate-400 font-mono w-6 shrink-0">[{i}]</span>
+            <FieldDiffBody beforeVal={b} afterVal={a} />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function ListDiffRow({ status, label, before, after }: {
+  status: 'added' | 'removed' | 'modified';
+  label: string;
+  before?: Record<string, unknown>;
+  after?: Record<string, unknown>;
+}) {
+  const symbol =
+    status === 'added' ? <Plus size={10} className="text-violet-500" /> :
+    status === 'removed' ? <Minus size={10} className="text-red-500" /> :
+    <Pencil size={10} className="text-amber-500" />;
+  const colorClass =
+    status === 'added' ? 'text-violet-700' :
+    status === 'removed' ? 'text-red-700 line-through decoration-red-300' :
+    'text-amber-800';
+
+  if (status === 'modified' && before && after) {
+    const changedKeys = diffObjectKeys(before, after);
+    return (
+      <div className="space-y-0.5">
+        <div className="flex items-center gap-1 text-[11px]">
+          <span>{symbol}</span>
+          <span className={colorClass}>{label}</span>
+        </div>
+        <div className="pl-4 space-y-0.5">
+          {changedKeys.map((k) => (
+            <FieldDiff key={k} field={k} beforeVal={before[k]} afterVal={after[k]} />
+          ))}
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="flex items-center gap-1 text-[11px]">
+      <span>{symbol}</span>
+      <span className={colorClass}>{label}</span>
+    </div>
+  );
+}
+
+function PrimitiveDiff({ before, after }: { before: unknown; after: unknown }) {
+  const fmt = (v: unknown) => v === undefined ? '—' : String(v);
+  return (
+    <div className="flex items-center gap-1.5 text-[11px]">
+      <span className="rounded bg-red-100 text-red-800 px-1.5 py-0.5 line-through decoration-red-400/60">{fmt(before)}</span>
+      <ArrowRight size={10} className="text-slate-400 shrink-0" />
+      <span className="rounded bg-emerald-100 text-emerald-800 px-1.5 py-0.5">{fmt(after)}</span>
+    </div>
+  );
+}
+
+function TwoBoxDiff({ before, after }: { before: string; after: string }) {
+  return (
+    <div className="grid grid-cols-2 gap-1.5">
+      <div className="rounded bg-red-50 border border-red-100 px-2 py-1 text-slate-600 whitespace-pre-wrap break-words">{before || '—'}</div>
+      <div className="rounded bg-emerald-50 border border-emerald-100 px-2 py-1 text-slate-700 whitespace-pre-wrap break-words">{after || '—'}</div>
+    </div>
+  );
+}
+
+// ─── Order/reorder visualization for page-level meta changes ────────────────
+
+function ReorderDiff({ before, after }: { before: FunnelPage; after: FunnelPage }) {
+  const renderRow = (page: FunnelPage, label: string) => (
+    <div>
+      <p className="text-[10px] uppercase tracking-wide text-slate-400 mb-0.5">{label}</p>
+      <ol className="text-[11px] text-slate-700 space-y-0.5">
+        {page.nodes.map((n, i) => (
+          <li key={n.id} className="flex gap-1.5">
+            <span className="text-slate-400 font-mono w-5 shrink-0">{i + 1}.</span>
+            <span className="truncate">{summarizeBlockLabel(n)}</span>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+  return (
+    <div className="rounded border border-slate-200 bg-slate-50 px-2 py-1.5 grid grid-cols-2 gap-2">
+      {renderRow(before, 'Reihenfolge vorher')}
+      {renderRow(after, 'Reihenfolge nachher')}
+    </div>
+  );
+}
+
+// ─── Read helpers ───────────────────────────────────────────────────────────
+
+function readBlockField(node: FunnelNode, field: string): unknown {
   if (field === 'style') return node.style;
   if (field === 'kind') return node.kind;
   if (field === 'type' && node.kind === 'block') return node.type;
@@ -432,16 +654,95 @@ function readField(node: import('@/lib/funnel-types').FunnelNode, field: string)
   return undefined;
 }
 
-function renderValue(v: unknown): string {
-  if (v === undefined || v === null) return '—';
-  if (typeof v === 'string') return v.length > 200 ? `${v.slice(0, 200)}…` : v;
-  if (typeof v === 'number' || typeof v === 'boolean') return String(v);
-  if (Array.isArray(v)) return `[${v.length} Einträge]`;
-  if (typeof v === 'object') {
-    const json = JSON.stringify(v);
-    return json.length > 200 ? `${json.slice(0, 200)}…` : json;
+function readPageField(page: FunnelPage, field: string): unknown {
+  switch (field) {
+    case 'name': return page.name;
+    case 'nextPageId': return page.nextPageId;
+    case 'visibleIf': return page.visibleIf;
+    case 'hideLocationHint': return page.hideLocationHint;
+    default: return (page as unknown as Record<string, unknown>)[field];
   }
-  return String(v);
+}
+
+// ─── Misc helpers ───────────────────────────────────────────────────────────
+
+function isPrimitive(v: unknown): v is string | number | boolean | null | undefined {
+  return v === null || v === undefined || typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean';
+}
+
+function deepEqual(a: unknown, b: unknown): boolean {
+  if (Object.is(a, b)) return true;
+  if (a === null || b === null) return false;
+  if (typeof a !== 'object' || typeof b !== 'object') return false;
+  if (Array.isArray(a) !== Array.isArray(b)) return false;
+  if (Array.isArray(a) && Array.isArray(b)) {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) if (!deepEqual(a[i], b[i])) return false;
+    return true;
+  }
+  const ao = a as Record<string, unknown>;
+  const bo = b as Record<string, unknown>;
+  const ak = Object.keys(ao);
+  const bk = Object.keys(bo);
+  if (ak.length !== bk.length) return false;
+  for (const k of ak) {
+    if (!Object.prototype.hasOwnProperty.call(bo, k)) return false;
+    if (!deepEqual(ao[k], bo[k])) return false;
+  }
+  return true;
+}
+
+function diffObjectKeys(a: Record<string, unknown>, b: Record<string, unknown>): string[] {
+  const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+  // Hide internal id from the per-field detail (the id was used to match items).
+  keys.delete('id');
+  return Array.from(keys).filter((k) => !deepEqual(a[k], b[k]));
+}
+
+function itemLabel(item: Record<string, unknown>): string {
+  for (const k of ['text', 'label', 'title', 'name', 'question']) {
+    const v = item[k];
+    if (typeof v === 'string' && v.trim().length > 0) {
+      return v.length > 60 ? `${v.slice(0, 60)}…` : v;
+    }
+  }
+  const id = item.id;
+  return typeof id === 'string' ? id : '(unbenannt)';
+}
+
+function prettyJson(v: unknown): string {
+  if (v === undefined) return '—';
+  try {
+    const json = JSON.stringify(v, null, 2);
+    return json.length > 800 ? `${json.slice(0, 800)}…` : json;
+  } catch {
+    return String(v);
+  }
+}
+
+function prettyFieldName(f: string): string {
+  // Slight nicety: friendlier German label for the most common fields.
+  const map: Record<string, string> = {
+    name: 'Name',
+    text: 'Text',
+    title: 'Titel',
+    question: 'Frage',
+    label: 'Beschriftung',
+    options: 'Optionen',
+    statements: 'Aussagen',
+    cards: 'Karten',
+    style: 'Stil',
+    nextPageId: 'Nächste Seite',
+    visibleIf: 'Sichtbarkeits-Bedingung',
+    hideLocationHint: 'Ortshinweis verbergen',
+    sliderDimensionId: 'Slider-Dimension',
+    optionA: 'Option A',
+    optionB: 'Option B',
+    optionPositive: 'Option Ja',
+    optionNeutral: 'Option Vielleicht',
+    optionNegative: 'Option Nein',
+  };
+  return map[f] ?? f;
 }
 
 // ─── Dimension row ──────────────────────────────────────────────────────────
