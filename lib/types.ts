@@ -302,6 +302,8 @@ export interface JobQuest {
   createdAt: string;
   updatedAt: string;
   publishedAt?: string;
+  /** When set, the quest is in the trash and will be hard-deleted 30 days later. */
+  deletedAt?: string;
 }
 
 export interface Lead {
@@ -485,6 +487,8 @@ export interface CareerCheck {
   createdAt: string;
   updatedAt: string;
   publishedAt?: string;
+  /** When set, the check is in the trash and will be hard-deleted 30 days later. */
+  deletedAt?: string;
 }
 
 export interface CareerCheckLead {
@@ -604,6 +608,8 @@ export interface FormPage {
   createdAt: string;
   updatedAt: string;
   publishedAt?: string;
+  /** When set, the form is in the trash and will be hard-deleted 30 days later. */
+  deletedAt?: string;
 }
 
 export interface FormSubmission {

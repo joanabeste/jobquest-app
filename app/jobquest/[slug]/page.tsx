@@ -17,6 +17,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     .select('title, company_id, slug')
     .eq('slug', slug)
     .eq('status', 'published')
+    .is('deleted_at', null)
     .single();
 
   if (!questRow) {

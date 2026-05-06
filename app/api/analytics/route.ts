@@ -13,12 +13,13 @@ export async function GET(req: NextRequest) {
   const supabase = createAdminClient();
 
   if (questId) {
-    // Verify quest belongs to company
+    // Verify quest belongs to company and is not in the trash
     const { data: quest } = await supabase
       .from('job_quests')
       .select('id')
       .eq('id', questId)
       .eq('company_id', session.company.id)
+      .is('deleted_at', null)
       .single();
     if (!quest) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
@@ -33,12 +34,13 @@ export async function GET(req: NextRequest) {
   }
 
   if (checkId) {
-    // Verify check belongs to company
+    // Verify check belongs to company and is not in the trash
     const { data: check } = await supabase
       .from('career_checks')
       .select('id')
       .eq('id', checkId)
       .eq('company_id', session.company.id)
+      .is('deleted_at', null)
       .single();
     if (!check) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
@@ -53,12 +55,13 @@ export async function GET(req: NextRequest) {
   }
 
   if (formId) {
-    // Verify form belongs to company
+    // Verify form belongs to company and is not in the trash
     const { data: form } = await supabase
       .from('form_pages')
       .select('id')
       .eq('id', formId)
       .eq('company_id', session.company.id)
+      .is('deleted_at', null)
       .single();
     if (!form) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
@@ -73,10 +76,11 @@ export async function GET(req: NextRequest) {
   }
 
   // Company-wide: all quest + career-check + form-page events for this company
+  // (excluding items currently in the trash).
   const [questsRes, checksRes, formsRes] = await Promise.all([
-    supabase.from('job_quests').select('id').eq('company_id', session.company.id),
-    supabase.from('career_checks').select('id').eq('company_id', session.company.id),
-    supabase.from('form_pages').select('id').eq('company_id', session.company.id),
+    supabase.from('job_quests').select('id').eq('company_id', session.company.id).is('deleted_at', null),
+    supabase.from('career_checks').select('id').eq('company_id', session.company.id).is('deleted_at', null),
+    supabase.from('form_pages').select('id').eq('company_id', session.company.id).is('deleted_at', null),
   ]);
   if (questsRes.error) return NextResponse.json({ error: questsRes.error.message }, { status: 500 });
   if (checksRes.error) return NextResponse.json({ error: checksRes.error.message }, { status: 500 });

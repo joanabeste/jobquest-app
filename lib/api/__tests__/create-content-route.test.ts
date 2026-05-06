@@ -65,6 +65,10 @@ function makeReq(body: unknown): NextRequest {
   return { json: async () => body } as unknown as NextRequest;
 }
 
+function makeListReq(search = ''): NextRequest {
+  return { url: `http://localhost/api/items${search}` } as unknown as NextRequest;
+}
+
 beforeEach(() => {
   jest.clearAllMocks();
   mockCheckQuota.mockResolvedValue({ allowed: true, current: 0, max: 10 });
@@ -73,7 +77,7 @@ beforeEach(() => {
 describe('createContentRoute — GET', () => {
   test('401 without session', async () => {
     mockGetSession.mockResolvedValue(null);
-    const res = await GET();
+    const res = await GET(makeListReq());
     expect(res.status).toBe(401);
   });
 
@@ -82,7 +86,7 @@ describe('createContentRoute — GET', () => {
     mockCreateAdminClient.mockReturnValue({
       from: () => makeChain({ data: [{ id: 'i1', company_id: 'company-1', title: 'A' }], error: null }),
     });
-    const res = await GET();
+    const res = await GET(makeListReq());
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body[0]).toEqual({ id: 'i1', companyId: 'company-1', title: 'A' });
@@ -94,7 +98,7 @@ describe('createContentRoute — GET', () => {
     mockCreateAdminClient.mockReturnValue({
       from: () => makeChain({ data: null, error: { message: 'pg internal' } }),
     });
-    const res = await GET();
+    const res = await GET(makeListReq());
     expect(res.status).toBe(500);
     const body = await res.json();
     expect(body.error).toBe('list_failed');

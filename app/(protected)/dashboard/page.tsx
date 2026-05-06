@@ -15,9 +15,11 @@ import {
   questConfig, checkConfig, formConfig,
   type ContentTypeConfig, type ContentTypeKey, type BaseContentItem,
 } from '@/lib/dashboard/contentTypes';
-import { Plus, Users, Search, SortAsc } from 'lucide-react';
+import { Plus, Users, Search, SortAsc, Trash2 } from 'lucide-react';
+import TrashListSection from '@/components/dashboard/TrashListSection';
 
 type SortBy = 'updated' | 'created' | 'title';
+type ActiveTab = ContentTypeKey | 'trash';
 
 export default function DashboardPage() {
   const { company, can } = useAuth();
@@ -53,7 +55,7 @@ export default function DashboardPage() {
   }, [plan, questList, checkList, formList]);
 
   const defaultTab: ContentTypeKey = visibleConfigs[0]?.[0].key ?? 'jobquests';
-  const [activeTab, setActiveTab] = useState<ContentTypeKey>(defaultTab);
+  const [activeTab, setActiveTab] = useState<ActiveTab>(defaultTab);
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<SortBy>('updated');
 
@@ -68,7 +70,9 @@ export default function DashboardPage() {
   // If the initial defaultTab was picked from DEFAULT_PLAN (before company
   // loaded) but the company's real plan doesn't allow that content type,
   // switch to the first actually-visible tab. Also handles live plan changes.
+  // The trash tab is always considered "visible".
   useEffect(() => {
+    if (activeTab === 'trash') return;
     const isActiveVisible = visibleConfigs.some(([cfg]) => cfg.key === activeTab);
     if (!isActiveVisible && visibleConfigs.length > 0) {
       setActiveTab(visibleConfigs[0][0].key);
@@ -207,36 +211,47 @@ export default function DashboardPage() {
             onClick={() => setActiveTab(cfg.key)}
           />
         ))}
+        <button
+          onClick={() => setActiveTab('trash')}
+          className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ml-auto ${
+            activeTab === 'trash' ? 'border-slate-700 text-slate-900' : 'border-transparent text-slate-400 hover:text-slate-600'
+          }`}
+        >
+          <Trash2 size={14} /> Papierkorb
+        </button>
       </div>
 
-      {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-4">
-        <div className="relative flex-1">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
-            placeholder={`${activeLabel} durchsuchen…`}
-            className="input-field pl-9"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+      {/* Toolbar — hidden in trash mode (trash has its own retention warning) */}
+      {activeTab !== 'trash' && (
+        <div className="flex flex-col sm:flex-row gap-3 mb-4">
+          <div className="relative flex-1">
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder={`${activeLabel} durchsuchen…`}
+              className="input-field pl-9"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <SortAsc size={15} className="text-slate-400" />
+            <select
+              className="input-field w-auto"
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as SortBy)}
+            >
+              <option value="updated">Zuletzt aktualisiert</option>
+              <option value="created">Erstellungsdatum</option>
+              <option value="title">Name A–Z</option>
+            </select>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <SortAsc size={15} className="text-slate-400" />
-          <select
-            className="input-field w-auto"
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as SortBy)}
-          >
-            <option value="updated">Zuletzt aktualisiert</option>
-            <option value="created">Erstellungsdatum</option>
-            <option value="title">Name A–Z</option>
-          </select>
-        </div>
-      </div>
+      )}
 
       {/* Content */}
-      {isLoading ? (
+      {activeTab === 'trash' ? <TrashListSection active={activeTab === 'trash'} />
+       : isLoading ? (
         <div className="space-y-3">
           {Array.from({ length: 4 }).map((_, i) => <ListItemSkeleton key={i} />)}
         </div>
@@ -252,11 +267,11 @@ export default function DashboardPage() {
       ]).map(([list, cfg]) => list.deleteConfirm && (
         <ConfirmModal
           key={cfg.key}
-          title="Unwiderruflich löschen?"
+          title="In den Papierkorb verschieben?"
           description={
             <>
-              <span className="font-medium">&ldquo;{list.deleteConfirm.title}&rdquo;</span> wird permanent gelöscht.
-              Alle zugehörigen Kontakte werden ebenfalls unwiderruflich entfernt.
+              <span className="font-medium">&ldquo;{list.deleteConfirm.title}&rdquo;</span> wird in den Papierkorb verschoben und nach 30 Tagen automatisch endgültig gelöscht.
+              Du kannst es bis dahin im Papierkorb wiederherstellen.
             </>
           }
           onConfirm={() => list.handleDelete(list.deleteConfirm!.id)}

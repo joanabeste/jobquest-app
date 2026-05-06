@@ -33,15 +33,20 @@ const mockCreateAdminClient = createAdminClient as jest.Mock;
 
 /** Builds a Supabase builder chain that resolves to `result` when awaited. */
 function makeChain(result: { data: unknown; error: unknown }) {
-   
+
   const chain: any = {};
-  for (const m of ['from', 'select', 'eq', 'order', 'insert', 'update', 'single', 'upsert']) {
+  for (const m of ['from', 'select', 'eq', 'is', 'not', 'order', 'insert', 'update', 'single', 'upsert']) {
     chain[m] = () => chain;
   }
   // Make it thenable so `await chain` returns result
   chain.then = (resolve: (v: unknown) => unknown, reject?: (e: unknown) => unknown) =>
     Promise.resolve(result).then(resolve, reject);
   return chain;
+}
+
+/** Minimal NextRequest stand-in — only `url` is read by the route handler. */
+function makeReq(search = ''): NextRequest {
+  return { url: `http://localhost/api/quests${search}` } as unknown as NextRequest;
 }
 
 const fakeSession = {
@@ -67,7 +72,7 @@ const dbRow = {
 describe('GET /api/quests', () => {
   test('returns 401 when no session', async () => {
     mockGetSession.mockResolvedValue(null);
-    const res = await GET();
+    const res = await GET(makeReq());
     expect(res.status).toBe(401);
     const body = await res.json();
     expect(body.error).toBe('Unauthorized');
@@ -77,7 +82,7 @@ describe('GET /api/quests', () => {
     mockGetSession.mockResolvedValue(fakeSession);
     mockCreateAdminClient.mockReturnValue({ from: () => makeChain({ data: [dbRow], error: null }) });
 
-    const res = await GET();
+    const res = await GET(makeReq());
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(Array.isArray(body)).toBe(true);
@@ -90,7 +95,7 @@ describe('GET /api/quests', () => {
     mockGetSession.mockResolvedValue(fakeSession);
     mockCreateAdminClient.mockReturnValue({ from: () => makeChain({ data: null, error: null }) });
 
-    const res = await GET();
+    const res = await GET(makeReq());
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual([]);
   });
@@ -99,7 +104,7 @@ describe('GET /api/quests', () => {
     mockGetSession.mockResolvedValue(fakeSession);
     mockCreateAdminClient.mockReturnValue({ from: () => makeChain({ data: null, error: { message: 'DB error' } }) });
 
-    const res = await GET();
+    const res = await GET(makeReq());
     expect(res.status).toBe(500);
     const body = await res.json();
     expect(body.error).toBe('list_failed');

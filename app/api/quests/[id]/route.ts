@@ -6,4 +6,5 @@ export const { GET, PUT, DELETE } = createCrudRoute<JobQuest>({
   table: 'job_quests',
   fromDb: (row) => questFromDb(row as Parameters<typeof questFromDb>[0]),
   toDb: (item) => questToDb(item) as Record<string, unknown>,
+  softDelete: true,
 });

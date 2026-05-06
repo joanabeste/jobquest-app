@@ -15,6 +15,13 @@ interface CrudRouteOptions<T extends { id: string; companyId: string }> {
    * caller must trust whatever shape the client sends.
    */
   bodySchema?: ZodType<T>;
+  /**
+   * When true, DELETE soft-deletes (UPDATE deleted_at = now()) instead of
+   * physically removing the row. Use the dedicated /restore and /permanent
+   * routes for the trash workflow. GET also filters out trashed rows so that
+   * direct lookups on a soft-deleted item return 404 like a hard delete.
+   */
+  softDelete?: boolean;
 }
 
 /**
@@ -35,12 +42,13 @@ export function createCrudRoute<T extends { id: string; companyId: string }>(
 
     const { id } = await params;
     const supabase = createAdminClient();
-    const { data } = await supabase
+    let q = supabase
       .from(opts.table)
       .select('*')
       .eq('id', id)
-      .eq('company_id', session.company.id)
-      .single();
+      .eq('company_id', session.company.id);
+    if (opts.softDelete) q = q.is('deleted_at', null);
+    const { data } = await q.single();
 
     if (!data) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json(opts.fromDb(data as Record<string, unknown>));
@@ -103,6 +111,19 @@ export function createCrudRoute<T extends { id: string; companyId: string }>(
 
     const { id } = await params;
     const supabase = createAdminClient();
+    if (opts.softDelete) {
+      const { error } = await supabase
+        .from(opts.table)
+        .update({ deleted_at: new Date().toISOString() })
+        .eq('id', id)
+        .eq('company_id', session.company.id)
+        .is('deleted_at', null);
+      if (error) {
+        console.error(`[crud:${opts.table}] soft-delete failed`, error);
+        return NextResponse.json({ error: 'delete_failed' }, { status: 500 });
+      }
+      return NextResponse.json({ ok: true });
+    }
     const { error } = await supabase
       .from(opts.table)
       .delete()

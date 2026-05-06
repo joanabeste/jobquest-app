@@ -6,4 +6,5 @@ export const { GET, PUT, DELETE } = createCrudRoute<FormPage>({
   table: 'form_pages',
   fromDb: (row) => formPageFromDb(row as Parameters<typeof formPageFromDb>[0]),
   toDb: (item) => formPageToDb(item) as Record<string, unknown>,
+  softDelete: true,
 });

@@ -8,4 +8,5 @@ export const { GET, POST } = createContentRoute<FormPage>({
   quotaLabel: 'Formulare',
   fromDb: formPageFromDb,
   toDb: formPageToDb,
+  softDelete: true,
 });

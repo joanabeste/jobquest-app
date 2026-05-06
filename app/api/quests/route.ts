@@ -8,4 +8,5 @@ export const { GET, POST } = createContentRoute<JobQuest>({
   quotaLabel: 'JobQuests',
   fromDb: questFromDb,
   toDb: questToDb,
+  softDelete: true,
 });

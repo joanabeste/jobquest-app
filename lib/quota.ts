@@ -28,10 +28,14 @@ export async function checkQuota(
   if (max === 0) return { allowed: false, current: 0, max: 0 };
 
   const admin = createAdminClient();
+  // Soft-deleted rows must not count against quota — they're already in the
+  // user's trash and will either be restored (then they count again, but the
+  // unique slug index ensures no duplicates) or be hard-deleted by the cron.
   const { count } = await admin
     .from(TABLE_MAP[contentType])
     .select('id', { count: 'exact', head: true })
-    .eq('company_id', companyId);
+    .eq('company_id', companyId)
+    .is('deleted_at', null);
 
   const current = count ?? 0;
   return { allowed: current < max, current, max };

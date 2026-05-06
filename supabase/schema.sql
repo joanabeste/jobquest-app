@@ -64,11 +64,13 @@ create table public.job_quests (
   card_image    text,
   created_at    timestamptz not null default now(),
   updated_at    timestamptz not null default now(),
-  published_at  timestamptz
+  published_at  timestamptz,
+  deleted_at    timestamptz
 );
 
-create unique index job_quests_slug_idx on public.job_quests (slug);
+create unique index job_quests_slug_idx on public.job_quests (slug) where deleted_at is null;
 create index job_quests_company_id_idx on public.job_quests (company_id);
+create index job_quests_deleted_at_idx on public.job_quests (deleted_at) where deleted_at is not null;
 
 -- ============================================================
 -- 4. LEADS
@@ -131,11 +133,13 @@ create table public.career_checks (
   card_image    text,
   created_at    timestamptz not null default now(),
   updated_at    timestamptz not null default now(),
-  published_at  timestamptz
+  published_at  timestamptz,
+  deleted_at    timestamptz
 );
 
-create unique index career_checks_slug_idx on public.career_checks (slug);
+create unique index career_checks_slug_idx on public.career_checks (slug) where deleted_at is null;
 create index career_checks_company_id_idx on public.career_checks (company_id);
+create index career_checks_deleted_at_idx on public.career_checks (deleted_at) where deleted_at is not null;
 
 -- Wire analytics_events.career_check_id FK now that career_checks exists.
 alter table public.analytics_events
@@ -178,10 +182,12 @@ create table public.form_pages (
   form_config     jsonb not null default '{}'::jsonb,
   created_at      timestamptz not null default now(),
   updated_at      timestamptz not null default now(),
-  published_at    timestamptz
+  published_at    timestamptz,
+  deleted_at      timestamptz
 );
 
-create unique index form_pages_slug_idx on public.form_pages (slug);
+create unique index form_pages_slug_idx on public.form_pages (slug) where deleted_at is null;
+create index form_pages_deleted_at_idx on public.form_pages (deleted_at) where deleted_at is not null;
 create index form_pages_company_id_idx on public.form_pages (company_id);
 
 -- Wire analytics_events.form_page_id FK now that form_pages exists.

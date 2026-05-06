@@ -22,10 +22,10 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ slu
     return NextResponse.json({ error: 'not_found' }, { status: 404 });
   }
 
-  // Load published quests and checks for this company
+  // Load published, non-trashed quests and checks for this company
   const [questsRes, checksRes] = await Promise.all([
-    supabase.from('job_quests').select('*').eq('company_id', company.id).eq('status', 'published'),
-    supabase.from('career_checks').select('*').eq('company_id', company.id).eq('status', 'published'),
+    supabase.from('job_quests').select('*').eq('company_id', company.id).eq('status', 'published').is('deleted_at', null),
+    supabase.from('career_checks').select('*').eq('company_id', company.id).eq('status', 'published').is('deleted_at', null),
   ]);
 
   const quests = (questsRes.data ?? []).map((r) => questFromDb(r as Record<string, unknown>));

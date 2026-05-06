@@ -186,6 +186,7 @@ export function questFromDb(row: DbRow): JobQuest {
     createdAt: str(row, 'created_at'),
     updatedAt: str(row, 'updated_at'),
     publishedAt: optStr(row, 'published_at'),
+    deletedAt: optStr(row, 'deleted_at'),
   };
 }
 
@@ -285,6 +286,7 @@ export function careerCheckFromDb(row: DbRow): CareerCheck {
     createdAt: str(row, 'created_at'),
     updatedAt: str(row, 'updated_at'),
     publishedAt: optStr(row, 'published_at'),
+    deletedAt: optStr(row, 'deleted_at'),
   };
 }
 
@@ -356,6 +358,7 @@ export function formPageFromDb(row: DbRow): FormPage {
     createdAt: str(row, 'created_at'),
     updatedAt: str(row, 'updated_at'),
     publishedAt: optStr(row, 'published_at'),
+    deletedAt: optStr(row, 'deleted_at'),
   };
 }
 

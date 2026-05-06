@@ -10,10 +10,11 @@ export async function GET() {
   const admin = createAdminClient();
   const companyId = session.company.id;
 
+  // Soft-deleted items must not count against quota — see lib/quota.ts.
   const [quests, checks, forms] = await Promise.all([
-    admin.from('job_quests').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
-    admin.from('career_checks').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
-    admin.from('form_pages').select('id', { count: 'exact', head: true }).eq('company_id', companyId),
+    admin.from('job_quests').select('id', { count: 'exact', head: true }).eq('company_id', companyId).is('deleted_at', null),
+    admin.from('career_checks').select('id', { count: 'exact', head: true }).eq('company_id', companyId).is('deleted_at', null),
+    admin.from('form_pages').select('id', { count: 'exact', head: true }).eq('company_id', companyId).is('deleted_at', null),
   ]);
 
   return NextResponse.json({

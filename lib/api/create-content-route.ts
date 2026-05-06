@@ -20,6 +20,12 @@ interface ContentRouteOptions<T extends { id: string; companyId: string }> {
    * the client controls the entire payload shape.
    */
   bodySchema?: ZodType<T>;
+  /**
+   * When true, list-GET filters out rows with deleted_at IS NOT NULL by
+   * default. The client may pass `?trash=true` to fetch only soft-deleted
+   * rows (used by the Papierkorb-View).
+   */
+  softDelete?: boolean;
 }
 
 /**
@@ -33,16 +39,22 @@ interface ContentRouteOptions<T extends { id: string; companyId: string }> {
 export function createContentRoute<T extends { id: string; companyId: string }>(
   opts: ContentRouteOptions<T>,
 ) {
-  async function GET() {
+  async function GET(req: NextRequest) {
     const session = await getSession();
     if (!session) return unauthorized();
 
+    const trashOnly = opts.softDelete && new URL(req.url).searchParams.get('trash') === 'true';
+
     const supabase = createAdminClient();
-    const { data, error } = await supabase
+    let q = supabase
       .from(opts.table)
       .select('*')
       .eq('company_id', session.company.id)
       .order('updated_at', { ascending: false });
+    if (opts.softDelete) {
+      q = trashOnly ? q.not('deleted_at', 'is', null) : q.is('deleted_at', null);
+    }
+    const { data, error } = await q;
 
     if (error) {
       console.error(`[content:${opts.table}] list failed`, error);

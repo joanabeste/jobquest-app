@@ -6,4 +6,5 @@ export const { GET, PUT, DELETE } = createCrudRoute<CareerCheck>({
   table: 'career_checks',
   fromDb: (row) => careerCheckFromDb(row as Parameters<typeof careerCheckFromDb>[0]),
   toDb: (item) => careerCheckToDb(item) as Record<string, unknown>,
+  softDelete: true,
 });

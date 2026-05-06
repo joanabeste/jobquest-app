@@ -44,6 +44,7 @@ function createContentStorage<T extends { id: string; title?: string }, _S exten
         .select('*')
         .eq(supabaseSlugField, slug)
         .eq('status', 'published')
+        .is('deleted_at', null)
         .single();
       return data ? fromDb(data as Record<string, unknown>) : undefined;
     },
@@ -52,8 +53,22 @@ function createContentStorage<T extends { id: string; title?: string }, _S exten
       await apiUpsert(`/api/${endpoint}/${item.id}`, `/api/${endpoint}`, item);
     },
 
+    /** Soft-deletes the item (puts it in the 30-day trash). */
     delete: async (id: string): Promise<void> => {
       await apiFetch(`/api/${endpoint}/${id}`, { method: 'DELETE' });
+    },
+
+    /** Returns only soft-deleted items (the trash view). */
+    getTrash: (): Promise<T[]> => apiFetch<T[]>(`/api/${endpoint}?trash=true`),
+
+    /** Restores a soft-deleted item back to the active list. */
+    restore: async (id: string): Promise<void> => {
+      await apiFetch(`/api/${endpoint}/${id}/restore`, { method: 'POST' });
+    },
+
+    /** Hard-deletes a soft-deleted item (irreversible). */
+    permanentDelete: async (id: string): Promise<void> => {
+      await apiFetch(`/api/${endpoint}/${id}/permanent`, { method: 'DELETE' });
     },
 
     duplicate: async (id: string, newId: string, newSlug: string): Promise<T | null> => {

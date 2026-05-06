@@ -23,6 +23,8 @@ export interface BaseContentItem {
   useCustomDomain?: boolean;
   createdAt: string;
   updatedAt: string;
+  /** ISO timestamp when this item was soft-deleted; absent when active. */
+  deletedAt?: string;
 }
 
 export interface ContentTypeConfig<T extends BaseContentItem> {
@@ -46,6 +48,11 @@ export interface ContentTypeConfig<T extends BaseContentItem> {
     save: (item: T) => Promise<void>;
     delete: (id: string) => Promise<void>;
     duplicate: (id: string, newId: string, newSlug: string) => Promise<T | null>;
+    /** Trash workflow — backed by /api/<endpoint>?trash=true and the
+     *  /restore + /permanent sub-routes. */
+    getTrash: () => Promise<T[]>;
+    restore: (id: string) => Promise<void>;
+    permanentDelete: (id: string) => Promise<void>;
   };
   countsStorage: { getCounts: () => Promise<Record<string, number>> };
   /** Label used in row meta and stat card, e.g. "Kontakte" / "Einreichungen". */
