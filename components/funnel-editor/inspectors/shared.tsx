@@ -1,8 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { X, ChevronDown, ChevronUp, ImageIcon, Upload } from 'lucide-react';
+import { X, ChevronDown, ChevronUp, ImageIcon, Upload, Crop } from 'lucide-react';
 import MediaLibraryPicker from '../MediaLibraryPicker';
+import ImageCropModal from '@/components/shared/ImageCropModal';
+import { uploadToMediaLibrary } from '@/components/shared/MediaLibrary';
 
 export function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -23,8 +25,32 @@ export function NumberInput({ label, value, onChange }: { label: string; value: 
   );
 }
 
-export function ImageUploadField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+export function ImageUploadField({ label, value, onChange, cropAspect, cropTitle }: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  /** When set, shows an "Ausschnitt anpassen" button under the preview that
+   *  opens a crop modal locked to this pixel aspect ratio (e.g. 1 = square,
+   *  16/9 = landscape). Without it, the field stays a plain media picker. */
+  cropAspect?: number;
+  cropTitle?: string;
+}) {
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [cropping, setCropping] = useState<{ src: string } | null>(null);
+
+  async function handleCropConfirm(base64: string) {
+    setCropping(null);
+    try {
+      const blob = await (await fetch(base64)).blob();
+      const asset = await uploadToMediaLibrary(blob, { filename: 'crop.png' });
+      onChange(asset.url);
+    } catch (e) {
+      // Fallback to the raw data URL so the user does not lose their crop.
+      console.error('[ImageUploadField] cropped upload failed, using data URL', e);
+      onChange(base64);
+    }
+  }
+
   return (
     <Field label={label}>
       {value && (
@@ -44,11 +70,29 @@ export function ImageUploadField({ label, value, onChange }: { label: string; va
         {value ? <Upload size={12} /> : <ImageIcon size={12} />}
         {value ? 'Bild ändern' : 'Bild aus Mediathek wählen'}
       </button>
+      {cropAspect && value && (
+        <button
+          type="button"
+          onClick={() => setCropping({ src: value })}
+          className="w-full flex items-center justify-center gap-1.5 mt-1 px-3 py-1.5 rounded-lg border border-slate-200 text-[11px] text-slate-600 hover:bg-slate-50 hover:border-violet-400 transition-colors"
+        >
+          <Crop size={11} /> Ausschnitt anpassen
+        </button>
+      )}
       <MediaLibraryPicker
         open={pickerOpen}
         onClose={() => setPickerOpen(false)}
         onSelect={(url) => onChange(url)}
       />
+      {cropping && (
+        <ImageCropModal
+          src={cropping.src}
+          aspect={cropAspect}
+          title={cropTitle ?? 'Ausschnitt anpassen'}
+          onConfirm={handleCropConfirm}
+          onCancel={() => setCropping(null)}
+        />
+      )}
     </Field>
   );
 }

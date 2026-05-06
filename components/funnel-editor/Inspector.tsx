@@ -368,7 +368,13 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars, speaker
     case 'quest_scene':
       return (
         <div className="space-y-3">
-          <ImageUploadField value={(props.imageUrl as string) ?? ''} onChange={(v) => onChange({ imageUrl: v })} label="Bild" />
+          <ImageUploadField
+            value={(props.imageUrl as string) ?? ''}
+            onChange={(v) => onChange({ imageUrl: v })}
+            label="Bild"
+            cropAspect={16 / 9}
+            cropTitle="Szenen-Bild zuschneiden"
+          />
           <Field label="Titel"><VarInput html value={(props.title as string) ?? ''} onChange={(v) => onChange({ title: v })} className="input-field text-sm" placeholder="Willkommen bei …" variables={availableVars} /></Field>
           <Field label="Einleitungstext"><VarInput value={(props.subtext as string) ?? ''} onChange={(v) => onChange({ subtext: v })} className="input-field text-sm" placeholder="Erlebe virtuell einen typischen Arbeitstag als:" variables={availableVars} /></Field>
           <Field label="Jobtitel"><input value={(props.accentText as string) ?? ''} onChange={(e) => onChange({ accentText: e.target.value })} className="input-field text-sm" placeholder="z. B. Pflegefachkraft (m/w/d)" /><p className="text-[10px] text-slate-400 mt-1">Wird farbig hervorgehoben</p></Field>
@@ -526,7 +532,13 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars, speaker
     case 'check_intro':
       return (
         <div className="space-y-3">
-          <ImageUploadField value={(props.imageUrl as string) ?? ''} onChange={(v) => onChange({ imageUrl: v })} label="Bild" />
+          <ImageUploadField
+            value={(props.imageUrl as string) ?? ''}
+            onChange={(v) => onChange({ imageUrl: v })}
+            label="Bild"
+            cropAspect={16 / 9}
+            cropTitle="Intro-Bild zuschneiden"
+          />
           <Field label="Überschrift"><VarInput html value={(props.headline as string) ?? ''} onChange={(v) => onChange({ headline: v })} className="input-field text-sm" variables={availableVars} /></Field>
           <Field label="Untertext"><VarTextarea html value={(props.subtext as string) ?? ''} onChange={(v) => onChange({ subtext: v })} rows={2} variables={availableVars} /></Field>
           <Section label="Verhalten" collapsible defaultOpen={true}>
@@ -683,7 +695,13 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars, speaker
     case 'form_hero':
       return (
         <div className="space-y-3">
-          <ImageUploadField value={(props.imageUrl as string) ?? ''} onChange={(v) => onChange({ imageUrl: v })} label="Hintergrundbild" />
+          <ImageUploadField
+            value={(props.imageUrl as string) ?? ''}
+            onChange={(v) => onChange({ imageUrl: v })}
+            label="Hintergrundbild"
+            cropAspect={16 / 9}
+            cropTitle="Hintergrundbild zuschneiden"
+          />
           <Field label="Überschrift"><VarInput html value={(props.headline as string) ?? ''} onChange={(v) => onChange({ headline: v })} className="input-field text-sm" variables={availableVars} /></Field>
           <Field label="Untertext"><VarTextarea html value={(props.subtext as string) ?? ''} onChange={(v) => onChange({ subtext: v })} rows={2} variables={availableVars} /></Field>
           <Section label="Verhalten" collapsible defaultOpen={true}>

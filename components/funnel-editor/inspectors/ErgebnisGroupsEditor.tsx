@@ -277,6 +277,8 @@ function SuggestionList({ group, onChange }: { group: Group; onChange: (s: Sugge
               label="Bild"
               value={sug.imageUrl ?? ''}
               onChange={(v) => patch(sug.id, { imageUrl: v || undefined })}
+              cropAspect={16 / 10}
+              cropTitle="Karten-Bild zuschneiden"
             />
 
             <div className="border-t border-slate-100 pt-1.5">

@@ -92,7 +92,13 @@ export function HotspotEditor({ props, onChange }: {
 
   return (
     <div className="space-y-4">
-      <ImageUploadField label="Bild" value={imageUrl} onChange={(url) => onChange({ imageUrl: url })} />
+      <ImageUploadField
+        label="Bild"
+        value={imageUrl}
+        onChange={(url) => onChange({ imageUrl: url })}
+        cropAspect={16 / 9}
+        cropTitle="Hotspot-Bild zuschneiden"
+      />
 
       {/* Image with hotspot placement */}
       {imageUrl ? (
