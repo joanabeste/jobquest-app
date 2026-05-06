@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Trash2, Copy, MousePointer2, Lock } from 'lucide-react';
 import RichTextEditor from './RichTextEditor';
-import { FunnelNode, FunnelStyle, FunnelPage, BLOCK_LABELS, LeadFieldDef } from '@/lib/funnel-types';
+import { FunnelNode, FunnelStyle, FunnelPage, BLOCK_LABELS, LeadFieldDef, type SpeakerOverride } from '@/lib/funnel-types';
 import { BLOCK_META } from './NodeView';
 import { VarInput, VarTextarea } from './VarInput';
 import { type VariableDef, CONTEXT_VARIABLES } from '@/lib/funnel-variables';
@@ -36,9 +36,11 @@ interface InspectorProps {
   currentPage?: FunnelPage;
   onUpdatePage?: (patch: Partial<FunnelPage>) => void;
   availableVars?: VariableDef[];
+  speakers?: Record<string, SpeakerOverride>;
+  onSpeakersChange?: (patch: Record<string, SpeakerOverride | null>) => void;
 }
 
-export default function Inspector({ node, isLocked, onUpdate, onDelete, onDuplicate, extraPanel, pages, currentPage, onUpdatePage, availableVars = CONTEXT_VARIABLES }: InspectorProps) {
+export default function Inspector({ node, isLocked, onUpdate, onDelete, onDuplicate, extraPanel, pages, currentPage, onUpdatePage, availableVars = CONTEXT_VARIABLES, speakers, onSpeakersChange }: InspectorProps) {
   const [tab, setTab] = useState<'props' | 'page'>('props');
 
   useEffect(() => {
@@ -107,7 +109,7 @@ export default function Inspector({ node, isLocked, onUpdate, onDelete, onDuplic
             </div>
           ) : (
             <div className="p-4">
-              <BlockPropsEditor node={node} props={props} onChange={updateProps} pages={pages} availableVars={availableVars} />
+              <BlockPropsEditor node={node} props={props} onChange={updateProps} pages={pages} availableVars={availableVars} speakers={speakers} onSpeakersChange={onSpeakersChange} />
             </div>
           )
         ) : !node ? (
@@ -273,12 +275,14 @@ function PageSettingsEditor({ currentPage, pages, onUpdate }: { currentPage?: Fu
 }
 
 // ─── Block props editor ───────────────────────────────────────────────────────
-function BlockPropsEditor({ node, props, onChange, pages, availableVars }: {
+function BlockPropsEditor({ node, props, onChange, pages, availableVars, speakers, onSpeakersChange }: {
   node: import('@/lib/funnel-types').BlockNode;
   props: Record<string, unknown>;
   onChange: (patch: Record<string, unknown>) => void;
   pages?: FunnelPage[];
   availableVars: VariableDef[];
+  speakers?: Record<string, SpeakerOverride>;
+  onSpeakersChange?: (patch: Record<string, SpeakerOverride | null>) => void;
 }) {
   const { selectedFieldId, setSelectedFieldId, dimensions } = useFunnelEditorCtx();
 
@@ -374,7 +378,7 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars }: {
       );
 
     case 'quest_dialog':
-      return <DialogEditor props={props} onChange={onChange} variables={availableVars} />;
+      return <DialogEditor props={props} onChange={onChange} variables={availableVars} speakers={speakers} onSpeakersChange={onSpeakersChange} />;
 
     case 'quest_decision':
       return <DecisionEditor props={props} onChange={onChange} pages={pages} variables={availableVars} />;

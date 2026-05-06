@@ -12,12 +12,18 @@ import { ownsContent, type FunnelContentType } from './_shared';
 // Values must match the FunnelContentType union and CONTENT_TABLE keys.
 const FunnelContentTypeSchema = z.enum(['quest', 'check', 'form']);
 
+const SpeakerOverrideSchema = z.object({
+  displayName: z.string().max(200).optional(),
+  avatarUrl: z.string().url().max(2000).optional(),
+});
+
 const FunnelDocSchema = z.object({
   id: z.string().uuid().optional(),
   contentId: z.string().min(1).max(200),
   contentType: FunnelContentTypeSchema,
   pages: z.array(z.unknown()).optional().default([]),
   emailConfig: z.unknown().optional(),
+  speakers: z.record(z.string(), SpeakerOverrideSchema).optional(),
   createdAt: z.string().optional(),
   updatedAt: z.string().optional(),
 }).passthrough();

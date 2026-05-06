@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { ArrowRight, FileDown, Check, X, ChevronRight, MessageCircle } from 'lucide-react';
-import { BlockNode } from '@/lib/funnel-types';
+import { BlockNode, type SpeakerOverride } from '@/lib/funnel-types';
 import { applyVars, stripNamePlaceholder } from '@/lib/funnel-variables';
 import { Company, Dimension } from '@/lib/types';
 import { DECISION_ICONS, isIconName, isUnknownIconName } from '@/lib/decision-icons';
@@ -310,6 +310,7 @@ export function BlockRenderer({
   dialogInputInFooter,
   lastDialogSpeaker: _lastDialogSpeaker,
   previousPageRecap,
+  speakerOverrides,
 }: {
   node: BlockNode; company: Company; primary: string; br: string;
   answers: Record<string, unknown>; firstName: string;
@@ -333,6 +334,7 @@ export function BlockRenderer({
   dialogInputInFooter?: boolean;
   lastDialogSpeaker?: string;
   previousPageRecap?: string;
+  speakerOverrides?: Record<string, SpeakerOverride>;
 }) {
   const p = node.props;
   const varsMap = {
@@ -505,6 +507,7 @@ export function BlockRenderer({
           answers={answers}
           br={br}
           inputInFooter={dialogInputInFooter}
+          speakerOverrides={speakerOverrides}
         />
       );
     }

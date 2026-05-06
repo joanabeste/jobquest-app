@@ -554,6 +554,7 @@ export default function FunnelPlayer({ doc, company, contentDbId, onPageChange }
     dialogInputInFooter: hasDialogInput,
     lastDialogSpeaker,
     previousPageRecap,
+    speakerOverrides: doc.speakers,
   };
 
   return (

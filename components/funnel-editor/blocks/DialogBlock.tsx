@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { applyVars } from '@/lib/funnel-variables';
+import type { SpeakerOverride } from '@/lib/funnel-types';
 
 export interface DialogLine { id: string; speaker: string; text: string; imageUrl?: string; avatarUrl?: string; position?: 'left' | 'right' | 'center'; }
 interface DialogChoice { id: string; text: string; reaction?: string; }
@@ -52,7 +53,7 @@ function TypingIndicator({ primary, avatarUrl, speaker }: { primary: string; ava
 }
 
 // ─── Dialog block – reveals bubbles one by one with typing animation ──────────
-export default function DialogBlock({ lines, primary, visibleCount, onAdvance, firstName, choices, input, nodeId, onAnswer, onSetFirstName, onCapture, capturedVars, answers, br, inputInFooter }: {
+export default function DialogBlock({ lines, primary, visibleCount, onAdvance, firstName, choices, input, nodeId, onAnswer, onSetFirstName, onCapture, capturedVars, answers, br, inputInFooter, speakerOverrides }: {
   lines: DialogLine[];
   primary: string;
   visibleCount: number;
@@ -68,6 +69,7 @@ export default function DialogBlock({ lines, primary, visibleCount, onAdvance, f
   answers?: Record<string, unknown>;
   br?: string;
   inputInFooter?: boolean;
+  speakerOverrides?: Record<string, SpeakerOverride>;
 }) {
   const [typing, setTyping] = useState(false);
 
@@ -137,14 +139,25 @@ export default function DialogBlock({ lines, primary, visibleCount, onAdvance, f
   const followUpSpeaker = lines.filter(l => l.position !== 'right').at(-1) ?? lines[0];
 
   // Resolve avatar for a given speaker name: prefer the line's own avatarUrl,
-  // otherwise reuse the most recent matching speaker's avatar in the same block.
+  // then the global speaker-override avatar (set via Sprecher-Sektion im
+  // DialogEditor), then reuse the most recent matching speaker's avatar in the
+  // same block as a Block-internal fallback.
   function avatarFor(speaker: string, ownAvatar?: string): string | undefined {
     if (ownAvatar) return ownAvatar;
     if (!speaker) return undefined;
+    const override = speakerOverrides?.[speaker]?.avatarUrl;
+    if (override) return override;
     for (let i = lines.length - 1; i >= 0; i--) {
       if (lines[i].speaker === speaker && lines[i].avatarUrl) return lines[i].avatarUrl;
     }
     return undefined;
+  }
+
+  // Resolve display name for a given speaker string: global override wins,
+  // otherwise the original string from the Line.
+  function displayNameFor(speaker: string): string {
+    const override = speakerOverrides?.[speaker]?.displayName?.trim();
+    return override || speaker;
   }
 
   return (
@@ -166,15 +179,16 @@ export default function DialogBlock({ lines, primary, visibleCount, onAdvance, f
         }
 
         const lineAvatar = avatarFor(line.speaker, line.avatarUrl);
+        const lineDisplay = displayNameFor(line.speaker);
         return (
           <div
             key={line.id}
             className={`flex gap-3 px-5 ${isRight ? 'flex-row-reverse' : ''}`}
             style={{ animation: idx === visibleCount - 1 ? 'fadeSlideIn 0.3s ease-out' : undefined }}
           >
-            <Avatar speaker={line.speaker} primary={primary} avatarUrl={lineAvatar} />
+            <Avatar speaker={lineDisplay} primary={primary} avatarUrl={lineAvatar} />
             <div className={`max-w-[78%] ${isRight ? 'items-end' : ''} flex flex-col`}>
-              <p className="text-[13px] font-medium text-slate-600 mb-1">{isRight && firstName ? firstName : line.speaker}</p>
+              <p className="text-[13px] font-medium text-slate-600 mb-1">{isRight && firstName ? firstName : lineDisplay}</p>
               {!!line.imageUrl && (
 
                 <img src={line.imageUrl} alt="" className="w-full rounded-2xl mb-1.5 max-h-44 object-cover shadow-sm" />
@@ -225,12 +239,12 @@ export default function DialogBlock({ lines, primary, visibleCount, onAdvance, f
       {choiceReactionVisible && selectedChoice?.reaction && (
         <div className="flex gap-3 px-5" style={{ animation: 'fadeSlideIn 0.3s ease-out' }}>
           <Avatar
-            speaker={followUpSpeaker?.speaker ?? ''}
+            speaker={displayNameFor(followUpSpeaker?.speaker ?? '')}
             primary={primary}
             avatarUrl={avatarFor(followUpSpeaker?.speaker ?? '', followUpSpeaker?.avatarUrl)}
           />
           <div className="max-w-[78%] flex flex-col">
-            <p className="text-[13px] font-medium text-slate-600 mb-1">{followUpSpeaker?.speaker || 'Sprecher'}</p>
+            <p className="text-[13px] font-medium text-slate-600 mb-1">{followUpSpeaker?.speaker ? displayNameFor(followUpSpeaker.speaker) : 'Sprecher'}</p>
             <div className="bg-slate-100 px-3.5 py-2.5 rounded-2xl text-[15px] leading-relaxed text-slate-700">
               {selectedChoice.reaction}
             </div>
@@ -314,12 +328,12 @@ export default function DialogBlock({ lines, primary, visibleCount, onAdvance, f
       {inputFollowUpVisible && input?.followUpText && (
         <div className="flex gap-3 px-5" style={{ animation: 'fadeSlideIn 0.3s ease-out' }}>
           <Avatar
-            speaker={followUpSpeaker?.speaker ?? ''}
+            speaker={displayNameFor(followUpSpeaker?.speaker ?? '')}
             primary={primary}
             avatarUrl={avatarFor(followUpSpeaker?.speaker ?? '', followUpSpeaker?.avatarUrl)}
           />
           <div className="max-w-[78%] flex flex-col">
-            <p className="text-[13px] font-medium text-slate-600 mb-1">{followUpSpeaker?.speaker || 'Sprecher'}</p>
+            <p className="text-[13px] font-medium text-slate-600 mb-1">{followUpSpeaker?.speaker ? displayNameFor(followUpSpeaker.speaker) : 'Sprecher'}</p>
             <div className="bg-slate-100 px-3.5 py-2.5 rounded-2xl text-[15px] leading-relaxed text-slate-700">
               {applyVars(input.followUpText, {
                 ...(capturedVars ?? {}),

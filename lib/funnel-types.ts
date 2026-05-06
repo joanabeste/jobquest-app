@@ -119,12 +119,21 @@ export const DEFAULT_EMAIL_CONFIG: EmailConfig = {
     '@interessierteBerufe',
 };
 
+export interface SpeakerOverride {
+  /** Optional: zeigt diesen Namen statt des speaker-Strings im Player. */
+  displayName?: string;
+  /** Optional: globaler Avatar für diesen Sprecher. Per-Line avatarUrl hat Vorrang. */
+  avatarUrl?: string;
+}
+
 export interface FunnelDoc {
   id: string;
   contentId: string;
   contentType: FunnelContentType;
   pages: FunnelPage[];
   emailConfig?: EmailConfig;
+  /** Globale Override-Map für Sprecher. Key = speaker-String wie er in den DialogLines steht. */
+  speakers?: Record<string, SpeakerOverride>;
   createdAt: string;
   updatedAt: string;
 }

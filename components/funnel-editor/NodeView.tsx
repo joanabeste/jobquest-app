@@ -83,11 +83,13 @@ interface NodeViewProps {
   renderColumns?: (layout: LayoutNode) => React.ReactNode;
   /** Review-Modus: wenn gesetzt, wird dieser Badge statt der Edit-Buttons oben rechts angezeigt. */
   reviewPin?: React.ReactNode;
+  speakerOverrides?: Record<string, { displayName?: string; avatarUrl?: string }>;
 }
 
 export default function NodeView({
   node, isSelected, isDragging, isLocked, dragHandle,
   onSelect, onDelete, onDuplicate, onUpdate, renderColumns, reviewPin,
+  speakerOverrides,
 }: NodeViewProps) {
   const meta = node.kind === 'block' ? BLOCK_META[node.type] : null;
   const Icon = meta?.icon;
@@ -118,6 +120,7 @@ export default function NodeView({
           <BlockPreview
             node={node as BlockNode}
             onUpdate={onUpdate ? (p) => onUpdate({ props: p }) : undefined}
+            speakerOverrides={speakerOverrides}
           />
         </StyleWrapper>
       ) : (

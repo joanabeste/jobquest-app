@@ -13,7 +13,7 @@ import type {
   FunnelComment,
   ReviewLink,
 } from '../types';
-import type { FunnelDoc, EmailConfig } from '../funnel-types';
+import type { FunnelDoc, EmailConfig, SpeakerOverride } from '../funnel-types';
 import { type DbRow, str, optStr, num, json, optBool, bool } from './row-helpers';
 
 // All `*FromDb` mappers take `DbRow` (a typed alias for `Record<string,
@@ -412,6 +412,7 @@ export function funnelDocFromDb(row: DbRow): FunnelDoc {
     contentType: str(row, 'content_type') as FunnelDoc['contentType'],
     pages: json<FunnelDoc['pages']>(row, 'pages', [] as FunnelDoc['pages']),
     emailConfig: json<EmailConfig | undefined>(row, 'email_config'),
+    speakers: json<Record<string, SpeakerOverride> | undefined>(row, 'speakers'),
     createdAt: str(row, 'created_at'),
     updatedAt: str(row, 'updated_at'),
   };
@@ -424,6 +425,7 @@ export function funnelDocToDb(d: FunnelDoc): Record<string, unknown> {
     content_type: d.contentType,
     pages: d.pages,
     email_config: d.emailConfig ?? null,
+    speakers: d.speakers ?? null,
     created_at: d.createdAt,
     updated_at: d.updatedAt,
   };

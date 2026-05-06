@@ -1,19 +1,28 @@
 'use client';
 
-import { Plus, X } from 'lucide-react';
+import { Plus, X, RotateCcw } from 'lucide-react';
 import { Field, ImageUploadField } from './shared';
 import { VarInput, VarTextarea } from '@/components/funnel-editor/VarInput';
 import type { VariableDef } from '@/lib/funnel-variables';
 import { slugifyVar } from '@/lib/funnel-variables';
+import type { SpeakerOverride } from '@/lib/funnel-types';
+import { collectSpeakersInBlock } from '@/lib/speaker-ops';
 
-type DialogLineDef = { id: string; speaker: string; text: string; imageUrl?: string; avatarUrl?: string };
+type DialogLineDef = { id: string; speaker: string; text: string; imageUrl?: string; avatarUrl?: string; position?: 'left' | 'right' | 'center' };
 
-export function DialogEditor({ props, onChange, variables = [] }: { props: Record<string, unknown>; onChange: (p: Record<string, unknown>) => void; variables?: VariableDef[] }) {
+export function DialogEditor({ props, onChange, variables = [], speakers, onSpeakersChange }: {
+  props: Record<string, unknown>;
+  onChange: (p: Record<string, unknown>) => void;
+  variables?: VariableDef[];
+  speakers?: Record<string, SpeakerOverride>;
+  onSpeakersChange?: (patch: Record<string, SpeakerOverride | null>) => void;
+}) {
   const lines = (props.lines as DialogLineDef[]) ?? [];
   const choices = (props.choices as { id: string; text: string; reaction?: string }[]) ?? [];
   const input = (props.input as { placeholder?: string; captures?: string; followUpText?: string } | undefined) ?? null;
   const hasChoices = choices.length > 0;
   const hasInput = !!input;
+  const blockSpeakers = collectSpeakersInBlock({ lines });
 
   // Returns the most recent avatarUrl used for a given speaker name in this
   // block. Used to auto-fill the avatar when the user types a known speaker.
@@ -45,9 +54,74 @@ export function DialogEditor({ props, onChange, variables = [] }: { props: Recor
     onChange({ choices: choices.map((c, j) => j === i ? { ...c, ...patch } : c) });
   }
 
+  // Findet das erste vorkommende per-Line avatarUrl eines Speakers im
+  // aktuellen Block — als Vorschau-Fallback, bevor ein globales Avatar gesetzt
+  // wurde. So sieht die Nutzerin sofort etwas, statt eines leeren Slots.
+  function firstPerLineAvatarFor(speaker: string): string | undefined {
+    for (const l of lines) {
+      if (l.speaker === speaker && l.avatarUrl) return l.avatarUrl;
+    }
+    return undefined;
+  }
+
+  function patchSpeaker(speaker: string, patch: SpeakerOverride | null) {
+    if (!onSpeakersChange) return;
+    onSpeakersChange({ [speaker]: patch });
+  }
+
   return (
     <div className="space-y-3">
       <Field label="Titel (optional)"><VarInput value={(props.title as string) ?? ''} onChange={(v) => onChange({ title: v })} variables={variables} /></Field>
+
+      {onSpeakersChange && blockSpeakers.length > 0 && (
+        <div className="border border-violet-100 bg-violet-50/40 rounded-xl p-2.5 space-y-2">
+          <div className="flex items-baseline justify-between">
+            <p className="text-[10px] uppercase tracking-wider font-semibold text-violet-700">Sprecher in dieser Quest</p>
+          </div>
+          <p className="text-[10px] text-slate-500 leading-snug">Anzeigename und Profilbild wirken in <strong>allen Chats</strong> der ganzen Quest.</p>
+          <div className="space-y-2">
+            {blockSpeakers.map((s) => {
+              const ov = speakers?.[s];
+              const previewAvatar = ov?.avatarUrl ?? firstPerLineAvatarFor(s);
+              const initial = (ov?.displayName?.trim() || s).charAt(0).toUpperCase();
+              const hasOverride = !!(ov && (ov.displayName?.trim() || ov.avatarUrl));
+              return (
+                <div key={s} className="bg-white rounded-lg p-2 border border-violet-100/70 space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    {previewAvatar ? (
+                      <img src={previewAvatar} alt="" className="w-7 h-7 rounded-full object-cover flex-shrink-0 border border-slate-200" />
+                    ) : (
+                      <div className="w-7 h-7 rounded-full bg-violet-100 flex items-center justify-center text-[11px] font-semibold text-violet-700 flex-shrink-0">{initial || '?'}</div>
+                    )}
+                    <p className="flex-1 text-[12px] font-medium text-slate-700 truncate" title={s}>{s}</p>
+                    {hasOverride && (
+                      <button
+                        onClick={() => patchSpeaker(s, null)}
+                        title="Override entfernen"
+                        className="p-0.5 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-700"
+                      >
+                        <RotateCcw size={11} />
+                      </button>
+                    )}
+                  </div>
+                  <input
+                    value={ov?.displayName ?? ''}
+                    onChange={(e) => patchSpeaker(s, { ...(ov ?? {}), displayName: e.target.value })}
+                    placeholder="Anzeigename überschreiben (optional)"
+                    className="w-full mini-input"
+                  />
+                  <ImageUploadField
+                    label="Profilbild (global)"
+                    value={ov?.avatarUrl ?? ''}
+                    onChange={(url) => patchSpeaker(s, { ...(ov ?? {}), avatarUrl: url || undefined })}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       <div>
         <div className="flex items-center justify-between mb-2">
           <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Zeilen</p>

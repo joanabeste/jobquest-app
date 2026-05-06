@@ -394,6 +394,28 @@ function FunnelEditorInner({
     funnelStorage.save(next);
   }
 
+  // ── speaker overrides (global Anzeigename + Avatar pro Sprecher) ────────────
+  // Die Map wird patchwise aktualisiert; ein leeres Override-Objekt entfernt
+  // den Eintrag (Reset). Per-Line avatarUrl bleibt unangetastet.
+  function handleSpeakersChange(patch: Record<string, { displayName?: string; avatarUrl?: string } | null>) {
+    const next: Record<string, { displayName?: string; avatarUrl?: string }> = { ...(doc.speakers ?? {}) };
+    for (const [key, value] of Object.entries(patch)) {
+      if (value === null) {
+        delete next[key];
+        continue;
+      }
+      const trimmed: { displayName?: string; avatarUrl?: string } = {};
+      if (value.displayName?.trim()) trimmed.displayName = value.displayName.trim();
+      if (value.avatarUrl) trimmed.avatarUrl = value.avatarUrl;
+      if (Object.keys(trimmed).length === 0) {
+        delete next[key];
+      } else {
+        next[key] = trimmed;
+      }
+    }
+    push({ ...doc, speakers: Object.keys(next).length > 0 ? next : undefined });
+  }
+
   // ── AI generation ───────────────────────────────────────────────────────────
 
   /**
@@ -702,6 +724,7 @@ function FunnelEditorInner({
               onReorderColumn={handleReorderColumn}
               onMoveToContainer={handleMoveToContainer}
               reviewPinFor={view === 'review' ? buildReviewPin : undefined}
+              speakerOverrides={doc.speakers}
             />
 
             {/* Right – Inspector oder Review-Panel */}
@@ -733,6 +756,8 @@ function FunnelEditorInner({
               currentPage={activePage}
               onUpdatePage={handleUpdatePage}
               availableVars={availableVars}
+              speakers={doc.speakers}
+              onSpeakersChange={handleSpeakersChange}
             />
             )}
             </FunnelEditorContext.Provider>

@@ -378,9 +378,10 @@ function QuestHotspotPreview({ p, onUpdate }: {
 }
 
 // ─── Block preview – matches FunnelPlayer visual output ───────────────────────
-export default function BlockPreview({ node, onUpdate }: {
+export default function BlockPreview({ node, onUpdate, speakerOverrides }: {
   node: BlockNode;
   onUpdate?: (props: Record<string, unknown>) => void;
+  speakerOverrides?: Record<string, { displayName?: string; avatarUrl?: string }>;
 }) {
   const { primary, br } = useCi();
   const p = node.props;
@@ -517,14 +518,21 @@ export default function BlockPreview({ node, onUpdate }: {
 
     case 'quest_dialog': {
       const lines = (p.lines as { id: string; speaker: string; text: string; imageUrl?: string; avatarUrl?: string; position?: string }[]) || [];
-      // Resolve avatar by speaker for the preview too — same heuristic as the player.
+      // Resolve avatar by speaker for the preview too — same priority as the player:
+      // per-line avatar > global override > block-internal previous match.
       const avatarFor = (speaker: string, ownAvatar?: string): string | undefined => {
         if (ownAvatar) return ownAvatar;
         if (!speaker) return undefined;
+        const override = speakerOverrides?.[speaker]?.avatarUrl;
+        if (override) return override;
         for (let i = lines.length - 1; i >= 0; i--) {
           if (lines[i].speaker === speaker && lines[i].avatarUrl) return lines[i].avatarUrl;
         }
         return undefined;
+      };
+      const displayNameFor = (speaker: string): string => {
+        const override = speakerOverrides?.[speaker]?.displayName?.trim();
+        return override || speaker;
       };
       return (
         <div className="py-4 space-y-3">
@@ -546,12 +554,12 @@ export default function BlockPreview({ node, onUpdate }: {
                   }
                   return (
                     <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center flex-shrink-0 mt-auto">
-                      <span className="text-sm font-bold text-violet-600">{l.speaker?.[0]?.toUpperCase()}</span>
+                      <span className="text-sm font-bold text-violet-600">{displayNameFor(l.speaker)?.[0]?.toUpperCase()}</span>
                     </div>
                   );
                 })()}
                 <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-medium text-slate-600 mb-1">{l.speaker}</p>
+                  <p className="text-[13px] font-medium text-slate-600 mb-1">{displayNameFor(l.speaker)}</p>
                   {!!l.imageUrl && (
                     <img src={l.imageUrl} alt="" className="w-full rounded-2xl mb-1.5 max-h-44 object-cover shadow-sm" />
                   )}

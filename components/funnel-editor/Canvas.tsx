@@ -36,6 +36,7 @@ interface CanvasProps {
   onMoveToContainer: (nodeId: string, targetContainer: 'root' | string, afterId: string | null) => void;
   /** Wenn gesetzt, wird für jeden Block der zurückgegebene Pin rechts oben gezeigt. */
   reviewPinFor?: (node: FunnelNode) => React.ReactNode;
+  speakerOverrides?: Record<string, { displayName?: string; avatarUrl?: string }>;
 }
 
 const ROOT_CONTAINER = '__root__';
@@ -48,6 +49,7 @@ export default function Canvas({
   onDeleteNode, onDuplicateNode, onUpdateNode,
   onReorderRoot, onReorderColumn, onMoveToContainer,
   reviewPinFor,
+  speakerOverrides,
 }: CanvasProps) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -154,6 +156,7 @@ export default function Canvas({
                     onUpdateNode={onUpdateNode}
                     onSetInsertTarget={onSetInsertTarget}
                     reviewPinFor={reviewPinFor}
+                    speakerOverrides={speakerOverrides}
                   />
                   <InsertZone
                     target={{ location: 'root', afterId: node.id }}
@@ -188,6 +191,7 @@ export default function Canvas({
                     onSelect={() => {}}
                     onDelete={() => {}}
                     onDuplicate={() => {}}
+                    speakerOverrides={speakerOverrides}
                   />
                 </div>
               )}
@@ -231,6 +235,7 @@ function SortableNodeWrapper({
   onSelectNode, onDeleteNode, onDuplicateNode, onUpdateNode,
   onSetInsertTarget,
   reviewPinFor,
+  speakerOverrides,
 }: {
   node: FunnelNode; isSelected: boolean; isDragging: boolean; isLocked?: boolean;
   onSelect: () => void; onDelete: () => void; onDuplicate: () => void;
@@ -241,6 +246,7 @@ function SortableNodeWrapper({
   onUpdateNode: (nodeId: string, patch: { props?: Record<string, unknown>; style?: Partial<FunnelStyle> }) => void;
   onSetInsertTarget: (t: InsertTarget | null) => void;
   reviewPinFor?: (node: FunnelNode) => React.ReactNode;
+  speakerOverrides?: Record<string, { displayName?: string; avatarUrl?: string }>;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: node.id });
   const style = { transform: CSS.Transform.toString(transform), transition };
@@ -265,6 +271,7 @@ function SortableNodeWrapper({
         onDuplicate={onDuplicate}
         onUpdate={onUpdate}
         reviewPin={reviewPinFor?.(node)}
+        speakerOverrides={speakerOverrides}
         renderColumns={node.kind === 'layout' ? (layout: LayoutNode) => (
           <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${layout.columns.length}, 1fr)` }}>
             {layout.columns.map((col) => (
@@ -279,6 +286,7 @@ function SortableNodeWrapper({
                 onUpdateNode={onUpdateNode}
                 onSetInsertTarget={onSetInsertTarget}
                 reviewPinFor={reviewPinFor}
+                speakerOverrides={speakerOverrides}
               />
             ))}
           </div>
@@ -293,6 +301,7 @@ function ColumnDropZone({
   column, insertTarget, selectedNodeId,
   onSelectNode, onDeleteNode, onDuplicateNode, onUpdateNode, onSetInsertTarget,
   reviewPinFor,
+  speakerOverrides,
 }: {
   column: Column;
   insertTarget: InsertTarget | null; selectedNodeId: string | null;
@@ -301,6 +310,7 @@ function ColumnDropZone({
   onUpdateNode: (nodeId: string, patch: { props?: Record<string, unknown>; style?: Partial<FunnelStyle> }) => void;
   onSetInsertTarget: (t: InsertTarget | null) => void;
   reviewPinFor?: (node: FunnelNode) => React.ReactNode;
+  speakerOverrides?: Record<string, { displayName?: string; avatarUrl?: string }>;
 }) {
   const { setNodeRef } = useDroppable({ id: column.id });
 
@@ -327,6 +337,7 @@ function ColumnDropZone({
             onUpdateNode={onUpdateNode}
             onSetInsertTarget={onSetInsertTarget}
             reviewPinFor={reviewPinFor}
+            speakerOverrides={speakerOverrides}
           />
         ))}
 
@@ -343,6 +354,7 @@ function SortableColumnNode({
   node, selectedNodeId, columnId, insertTarget,
   onSelectNode, onDeleteNode, onDuplicateNode, onUpdateNode, onSetInsertTarget,
   reviewPinFor,
+  speakerOverrides,
 }: {
   node: BlockNode;
   selectedNodeId: string | null;
@@ -354,6 +366,7 @@ function SortableColumnNode({
   onUpdateNode: (nodeId: string, patch: { props?: Record<string, unknown>; style?: Partial<FunnelStyle> }) => void;
   onSetInsertTarget: (t: InsertTarget | null) => void;
   reviewPinFor?: (node: FunnelNode) => React.ReactNode;
+  speakerOverrides?: Record<string, { displayName?: string; avatarUrl?: string }>;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: node.id });
   const style = { transform: CSS.Transform.toString(transform), transition };
@@ -376,6 +389,7 @@ function SortableColumnNode({
         onDuplicate={() => onDuplicateNode(node.id)}
         onUpdate={(patch) => onUpdateNode(node.id, patch)}
         reviewPin={reviewPinFor?.(node)}
+        speakerOverrides={speakerOverrides}
       />
       <InsertZone
         target={{ location: 'column', columnId, afterId: node.id }}
