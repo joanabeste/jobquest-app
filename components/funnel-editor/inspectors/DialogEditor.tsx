@@ -1,12 +1,15 @@
 'use client';
 
-import { Plus, X, RotateCcw } from 'lucide-react';
+import { useState } from 'react';
+import { Plus, X, RotateCcw, Crop } from 'lucide-react';
 import { Field, ImageUploadField } from './shared';
 import { VarInput, VarTextarea } from '@/components/funnel-editor/VarInput';
 import type { VariableDef } from '@/lib/funnel-variables';
 import { slugifyVar } from '@/lib/funnel-variables';
 import type { SpeakerOverride } from '@/lib/funnel-types';
 import { collectSpeakersInBlock } from '@/lib/speaker-ops';
+import ImageCropModal from '@/components/shared/ImageCropModal';
+import { uploadToMediaLibrary } from '@/components/shared/MediaLibrary';
 
 type DialogLineDef = { id: string; speaker: string; text: string; imageUrl?: string; avatarUrl?: string; position?: 'left' | 'right' | 'center' };
 
@@ -69,6 +72,25 @@ export function DialogEditor({ props, onChange, variables = [], speakers, onSpea
     onSpeakersChange({ [speaker]: patch });
   }
 
+  // Avatar cropping: open the shared ImageCropModal locked to 1:1, upload the
+  // cropped PNG to the media library, then forward the new URL to the caller.
+  const [cropper, setCropper] = useState<{ src: string; onSave: (url: string) => void } | null>(null);
+  async function applyCrop(base64: string) {
+    if (!cropper) return;
+    const onSave = cropper.onSave;
+    setCropper(null);
+    try {
+      const blob = await (await fetch(base64)).blob();
+      const asset = await uploadToMediaLibrary(blob, { filename: 'avatar.png' });
+      onSave(asset.url);
+    } catch (e) {
+      console.error('[DialogEditor] avatar upload failed', e);
+      // Fallback to the raw data URL so the user does not lose their crop —
+      // FunnelDoc accepts arbitrary URLs in avatarUrl.
+      onSave(base64);
+    }
+  }
+
   return (
     <div className="space-y-3">
       <Field label="Titel (optional)"><VarInput value={(props.title as string) ?? ''} onChange={(v) => onChange({ title: v })} variables={variables} /></Field>
@@ -115,6 +137,18 @@ export function DialogEditor({ props, onChange, variables = [], speakers, onSpea
                     value={ov?.avatarUrl ?? ''}
                     onChange={(url) => patchSpeaker(s, { ...(ov ?? {}), avatarUrl: url || undefined })}
                   />
+                  {ov?.avatarUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setCropper({
+                        src: ov.avatarUrl!,
+                        onSave: (url) => patchSpeaker(s, { ...(ov ?? {}), avatarUrl: url }),
+                      })}
+                      className="w-full flex items-center justify-center gap-1.5 mt-1 px-3 py-1.5 rounded-lg border border-slate-200 text-[11px] text-slate-600 hover:bg-slate-50 hover:border-violet-400 transition-colors"
+                    >
+                      <Crop size={11} /> Ausschnitt anpassen
+                    </button>
+                  )}
                 </div>
               );
             })}
@@ -163,6 +197,18 @@ export function DialogEditor({ props, onChange, variables = [], speakers, onSpea
               <VarTextarea value={l.text} onChange={(v) => updateLine(l.id, { text: v })}
                 rows={2} className="w-full mini-input resize-none" placeholder="Text…" variables={variables} />
               <ImageUploadField label="Profilbild (optional)" value={l.avatarUrl ?? ''} onChange={(v) => updateLine(l.id, { avatarUrl: v })} />
+              {l.avatarUrl && (
+                <button
+                  type="button"
+                  onClick={() => setCropper({
+                    src: l.avatarUrl!,
+                    onSave: (url) => updateLine(l.id, { avatarUrl: url }),
+                  })}
+                  className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 text-[11px] text-slate-600 hover:bg-slate-50 hover:border-violet-400 transition-colors"
+                >
+                  <Crop size={11} /> Profilbild-Ausschnitt anpassen
+                </button>
+              )}
               <ImageUploadField label="Bild im Chat (optional)" value={l.imageUrl ?? ''} onChange={(v) => updateLine(l.id, { imageUrl: v })} />
             </div>
           ))}
@@ -230,6 +276,16 @@ export function DialogEditor({ props, onChange, variables = [], speakers, onSpea
             </div>
           )}
         </div>
+      )}
+
+      {cropper && (
+        <ImageCropModal
+          src={cropper.src}
+          aspect={1}
+          title="Profilbild-Ausschnitt"
+          onConfirm={applyCrop}
+          onCancel={() => setCropper(null)}
+        />
       )}
     </div>
   );

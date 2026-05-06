@@ -5,18 +5,23 @@ import { useRef, useState } from 'react';
 /**
  * Generic image crop modal: draggable + resizable rectangle, outputs the
  * cropped region as a PNG data URL at the source's natural pixel size.
- * Aspect ratio is preserved (no enforced square / no zoom slider).
+ *
+ * `aspect` (pixel ratio of the cropped region, e.g. 1 = square, 16/9 =
+ * landscape) optionally locks the rectangle. When omitted, the user can
+ * resize freely on both axes.
  */
 export default function ImageCropModal({
   src,
   onConfirm,
   onCancel,
   title = 'Bild zuschneiden',
+  aspect,
 }: {
   src: string;
   onConfirm: (base64: string) => void;
   onCancel: () => void;
   title?: string;
+  aspect?: number;
 }) {
   const imgRef = useRef<HTMLImageElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -29,10 +34,33 @@ export default function ImageCropModal({
   const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
   const MIN = 5;
 
+  // Crop coords are stored in *percent of container*. Aspect is given in
+  // *pixel* terms, so we convert by the image's natural aspect to keep the
+  // rectangle visually correct on non-square images.
+  function pctRatio(): number | undefined {
+    if (!aspect) return undefined;
+    const imgAspect = natW / natH;
+    if (!imgAspect || !isFinite(imgAspect)) return undefined;
+    return aspect / imgAspect; // (right-left)/(bottom-top) in pct units
+  }
+
   function onLoad() {
     const img = imgRef.current!;
-    setNatW(img.naturalWidth);
-    setNatH(img.naturalHeight);
+    const w = img.naturalWidth;
+    const h = img.naturalHeight;
+    setNatW(w);
+    setNatH(h);
+    if (aspect) {
+      // Init with the largest centered aspect-locked rectangle.
+      const imgAspect = w / h;
+      const r = aspect / imgAspect; // pct width / pct height target
+      let pw = 100;
+      let ph = pw / r;
+      if (ph > 100) { ph = 100; pw = ph * r; }
+      const left = (100 - pw) / 2;
+      const top = (100 - ph) / 2;
+      setCrop({ left, top, right: left + pw, bottom: top + ph });
+    }
   }
 
   function startDrag(handle: Handle, e: React.MouseEvent) {
@@ -57,6 +85,34 @@ export default function ImageCropModal({
         if (drag.current.handle === 'ne' || drag.current.handle === 'se') right = clamp(s.right + dx, s.left + MIN, 100);
         if (drag.current.handle === 'nw' || drag.current.handle === 'ne') top = clamp(s.top + dy, 0, s.bottom - MIN);
         if (drag.current.handle === 'sw' || drag.current.handle === 'se') bottom = clamp(s.bottom + dy, s.top + MIN, 100);
+
+        const r = pctRatio();
+        if (r) {
+          // x-axis is master (gives a stable feel when dragging diagonally on
+          // a non-square image). Recompute the y-axis off the x-extent and
+          // anchor it to the opposite corner of the dragged handle.
+          const w = right - left;
+          const targetH = w / r;
+          const handle = drag.current.handle;
+          const goesUp = handle === 'nw' || handle === 'ne';
+          if (goesUp) {
+            top = bottom - targetH;
+          } else {
+            bottom = top + targetH;
+          }
+          // If the new height blows past the canvas, shrink back to the
+          // largest aspect-locked rect that still fits at the cursor's anchor.
+          if (top < 0 || bottom > 100) {
+            const overflow = top < 0 ? -top : bottom - 100;
+            const scale = (targetH - overflow) / targetH;
+            const newW = w * scale;
+            // keep the anchor (opposite corner of dragged handle) fixed
+            if (handle === 'nw') { left = right - newW; top = bottom - newW / r; }
+            if (handle === 'ne') { right = left + newW; top = bottom - newW / r; }
+            if (handle === 'sw') { left = right - newW; bottom = top + newW / r; }
+            if (handle === 'se') { right = left + newW; bottom = top + newW / r; }
+          }
+        }
       }
       setCrop({ left, top, right, bottom });
     }
