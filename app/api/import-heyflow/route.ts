@@ -74,6 +74,28 @@ WICHTIG – KONVERTIERUNGSREGELN:
   RICHTIG: "Paul sitzt nachdenklich auf der Couch." / "Im Aufenthaltsraum ist es ruhig." / "Eine Stunde später, im Wohnzimmer."
   WENN auf eine Szene ein Lob-/Feedback-Dialog folgt ("Super!", "Gut gemacht, @vorname!", "Klasse Wahl"), MUSS dazwischen eine quest_decision stehen, in der der User die Aktion selbst gewählt hat. Niemals: Narrator "Du machst X" → Feedback "Super, X war richtig". IMMER: Setup (neutral) → quest_decision (Wahl) → quest_dialog (Feedback bezogen auf die Wahl).
 
+CHAT-HYGIENE — REGELN FÜR quest_dialog:
+(C1) BUBBLE-INHALT IST NUR GESPROCHENES.
+  Eine Zeile mit position:"left" oder position:"right" enthält AUSSCHLIESSLICH gesprochene Wörter der Person. Keine Handlungen, Gesten, Blicke, Berührungen, Mimik.
+  FALSCH (in left-Bubble): "Simon legt dir kurz die Hand auf die Schulter und sagt: 'Mach dir keine Sorgen.'"
+  RICHTIG: center-Zeile (kein speaker) "Simon legt dir kurz die Hand auf die Schulter." + danach left-Zeile Simon: "Mach dir keine Sorgen."
+  Test: Würde diese Zeile in einem Hörspiel als Sprecherton zu hören sein? Wenn nein → kein left/right.
+(C2) KEINE ANKÜNDIGUNGS-CENTER-ZEILEN.
+  Der Player zeigt den Sprechernamen automatisch über jeder Bubble. Eine center-Zeile, die nur ankündigt, dass die nächste Person spricht, ist redundant und MUSS entfernt werden.
+  FALSCH: center "Simon kommt hinzu und erklärt dir:" → left Simon "Achte auf die Atmung."
+  RICHTIG ohne Eigen-Handlung: nur left Simon "Achte auf die Atmung."
+  RICHTIG mit Eigen-Handlung: center "Simon kommt aus dem Aufenthaltsraum." → left Simon "Achte auf die Atmung."
+  Faustregel: Eine center-Zeile darf nur stehen, wenn sie auch ohne den Folgesatz als eigenständige Szenenbeschreibung funktioniert.
+(C3) REACTION-BUBBLE BRAUCHT BENANNTEN SPRECHER.
+  In jedem quest_dialog mit choices: Die LETZTE non-right-Zeile vor den choices MUSS eine left-Zeile mit konkretem speaker sein (kein center, kein leerer speaker). Sonst rendert die Reaktion auf die User-Wahl unter dem Fallback-Namen "Sprecher".
+(C4) KEINE WIEDERHOLUNG DES SETUP-SATZES AUF DER FOLGESEITE.
+  Eine Erklär-/Feedback-/Konsequenz-Seite nach einer quest_decision oder quest_quiz beginnt NIE mit demselben (oder paraphrasierten) Eröffnungs-/Frage-Satz der Vorseite. Sie beginnt direkt mit der Konsequenz, der Erklärung oder einem neuen Beat.
+  Konvergenzseiten dürfen ein KURZES Recap geben, aber neu formuliert und maximal einen Satz.
+(C5) LANGE SETTING-BESCHREIBUNGEN IN quest_scene, NICHT IN BUBBLES.
+  Sobald eine "Beschreibung" der Situation länger als ~25 Wörter wäre oder mehr als einen Satz braucht, gehört sie in eine quest_scene davor — niemals in eine left/right oder center-Zeile.
+  Pattern für jede Begegnung: quest_scene (Ort + Stimmung + Bild falls vorhanden) → quest_dialog (Gespräch).
+  Auch beim Konvertieren von Heyflow gilt: Hat der Prototyp einen langen Beschreibungstext zu einem Ort/einer Situation, wird daraus quest_scene — keine Mega-Bubble.
+
 ═══════════════════════════════════════════════════════
   STRUKTUR (FESTER EINSTIEG + KONVERTIERTER INHALT + FESTER ABSCHLUSS)
 ═══════════════════════════════════════════════════════
@@ -95,6 +117,9 @@ Seite 2: quest_dialog → Namensabfrage. Eine Kollegin stellt sich vor und fragt
 
 Seite 3: quest_scene → Ort und heutige Aufgaben: Wo bin ich? Was steht heute an?
   MUSS bulletPoints haben (4–6 Aufgaben des Tages).
+  JEDER bulletPoint MUSS mit einem inhaltsbezogenen Emoji beginnen, gefolgt von einem Leerzeichen.
+  Beispiele: "☕ Übergabe um 6:30", "💊 Medikamentenrunde", "🍽 Frühstück anreichen", "📋 Pflegedokumentation", "🛏 Patientenzimmer richten".
+  Emoji bezieht sich auf die Aufgabe, nicht auf eine Wertung. Keine zwei gleichen Emojis pro Liste.
   description soll den Nutzer direkt mit @vorname ansprechen.
 
 ── KONVERTIERTER INHALT (Seiten 4 bis N-3) ──────────────────────────
@@ -144,6 +169,13 @@ BEISPIEL:
   Seite 9 — letzte Seite Pfad B — kein nextPageIndex
   Seite 10 — Konvergenz: passt zu beiden Pfaden
 
+BRANCHING-SELBSTTEST — VERPFLICHTEND vor Ausgabe:
+Für JEDE quest_decision mit Branching simulierst du beide Optionen und schreibst gedanklich auf, welche Seiten der jeweilige Pfad durchläuft, bis er die Konvergenzseite erreicht.
+Bedingung 1: Pfad-A-Seiten dürfen NIEMALS in Pfad-B sichtbar werden — und umgekehrt. Wenn doch → fehlt PAGE-Level nextPageIndex auf der LETZTEN Seite des einen Pfads.
+Bedingung 2: Jede Option der Decision MUSS Option-Level nextPageIndex haben, sonst läuft sie sequenziell durch beide Pfade.
+Bedingung 3: Genau EINER der beiden Pfade hat auf seiner letzten Seite Page-Level nextPageIndex zur Konvergenzseite — der andere läuft natürlich in die Konvergenz, weil sie unmittelbar folgt.
+Häufiger Fehler — UNBEDINGT VERMEIDEN: User wählt die "richtige" Option, läuft korrekt durch Pfad A und sieht danach trotzdem die "Falsche-Antwort"-Seite aus Pfad B, weil Pfad-A-Endseite kein Page-Level nextPageIndex hatte.
+
 ═══════════════════════════════════════════════════════
   BLOCK-TYPEN (exakte Props-Struktur!)
 ═══════════════════════════════════════════════════════
@@ -162,7 +194,13 @@ quest_dialog
   → 3–5 Zeilen pro Dialog — kurz und knackig! position: "left" = Kolleg:in, "right" = Nutzer.
     "center" = Erzahler-Handlung (z.B. "Du klopfst an die Tur.", "Ihr geht in den Aufenthaltsraum.").
     Center-Zeilen beschreiben Handlungen/Ortswechsel, keine gesprochenen Satze. speaker kann leer sein.
-  → speaker mit Rolle (z.B. "Sarah (Teamleiterin)"). @vorname nutzen.
+  → speaker: PFLICHT "Vorname (Rolle)" — z.B. "Sarah (Teamleiterin)", "Simon (Pflegefachkraft)", "Paul (Bewohner)".
+    KONSISTENZ-PFLICHT: Eine Figur bekommt in JEDEM Auftritt der gesamten Quest den GENAU IDENTISCHEN speaker-String — byte-identisch.
+    FALSCH: Erstauftritt "Simon (Pflegefachkraft)" → später "Simon" oder "Simon (PFK)" — DAS SIND DREI VERSCHIEDENE FIGUREN aus Sicht des Players.
+    Ausnahme nur bei Personen, deren Titel im Vornamen steht (Dr./Schwester/etc.): "Dr. Meier" reicht ohne Klammer — dann aber konsistent.
+    Bei position "right" immer "@vorname" oder "Du". Bei position "center" speaker leer lassen.
+    SELBSTPRÜFUNG vor Ausgabe: Jede Figur darf nur EINEN speaker-String haben.
+  → @vorname in Zeilen anderer Personen einsetzen.
   → choices: 2–3 Antwortoptionen mit reaction. Nutze choices fur interaktive Gesprache.
 
 quest_decision
@@ -236,11 +274,24 @@ quest_lead
 • Nutze quest_quiz wenn es klar richtige/falsche Antworten gibt.
 • Nutze quest_decision für echte Entscheidungen, MINDESTENS 2× MIT BRANCHING.
 • Vermeide mehrere gleichartige Blöcke direkt hintereinander.
-• Seitennamen = immer der Ort, z.B. "Schichtübergabe", "Frühstück", "Notfall".
-  NIEMALS "Feedback", "Feedback Falsch", "Reaktion" oder "Konsequenz". Auch Feedback-Seiten behalten den Ortsnamen. Max 4 Wörter.
+• Seitennamen = immer der Ort, z.B. "Schichtübergabe", "Frühstück", "Notfall", "Frau Lehmanns Zimmer", "Supermarkt – Kasse".
+  HARTE NEGATIVLISTE — diese Wörter dürfen NIRGENDS im Seitennamen vorkommen:
+    "Feedback", "richtig", "falsch", "Falsche Antwort", "Richtige Antwort", "Korrekt", "Korrektur",
+    "Reaktion", "Konsequenz", "Antwort", "Pfad", "Pfad A", "Pfad B", "Option A", "Option B",
+    "Richtiges Verhalten", "Falsches Verhalten", "Auflösung", "Lösung", "Erklärung", "Seite",
+    "Quiz richtig", "Quiz falsch"
+  Auch Reaktions-/Erklär-Seiten behalten den Ortsnamen. Max 4 Wörter, keine Wertung im Namen.
 • Jede id: eindeutiger UUID-String.
 • @vorname überall einsetzen, um den Nutzer persönlich anzusprechen.
 • Normale Groß-/Kleinschreibung. Keine ALL CAPS.
+
+KEINE HTML-TAGS — STRIKT:
+• ALLE String-Felder (title, description, subtext, accentText, text, question, reaction, feedback, name, speaker, etc.) sind REINER PLAINTEXT.
+• Niemals <p>, </p>, <br>, <br/>, <strong>, <em>, <span>, <div>, <h1>…<h6> oder andere HTML-Tags ausgeben — auch nicht zur Formatierung.
+• Absätze trennst du durch normale Sätze und Punkte, nicht durch Tags.
+• Auch keine geschriebenen Tag-Strings wie "<p>Hallo</p>" — der Player rendert sie roh und sie erscheinen im UI.
+• Markdown ist ebenfalls verboten (**fett**, *kursiv*, # Überschrift) — alles plain.
+• ACHTUNG beim Heyflow-Import: Der Heyflow-HTML-Inhalt enthält oft <p>-, <br>- oder andere Tags. Diese gehören in der konvertierten Quest NICHT mehr in den Output — extrahiere nur den Plaintext.
 
 ═══════════════════════════════════════════════════════
   AUSGABEFORMAT
