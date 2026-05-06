@@ -86,6 +86,13 @@ Eigennamen, die schon früher in der Quest auftauchen, BEHALTE bei
 (Story-Kohärenz). Wenn neuer Charakter nötig: realistischer deutscher
 Vorname plus Rolle, z.B. "Herr Berger (Bewohner)".
 
+═══ SPEAKER-KONSISTENZ (PFLICHT) ═══
+Eine Figur bekommt in JEDEM Auftritt der gesamten Quest den GENAU
+IDENTISCHEN speaker-String — byte-identisch. "Simon (Pflegefachkraft)"
+und "Simon" sind aus Sicht des Players zwei verschiedene Figuren mit
+verschiedenen Avataren. Vor Ausgabe: Sammle alle einzigartigen speaker-
+Strings — jede Figur darf nur EINEN String haben.
+
 ═══ DIALOG-FORMAT ═══
 quest_dialog props: { lines: [...] }
 • 3–5 lines pro Dialog. Position "left" = Gegenüber, "right" = @vorname,
@@ -96,6 +103,28 @@ quest_dialog props: { lines: [...] }
 • KEINE choices und KEIN input im umgewandelten Dialog (Dialog-choices
   sind nur für reine Reaktionen, hier nicht nötig — die Wahl kommt in
   der quest_decision direkt danach).
+
+═══ CHAT-HYGIENE (PFLICHT) ═══
+• Bubble-Inhalt ist NUR Gesprochenes. Eine left/right-Zeile enthält
+  ausschließlich gesprochene Wörter — keine Handlungen, Gesten,
+  Berührungen, Mimik. Solche Beschreibungen gehören in eine center-Zeile
+  (kein speaker) oder in die vorgelagerte quest_scene.
+  FALSCH (in left-Bubble Simon): "Simon legt dir die Hand auf die Schulter
+  und sagt: 'Bleib ruhig.'"
+  RICHTIG: center "Simon legt dir die Hand auf die Schulter." + left Simon
+  "Bleib ruhig."
+• KEINE Ankündigungs-center-Zeilen, die nur sagen, dass die nächste Person
+  spricht. Der Player rendert den Sprechernamen automatisch über jeder
+  Bubble.
+  FALSCH: center "Simon kommt hinzu und erklärt dir:" → left Simon "Achte
+  auf die Atmung."
+  RICHTIG: nur left Simon "Achte auf die Atmung." — oder center mit
+  eigenständiger Handlung "Simon kommt aus dem Aufenthaltsraum." → left
+  Simon "Achte auf die Atmung."
+• Reaction-Sicherung: In jedem Dialog mit choices muss die LETZTE
+  non-right-Zeile eine left-Zeile mit konkretem speaker sein (kein center,
+  kein leerer speaker). Sonst rendert die Reaktion auf die User-Wahl mit
+  dem Fallback-Namen "Sprecher".
 
 ═══ BRANCHING-PFLICHT ═══
 Wenn du eine quest_decision umwandelst, die schon Branching hat

@@ -46,6 +46,28 @@ LOGIK-REGELN — KEINE DOPPELUNGEN:
   RICHTIG: "Paul sitzt nachdenklich auf der Couch." / "Im Aufenthaltsraum ist es ruhig." / "Eine Stunde später, im Wohnzimmer."
   WENN auf eine Szene ein Lob-/Feedback-Dialog folgt ("Super!", "Gut gemacht, @vorname!", "Klasse Wahl"), MUSS dazwischen eine quest_decision stehen, in der der User die Aktion selbst gewählt hat. Niemals: Narrator "Du machst X" → Feedback "Super, X war richtig". IMMER: Setup (neutral) → quest_decision (Wahl) → quest_dialog (Feedback bezogen auf die Wahl).
 
+CHAT-HYGIENE — REGELN FÜR quest_dialog:
+(C1) BUBBLE-INHALT IST NUR GESPROCHENES.
+  Eine Zeile mit position:"left" oder position:"right" enthält AUSSCHLIESSLICH gesprochene Wörter der Person. Keine Handlungen, Gesten, Blicke, Berührungen, Mimik.
+  FALSCH (in left-Bubble): "Simon legt dir kurz die Hand auf die Schulter und sagt: 'Mach dir keine Sorgen.'"
+  RICHTIG: center-Zeile (kein speaker) "Simon legt dir kurz die Hand auf die Schulter." + danach left-Zeile Simon: "Mach dir keine Sorgen."
+  Test: Würde diese Zeile in einem Hörspiel als Sprecherton zu hören sein? Wenn nein → kein left/right.
+  Handlungsbeschreibungen, die mehr als ein kurzer Übergang sind (>15 Wörter, mehrere Sätze, Setting-Wechsel), gehören in eine eigene quest_scene DAVOR — nicht in eine center-Zeile.
+(C2) KEINE ANKÜNDIGUNGS-CENTER-ZEILEN.
+  Der DialogBlock zeigt den Sprechernamen automatisch über jeder Bubble. Eine center-Zeile, die nur ankündigt, dass die nächste Person spricht, ist redundant und MUSS entfernt werden.
+  FALSCH: center "Simon kommt hinzu und erklärt dir:" → left Simon "Achte auf die Atmung."
+  RICHTIG ohne Eigen-Handlung: nur left Simon "Achte auf die Atmung."
+  RICHTIG mit Eigen-Handlung: center "Simon kommt aus dem Aufenthaltsraum." → left Simon "Achte auf die Atmung."
+  Faustregel: Eine center-Zeile darf nur stehen, wenn sie auch ohne den Folgesatz als eigenständige Szenenbeschreibung funktioniert.
+(C3) REACTION-BUBBLE BRAUCHT BENANNTEN SPRECHER.
+  In jedem quest_dialog mit choices: Die LETZTE non-right-Zeile vor den choices MUSS eine left-Zeile mit konkretem speaker sein (kein center, kein leerer speaker).
+  Begründung: Der Player rendert die Reaktion auf die User-Wahl unter dem Namen dieser letzten left-Zeile. Ist sie center oder leer, erscheint der Fallback-Name "Sprecher" — wirkt unprofessionell.
+(C4) KEINE WIEDERHOLUNG DES SETUP-SATZES AUF DER FOLGESEITE.
+  Eine Erklär-/Feedback-/Konsequenz-Seite nach einer quest_decision oder quest_quiz beginnt NIE mit demselben (oder paraphrasierten) Eröffnungs-/Frage-Satz der Vorseite. Sie beginnt direkt mit der Konsequenz, der Erklärung oder einem neuen Beat.
+  FALSCH: Vorseite "Frau Meier braucht Hilfe an der Kasse." → Folgeseite description: "Frau Meier steht an der Kasse und braucht Hilfe…"
+  RICHTIG: Folgeseite description: "Du nimmst dir kurz Zeit, sortierst die Lebensmittel auf das Band — Frau Meier nickt erleichtert."
+  Konvergenzseiten dürfen ein KURZES Recap geben, aber neu formuliert und maximal einen Satz.
+
 ═══════════════════════════════════════════════════════
   STRUKTUR (FESTER EINSTIEG + PFLICHTINHALT + FESTER ABSCHLUSS)
 ═══════════════════════════════════════════════════════
@@ -69,6 +91,9 @@ Seite 2: quest_dialog   → PFLICHT: Namensabfrage über Gespräch.
                           KEIN quest_vorname Block – ausschließlich quest_dialog mit input verwenden!
 Seite 3: quest_scene    → Ort und heutige Aufgaben: Wo bin ich? Was steht heute an?
                           MUSS bulletPoints haben (4–6 Aufgaben des Tages).
+                          JEDER bulletPoint MUSS mit einem inhaltsbezogenen Emoji beginnen, gefolgt von einem Leerzeichen.
+                          Beispiele: "☕ Übergabe um 6:30", "💊 Medikamentenrunde", "🍽 Frühstück anreichen", "📋 Pflegedokumentation", "🛏 Patientenzimmer richten", "🚿 Morgenpflege".
+                          Emoji bezieht sich auf die Aufgabe, nicht auf eine Wertung. Keine zwei gleichen Emojis pro Liste.
                           description soll den Nutzer direkt mit @vorname ansprechen.
 
 ── PFLICHTINHALT (zwischen Seite 3 und dem Abschluss) ──────────────────────────
@@ -127,6 +152,13 @@ quest_scene
   → SEITE 0: Nutze subtext, accentText und buttonText wie oben beschrieben.
     Falls Bilder mitgeschickt wurden: Setze imageUrl auf eine der echten URLs.
 
+  → WANN quest_scene STATT quest_dialog?
+    Setting-Beschreibungen, Ortswechsel und Situationsaufbau gehören IMMER in eine quest_scene MIT Titel + description (+ Bild, falls passend) — nicht in eine Chat-Bubble.
+    Heuristik: Sobald eine "Beschreibung" der Situation länger als ~25 Wörter wäre oder mehr als einen Satz braucht, MUSS sie in eine quest_scene davor — niemals in eine left/right oder center-Zeile eines quest_dialog.
+    FALSCH: quest_dialog mit erster left-Bubble Speaker "Frau Meier (Bewohnerin)" Text "Du betrittst das Zimmer, es riecht nach Lavendel, das Fenster ist gekippt, und Frau Meier sitzt im Lesesessel. Sie schaut auf, lächelt müde und winkt dich heran." → diese ganze Setting-Beschreibung wirkt im Chat absurd, weil sie aus Frau Meiers Mund kommt.
+    RICHTIG: quest_scene "Frau Meiers Zimmer" mit description = die Setting-Beschreibung + imageUrl, gefolgt von quest_dialog wo Frau Meier nur noch SPRICHT ("Schön, dass du kommst, @vorname.").
+    Pattern für jede Begegnung: quest_scene (Ort + Stimmung) → quest_dialog (Gespräch).
+
 quest_spinner
   Props: { text: "Dein Arbeitstag beginnt…", doneText: "Los geht's!" }
   → Automatischer Ladescreen, springt nach ~2 Sekunden selbst weiter. Genau diese Props, kein Abweichen.
@@ -139,9 +171,14 @@ quest_dialog
     Center-Zeilen haben KEINEN speaker — sie beschreiben was passiert, nicht was jemand sagt.
     Nutze center für Ortswechsel, Handlungen und Szenenbeschreibungen innerhalb eines Dialogs.
     Zeilen des Nutzers sind kurze Reaktionen ("Verstanden!" / "Mach ich sofort.") — kein Monolog.
-  → speaker: Realistische deutsche Vornamen + Rolle (z.B. "Sarah (Teamleiterin)", "Dr. Meier", "Du").
+  → speaker: PFLICHT "Vorname (Rolle)" bei jeder benannten Story-Figur — z.B. "Sarah (Teamleiterin)", "Simon (Pflegefachkraft)", "Paul (Bewohner)".
+    KONSISTENZ-PFLICHT: Eine Figur bekommt in JEDEM Auftritt der gesamten Quest den GENAU IDENTISCHEN speaker-String — byte-identisch (gleiche Schreibweise, gleiche Rolle in Klammern, keine Variationen).
+    FALSCH: Erstauftritt "Simon (Pflegefachkraft)" → später "Simon" oder "Simon (PFK)" oder "Simon, Pfleger" — DAS SIND DREI VERSCHIEDENE FIGUREN aus Sicht des Players (Avatar/Speaker-Anzeige).
+    RICHTIG: Erstauftritt "Simon (Pflegefachkraft)" → in jedem weiteren Dialog der ganzen Quest exakt "Simon (Pflegefachkraft)".
+    Ausnahme nur bei Personen, deren Titel im Vornamen steht (Dr./Schwester/Pfarrer/etc.): "Dr. Meier" reicht ohne zusätzliche Klammer — dann aber auch dort konsistent.
     Bei position "right" immer speaker "@vorname" oder "Du" verwenden.
-    Bei position "center" kann speaker leer sein oder "Erzähler".
+    Bei position "center" speaker leer lassen (kein "Erzähler"-String, kein Name).
+    SELBSTPRÜFUNG vor Ausgabe: Sammle alle einzigartigen speaker-Strings der Quest — jede Figur darf nur EINEN String haben.
   → @vorname in Zeilen anderer Personen einsetzen, um den Nutzer direkt anzusprechen.
   → choices (optional): 2–3 kurze Antwortoptionen als Chat-Buttons — erscheinen nach allen Dialog-Zeilen.
     → text: Erste-Person-Antwort (z.B. "Klar, ich übernehme das!").
@@ -250,6 +287,14 @@ BRANCHING-MECHANISMUS — ZWEI Arten von nextPageIndex, beide nötig:
     Seite 15: PAGE nextPageIndex:18
     Seite 17: kein nextPageIndex
 
+  BRANCHING-SELBSTTEST — VERPFLICHTEND vor Ausgabe:
+  Für JEDE quest_decision mit Branching simulierst du beide Optionen und schreibst gedanklich auf, welche Seiten der jeweilige Pfad durchläuft, bis er die Konvergenzseite erreicht.
+  Bedingung 1: Pfad-A-Seiten dürfen NIEMALS in Pfad-B sichtbar werden — und umgekehrt. Wenn doch → fehlt PAGE-Level nextPageIndex auf der LETZTEN Seite des einen Pfads, der sonst weiterläuft.
+  Bedingung 2: Jede Option der Decision MUSS Option-Level nextPageIndex haben, sonst läuft sie sequenziell durch beide Pfade.
+  Bedingung 3: Genau EINER der beiden Pfade hat auf seiner letzten Seite Page-Level nextPageIndex zur Konvergenzseite — der andere läuft natürlich in die Konvergenz, weil sie unmittelbar folgt.
+  Häufiger Fehler — UNBEDINGT VERMEIDEN: User wählt die "richtige" Option, läuft korrekt durch Pfad A und sieht danach trotzdem die "Falsche-Antwort"-Seite aus Pfad B, weil Pfad-A-Endseite kein Page-Level nextPageIndex hatte.
+  Wenn eine Branching-Decision isWrong-Optionen enthält, ist die Branching-Konstruktion identisch — das einzige zusätzliche Feld ist "isWrong: true" auf der Option, die Pfad-Struktur und nextPageIndex-Logik sind dieselben.
+
 quest_quiz
   Props: { question: string, options: [{ id: "UUID", text: string, correct: boolean, feedback: string }] }
   → 3–4 Optionen. Genau eine ist correct: true.
@@ -354,16 +399,27 @@ SPRACHE & STIL:
 • Überschriften, Titel und Buttons: Nur erstes Wort und Eigennamen groß.
 • Emojis sparsam und kontextpassend einsetzen – nicht bei jedem Element.
 
+KEINE HTML-TAGS — STRIKT:
+• ALLE String-Felder (title, description, subtext, accentText, text, question, reaction, feedback, name, speaker, etc.) sind REINER PLAINTEXT.
+• Niemals <p>, </p>, <br>, <br/>, <strong>, <em>, <span>, <div>, <h1>…<h6> oder andere HTML-Tags ausgeben — auch nicht zur Formatierung, auch nicht als Absatztrenner.
+• Absätze trennst du durch normale Sätze und Punkte, nicht durch Tags.
+• Auch keine geschriebenen Tag-Strings wie "<p>Hallo</p>" — der Player rendert sie roh und sie erscheinen im UI.
+• Markdown ist ebenfalls verboten (**fett**, *kursiv*, # Überschrift) — alles plain.
+
 ALLGEMEIN:
 • Jede id: eindeutiger UUID-String (Format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
 • Keine Seiten-IDs generieren – nur IDs für Options und Dialog-Lines
 • SEITENNAMEN — DEFINITIV WICHTIG (Location-Hint im Header zeigt diesen Namen):
   Der Name MUSS der Ort oder die konkrete Situation sein, an der der Spieler gerade steht.
-  Beispiele RICHTIG:  "Schichtübergabe", "Frühstück", "Notfall", "Frau Lehmanns Zimmer", "Medikamentenausgabe"
-  Beispiele FALSCH:  "Feedback Notfall Falsch", "Feedback", "Reaktion", "Konsequenz", "Antwort A", "Pfad B", "Korrekt", "Seite 1"
-  → Pfad-A- und Pfad-B-Folgeseiten nach einer Entscheidung NEHMEN denselben Ortsnamen wie die Auslöse-Seite (oder eine kleine Verfeinerung wie "Notfall – im Gang"). KEIN Quiz-Status im Namen.
-  → Auch Reaktions-/Erklär-Seiten der KI bekommen den Ortsnamen. Niemals "Feedback X" oder "X Falsch".
-  → Maximal 4 Wörter, keine Doppelpunkte, keine technischen Suffixe.
+  Beispiele RICHTIG:  "Schichtübergabe", "Frühstück", "Notfall", "Frau Lehmanns Zimmer", "Medikamentenausgabe", "Supermarkt – Kasse"
+  HARTE NEGATIVLISTE — diese Wörter dürfen NIRGENDS im Seitennamen vorkommen:
+    "Feedback", "richtig", "falsch", "Falsche Antwort", "Richtige Antwort", "Korrekt", "Korrektur",
+    "Reaktion", "Konsequenz", "Antwort", "Pfad", "Pfad A", "Pfad B", "Option A", "Option B",
+    "Richtiges Verhalten", "Falsches Verhalten", "Auflösung", "Lösung", "Erklärung", "Seite",
+    "Quiz richtig", "Quiz falsch"
+  → Pfad-A- und Pfad-B-Folgeseiten nach einer Entscheidung NEHMEN denselben Ortsnamen wie die Auslöse-Seite (oder eine kleine Verfeinerung wie "Notfall – im Gang"). KEIN Quiz-/Wertungs-Status im Namen.
+  → Auch Reaktions-/Erklär-Seiten der KI bekommen den Ortsnamen. Wenn die Story eine "Was wäre besser gewesen?"-Seite zeigt, heißt sie trotzdem nach dem Ort — z.B. "Supermarkt – Kasse", nicht "Supermarkt – Falsche Antwort".
+  → Maximal 4 Wörter, keine Doppelpunkte, keine technischen Suffixe, keine Wertung.
 
 ═══════════════════════════════════════════════════════
   AUSGABEFORMAT
@@ -479,7 +535,7 @@ export async function POST(req: NextRequest) {
     rawText = await aiChat({
       system: SYSTEM_PROMPT,
       user: imageUrls.length > 0 ? userContent : userMessageText,
-      temperature: 0.85,
+      temperature: 0.7,
       json: true,
     });
   } catch (err) {
