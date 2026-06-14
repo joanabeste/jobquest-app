@@ -180,14 +180,14 @@ export default function SwipeDeckBlock({ nodeId, props, answers, onAnswer, onNex
         }
       `}</style>
       {question && (
-        <h2 className="fp-heading text-base font-bold mb-1 text-center">{question}</h2>
+        <h2 className="fp-heading text-base md:text-xl font-bold mb-1 text-center">{question}</h2>
       )}
-      <p className="text-[11px] text-slate-400 text-center mb-4">
+      <p className="text-[11px] md:text-xs text-slate-400 text-center mb-4 md:mb-5">
         Karte {Math.min(idx + 1, cards.length)} / {cards.length}
       </p>
 
       {/* Card stack — height bounded but allows the page to still scroll OUTSIDE the card */}
-      <div className="relative h-[320px] select-none mb-4">
+      <div className="relative h-[320px] md:h-[380px] select-none mb-4">
         {/* Background card peek */}
         {cards[idx + 1] && (
           <div
@@ -202,7 +202,7 @@ export default function SwipeDeckBlock({ nodeId, props, answers, onAnswer, onNex
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
           onPointerCancel={onPointerUp}
-          className="absolute inset-0 bg-white border-2 cursor-grab active:cursor-grabbing flex flex-col items-center justify-center text-center p-5 shadow-md select-none"
+          className="absolute inset-0 bg-white border-2 cursor-grab active:cursor-grabbing flex flex-col items-center justify-center text-center p-5 md:p-7 shadow-md select-none"
           style={{
             borderRadius: br,
             borderColor: primary + '40',
@@ -222,9 +222,9 @@ export default function SwipeDeckBlock({ nodeId, props, answers, onAnswer, onNex
               style={{ color: '#dc2626', borderColor: '#dc2626' }}>NEIN</span>
           )}
           {card.imageUrl && (
-            <img src={card.imageUrl} alt="" className="w-full h-32 object-cover rounded-lg mb-3 pointer-events-none" draggable={false} />
+            <img src={card.imageUrl} alt="" className="w-full h-32 md:h-40 object-cover rounded-lg mb-3 md:mb-4 pointer-events-none" draggable={false} />
           )}
-          <p className="text-base text-slate-800 font-medium leading-snug pointer-events-none">{card.text}</p>
+          <p className="text-base md:text-lg text-slate-800 font-medium leading-snug pointer-events-none">{card.text}</p>
           {hintActive && (
             <div
               className="absolute bottom-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium pointer-events-none whitespace-nowrap"
@@ -243,25 +243,25 @@ export default function SwipeDeckBlock({ nodeId, props, answers, onAnswer, onNex
       </div>
 
       {/* Buttons */}
-      <div className="flex items-center justify-center gap-3">
+      <div className="flex items-center justify-center gap-3 md:gap-4">
         <button
           onClick={() => commit('neg')}
           aria-label={card.optionNegative?.label || 'Nein'}
-          className="w-12 h-12 rounded-full border-2 border-rose-200 text-rose-500 hover:bg-rose-50 active:scale-95 flex items-center justify-center transition-all"
+          className="w-12 h-12 md:w-14 md:h-14 rounded-full border-2 border-rose-200 text-rose-500 hover:bg-rose-50 active:scale-95 flex items-center justify-center transition-all"
         >
           <ThumbsDown size={18} />
         </button>
         <button
           onClick={() => commit('neu')}
           aria-label={card.optionNeutral?.label || 'Vielleicht'}
-          className="w-11 h-11 rounded-full border-2 border-slate-200 text-slate-500 hover:bg-slate-50 active:scale-95 flex items-center justify-center transition-all"
+          className="w-11 h-11 md:w-12 md:h-12 rounded-full border-2 border-slate-200 text-slate-500 hover:bg-slate-50 active:scale-95 flex items-center justify-center transition-all"
         >
           <Meh size={16} />
         </button>
         <button
           onClick={() => commit('pos')}
           aria-label={card.optionPositive?.label || 'Ja'}
-          className="w-12 h-12 rounded-full border-2 border-emerald-200 text-emerald-500 hover:bg-emerald-50 active:scale-95 flex items-center justify-center transition-all"
+          className="w-12 h-12 md:w-14 md:h-14 rounded-full border-2 border-emerald-200 text-emerald-500 hover:bg-emerald-50 active:scale-95 flex items-center justify-center transition-all"
         >
           <ThumbsUp size={18} />
         </button>
@@ -270,7 +270,7 @@ export default function SwipeDeckBlock({ nodeId, props, answers, onAnswer, onNex
       {allowSkip && (
         <button
           onClick={() => commit('skip')}
-          className="mt-3 w-full text-center text-[11px] text-slate-400 hover:text-slate-600 transition-colors py-1.5 inline-flex items-center justify-center gap-1"
+          className="mt-3 md:mt-4 w-full text-center text-[11px] md:text-xs text-slate-400 hover:text-slate-600 transition-colors py-1.5 inline-flex items-center justify-center gap-1"
         >
           <SkipForward size={11} /> Weiß nicht / überspringen
         </button>

@@ -8,6 +8,7 @@ import { Company, Dimension } from '@/lib/types';
 import { DECISION_ICONS, isIconName, isUnknownIconName } from '@/lib/decision-icons';
 import { diversifyDecisionIcons } from '@/lib/decision-icon-picker';
 import { SKIP_ANSWER } from '@/lib/funnel-utils';
+import { readableTextColor, readableAccentColor } from '@/lib/contrast';
 import { s, n, b, sh, inlineHtml } from './blocks/helpers';
 import DialogBlock, { type DialogLine } from './blocks/DialogBlock';
 import HotspotBlock from './blocks/HotspotBlock';
@@ -234,10 +235,11 @@ function SliderBlock({ nodeId, p, answers, onAnswer, onNext, primary, showNextBu
             a number on a Likert-style preference slider is noise, so we hide it. */}
         {!isBipolar && (
           <div
-            className="absolute -top-1 text-[11px] font-bold text-white px-2 py-0.5 rounded-full shadow-sm pointer-events-none"
+            className="absolute -top-1 text-[11px] font-bold px-2 py-0.5 rounded-full shadow-sm pointer-events-none"
             style={{
               left: `calc(${progress * 100}% - 16px)`,
               background: primary,
+              color: readableTextColor(primary),
             }}
           >
             {val}
@@ -455,7 +457,7 @@ export function BlockRenderer({
             <h1 className="fp-heading leading-tight mb-4" dangerouslySetInnerHTML={{ __html: sh(inlineHtml(si(p.title))) }} />
             {!!subtext && <div className="text-sm text-slate-600 mb-3 leading-relaxed rte" dangerouslySetInnerHTML={{ __html: sh(si(subtext)) }} />}
             {!!accentText && (
-              <p className="text-sm font-bold uppercase tracking-wide mb-4" style={{ color: primary }}>{accentText}</p>
+              <p className="text-sm font-bold uppercase tracking-wide mb-4" style={{ color: readableAccentColor(primary) }}>{accentText}</p>
             )}
             {!!s(p.description) && (
               <div className="text-sm text-slate-600 leading-relaxed mb-4 rte" dangerouslySetInnerHTML={{ __html: sh(si(p.description)) }} />
@@ -464,7 +466,7 @@ export function BlockRenderer({
               <ul className="text-sm text-slate-600 text-left space-y-2 mb-6 mt-2">
                 {bulletPoints.map((point, i) => (
                   <li key={i} className="flex items-start gap-2">
-                    <span className="font-bold flex-shrink-0 mt-px" style={{ color: primary }}>»</span>
+                    <span className="font-bold flex-shrink-0 mt-px" style={{ color: readableAccentColor(primary) }}>»</span>
                     <span className="leading-relaxed">{point}</span>
                   </li>
                 ))}
@@ -556,7 +558,7 @@ export function BlockRenderer({
                   <span className="text-sm font-medium text-slate-700 leading-snug flex-1">{o.text}</span>
                   {isSelected && (
                     <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: optAccent }}>
-                      {o.isWrong ? <X size={11} className="text-white" /> : <Check size={11} className="text-white" />}
+                      {o.isWrong ? <X size={11} style={{ color: readableTextColor(optAccent) }} /> : <Check size={11} style={{ color: readableTextColor(optAccent) }} />}
                     </div>
                   )}
                 </button>
@@ -615,7 +617,7 @@ export function BlockRenderer({
                       {!revealed
                         ? <div className={`w-3.5 h-3.5 rounded border-2 ${isSel ? 'border-transparent' : 'border-slate-300'}`}
                             style={isSel ? { background: primary } : {}}>
-                            {isSel && <Check size={10} className="text-white" />}
+                            {isSel && <Check size={10} style={{ color: readableTextColor(primary) }} />}
                           </div>
                         : o.correct && isSel ? <Check size={14} className="text-emerald-600" />
                         : !o.correct && isSel ? <X size={14} className="text-red-500" />
@@ -685,7 +687,7 @@ export function BlockRenderer({
                     {!revealed
                       ? <div className={`w-3.5 h-3.5 rounded-full border-2 ${isSelected ? 'border-transparent' : 'border-slate-300'}`}
                           style={isSelected ? { background: primary } : {}}>
-                          {isSelected && <Check size={10} className="text-white" />}
+                          {isSelected && <Check size={10} style={{ color: readableTextColor(primary) }} />}
                         </div>
                       : o.correct ? <Check size={14} className="text-emerald-600" />
                       : isSelected ? <X size={14} className="text-red-500" />
@@ -992,7 +994,7 @@ export function BlockRenderer({
                       background: isChecked ? primary : 'transparent',
                     }}
                   >
-                    {isChecked && <Check size={12} className="text-white" />}
+                    {isChecked && <Check size={12} style={{ color: readableTextColor(primary) }} />}
                   </div>
                   <span className={`font-medium ${isChecked ? 'text-slate-900' : 'text-slate-600'}`}>{stmt.text}</span>
                 </button>
@@ -1053,12 +1055,12 @@ export function BlockRenderer({
             <img src={imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover opacity-30" />
           )}
           <div className="relative z-10 px-8 py-12">
-            <h1 className="text-3xl font-bold text-white mb-3 leading-tight" dangerouslySetInnerHTML={{ __html: sh(inlineHtml(s(p.headline))) }} />
-            {b(p.subtext) && <div className="text-white/80 text-base mb-6 leading-relaxed rte" dangerouslySetInnerHTML={{ __html: sh(s(p.subtext)) }} />}
+            <h1 className="text-3xl font-bold mb-3 leading-tight" style={{ color: readableTextColor(primary) }} dangerouslySetInnerHTML={{ __html: sh(inlineHtml(s(p.headline))) }} />
+            {b(p.subtext) && <div className="text-base mb-6 leading-relaxed rte" style={{ color: readableTextColor(primary), opacity: 0.8 }} dangerouslySetInnerHTML={{ __html: sh(s(p.subtext)) }} />}
             {b(p.ctaText) && (
               <button onClick={() => onNext()}
                 className="inline-flex items-center gap-2 px-8 py-3 bg-white font-semibold text-sm shadow-lg"
-                style={{ borderRadius: br, color: primary }}>
+                style={{ borderRadius: br, color: readableAccentColor(primary) }}>
                 {s(p.ctaText)} <ArrowRight size={16} />
               </button>
             )}
@@ -1146,7 +1148,7 @@ export function CompletionScreen({ company, headline, text, primary, buttonText,
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] px-8 text-center">
       <div className="w-20 h-20 rounded-full flex items-center justify-center mb-5" style={{ background: `${primary}20` }}>
-        <Check size={36} style={{ color: primary }} />
+        <Check size={36} style={{ color: readableAccentColor(primary) }} />
       </div>
       <h2 className="fp-heading text-2xl font-bold mb-3">{headline}</h2>
       {text && <p className="text-slate-500 text-base leading-relaxed max-w-xs">{text}</p>}
@@ -1155,8 +1157,8 @@ export function CompletionScreen({ company, headline, text, primary, buttonText,
           href={buttonUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-5 inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm text-white"
-          style={{ background: primary }}
+          className="mt-5 inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm"
+          style={{ background: primary, color: readableTextColor(primary) }}
         >
           {buttonText} →
         </a>
@@ -1164,7 +1166,7 @@ export function CompletionScreen({ company, headline, text, primary, buttonText,
       <div className="mt-8 flex items-center gap-2 text-slate-400 text-xs">
         {company.logo
           ? <img src={company.logo} alt="" className="h-5 w-auto max-w-[80px] rounded object-contain" />
-          : <div className="w-5 h-5 rounded flex items-center justify-center text-white text-[10px] font-bold" style={{ background: primary }}>{company.name.charAt(0)}</div>}
+          : <div className="w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold" style={{ background: primary, color: readableTextColor(primary) }}>{company.name.charAt(0)}</div>}
         <span>{company.name}</span>
       </div>
     </div>

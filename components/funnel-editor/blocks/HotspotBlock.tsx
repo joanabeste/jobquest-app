@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { MapPin, Check } from 'lucide-react';
 import { DECISION_ICONS, isIconName } from '@/lib/decision-icons';
+import { readableTextColor, readableAccentColor } from '@/lib/contrast';
 
 export default function HotspotBlock({ imageUrl, hotspots, requireAll, doneText, primary, br, nodeId, answers, onAnswer, onNext }: {
   imageUrl: string;
@@ -73,10 +74,10 @@ export default function HotspotBlock({ imageUrl, hotspots, requireAll, doneText,
                 }}
               >
                 {isFound
-                  ? <Check size={16} className="text-white" />
+                  ? <Check size={16} style={{ color: readableTextColor(primary) }} />
                   : IconComp
-                    ? <IconComp size={16} style={{ color: primary }} />
-                    : <MapPin size={15} style={{ color: primary }} />
+                    ? <IconComp size={16} style={{ color: readableAccentColor(primary) }} />
+                    : <MapPin size={15} style={{ color: readableAccentColor(primary) }} />
                 }
               </span>
             </button>
@@ -100,8 +101,8 @@ export default function HotspotBlock({ imageUrl, hotspots, requireAll, doneText,
               style={{ background: `${primary}20` }}
             >
               {isIconName(activeSpot.icon)
-                ? (() => { const Ic = DECISION_ICONS[activeSpot.icon!]; return <Ic size={16} style={{ color: primary }} />; })()
-                : <MapPin size={14} style={{ color: primary }} />
+                ? (() => { const Ic = DECISION_ICONS[activeSpot.icon!]; return <Ic size={16} style={{ color: readableAccentColor(primary) }} />; })()
+                : <MapPin size={14} style={{ color: readableAccentColor(primary) }} />
               }
             </div>
             <div className="flex-1 min-w-0">

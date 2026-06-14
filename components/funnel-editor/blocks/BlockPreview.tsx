@@ -17,6 +17,7 @@ import {
   AlignLeft as AlignLeftIcon, AlignCenter, AlignRight,
 } from 'lucide-react';
 import { BlockNode, LeadFieldDef } from '@/lib/funnel-types';
+import { readableTextColor, readableAccentColor } from '@/lib/contrast';
 import { useCi } from '@/lib/ci-context';
 import { useFunnelEditorCtx } from '../FunnelEditorContext';
 import InlineLeadFields from '../InlineLeadFields';
@@ -424,8 +425,8 @@ export default function BlockPreview({ node, onUpdate, speakerOverrides }: {
             className="inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold"
             style={{
               borderRadius: br,
-              ...(isPrimary ? { background: primary, color: '#fff' } :
-                  isOutline  ? { border: `2px solid ${primary}`, color: primary } :
+              ...(isPrimary ? { background: primary, color: readableTextColor(primary) } :
+                  isOutline  ? { border: `2px solid ${primary}`, color: readableAccentColor(primary) } :
                                { background: '#f1f5f9', color: '#334155', border: '1px solid #e2e8f0' }),
             }}
           >
@@ -505,10 +506,10 @@ export default function BlockPreview({ node, onUpdate, speakerOverrides }: {
               <p className="text-sm text-slate-600 mt-2 leading-relaxed">{p.subtext as string}</p>
             )}
             {!!(p.accentText as string) && (
-              <p className="text-sm font-bold uppercase tracking-wide mt-2" style={{ color: primary }}>{p.accentText as string}</p>
+              <p className="text-sm font-bold uppercase tracking-wide mt-2" style={{ color: readableAccentColor(primary) }}>{p.accentText as string}</p>
             )}
             <RichEd v={(p.description as string) ?? ''} up={up?.('description')} ph="Beschreibung…" cl="text-sm text-slate-500 mt-3 leading-relaxed" />
-            <div className="mt-4 text-white text-sm font-semibold py-3 px-6 inline-block" style={{ background: primary, borderRadius: br }}>
+            <div className="mt-4 text-sm font-semibold py-3 px-6 inline-block" style={{ background: primary, color: readableTextColor(primary), borderRadius: br }}>
               {(p.buttonText as string) || 'Alles klar, verstanden!'}
             </div>
           </div>
@@ -738,7 +739,7 @@ export default function BlockPreview({ node, onUpdate, speakerOverrides }: {
               <StaticFieldRows fields={fields} br={br} />
             )}
           </div>
-          <button disabled className="w-full mt-4 py-3.5 font-semibold text-sm text-white text-center disabled:opacity-100 cursor-default" style={{ borderRadius: br, background: primary }}>
+          <button disabled className="w-full mt-4 py-3.5 font-semibold text-sm text-center disabled:opacity-100 cursor-default" style={{ borderRadius: br, background: primary, color: readableTextColor(primary) }}>
             {(p.buttonText as string) || <span style={{ opacity: 0.3 }}>Jetzt bewerben</span>}
           </button>
         </div>
@@ -749,11 +750,11 @@ export default function BlockPreview({ node, onUpdate, speakerOverrides }: {
 
     case 'check_intro':
       return (
-        <div className="px-6 py-10 text-white text-center min-h-[220px] flex flex-col justify-center" style={{ background: primary }}>
+        <div className="px-6 py-10 text-center min-h-[220px] flex flex-col justify-center" style={{ background: primary, color: readableTextColor(primary) }}>
           <RichEd v={(p.headline as string) ?? ''} up={up?.('headline')} ph="Intro" cl="font-bold text-2xl leading-tight mb-2 block" />
-          <RichEd v={(p.subtext as string) ?? ''} up={up?.('subtext')} ph="Untertext" cl="text-sm text-white/70 mb-6 block" />
+          <RichEd v={(p.subtext as string) ?? ''} up={up?.('subtext')} ph="Untertext" cl="text-sm opacity-70 mb-6 block" />
           <div>
-            <span className="inline-block px-8 py-3 bg-white text-sm font-semibold" style={{ borderRadius: br, color: primary }}>
+            <span className="inline-block px-8 py-3 bg-white text-sm font-semibold" style={{ borderRadius: br, color: readableAccentColor(primary) }}>
               <Ed v={(p.buttonText as string) ?? ''} up={up?.('buttonText')} ph="Jetzt starten" cl="" />
             </span>
           </div>
@@ -864,7 +865,7 @@ export default function BlockPreview({ node, onUpdate, speakerOverrides }: {
           <div className="flex items-stretch gap-2">
             <ThisOrThatMiniCard o={optA} primary={primary} />
             <div className="flex items-center">
-              <span className="text-[9px] font-bold tracking-widest uppercase" style={{ color: primary }}>oder</span>
+              <span className="text-[9px] font-bold tracking-widest uppercase" style={{ color: readableAccentColor(primary) }}>oder</span>
             </div>
             <ThisOrThatMiniCard o={optB} primary={primary} />
           </div>
@@ -940,10 +941,10 @@ export default function BlockPreview({ node, onUpdate, speakerOverrides }: {
 
     case 'form_hero':
       return (
-        <div className="px-6 py-10 text-white min-h-[200px] flex flex-col justify-center" style={{ background: primary }}>
+        <div className="px-6 py-10 min-h-[200px] flex flex-col justify-center" style={{ background: primary, color: readableTextColor(primary) }}>
           <RichEd v={(p.headline as string) ?? ''} up={up?.('headline')} ph="Hero" cl="font-bold text-2xl mb-2 block" />
-          <RichEd v={(p.subtext as string) ?? ''} up={up?.('subtext')} ph="Untertext" cl="text-sm text-white/70 mb-6 block" />
-          <span className="inline-block px-6 py-3 bg-white text-sm font-semibold self-start" style={{ borderRadius: br, color: primary }}>
+          <RichEd v={(p.subtext as string) ?? ''} up={up?.('subtext')} ph="Untertext" cl="text-sm opacity-70 mb-6 block" />
+          <span className="inline-block px-6 py-3 bg-white text-sm font-semibold self-start" style={{ borderRadius: br, color: readableAccentColor(primary) }}>
             <Ed v={(p.ctaText as string) ?? ''} up={up?.('ctaText')} ph="CTA" cl="" />
           </span>
         </div>
@@ -998,7 +999,7 @@ export default function BlockPreview({ node, onUpdate, speakerOverrides }: {
               <StaticFieldRows fields={fields} br={br} />
             )}
           </div>
-          <button disabled className="w-full mt-4 py-3.5 font-semibold text-sm text-white text-center disabled:opacity-100 cursor-default" style={{ borderRadius: br, background: primary }}>
+          <button disabled className="w-full mt-4 py-3.5 font-semibold text-sm text-center disabled:opacity-100 cursor-default" style={{ borderRadius: br, background: primary, color: readableTextColor(primary) }}>
             {(p.buttonText as string) || <span style={{ opacity: 0.3 }}>Jetzt bewerben</span>}
           </button>
         </div>
@@ -1016,7 +1017,7 @@ function ThisOrThatMiniCard({ o, primary }: { o: { imageUrl?: string; label?: st
       {o.imageUrl ? (
         <img src={o.imageUrl} alt="" className="w-full h-full object-cover" />
       ) : (
-        <div className="w-full h-full flex items-center justify-center text-2xl font-black" style={{ background: primary + '14', color: primary }}>
+        <div className="w-full h-full flex items-center justify-center text-2xl font-black" style={{ background: primary + '14', color: readableAccentColor(primary) }}>
           {(o.label ?? '?').charAt(0)}
         </div>
       )}

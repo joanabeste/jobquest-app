@@ -2,6 +2,7 @@
 
 import { Check, ExternalLink, ChevronRight } from 'lucide-react';
 import { Company, SuccessPageConfig, DEFAULT_SUCCESS_PAGE } from '@/lib/types';
+import { readableTextColor, readableAccentColor } from '@/lib/contrast';
 
 interface FeaturedQuest {
   id: string;
@@ -29,7 +30,7 @@ export default function SuccessPage({ company, primary, br, featuredQuests = [] 
           className="w-20 h-20 rounded-full flex items-center justify-center mb-5 mx-auto"
           style={{ background: `${primary}20` }}
         >
-          <Check size={38} style={{ color: primary }} />
+          <Check size={38} style={{ color: readableAccentColor(primary) }} />
         </div>
         <h2 className="text-2xl font-bold text-slate-900 mb-3 leading-tight">{cfg.headline}</h2>
         {cfg.text && <p className="text-slate-500 text-base leading-relaxed">{cfg.text}</p>}
@@ -80,7 +81,7 @@ export default function SuccessPage({ company, primary, br, featuredQuests = [] 
             <h3 className="text-sm font-semibold text-slate-700 mb-3">{cfg.jobsHeadline}</h3>
             {sections.map(({ group, jobs }) => (
               <div key={group || '__ungrouped'} className="mb-4 last:mb-0">
-                {group && <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: primary }}>{group}</p>}
+                {group && <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: readableAccentColor(primary) }}>{group}</p>}
                 <div className="flex flex-col gap-1.5">{jobs.map(renderJob)}</div>
               </div>
             ))}
@@ -104,8 +105,8 @@ export default function SuccessPage({ company, primary, br, featuredQuests = [] 
                   <img src={q.logo ?? company.logo} alt="" className="h-8 w-auto max-w-[100px] rounded object-contain flex-shrink-0" />
                 ) : (
                   <div
-                    className="w-8 h-8 rounded flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
-                    style={{ background: primary }}
+                    className="w-8 h-8 rounded flex items-center justify-center text-xs font-bold flex-shrink-0"
+                    style={{ background: primary, color: readableTextColor(primary) }}
                   >
                     {q.title.charAt(0)}
                   </div>
@@ -124,8 +125,8 @@ export default function SuccessPage({ company, primary, br, featuredQuests = [] 
           <img src={company.logo} alt="" className="h-5 w-auto max-w-[80px] rounded object-contain" />
         ) : (
           <div
-            className="w-5 h-5 rounded flex items-center justify-center text-white text-[10px] font-bold"
-            style={{ background: primary }}
+            className="w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold"
+            style={{ background: primary, color: readableTextColor(primary) }}
           >
             {company.name.charAt(0)}
           </div>

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { applyVars } from '@/lib/funnel-variables';
+import { readableTextColor, readableAccentColor } from '@/lib/contrast';
 import type { SpeakerOverride } from '@/lib/funnel-types';
 
 export interface DialogLine { id: string; speaker: string; text: string; imageUrl?: string; avatarUrl?: string; position?: 'left' | 'right' | 'center'; }
@@ -20,8 +21,8 @@ function Avatar({ speaker, primary, avatarUrl }: { speaker: string; primary: str
   }
   return (
     <div
-      className="w-10 h-10 rounded-full flex-shrink-0 mt-auto overflow-hidden flex items-center justify-center font-bold text-white text-base"
-      style={{ background: primary }}
+      className="w-10 h-10 rounded-full flex-shrink-0 mt-auto overflow-hidden flex items-center justify-center font-bold text-base"
+      style={{ background: primary, color: readableTextColor(primary) }}
     >
       <span>{speaker?.charAt(0)?.toUpperCase() || '?'}</span>
     </div>
@@ -194,8 +195,8 @@ export default function DialogBlock({ lines, primary, visibleCount, onAdvance, f
                 <img src={line.imageUrl} alt="" className="w-full rounded-2xl mb-1.5 max-h-44 object-cover shadow-sm" />
               )}
               {!!line.text && (
-                <div className={`px-3.5 py-2.5 rounded-2xl text-[15px] leading-relaxed ${isRight ? 'text-white' : 'bg-slate-100 text-slate-700'}`}
-                  style={isRight ? { background: primary } : {}}>
+                <div className={`px-3.5 py-2.5 rounded-2xl text-[15px] leading-relaxed ${isRight ? '' : 'bg-slate-100 text-slate-700'}`}
+                  style={isRight ? { background: primary, color: readableTextColor(primary) } : {}}>
                   {line.text}
                 </div>
               )}
@@ -219,7 +220,7 @@ export default function DialogBlock({ lines, primary, visibleCount, onAdvance, f
           <Avatar speaker={firstName || 'I'} primary={primary} />
           <div className="max-w-[78%] items-end flex flex-col">
             <p className="text-[13px] font-medium text-slate-600 mb-1">{firstName || 'Ich'}</p>
-            <div className="px-3.5 py-2.5 rounded-2xl text-[15px] leading-relaxed text-white" style={{ background: primary }}>
+            <div className="px-3.5 py-2.5 rounded-2xl text-[15px] leading-relaxed" style={{ background: primary, color: readableTextColor(primary) }}>
               {selectedChoice.text}
             </div>
           </div>
@@ -261,7 +262,7 @@ export default function DialogBlock({ lines, primary, visibleCount, onAdvance, f
               key={c.id}
               onClick={() => { if (nodeId && onAnswer) onAnswer(nodeId, c.id); }}
               className="w-full text-left px-4 py-3 text-[15px] rounded-2xl border-2 transition-all hover:shadow-sm active:scale-[0.98] font-medium"
-              style={{ borderColor: primary, color: primary, background: `${primary}08`, borderRadius: br ?? '12px' }}
+              style={{ borderColor: primary, color: readableAccentColor(primary), background: `${primary}08`, borderRadius: br ?? '12px' }}
             >
               {c.text}
             </button>
@@ -296,7 +297,7 @@ export default function DialogBlock({ lines, primary, visibleCount, onAdvance, f
               className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 disabled:opacity-40 transition-opacity"
               style={{ background: primary }}
             >
-              <ArrowRight size={16} className="text-white" />
+              <ArrowRight size={16} style={{ color: readableTextColor(primary) }} />
             </button>
           </div>
         </div>
@@ -308,7 +309,7 @@ export default function DialogBlock({ lines, primary, visibleCount, onAdvance, f
           <Avatar speaker={firstName || inputValue || 'I'} primary={primary} />
           <div className="max-w-[78%] items-end flex flex-col">
             <p className="text-[13px] font-medium text-slate-600 mb-1">{firstName || 'Ich'}</p>
-            <div className="px-3.5 py-2.5 rounded-2xl text-[15px] leading-relaxed text-white" style={{ background: primary }}>
+            <div className="px-3.5 py-2.5 rounded-2xl text-[15px] leading-relaxed" style={{ background: primary, color: readableTextColor(primary) }}>
               {existingInputAnswer ?? inputValue}
             </div>
           </div>

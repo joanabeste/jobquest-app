@@ -12,6 +12,7 @@ import { Company, Dimension } from '@/lib/types';
 import { flatBlocks, isSubmitPage, computeScores, computeMaxScores } from '@/lib/funnel-utils';
 import { analyticsStorage } from '@/lib/storage';
 import { useCorporateDesign } from '@/lib/use-corporate-design';
+import { readableTextColor } from '@/lib/contrast';
 import { useFavicon } from '@/lib/use-favicon';
 import { ChevronLeft, ChevronRight, MapPin, CheckCircle, Send } from 'lucide-react';
 import { StyledBlock, DialogLine, LeadForm, emptyLead } from './BlockRenderer';
@@ -622,7 +623,7 @@ export default function FunnelPlayer({ doc, company, contentDbId, onPageChange }
             {company.logo ? (
               <img src={company.logo} alt={company.name} className="h-7 w-auto max-w-[120px] rounded-lg object-contain flex-shrink-0" />
             ) : (
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white font-bold text-sm fp-btn flex-shrink-0">
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center font-bold text-sm fp-btn flex-shrink-0">
                 {company.name.charAt(0)}
               </div>
             )}
@@ -654,7 +655,11 @@ export default function FunnelPlayer({ doc, company, contentDbId, onPageChange }
 
       {/* ── Content ────────────────────────────────────────────────────────── */}
       <main
-        className={`${isWidePage ? 'max-w-lg md:max-w-5xl' : 'max-w-lg'} mx-auto w-full ${doc.contentType === 'check' ? 'pb-6' : 'pb-24'}`}
+        className={`${
+          isWidePage ? 'max-w-lg md:max-w-5xl'
+          : doc.contentType === 'check' ? 'max-w-lg md:max-w-xl'
+          : 'max-w-lg'
+        } mx-auto w-full ${doc.contentType === 'check' ? 'pb-6' : 'pb-24'}`}
         style={{
           transition: 'opacity 250ms ease, transform 250ms ease',
           opacity: pageTransition === 'fading-out' ? 0 : 1,
@@ -737,7 +742,7 @@ export default function FunnelPlayer({ doc, company, contentDbId, onPageChange }
                   className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 disabled:opacity-40 transition-opacity"
                   style={{ background: primary }}
                 >
-                  <Send size={18} className="text-white" />
+                  <Send size={18} style={{ color: readableTextColor(primary) }} />
                 </button>
               </>
             ) : (

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { JobQuest, QuestModule, Company, DecisionModule, DialogModule, DEFAULT_CORPORATE_DESIGN, DEFAULT_LEAD_CONFIG } from '@/lib/types';
 import { leadStorage, analyticsStorage } from '@/lib/storage';
 import { ChevronRight, ChevronLeft } from 'lucide-react';
+import { readableTextColor, readableAccentColor } from '@/lib/contrast';
 import ModuleRenderer from './QuestModules';
 import { LeadForm, LeadFormData } from './QuestLeadForm';
 import SuccessPage from './SuccessPage';
@@ -29,6 +30,9 @@ export default function QuestPlayer({ quest, company }: Props) {
 
   const design = company.corporateDesign ?? DEFAULT_CORPORATE_DESIGN;
   const primary = design.primaryColor || DEFAULT_CORPORATE_DESIGN.primaryColor;
+  // Auto-Kontrast: lesbare Schrift auf primary-Flächen bzw. als Akzent auf hell.
+  const onPrimary = readableTextColor(primary);
+  const ink = readableAccentColor(primary);
   const textColor = design.textColor || DEFAULT_CORPORATE_DESIGN.textColor;
   const headingColor = design.headingColor || DEFAULT_CORPORATE_DESIGN.headingColor;
   const br = `${design.borderRadius}px`;
@@ -45,21 +49,21 @@ export default function QuestPlayer({ quest, company }: Props) {
     design.bodyFontData ? `@font-face{font-family:'${bodyFontName}';src:url('${design.bodyFontData}')}` : '',
     `.quest-cd{font-family:${bodyFontFamily};color:${textColor}}`,
     `.quest-cd .quest-heading{font-family:${headingFontFamily};color:${headingColor}}`,
-    `.quest-cd .quest-logo-bg{background-color:${primary}}`,
+    `.quest-cd .quest-logo-bg{background-color:${primary};color:${onPrimary}}`,
     `.quest-cd .quest-progress{background-color:${primary}}`,
-    `.quest-cd .quest-btn-next{background-color:${primary};border-radius:${br}}`,
+    `.quest-cd .quest-btn-next{background-color:${primary};color:${onPrimary};border-radius:${br}}`,
     `.quest-cd .quest-btn-next:hover{filter:brightness(0.85)}`,
-    `.quest-cd .btn-primary{background-color:${primary};border-radius:${br}}`,
+    `.quest-cd .btn-primary{background-color:${primary};color:${onPrimary};border-radius:${br}}`,
     `.quest-cd .btn-primary:hover{filter:brightness(0.85)}`,
-    `.quest-cd .quest-badge{color:${primary}}`,
-    `.quest-cd .quest-dialog-avatar{background-color:${primary}22;color:${primary}}`,
-    `.quest-cd .quest-dialog-more:hover{border-color:${primary}66;background-color:${primary}0f;color:${primary}}`,
+    `.quest-cd .quest-badge{color:${ink}}`,
+    `.quest-cd .quest-dialog-avatar{background-color:${primary}22;color:${ink}}`,
+    `.quest-cd .quest-dialog-more:hover{border-color:${primary}66;background-color:${primary}0f;color:${ink}}`,
     `.quest-cd .quest-option-default:hover{border-color:${primary}99;background-color:${primary}12}`,
     `.quest-cd .quest-option-default,.quest-cd .quest-option-selected{border-radius:${br}}`,
-    `.quest-cd .quest-option-selected{border-color:${primary};background-color:${primary}18;color:${primary}}`,
-    `.quest-cd .quest-decision-feedback{background-color:${primary}12;border-color:${primary}44;color:${primary};border-radius:${br}}`,
-    `.quest-cd .chat-bubble-right{background-color:${primary};color:white}`,
-    `.quest-cd .quest-thankyou-box{background-color:${primary}15;color:${primary}}`,
+    `.quest-cd .quest-option-selected{border-color:${primary};background-color:${primary}18;color:${ink}}`,
+    `.quest-cd .quest-decision-feedback{background-color:${primary}12;border-color:${primary}44;color:${ink};border-radius:${br}}`,
+    `.quest-cd .chat-bubble-right{background-color:${primary};color:${onPrimary}}`,
+    `.quest-cd .quest-thankyou-box{background-color:${primary}15;color:${ink}}`,
     `.quest-cd .quest-checkbox{accent-color:${primary}}`,
     `.quest-cd .quest-icon-tint{background-color:${primary}18}`,
     `.quest-cd .card{border-radius:${br}}`,
@@ -160,7 +164,7 @@ export default function QuestPlayer({ quest, company }: Props) {
         {company.logo ? (
           <img src={company.logo} alt={company.name} className="h-8 w-auto max-w-[140px] rounded-lg object-contain" />
         ) : (
-          <div className="quest-logo-bg w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+          <div className="quest-logo-bg w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm">
             {company.name.charAt(0)}
           </div>
         )}
@@ -222,7 +226,7 @@ export default function QuestPlayer({ quest, company }: Props) {
                 onClick={handleNext}
                 disabled={!canProceed()}
                 className={`flex items-center gap-1.5 px-5 py-2 rounded-lg text-sm font-semibold transition-all ${
-                  canProceed() ? 'quest-btn-next text-white shadow-md' : 'bg-slate-100 text-slate-300 cursor-not-allowed'
+                  canProceed() ? 'quest-btn-next shadow-md' : 'bg-slate-100 text-slate-300 cursor-not-allowed'
                 }`}
               >
                 {isLastContentStep ? 'Weiter zur Bewerbung' : 'Weiter'}

@@ -2,6 +2,7 @@
 
 import { forwardRef, useRef, useState } from 'react';
 import { SKIP_ANSWER } from '@/lib/funnel-utils';
+import { readableAccentColor } from '@/lib/contrast';
 
 export interface ThisOrThatOption {
   id: string;
@@ -82,7 +83,7 @@ export default function ThisOrThatBlock({
 
         <div className="flex md:flex-col items-center justify-center gap-1.5 md:py-0 py-0">
           <div className="flex-1 md:flex-initial md:w-px md:h-6 h-px bg-slate-200" />
-          <span className="text-[9px] md:text-[10px] font-bold tracking-widest uppercase" style={{ color: primary }}>
+          <span className="text-[9px] md:text-[10px] font-bold tracking-widest uppercase" style={{ color: readableAccentColor(primary) }}>
             oder
           </span>
           <div className="flex-1 md:flex-initial md:w-px md:h-6 h-px bg-slate-200" />
@@ -166,7 +167,7 @@ const OptionCard = forwardRef<HTMLButtonElement, CardProps>(function OptionCard(
       ) : (
         <div
           className="absolute inset-0 flex items-center justify-center text-4xl md:text-6xl font-black"
-          style={{ background: primary + '12', color: primary }}
+          style={{ background: primary + '12', color: readableAccentColor(primary) }}
         >
           {initial}
         </div>

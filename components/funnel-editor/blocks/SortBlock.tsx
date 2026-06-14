@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { ArrowRight, Check, X, ChevronUp, ChevronDown, GripVertical } from 'lucide-react';
+import { readableAccentColor } from '@/lib/contrast';
 
 export type SortItem = { id: string; text: string; correctIndex?: number };
 
@@ -83,7 +84,7 @@ export default function SortBlock({ question, items: rawItems, showFeedback, fee
               <GripVertical size={14} className="text-slate-300 flex-shrink-0" />
               <span
                 className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0"
-                style={{ background: `${primary}20`, color: primary }}
+                style={{ background: `${primary}20`, color: readableAccentColor(primary) }}
               >
                 {i + 1}
               </span>

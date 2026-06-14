@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Trophy, Video, FileText, Send, ExternalLink, ChevronDown, X, Star } from 'lucide-react';
+import { readableTextColor, readableAccentColor } from '@/lib/contrast';
 
 /** Hook: starts at 0, animates to target after a delay */
 function useAnimatedValue(target: number, delay = 300, duration = 800): number {
@@ -129,12 +130,12 @@ export default function ErgebnisBlock({
     <div className="fp-card bg-white shadow-sm mx-4 my-5 p-5 sm:p-8 md:p-10">
       <div className="text-center md:max-w-2xl md:mx-auto">
         <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5" style={{ background: `${primary}20` }}>
-          <Trophy size={28} style={{ color: primary }} />
+          <Trophy size={28} style={{ color: readableAccentColor(primary) }} />
         </div>
         <h2 className="fp-heading text-2xl md:text-3xl font-bold mb-2" dangerouslySetInnerHTML={{ __html: sh(inlineHtml(headline)) }} />
         {b(subtext) && <div className="text-slate-500 text-sm md:text-base mb-3 rte" dangerouslySetInnerHTML={{ __html: sh(subtext) }} />}
         {onToggleMarkedSuggestion && (
-          <p className="text-xs md:text-sm mb-6 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full" style={{ background: primary + '12', color: primary }}>
+          <p className="text-xs md:text-sm mb-6 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full" style={{ background: primary + '12', color: readableAccentColor(primary) }}>
             <Star size={13} className="flex-shrink-0" />
             Tipp: Markiere die Berufe, zu denen du Infos bekommen möchtest.
           </p>
@@ -338,7 +339,7 @@ function MobileAccordion({ groups, dimensions, scores, maxScores, primary, br, m
               >
                 <div className="flex items-center gap-3 mb-2">
                   <span className="flex-1 text-sm font-semibold text-slate-900">{g.label}</span>
-                  <span className="text-sm font-bold flex-shrink-0" style={{ color: primary }}>{pct}%</span>
+                  <span className="text-sm font-bold flex-shrink-0" style={{ color: readableAccentColor(primary) }}>{pct}%</span>
                   <ChevronDown
                     size={16}
                     className="text-slate-400 flex-shrink-0 transition-transform"
@@ -371,7 +372,7 @@ function MobileAccordion({ groups, dimensions, scores, maxScores, primary, br, m
                           className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-left hover:bg-slate-50 transition-colors"
                         >
                           {isMarked && (
-                            <Star size={14} className="flex-shrink-0 fill-current" style={{ color: primary }} />
+                            <Star size={14} className="flex-shrink-0 fill-current" style={{ color: readableAccentColor(primary) }} />
                           )}
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-semibold text-slate-900 leading-snug">{withMwd(sug.title)}</p>
@@ -409,7 +410,7 @@ function MobileAccordion({ groups, dimensions, scores, maxScores, primary, br, m
               ) : (
                 <div
                   className="w-full aspect-[16/9] flex items-center justify-center text-5xl font-bold"
-                  style={{ background: primary + '15', color: primary }}
+                  style={{ background: primary + '15', color: readableAccentColor(primary) }}
                 >
                   {modalSug.title.charAt(0)}
                 </div>
@@ -438,8 +439,8 @@ function MobileAccordion({ groups, dimensions, scores, maxScores, primary, br, m
                     onClick={() => onToggleMarked(modalSug.id, modalSug.title)}
                     className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 mb-3 text-sm font-semibold rounded-xl transition-all"
                     style={isMarked
-                      ? { background: primary, color: '#fff' }
-                      : { background: primary + '15', color: primary, border: `2px solid ${primary}40` }}
+                      ? { background: primary, color: readableTextColor(primary) }
+                      : { background: primary + '15', color: readableAccentColor(primary), border: `2px solid ${primary}40` }}
                   >
                     <Star size={16} className={isMarked ? 'fill-current' : ''} />
                     {isMarked ? 'Gemerkt' : 'Interessiert mich'}
@@ -457,7 +458,7 @@ function MobileAccordion({ groups, dimensions, scores, maxScores, primary, br, m
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium border hover:bg-slate-50 transition-colors"
-                        style={{ borderRadius: br, borderColor: primary + '40', color: primary }}
+                        style={{ borderRadius: br, borderColor: primary + '40', color: readableAccentColor(primary) }}
                       >
                         <Icon size={14} /> {l.label}
                       </a>
@@ -482,7 +483,7 @@ function AnimatedBar({ name, pct, color, delay }: { name: string; pct: number; c
         <div className="flex-1 h-2.5 bg-slate-100 rounded-full overflow-hidden">
           <div className="h-full rounded-full" style={{ width: `${animPct}%`, background: color }} />
         </div>
-        <span className="text-xs font-bold w-8 text-right" style={{ color }}>{animPct}%</span>
+        <span className="text-xs font-bold w-8 text-right" style={{ color: readableAccentColor(color) }}>{animPct}%</span>
       </div>
     </div>
   );
@@ -506,7 +507,7 @@ function GroupBars({ group, dimensions, scores, maxScores, primary }: { group: E
       <div className="text-center mb-6 md:mb-8">
         <p className="text-sm text-slate-500">
           Übereinstimmung mit diesem Bereich:{' '}
-          <span className="font-bold text-base" style={{ color: primary }}>{pct}%</span>
+          <span className="font-bold text-base" style={{ color: readableAccentColor(primary) }}>{pct}%</span>
         </p>
       </div>
     );
@@ -591,7 +592,7 @@ function GroupSuggestions({ group, dimensions, scores, primary, br, markedIds, o
                 className="absolute top-2 right-2 z-10 w-8 h-8 rounded-full flex items-center justify-center shadow-sm"
                 style={{ background: primary }}
               >
-                <Star size={14} className="fill-current text-white" />
+                <Star size={14} className="fill-current" style={{ color: readableTextColor(primary) }} />
               </div>
             )}
             {sug.imageUrl ? (
@@ -599,7 +600,7 @@ function GroupSuggestions({ group, dimensions, scores, primary, br, markedIds, o
             ) : (
               <div
                 className="w-full aspect-[16/10] flex items-center justify-center text-3xl font-bold"
-                style={{ background: primary + '12', color: primary }}
+                style={{ background: primary + '12', color: readableAccentColor(primary) }}
               >
                 {sug.title.charAt(0)}
               </div>
@@ -610,7 +611,7 @@ function GroupSuggestions({ group, dimensions, scores, primary, br, markedIds, o
               </p>
               <span
                 className="mt-2 inline-flex items-center gap-1 text-xs font-medium group-hover:gap-1.5 transition-all"
-                style={{ color: primary }}
+                style={{ color: readableAccentColor(primary) }}
               >
                 Mehr erfahren <ChevronDown size={13} style={{ transform: 'rotate(-90deg)' }} />
               </span>
@@ -646,7 +647,7 @@ function GroupSuggestions({ group, dimensions, scores, primary, br, markedIds, o
               ) : (
                 <div
                   className="w-full aspect-[16/9] flex items-center justify-center text-5xl font-bold"
-                  style={{ background: primary + '15', color: primary }}
+                  style={{ background: primary + '15', color: readableAccentColor(primary) }}
                 >
                   {openSug.title.charAt(0)}
                 </div>
@@ -665,8 +666,8 @@ function GroupSuggestions({ group, dimensions, scores, primary, br, markedIds, o
                     onClick={() => onToggleMarked(openSug.id, openSug.title)}
                     className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 mb-4 text-sm font-semibold rounded-xl transition-all"
                     style={isMarked
-                      ? { background: primary, color: '#fff' }
-                      : { background: primary + '15', color: primary, border: `2px solid ${primary}40` }}
+                      ? { background: primary, color: readableTextColor(primary) }
+                      : { background: primary + '15', color: readableAccentColor(primary), border: `2px solid ${primary}40` }}
                   >
                     <Star size={16} className={isMarked ? 'fill-current' : ''} />
                     {isMarked ? 'Gemerkt' : 'Interessiert mich'}
@@ -684,7 +685,7 @@ function GroupSuggestions({ group, dimensions, scores, primary, br, markedIds, o
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium border hover:bg-slate-50 transition-colors"
-                        style={{ borderRadius: br, borderColor: primary + '40', color: primary }}
+                        style={{ borderRadius: br, borderColor: primary + '40', color: readableAccentColor(primary) }}
                       >
                         <Icon size={14} /> {l.label}
                       </a>
