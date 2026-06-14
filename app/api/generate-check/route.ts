@@ -188,20 +188,22 @@ Seite 2 (oder 1 wenn keine Studiengänge):
      • „Würdest du …?"
      • „Hättest du Lust, …?"
      • „Wärst du bereit, …?"
-     • „Klingt das nach dir: …?"
+     • „Klingt das nach dir: …?" (NUR mit anschließendem KONKRETEM Szenario, z. B. „Klingt das nach dir: lieber lange an einem kleinen Detail tüfteln?" — NIE mit abstraktem Eigenschaftswort wie „…kreativ?" / „…analytisch?")
      • „Hast du Bock, …?"
      VERBOTEN: Aussage-Sätze ohne „?" („Du sollst …", „Du machst …", „Du bleibst …"), Skala-Fragen („Wie gerne …?", „Wie sehr …?"), Mehrfach-Wahl-Fragen („Was lieber: A oder B?"), abstrakte Charakter-Fragen („Magst du Menschen?", „Bist du kreativ?").
   3. Konkret + sinnlich: Werkzeuge, Mengen, Zeitanker, sichtbare Details. KEIN abstraktes „Würdest du gerne kreativ sein?", sondern „Würdest du aus drei Holzresten ohne Anleitung etwas Brauchbares bauen?"
+     → ZEITANKER realistisch & für Jugendliche greifbar halten („eine Schulstunde lang", „einen Nachmittag", „eine halbe Stunde"). KEINE abschreckenden Extrem-Dauern (>3 Stunden, „8 Stunden", „ohne Pause") — sonst antwortet der Schüler auf die Anstrengung der Dauer statt auf die Tätigkeit selbst.
   4. Setting: Alltag (Schule, Freizeit, Familie, Freundeskreis, WG, Hobby, Praktikum, Nebenjob). NIEMALS Berufsname im Text.
   5. Echter Trade-off: NEIN muss für eine andere VALIDE Stärke stehen (Ruhe, Konzentration, Selbstständigkeit, Detailliebe …) — nicht für moralisches Versagen.
   6. Tonalität neutral-einladend, kein Imperativ-Druck und kein Social-Desirability-Köder („Würdest du gerne anderen helfen?" ist tabu — fast jeder sagt Ja).
+  7. WORTSCHATZ auf Schulniveau (ca. Klasse 8): alltägliche, einfache Wörter, die jede:r 14-Jährige sofort versteht. KEINE Fachbegriffe oder Erwachsenen-Vokabeln (z. B. „analytisch", „strukturiert", „Schaltkasten", „Setzlinge", „Geländewagen-Mechanik") — wenn ein Fachwort nötig wäre, beschreibe die Tätigkeit stattdessen in einfachen, konkreten Worten.
 
   GUT-BEISPIELE (alle Format-Punkte erfüllt):
   • „Würdest du eine Stunde alleine an einer Tabelle sitzen und Zahlen auf Tippfehler prüfen?"
   • „Hättest du Lust, 5 fremden Leuten zu erklären, wie ein Geländewagen funktioniert?"
   • „Wärst du bereit, ein kaputtes Möbelstück ohne Anleitung wieder zusammenzubauen?"
-  • „Würdest du 3 Stunden draußen bei Regen Setzlinge ins Beet pflanzen?"
-  • „Würdest du den ganzen Nachmittag eine Verwandte nach einem Sturz begleiten und mehrfach beim Aufstehen helfen?"
+  • „Würdest du einen Nachmittag draußen bei Regen junge Pflanzen ins Beet setzen?"
+  • „Würdest du einen Nachmittag deine Oma nach einem Sturz begleiten und ihr beim Aufstehen helfen?"
 
   SCHLECHT-BEISPIELE (NICHT generieren):
   ❌ „Du bleibst den Nachmittag bei deiner Oma und hilfst beim Aufstehen." → Aussage statt Frage, kein „?", nicht Ja/Nein-beantwortbar.
@@ -215,9 +217,9 @@ Seite 2 (oder 1 wenn keine Studiengänge):
 
   ── REVERSE-CODED (Pflicht: 1–2 von cardCount) ────────────────────────
   Beide Extreme geben Volltreffer-Punkte auf UNTERSCHIEDLICHE Dimensionen. Verhindert das „alles 👍 wischen"-Problem.
-  Beispiel: „Würdest du 8 Stunden konzentriert an einer einzigen Aufgabe sitzen?"
+  Beispiel: „Würdest du eine Schulstunde lang konzentriert an einer einzigen Aufgabe dranbleiben?"
     → JA +3 Analytik/Ausdauer, NEIN +3 Abwechslung/Aktion.
-  Beispiel: „Würdest du am Samstag einer Freundin 6 Stunden bei einem Projekt helfen — ohne Pause?"
+  Beispiel: „Würdest du einen Samstagnachmittag einer Freundin bei einem Projekt helfen?"
     → JA +3 Soziales, NEIN +2 Unabhängigkeit.
 
   ── SELF-CHECK pro Karte (alle ✓ vor dem Speichern) ────────────────────
@@ -276,8 +278,8 @@ OPTIONAL: 1 Werte-Frage als check_frage mit single_choice (direkt vor check_erge
 
 SWIPE-KARTEN vs. SELBST-SLIDER — wann was?
 • Swipe-Karten eignen sich für konkrete Szenarien mit spürbarer Präferenz ("Du öffnest einen elektrischen Schaltkasten — was denkst du?"). Binär/ternär, affektiv, schnell.
-• Slider (check_selbst) eignen sich für graduelle Selbsteinschätzungen zu einer generischen Fähigkeit/Neigung ("Wie gerne arbeitest du analytisch?"). Offen, kalibrierbar, nicht berufsspezifisch.
-→ Nutze den jeweils passenderen Typ. Wenn eine Dimension am besten über ein Szenario rüberkommt (z.B. Pflege → "Du sollst eine ältere Dame nach einem Sturz nach Hause begleiten"), dann Swipe-Karte. Wenn eine Dimension eine ruhigere Selbstreflexion braucht (z.B. "Mir fällt es leicht, komplexe Probleme zu analysieren" → Technik), dann Slider.
+• Slider (check_selbst) eignen sich für graduelle Selbsteinschätzungen zu einer generischen Fähigkeit/Neigung ("Wie gerne tüftelst du so lange an einem Problem, bis du die Lösung hast?"). Offen, kalibrierbar, nicht berufsspezifisch.
+→ Nutze den jeweils passenderen Typ. Wenn eine Dimension am besten über ein Szenario rüberkommt (z.B. Pflege → "Du sollst eine ältere Dame nach einem Sturz nach Hause begleiten"), dann Swipe-Karte. Wenn eine Dimension eine ruhigere Selbstreflexion braucht (z.B. "Mir fällt es leicht, lange an einer kniffligen Sache dranzubleiben" → Technik), dann Slider.
 → Vermeide Routine: nicht für jede Dimension stumpf "Wie gerne arbeitest du mit X?" wiederholen. Variiere Formulierungen.
 
 PRO-DIMENSION-SLIDER (check_selbst — Pflicht: GENAU 1 Slider pro Dimension):
@@ -301,7 +303,7 @@ PRO-DIMENSION-SLIDER (check_selbst — Pflicht: GENAU 1 Slider pro Dimension):
     SCHLECHT: sliderLabelMin "Gar nicht" ↔ sliderLabelMax "Sehr gerne" (bei Vorlieben → primed max-Wert)
     Unipolar ("Gar nicht" ↔ "Sehr gerne") NUR bei echten Fähigkeits-/Intensitäts-Fragen ("Wie sehr interessiert dich Technik an sich?").
   → question: offen formuliert, keine Berufsnamen, nicht "Wie gerne arbeitest du mit X".
-    BESSER: "Was passt eher zu dir?" als generische Frage + bipolare Labels. Oder ein konkretes Szenario: "Nach einem langen Schultag — was tut dir gut?"
+    BEVORZUGT ein konkretes, für Schüler greifbares Szenario als Einstieg (z. B. "Nach einem langen Schultag — was tut dir gut?"). Nur wenn kein Szenario passt, die generische Frage "Was passt eher zu dir?" + bipolare Labels nutzen.
   → Jede Dimension soll OPTISCH und SPRACHLICH anders klingen — nicht Wort-Variation des Dimensions-Namens.
 
 Vorletzte Seite: check_ergebnis

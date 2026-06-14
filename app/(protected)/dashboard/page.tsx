@@ -22,9 +22,30 @@ type SortBy = 'updated' | 'created' | 'title';
 type ActiveTab = ContentTypeKey | 'trash';
 
 export default function DashboardPage() {
-  const { company, can } = useAuth();
+  const { company, currentMember, can } = useAuth();
   const router = useRouter();
   const toast = useToast();
+
+  // ── Personal greeting ─────────────────────────────────────────────────────
+  // First name only feels warmer than the full name. Computed once on mount;
+  // the personalized branch only ever renders client-side (currentMember is
+  // hydrated from /api/auth/me after mount), so the time-based greeting can't
+  // cause an SSR hydration mismatch.
+  const firstName = currentMember?.name?.trim().split(/\s+/)[0] ?? '';
+  const greeting = useMemo(() => {
+    // Fest auf deutsche Zeit gepinnt (Europe/Berlin), unabhängig von der
+    // Zeitzone des Endgeräts. hourCycle 'h23' liefert 0–23 (Mitternacht = 0).
+    const h = Number(
+      new Intl.DateTimeFormat('en-GB', {
+        hour: '2-digit',
+        hourCycle: 'h23',
+        timeZone: 'Europe/Berlin',
+      }).format(new Date()),
+    );
+    if (h >= 5 && h < 11) return 'Guten Morgen';
+    if (h >= 11 && h < 18) return 'Guten Tag';
+    return 'Guten Abend';
+  }, []);
 
   // ── Hooks (one per content type) ──────────────────────────────────────────
   const questList = useContentList({
@@ -60,8 +81,16 @@ export default function DashboardPage() {
 
   const defaultTab: ContentTypeKey = visibleConfigs[0]?.[0].key ?? 'jobquests';
   const [activeTab, setActiveTab] = useState<ActiveTab>(defaultTab);
+  const [tabPinnedByUser, setTabPinnedByUser] = useState(false);
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<SortBy>('updated');
+
+  // Explizite Tab-Wahl des Nutzers → ab jetzt nicht mehr automatisch dem
+  // ersten Tab folgen.
+  function selectTab(tab: ActiveTab) {
+    setTabPinnedByUser(true);
+    setActiveTab(tab);
+  }
 
   useEffect(() => {
     if (!company) return;
@@ -80,8 +109,16 @@ export default function DashboardPage() {
     const isActiveVisible = visibleConfigs.some(([cfg]) => cfg.key === activeTab);
     if (!isActiveVisible && visibleConfigs.length > 0) {
       setActiveTab(visibleConfigs[0][0].key);
+      return;
     }
-  }, [visibleConfigs, activeTab]);
+    // Bis der Nutzer selbst einen Tab wählt, immer auf dem ersten (nach Inhalt
+    // sortierten) Tab bleiben. Der erste Render berechnet defaultTab noch im
+    // Lade-Zustand (alle leer → Ausgangsreihenfolge), daher hier nachziehen,
+    // sobald die Daten da sind und visibleConfigs neu sortiert hat.
+    if (!tabPinnedByUser && visibleConfigs.length > 0 && activeTab !== visibleConfigs[0][0].key) {
+      setActiveTab(visibleConfigs[0][0].key);
+    }
+  }, [visibleConfigs, activeTab, tabPinnedByUser]);
 
   useEffect(() => { setSearch(''); }, [activeTab]);
 
@@ -169,8 +206,15 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
-          <p className="text-slate-500 text-sm mt-0.5">Verwalte deine Inhalte und analysiere Ergebnisse</p>
+          <h1 className="text-2xl font-bold text-slate-900">
+            {firstName ? `${greeting}, ${firstName}!` : 'Willkommen zurück!'}{' '}
+            <span aria-hidden="true">👋</span>
+          </h1>
+          <p className="text-slate-500 text-sm mt-0.5">
+            {company?.name
+              ? `Schön, dass du da bist – hier ist dein Überblick für ${company.name}.`
+              : 'Verwalte deine Inhalte und analysiere Ergebnisse'}
+          </p>
         </div>
         {activeTab === 'jobquests' && renderCreateButton(questConfig, questList)}
         {activeTab === 'berufschecks' && renderCreateButton(checkConfig, checkList)}
@@ -190,7 +234,7 @@ export default function DashboardPage() {
                 value={`${list.items.length} / ${plan[cfg.planLimit]}`}
                 icon={cfg.icon}
                 color={cfg.color}
-                onClick={() => setActiveTab(cfg.key)}
+                onClick={() => selectTab(cfg.key)}
               />
             ))}
             <StatCard
@@ -212,11 +256,11 @@ export default function DashboardPage() {
             label={cfg.label}
             active={activeTab === cfg.key}
             badge={list.items.filter((i) => i.status === 'published').length}
-            onClick={() => setActiveTab(cfg.key)}
+            onClick={() => selectTab(cfg.key)}
           />
         ))}
         <button
-          onClick={() => setActiveTab('trash')}
+          onClick={() => selectTab('trash')}
           className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ml-auto ${
             activeTab === 'trash' ? 'border-slate-700 text-slate-900' : 'border-transparent text-slate-400 hover:text-slate-600'
           }`}
