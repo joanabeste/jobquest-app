@@ -11,9 +11,9 @@ export interface CI {
 }
 
 const defaults: CI = {
-  primary:      '#7c3aed',
-  accent:       '#f59e0b',
-  headingColor: '#0f172a',
+  primary:      '#3A22E0',
+  accent:       '#FF6B4A',
+  headingColor: '#15123A',
   textColor:    '#1e293b',
   br:           '12px',
 };

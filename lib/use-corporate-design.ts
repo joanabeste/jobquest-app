@@ -1,5 +1,6 @@
 import { Company, DEFAULT_CORPORATE_DESIGN } from '@/lib/types';
 import { fontFamilyFor } from '@/lib/fonts';
+import { readableTextColor } from '@/lib/contrast';
 
 /**
  * Derives CSS variables and a <style> string from a company's corporate design.
@@ -38,7 +39,9 @@ export function useCorporateDesign(company: Company) {
 
   // Button-specific overrides. If a field is unset, fall back to primary/body.
   const btnBg     = design.buttonColor      || primary;
-  const btnText   = design.buttonTextColor  || '#ffffff';
+  // Textfarbe: manueller Override gewinnt, sonst automatisch lesbarer Kontrast
+  // (schwarz auf hellem, weiß auf dunklem Button-Hintergrund).
+  const btnText   = design.buttonTextColor  || readableTextColor(btnBg);
   const btnSize   = design.buttonFontSize   ?? bSize;
   const btnWeight = design.buttonFontWeight ?? 600;
 

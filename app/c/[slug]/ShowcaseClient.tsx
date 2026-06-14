@@ -256,7 +256,7 @@ function ShowcaseSection({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {items.map((it) => (
           <Link key={it.id} href={it.href}
-            className="group bg-white border border-slate-200 hover:border-violet-400 hover:shadow-lg transition-all overflow-hidden flex flex-col"
+            className="group bg-white border border-slate-200 hover:border-jq-indigo hover:shadow-lg transition-all overflow-hidden flex flex-col"
             style={{ borderRadius: 'var(--showcase-radius)' }}>
             <div className="aspect-[16/10] bg-slate-100 overflow-hidden flex items-center justify-center">
               {it.cardImage ? (

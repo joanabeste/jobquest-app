@@ -109,13 +109,13 @@ export default function BlockLibrary({ contentType, onInsertBlock, onClose }: Bl
                     onClick={() => {
                       onInsertBlock(block.type, getDefaultProps(block.type));
                     }}
-                    className="w-full flex items-center gap-2.5 px-3 py-1.5 hover:bg-violet-50 active:bg-violet-100 transition-colors text-left group"
+                    className="w-full flex items-center gap-2.5 px-3 py-1.5 hover:bg-ci-soft active:bg-ci-soft transition-colors text-left group"
                   >
-                    <div className={`w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 transition-colors ${meta?.bg ?? 'bg-slate-100'} group-hover:bg-violet-100`}>
-                      {Icon && <Icon size={11} className={`${meta?.color ?? 'text-slate-500'} group-hover:text-violet-600`} />}
+                    <div className={`w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 transition-colors ${meta?.bg ?? 'bg-slate-100'} group-hover:bg-ci-soft`}>
+                      {Icon && <Icon size={11} className={`${meta?.color ?? 'text-slate-500'} group-hover:text-ci-ink`} />}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs font-medium text-slate-700 group-hover:text-violet-700 leading-none">{block.label}</p>
+                      <p className="text-xs font-medium text-slate-700 group-hover:text-ci-ink leading-none">{block.label}</p>
                       <p className="text-[10px] text-slate-400 mt-0.5 leading-tight truncate">{block.description}</p>
                     </div>
                   </button>

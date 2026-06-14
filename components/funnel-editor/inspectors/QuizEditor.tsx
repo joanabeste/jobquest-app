@@ -14,7 +14,7 @@ export function QuizEditor({ props, onChange, variables = [] }: { props: Record<
         <div className="flex items-center justify-between mb-2">
           <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Antworten</p>
           <button onClick={() => onChange({ options: [...options, { id: crypto.randomUUID(), text: 'Antwort', correct: false, feedback: '' }] })}
-            className="flex items-center gap-1 text-[10px] text-violet-600 font-medium"><Plus size={11} /> Antwort</button>
+            className="flex items-center gap-1 text-[10px] text-ci-ink font-medium"><Plus size={11} /> Antwort</button>
         </div>
         <div className="space-y-2">
           {options.map((o, i) => (

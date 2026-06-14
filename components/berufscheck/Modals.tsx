@@ -34,15 +34,15 @@ export function SetupWizard({ onComplete }: { onComplete: (dims: Dimension[]) =>
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
-        <div className="bg-gradient-to-br from-violet-600 to-indigo-600 px-8 py-7 text-white">
+        <div className="bg-gradient-to-br from-ci-ink to-indigo-600 px-8 py-7 text-white">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center">
               <Sparkles size={18} />
             </div>
-            <span className="text-sm font-medium text-violet-200">Berufscheck einrichten</span>
+            <span className="text-sm font-medium text-white/80">Berufscheck einrichten</span>
           </div>
           <h2 className="text-xl font-bold mb-1">Berufsfelder definieren</h2>
-          <p className="text-violet-200 text-sm leading-relaxed">
+          <p className="text-white/90 text-sm leading-relaxed">
             Berufsfelder sind die Kategorien, in denen du Teilnehmer bewertest.
             Die Antworten auf deine Fragen vergeben Punkte pro Berufsfeld –
             am Ende sieht man, welches am besten passt.
@@ -68,7 +68,7 @@ export function SetupWizard({ onComplete }: { onComplete: (dims: Dimension[]) =>
                   value={dim.name}
                   onChange={(e) => updateDim(dim.id, { name: e.target.value })}
                   placeholder={`z. B. ${['Technik & IT', 'Soziales & Pflege', 'Handwerk', 'Büro & Verwaltung', 'Kreatives & Medien'][idx] ?? 'Berufsfeld'}`}
-                  className="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-300 bg-white"
+                  className="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ci bg-white"
                   autoFocus={idx === 0}
                   onKeyDown={(e) => e.key === 'Enter' && addDim()}
                 />
@@ -80,7 +80,7 @@ export function SetupWizard({ onComplete }: { onComplete: (dims: Dimension[]) =>
               </div>
             ))}
           </div>
-          <button onClick={addDim} className="flex items-center gap-1.5 text-xs text-violet-600 hover:text-violet-700 font-medium px-2 py-1 transition-colors">
+          <button onClick={addDim} className="flex items-center gap-1.5 text-xs text-ci-ink hover:text-ci-ink font-medium px-2 py-1 transition-colors">
             <Plus size={13} />
             Weiteres Berufsfeld hinzufügen
           </button>
@@ -90,7 +90,7 @@ export function SetupWizard({ onComplete }: { onComplete: (dims: Dimension[]) =>
           <button
             onClick={() => onComplete(dims.map((d) => ({ ...d, name: d.name.trim() })))}
             disabled={!canFinish}
-            className="w-full flex items-center justify-center gap-2 py-3 px-6 bg-violet-600 text-white text-sm font-semibold rounded-xl hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="w-full flex items-center justify-center gap-2 py-3 px-6 bg-ci text-ci-on text-sm font-semibold rounded-xl hover:bg-ci-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             Berufscheck erstellen <ArrowRight size={16} />
           </button>
@@ -126,7 +126,7 @@ export function PublishModal({ slug, useCustomDomain, onShowQR, onClose }: {
           <p className="text-xs text-slate-500 mb-1">Öffentliche URL:</p>
           <div className="flex items-center gap-2">
             <p className="text-sm font-mono text-slate-800 flex-1 truncate">{publicUrl}</p>
-            <button onClick={() => navigator.clipboard.writeText(publicUrl)} className="text-violet-600 hover:text-violet-700 flex-shrink-0" title="Link kopieren">
+            <button onClick={() => navigator.clipboard.writeText(publicUrl)} className="text-ci-ink hover:text-ci-ink flex-shrink-0" title="Link kopieren">
               <LinkIcon size={14} />
             </button>
           </div>
@@ -134,7 +134,7 @@ export function PublishModal({ slug, useCustomDomain, onShowQR, onClose }: {
         <button onClick={onShowQR} className="w-full mb-2 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">
           QR-Code anzeigen
         </button>
-        <button onClick={onClose} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-violet-600 hover:bg-violet-700 rounded-xl transition-colors">
+        <button onClick={onClose} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-ci-on bg-ci hover:bg-ci-hover rounded-xl transition-colors">
           Fertig
         </button>
       </div>

@@ -38,7 +38,7 @@ const GenerateCheckSchema = z.object({
 
 // Palette of distinct hex colors for auto-generated dimensions.
 const DIMENSION_PALETTE = [
-  '#7c3aed', '#2563eb', '#059669', '#d97706', '#dc2626',
+  '#3A22E0', '#2563eb', '#059669', '#d97706', '#dc2626',
   '#0891b2', '#65a30d', '#ea580c', '#9333ea', '#0284c7',
 ];
 

@@ -59,7 +59,7 @@ export default function BerufsCheckLeadsPage() {
   if (!check) {
     return (
       <div className="h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-violet-600 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-ci border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -109,8 +109,8 @@ export default function BerufsCheckLeadsPage() {
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         <div className="bg-white rounded-2xl border border-slate-200 p-5 flex items-center gap-4 shadow-sm">
-          <div className="w-10 h-10 rounded-xl bg-violet-100 flex items-center justify-center flex-shrink-0">
-            <Users size={20} className="text-violet-600" />
+          <div className="w-10 h-10 rounded-xl bg-ci-soft flex items-center justify-center flex-shrink-0">
+            <Users size={20} className="text-ci-ink" />
           </div>
           <div>
             <p className="text-2xl font-bold text-slate-900">{leads.length}</p>
@@ -157,7 +157,7 @@ export default function BerufsCheckLeadsPage() {
               placeholder="Kontakte durchsuchen (Name, E-Mail)…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-300 bg-white"
+              className="w-full pl-9 pr-4 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-ci bg-white"
             />
           </div>
 
@@ -190,7 +190,7 @@ export default function BerufsCheckLeadsPage() {
                         <td className="px-4 py-3">
                           {top ? (
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium text-white"
-                              style={{ background: top.color ?? '#7c3aed' }}>
+                              style={{ background: top.color ?? '#3A22E0' }}>
                               {top.name}
                             </span>
                           ) : '—'}
@@ -199,7 +199,7 @@ export default function BerufsCheckLeadsPage() {
                           {new Date(lead.submittedAt).toLocaleString('de-DE')}
                         </td>
                         <td className="px-4 py-3 text-right">
-                          <span className="text-xs text-violet-600 font-medium hover:underline">Details</span>
+                          <span className="text-xs text-ci-ink font-medium hover:underline">Details</span>
                         </td>
                       </tr>
                     );
@@ -243,11 +243,11 @@ function LeadDetailModal({ lead, dimensions, onClose }: {
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
         onClick={(e) => e.stopPropagation()}>
         {/* Header */}
-        <div className="bg-gradient-to-br from-violet-600 to-indigo-600 px-6 py-5 text-white">
+        <div className="bg-gradient-to-br from-ci-ink to-indigo-600 px-6 py-5 text-white">
           <div className="flex items-start justify-between">
             <div>
               <h2 className="text-lg font-bold">{lead.firstName} {lead.lastName}</h2>
-              <p className="text-violet-200 text-sm mt-0.5">
+              <p className="text-white/70 text-sm mt-0.5">
                 {new Date(lead.submittedAt).toLocaleString('de-DE')}
               </p>
             </div>
@@ -265,7 +265,7 @@ function LeadDetailModal({ lead, dimensions, onClose }: {
             <div className="space-y-2">
               <div className="flex items-center gap-3 text-sm">
                 <Mail size={14} className="text-slate-400 flex-shrink-0" />
-                <a href={`mailto:${lead.email}`} className="text-violet-600 hover:underline truncate">{lead.email}</a>
+                <a href={`mailto:${lead.email}`} className="text-ci-ink hover:underline truncate">{lead.email}</a>
               </div>
               {lead.phone && (
                 <div className="flex items-center gap-3 text-sm">
@@ -298,7 +298,7 @@ function LeadDetailModal({ lead, dimensions, onClose }: {
                       </div>
                       <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
                         <div className="h-full rounded-full transition-all duration-500"
-                          style={{ width: `${pct}%`, background: dim.color ?? '#7c3aed' }} />
+                          style={{ width: `${pct}%`, background: dim.color ?? '#3A22E0' }} />
                       </div>
                     </div>
                   );

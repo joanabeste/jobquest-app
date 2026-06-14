@@ -66,7 +66,7 @@ function wrapVarsInHtml(html: string, variables: VariableDef[]): string {
     while ((m = re.exec(str))) {
       if (m.index > last) frag.appendChild(document.createTextNode(str.slice(last, m.index)));
       const chip = document.createElement('span');
-      chip.className = `${VAR_CHIP_CLASS} inline-block px-1 rounded bg-violet-100 text-violet-700 font-mono text-[0.9em]`;
+      chip.className = `${VAR_CHIP_CLASS} inline-block px-1 rounded bg-ci-soft text-ci-ink font-mono text-[0.9em]`;
       chip.setAttribute('contenteditable', 'false');
       chip.textContent = m[0];
       frag.appendChild(chip);
@@ -283,8 +283,8 @@ export default function RichTextEditor({ value, onChange, variables = [], minHei
     <div className="border border-slate-200 rounded-lg overflow-hidden text-sm">
       {/* Toolbar */}
       {linkMode ? (
-        <div className="flex items-center gap-1.5 px-2 py-1.5 bg-violet-50 border-b border-violet-200">
-          <Link2 size={12} className="text-violet-400 flex-shrink-0" />
+        <div className="flex items-center gap-1.5 px-2 py-1.5 bg-ci-soft border-b border-ci">
+          <Link2 size={12} className="text-ci-ink flex-shrink-0" />
           <input
             ref={linkInputRef}
             type="url"
@@ -298,7 +298,7 @@ export default function RichTextEditor({ value, onChange, variables = [], minHei
             className="flex-1 min-w-0 text-xs bg-transparent outline-none text-slate-800 placeholder-slate-400"
           />
           <button type="button" onMouseDown={(e) => { e.preventDefault(); confirmLink(); }}
-            className="px-2 py-0.5 text-xs font-semibold bg-violet-600 text-white rounded hover:bg-violet-700 transition-colors flex-shrink-0">
+            className="px-2 py-0.5 text-xs font-semibold bg-ci text-ci-on rounded hover:bg-ci-hover transition-colors flex-shrink-0">
             OK
           </button>
           <button type="button" onMouseDown={(e) => { e.preventDefault(); removeLink(); }}
@@ -359,7 +359,7 @@ export default function RichTextEditor({ value, onChange, variables = [], minHei
                   key={v.key}
                   type="button"
                   onMouseDown={(e) => { e.preventDefault(); insertVariable(v.key); }}
-                  className="px-1.5 py-0.5 rounded-md bg-violet-100 hover:bg-violet-200 text-violet-700 font-mono text-[10px] font-semibold transition-colors"
+                  className="px-1.5 py-0.5 rounded-md bg-ci-soft hover:bg-ci-soft text-ci-ink font-mono text-[10px] font-semibold transition-colors"
                   title={`Variable einfügen: ${v.label}`}
                 >
                   @{v.key}
@@ -379,7 +379,7 @@ export default function RichTextEditor({ value, onChange, variables = [], minHei
         onKeyDown={handleEditorKeyDown}
         onMouseUp={saveSelection}
         onKeyUp={saveSelection}
-        className="p-2 outline-none [&_a]:text-violet-600 [&_a]:underline [&_a]:cursor-pointer"
+        className="p-2 outline-none [&_a]:text-ci-ink [&_a]:underline [&_a]:cursor-pointer"
         style={{ minHeight }}
       />
 
@@ -398,10 +398,10 @@ export default function RichTextEditor({ value, onChange, variables = [], minHei
                 key={v.key}
                 onMouseDown={(e) => { e.preventDefault(); applyMention(v.key); }}
                 className={`w-full flex items-center gap-3 px-3 py-2 text-left transition-colors ${
-                  i === mentionIdx ? 'bg-violet-50' : 'hover:bg-slate-50'
+                  i === mentionIdx ? 'bg-ci-soft' : 'hover:bg-slate-50'
                 }`}
               >
-                <span className="text-violet-600 font-mono text-xs font-semibold">@{v.key}</span>
+                <span className="text-ci-ink font-mono text-xs font-semibold">@{v.key}</span>
                 <span className="text-xs text-slate-400">{v.label}</span>
               </button>
             ))}

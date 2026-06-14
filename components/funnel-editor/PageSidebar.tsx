@@ -46,7 +46,7 @@ export default function PageSidebar({
         <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Seiten</span>
         <button
           onClick={onAddPage}
-          className="w-6 h-6 rounded-lg bg-violet-50 hover:bg-violet-100 text-violet-500 hover:text-violet-700 flex items-center justify-center transition-colors"
+          className="w-6 h-6 rounded-lg bg-ci-soft hover:bg-ci-soft text-ci-ink hover:text-ci-ink flex items-center justify-center transition-colors"
           title="Seite hinzufügen"
         >
           <Plus size={12} />
@@ -123,7 +123,7 @@ function SortablePage({
       onClick={onSelect}
       className={`group relative flex items-center gap-2 px-2 py-2.5 rounded-xl cursor-pointer transition-all mb-0.5 ${
         isActive
-          ? 'bg-violet-50 shadow-[inset_3px_0_0_#7c3aed]'
+          ? 'bg-ci-soft shadow-[inset_3px_0_0_var(--ci-primary)]'
           : 'hover:bg-slate-50'
       } ${isDragging ? 'z-50' : ''}`}
     >
@@ -138,7 +138,7 @@ function SortablePage({
 
       {/* Page number badge */}
       <div className={`w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 text-[11px] font-semibold transition-colors ${
-        isActive ? 'bg-violet-500 text-white' : 'bg-slate-100 text-slate-400 group-hover:bg-slate-200'
+        isActive ? 'bg-ci text-ci-on' : 'bg-slate-100 text-slate-400 group-hover:bg-slate-200'
       }`}>
         {pageIndex + 1}
       </div>
@@ -155,7 +155,7 @@ function SortablePage({
               if (e.key === 'Enter') commitEdit();
               if (e.key === 'Escape') { setEditing(false); setEditValue(page.name); }
             }}
-            className="w-full text-[13px] bg-white border border-violet-300 rounded-lg px-2 py-0.5 outline-none focus:ring-1 focus:ring-violet-400"
+            className="w-full text-[13px] bg-white border border-ci rounded-lg px-2 py-0.5 outline-none focus:ring-1 focus:ring-ci"
             onClick={(e) => e.stopPropagation()}
             autoFocus
           />
@@ -176,7 +176,7 @@ function SortablePage({
           </span>
           {hasConnection && (
             <span title="Hat explizite Weiterleitung">
-              <GitBranch size={9} className="text-violet-300" />
+              <GitBranch size={9} className="text-ci-ink" />
             </span>
           )}
         </div>

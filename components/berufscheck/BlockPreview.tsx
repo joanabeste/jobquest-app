@@ -3,11 +3,11 @@
 import { MousePointer2 } from 'lucide-react';
 import { BerufsCheckBlock, Dimension } from '@/lib/types';
 
-const clickEl = 'rounded cursor-text transition-all hover:ring-2 hover:ring-violet-300 hover:ring-offset-1';
+const clickEl = 'rounded cursor-text transition-all hover:ring-2 hover:ring-ci hover:ring-offset-1';
 
 function PreviewHint() {
   return (
-    <p className="mt-3 text-[10px] text-violet-400 flex items-center gap-1 opacity-60">
+    <p className="mt-3 text-[10px] text-ci-ink flex items-center gap-1 opacity-60">
       <MousePointer2 size={10} /> Klicken zum Bearbeiten
     </p>
   );
@@ -21,7 +21,7 @@ export function BlockPreview({ block, dimensions, company, focusField }: {
 }) {
   switch (block.type) {
     case 'intro': return (
-      <div className="relative min-h-[240px] flex items-center justify-center text-center overflow-hidden rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600">
+      <div className="relative min-h-[240px] flex items-center justify-center text-center overflow-hidden rounded-2xl bg-gradient-to-br from-ci-ink to-indigo-600">
         {block.imageUrl && (
            
           <img src={block.imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover opacity-20" />
@@ -34,7 +34,7 @@ export function BlockPreview({ block, dimensions, company, focusField }: {
             {block.subtext || <span className="opacity-40 italic">Untertext…</span>}
           </p>
           <span onClick={() => focusField('buttonText')}
-            className={`inline-block px-6 py-2.5 bg-white rounded-xl text-violet-700 font-semibold text-sm ${clickEl}`}>
+            className={`inline-block px-6 py-2.5 bg-white rounded-xl text-ci-ink font-semibold text-sm ${clickEl}`}>
             {block.buttonText || 'Button'}
           </span>
         </div>
@@ -51,7 +51,7 @@ export function BlockPreview({ block, dimensions, company, focusField }: {
           <span className="text-slate-300 text-sm">{block.placeholder || 'Dein Vorname'}</span>
         </div>
         <span onClick={() => focusField('buttonText')}
-          className={`inline-block px-5 py-2 bg-violet-600 rounded-xl text-white text-sm font-semibold ${clickEl}`}>
+          className={`inline-block px-5 py-2 bg-ci rounded-xl text-ci-on text-sm font-semibold ${clickEl}`}>
           {block.buttonText || 'Weiter'}
         </span>
         <PreviewHint />
@@ -68,7 +68,7 @@ export function BlockPreview({ block, dimensions, company, focusField }: {
         )}
         <div className="mt-6">
           <div className="relative h-2 bg-slate-100 rounded-full">
-            <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-violet-600 shadow-md" />
+            <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-ci shadow-md" />
           </div>
           <div className="flex justify-between mt-2 text-xs text-slate-400">
             <span>{block.sliderLabelMin || 'Gar nicht'}</span>
@@ -96,7 +96,7 @@ export function BlockPreview({ block, dimensions, company, focusField }: {
         ) : (
           <div className="mt-4">
             <div className="relative h-2 bg-slate-100 rounded-full">
-              <div className="absolute left-1/3 -translate-x-1/2 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-violet-600 shadow-md" />
+              <div className="absolute left-1/3 -translate-x-1/2 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-ci shadow-md" />
             </div>
             <div className="flex justify-between mt-2 text-xs text-slate-400">
               <span>{block.sliderLabelMin || 'Wenig'}</span>
@@ -139,7 +139,7 @@ export function BlockPreview({ block, dimensions, company, focusField }: {
         </p>
         {block.buttonText && (
           <span onClick={() => focusField('buttonText')}
-            className={`mt-5 inline-block px-5 py-2 bg-violet-600 rounded-xl text-white text-sm font-semibold ${clickEl}`}>
+            className={`mt-5 inline-block px-5 py-2 bg-ci rounded-xl text-ci-on text-sm font-semibold ${clickEl}`}>
             {block.buttonText}
           </span>
         )}
@@ -164,7 +164,7 @@ export function BlockPreview({ block, dimensions, company, focusField }: {
           {block.privacyText.replace('{{company}}', company || 'Unternehmen').replace('@companyName', company || 'Unternehmen')}
         </p>
         <span onClick={() => focusField('buttonText')}
-          className={`block w-full py-2.5 bg-violet-600 rounded-xl text-white text-sm font-semibold text-center ${clickEl}`}>
+          className={`block w-full py-2.5 bg-ci rounded-xl text-ci-on text-sm font-semibold text-center ${clickEl}`}>
           {block.buttonText || 'Ergebnis anzeigen'}
         </span>
         <PreviewHint />
@@ -205,7 +205,7 @@ export function BlockPreview({ block, dimensions, company, focusField }: {
       <div className="bg-white rounded-2xl p-8 flex flex-col items-center gap-3">
         <span onClick={() => focusField('text')}
           className={`px-6 py-2.5 rounded-xl text-sm font-semibold ${
-            block.style === 'primary' ? 'bg-violet-600 text-white' : 'border-2 border-slate-300 text-slate-700'
+            block.style === 'primary' ? 'bg-ci text-ci-on' : 'border-2 border-slate-300 text-slate-700'
           } ${clickEl}`}>
           {block.text || <span className="italic opacity-50">Button-Text…</span>}
         </span>

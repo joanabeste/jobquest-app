@@ -30,7 +30,7 @@ function OptionRow({ opt, idx, dimensions, onUpdate, onDelete }: {
       <input
         value={opt.text}
         onChange={(e) => onUpdate(opt.id, { text: e.target.value })}
-        className="flex-1 text-sm bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-violet-300 min-w-0"
+        className="flex-1 text-sm bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-ci min-w-0"
         placeholder="Antwort…"
       />
       {dimensions.length > 0 && (
@@ -38,7 +38,7 @@ function OptionRow({ opt, idx, dimensions, onUpdate, onDelete }: {
           <select
             value={dimId}
             onChange={(e) => setDimension(e.target.value)}
-            className="text-xs bg-white border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-violet-300 max-w-[120px]"
+            className="text-xs bg-white border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-ci max-w-[120px]"
             style={dim ? { borderColor: dim.color, color: dim.color } : {}}
           >
             <option value="">— Feld —</option>
@@ -48,7 +48,7 @@ function OptionRow({ opt, idx, dimensions, onUpdate, onDelete }: {
             <input
               type="number" min="0" max="100" value={opt.scores[dimId] ?? 1}
               onChange={(e) => setScore(dimId, e.target.value)}
-              className="w-12 text-xs text-center bg-white border border-slate-200 rounded-lg px-1 py-1.5 focus:outline-none focus:ring-1 focus:ring-violet-300"
+              className="w-12 text-xs text-center bg-white border border-slate-200 rounded-lg px-1 py-1.5 focus:outline-none focus:ring-1 focus:ring-ci"
             />
           )}
         </>
@@ -88,7 +88,7 @@ export function InlineFrageEditor({ block, dimensions, onChange, fieldRefs }: {
           {(['single_choice', 'slider'] as const).map((ft) => (
             <button key={ft} onClick={() => u({ frageType: ft })}
               className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
-                block.frageType === ft ? 'bg-violet-600 text-white border-violet-600' : 'bg-white text-slate-600 border-slate-200 hover:border-violet-300'
+                block.frageType === ft ? 'bg-ci text-ci-on border-ci' : 'bg-white text-slate-600 border-slate-200 hover:border-ci'
               }`}>
               {ft === 'single_choice' ? 'Einzelauswahl' : 'Schieberegler'}
             </button>
@@ -107,7 +107,7 @@ export function InlineFrageEditor({ block, dimensions, onChange, fieldRefs }: {
                 <OptionRow key={opt.id} opt={opt} idx={i} dimensions={dimensions} onUpdate={updateOption} onDelete={deleteOption} />
               ))}
             </div>
-            <button onClick={addOption} className="mt-2 flex items-center gap-1 text-xs text-violet-600 font-medium px-2 py-1">
+            <button onClick={addOption} className="mt-2 flex items-center gap-1 text-xs text-ci-ink font-medium px-2 py-1">
               <Plus size={12} /> Option hinzufügen
             </button>
           </div>
@@ -126,7 +126,7 @@ export function InlineFrageEditor({ block, dimensions, onChange, fieldRefs }: {
             </div>
             <CfgField label="Berufsfeld" hint="Slider-Wert wird als Punktzahl gewertet">
               <select value={block.sliderDimensionId ?? ''} onChange={(e) => u({ sliderDimensionId: e.target.value || undefined })}
-                className="w-full px-2.5 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-violet-300 bg-white">
+                className="w-full px-2.5 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-ci bg-white">
                 <option value="">— Kein Berufsfeld —</option>
                 {dimensions.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
               </select>
@@ -176,7 +176,7 @@ export function InlineErgebnisfrageEditor({ block, dimensions, onChange, fieldRe
             <OptionRow key={opt.id} opt={opt} idx={i} dimensions={dimensions} onUpdate={updateOption} onDelete={deleteOption} />
           ))}
         </div>
-        <button onClick={addOption} className="mt-2 flex items-center gap-1 text-xs text-violet-600 font-medium px-2 py-1">
+        <button onClick={addOption} className="mt-2 flex items-center gap-1 text-xs text-ci-ink font-medium px-2 py-1">
           <Plus size={12} /> Option hinzufügen
         </button>
       </div>

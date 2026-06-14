@@ -106,13 +106,13 @@ export default function NodeView({
       onClick={(e) => e.stopPropagation()}
       className={`relative group transition-all duration-100 cursor-default
         ${isSelected
-          ? 'ring-2 ring-violet-500 ring-offset-0 z-10'
-          : 'hover:ring-1 hover:ring-violet-300/50'}
+          ? 'ring-2 ring-ci ring-offset-0 z-10'
+          : 'hover:ring-1 hover:ring-ci/50'}
         ${isDragging ? 'opacity-40' : ''}
       `}
     >
       {isSelected && (
-        <div className="absolute top-0 inset-x-0 h-0.5 bg-violet-500 z-30 pointer-events-none" />
+        <div className="absolute top-0 inset-x-0 h-0.5 bg-ci z-30 pointer-events-none" />
       )}
 
       {node.kind === 'block' ? (
@@ -140,14 +140,14 @@ export default function NodeView({
       <div className={`absolute top-2 left-2 flex items-center gap-1 z-20 transition-opacity duration-100 pointer-events-none ${labelOpacity}`}>
         {dragHandle && (
           <span className={`pointer-events-auto flex items-center rounded p-0.5 transition-colors
-            ${isSelected ? 'bg-violet-700 text-white' : 'bg-violet-700/75 text-white/80 hover:text-white backdrop-blur-sm'}`}>
+            ${isSelected ? 'bg-ci text-ci-on' : 'bg-ci/75 text-ci-on/80 hover:text-ci-on backdrop-blur-sm'}`}>
             {dragHandle}
           </span>
         )}
         <span className={`flex items-center gap-1 px-1.5 py-0.5 rounded pointer-events-none transition-colors
-          ${isSelected ? 'bg-violet-600 shadow-sm' : 'bg-violet-600/75 backdrop-blur-sm'}`}>
-          {Icon && <Icon size={9} className="text-white flex-shrink-0" />}
-          <span className="text-[9px] font-bold uppercase tracking-widest text-white leading-none">{label}</span>
+          ${isSelected ? 'bg-ci shadow-sm' : 'bg-ci/75 backdrop-blur-sm'}`}>
+          {Icon && <Icon size={9} className="text-ci-on flex-shrink-0" />}
+          <span className="text-[9px] font-bold uppercase tracking-widest text-ci-on leading-none">{label}</span>
         </span>
       </div>
 
@@ -159,7 +159,7 @@ export default function NodeView({
         <div className={`absolute top-2 right-2 flex items-center gap-0.5 z-20 transition-opacity duration-100 ${actionOpacity}`}>
           <button
             onClick={(e) => { e.stopPropagation(); onDuplicate(); }}
-            className="p-1 rounded bg-white shadow-sm border border-slate-100 text-slate-400 hover:text-violet-600 hover:border-violet-200 transition-colors"
+            className="p-1 rounded bg-white shadow-sm border border-slate-100 text-slate-400 hover:text-ci-ink hover:border-ci transition-colors"
             title="Duplizieren (⌘D)"
           >
             <Copy size={11} />

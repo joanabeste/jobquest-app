@@ -98,9 +98,9 @@ function VarDropdown({
         <button
           key={v.key}
           onMouseDown={(e) => { e.preventDefault(); onSelect(v.key); }}
-          className="w-full flex items-center gap-3 px-3 py-2 hover:bg-violet-50 transition-colors text-left"
+          className="w-full flex items-center gap-3 px-3 py-2 hover:bg-ci-soft transition-colors text-left"
         >
-          <span className="text-violet-600 font-mono text-xs font-semibold">@{v.key}</span>
+          <span className="text-ci-ink font-mono text-xs font-semibold">@{v.key}</span>
           <span className="text-xs text-slate-400">{v.label}</span>
         </button>
       ))}

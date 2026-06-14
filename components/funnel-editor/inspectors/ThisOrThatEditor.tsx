@@ -54,7 +54,7 @@ export function ThisOrThatEditor({ props, onChange, variables = [] }: {
           type="checkbox"
           checked={allowSkip}
           onChange={(e) => onChange({ allowSkip: e.target.checked })}
-          className="accent-violet-600"
+          className="accent-ci"
         />
         <span className="text-xs text-slate-700">&bdquo;Überspringen&ldquo;-Button anzeigen</span>
       </label>
@@ -142,14 +142,14 @@ function OptionColumn({ side, option, onPatch }: {
           type="button"
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading}
-          className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg border border-dashed border-slate-300 text-[11px] text-slate-600 hover:bg-slate-50 hover:border-violet-400 disabled:opacity-60"
+          className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg border border-dashed border-slate-300 text-[11px] text-slate-600 hover:bg-slate-50 hover:border-ci disabled:opacity-60"
         >
           <Upload size={11} /> {uploading ? 'Lädt…' : 'Hochladen'}
         </button>
         <button
           type="button"
           onClick={() => setLibraryOpen(true)}
-          className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg border border-dashed border-slate-300 text-[11px] text-slate-600 hover:bg-slate-50 hover:border-violet-400"
+          className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg border border-dashed border-slate-300 text-[11px] text-slate-600 hover:bg-slate-50 hover:border-ci"
         >
           <ImageIcon size={11} /> Mediathek
         </button>

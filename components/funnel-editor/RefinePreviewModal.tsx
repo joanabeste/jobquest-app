@@ -108,7 +108,7 @@ export default function RefinePreviewModal({
         <div className="px-6 pt-4 pb-3 border-b border-slate-100">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
-              <Sparkles size={18} className="text-violet-500" />
+              <Sparkles size={18} className="text-ci-ink" />
               <h2 className="text-base font-semibold text-slate-900">KI-Vorschlag prüfen</h2>
             </div>
             <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 transition-colors">
@@ -134,7 +134,7 @@ export default function RefinePreviewModal({
           {/* changesSummary aus KI-Antwort */}
           <section>
             <h3 className="text-xs font-semibold text-slate-700 mb-1.5 flex items-center gap-1.5">
-              <Wand2 size={12} className="text-violet-500" />
+              <Wand2 size={12} className="text-ci-ink" />
               Was die KI sagt, dass sie geändert hat
             </h3>
             {changesSummary.length === 0 ? (
@@ -144,7 +144,7 @@ export default function RefinePreviewModal({
             ) : (
               <ul className="space-y-1 text-xs text-slate-600 pl-2">
                 {changesSummary.map((s, i) => (
-                  <li key={i} className="flex gap-2"><span className="text-violet-400">•</span><span>{s}</span></li>
+                  <li key={i} className="flex gap-2"><span className="text-ci-ink">•</span><span>{s}</span></li>
                 ))}
               </ul>
             )}
@@ -163,7 +163,7 @@ export default function RefinePreviewModal({
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-xs font-semibold text-slate-700">Tatsächliche Änderungen</h3>
                 <div className="flex gap-2 text-[11px]">
-                  <button onClick={selectAll} className="text-violet-600 hover:underline">Alle</button>
+                  <button onClick={selectAll} className="text-ci-ink hover:underline">Alle</button>
                   <span className="text-slate-300">|</span>
                   <button onClick={selectNone} className="text-slate-500 hover:underline">Keine</button>
                 </div>
@@ -224,7 +224,7 @@ export default function RefinePreviewModal({
             <button
               onClick={handleApply}
               disabled={selectedCount === 0}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-violet-600 text-white rounded-xl hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-ci text-ci-on rounded-xl hover:bg-ci-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <Sparkles size={14} /> Übernehmen
             </button>
@@ -255,21 +255,21 @@ function PageChangeCard({
   onToggleField: (id: string) => void;
 }) {
   const symbol =
-    change.kind === 'added' ? <Plus size={14} className="text-violet-500" /> :
+    change.kind === 'added' ? <Plus size={14} className="text-ci-ink" /> :
     change.kind === 'removed' ? <Minus size={14} className="text-red-500" /> :
     <Pencil size={14} className="text-amber-500" />;
 
   if (change.kind === 'added' || change.kind === 'removed') {
     const pageName = change.kind === 'added' ? change.page.name : change.page.name;
     const blockCount = change.kind === 'added' ? change.page.nodes.length : change.page.nodes.length;
-    const colorClass = change.kind === 'added' ? 'border-violet-200 bg-violet-50/30' : 'border-red-200 bg-red-50/30';
+    const colorClass = change.kind === 'added' ? 'border-ci bg-ci-soft/30' : 'border-red-200 bg-red-50/30';
     return (
       <label className={`flex items-center gap-2.5 px-3 py-2 rounded-lg border ${colorClass} cursor-pointer hover:bg-opacity-50`}>
         <input
           type="checkbox"
           checked={selection.has(change.id)}
           onChange={() => onToggle(change.id)}
-          className="w-3.5 h-3.5 accent-violet-600"
+          className="w-3.5 h-3.5 accent-ci"
         />
         {symbol}
         <div className="flex-1 min-w-0">
@@ -316,7 +316,7 @@ function PageChangeCard({
                   type="checkbox"
                   checked={selection.has(change.metaChangeId)}
                   onChange={() => onToggle(change.metaChangeId!)}
-                  className="mt-0.5 w-3.5 h-3.5 accent-violet-600"
+                  className="mt-0.5 w-3.5 h-3.5 accent-ci"
                 />
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-medium text-slate-700">Seiten-Eigenschaften</p>
@@ -372,7 +372,7 @@ function BlockChangeRow({
   onExpand: () => void;
 }) {
   const symbol =
-    change.kind === 'added' ? <Plus size={12} className="text-violet-500" /> :
+    change.kind === 'added' ? <Plus size={12} className="text-ci-ink" /> :
     change.kind === 'removed' ? <Minus size={12} className="text-red-500" /> :
     <Pencil size={12} className="text-amber-500" />;
   const labelNode = change.kind === 'added' ? change.node : change.kind === 'removed' ? change.node : change.after;
@@ -385,7 +385,7 @@ function BlockChangeRow({
           type="checkbox"
           checked={selected}
           onChange={onToggle}
-          className="mt-0.5 w-3.5 h-3.5 accent-violet-600 shrink-0"
+          className="mt-0.5 w-3.5 h-3.5 accent-ci shrink-0"
         />
         <button
           onClick={change.kind === 'modified' ? onExpand : undefined}
@@ -568,11 +568,11 @@ function ListDiffRow({ status, label, before, after }: {
   after?: Record<string, unknown>;
 }) {
   const symbol =
-    status === 'added' ? <Plus size={10} className="text-violet-500" /> :
+    status === 'added' ? <Plus size={10} className="text-ci-ink" /> :
     status === 'removed' ? <Minus size={10} className="text-red-500" /> :
     <Pencil size={10} className="text-amber-500" />;
   const colorClass =
-    status === 'added' ? 'text-violet-700' :
+    status === 'added' ? 'text-ci-ink' :
     status === 'removed' ? 'text-red-700 line-through decoration-red-300' :
     'text-amber-800';
 
@@ -749,7 +749,7 @@ function prettyFieldName(f: string): string {
 
 function DimensionRow({ change, selected, onToggle }: { change: DimensionChange; selected: boolean; onToggle: () => void }) {
   const symbol =
-    change.kind === 'added' ? <Plus size={12} className="text-violet-500" /> :
+    change.kind === 'added' ? <Plus size={12} className="text-ci-ink" /> :
     change.kind === 'removed' ? <Minus size={12} className="text-red-500" /> :
     <Pencil size={12} className="text-amber-500" />;
   const name =
@@ -757,12 +757,12 @@ function DimensionRow({ change, selected, onToggle }: { change: DimensionChange;
     change.kind === 'removed' ? change.dimension.name :
     change.after.name;
   const colorClass =
-    change.kind === 'added' ? 'border-violet-100 bg-violet-50/30' :
+    change.kind === 'added' ? 'border-ci bg-ci-soft/30' :
     change.kind === 'removed' ? 'border-red-100 bg-red-50/30' :
     'border-amber-100 bg-amber-50/30';
   return (
     <label className={`flex items-center gap-2.5 px-3 py-1.5 rounded-lg border ${colorClass} cursor-pointer hover:bg-opacity-50`}>
-      <input type="checkbox" checked={selected} onChange={onToggle} className="w-3.5 h-3.5 accent-violet-600" />
+      <input type="checkbox" checked={selected} onChange={onToggle} className="w-3.5 h-3.5 accent-ci" />
       {symbol}
       <span className="flex-1 min-w-0 text-xs text-slate-700 truncate">
         {change.kind === 'added' ? 'neu' : change.kind === 'removed' ? 'entfernen' : 'ändern'}: {name || '(unbenannt)'}

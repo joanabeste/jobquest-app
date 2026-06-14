@@ -12,6 +12,7 @@ import ImageCropModal from '@/components/shared/ImageCropModal';
 import MediaLibrary from '@/components/shared/MediaLibrary';
 import ImportFromWebsiteModal, { ExtractedProfile } from '@/components/company/ImportFromWebsiteModal';
 import { FONT_OPTIONS, fontFamilyFor } from '@/lib/fonts';
+import { readableTextColor } from '@/lib/contrast';
 import CustomDomainSettings from '@/components/settings/CustomDomainSettings';
 
 type Tab = 'company' | 'design' | 'success';
@@ -410,10 +411,10 @@ export default function SettingsCompanyPage() {
                   />
                   <OptionalColor
                     label="Button-Textfarbe"
-                    desc="Leer = Weiß"
+                    desc="Leer = automatisch (schwarz/weiß)"
                     value={design.buttonTextColor}
-                    fallback="#ffffff"
-                    fallbackLabel="Wie Standard (Weiß)"
+                    fallback={readableTextColor(design.buttonColor || design.primaryColor)}
+                    fallbackLabel="Automatisch (je nach Hintergrund)"
                     onChange={(v) => setDesign((d) => ({ ...d, buttonTextColor: v }))}
                   />
                 </div>
@@ -463,7 +464,7 @@ export default function SettingsCompanyPage() {
                     className="px-5 py-2.5 inline-flex items-center justify-center transition-all"
                     style={{
                       backgroundColor: design.buttonColor || design.primaryColor,
-                      color: design.buttonTextColor || '#ffffff',
+                      color: design.buttonTextColor || readableTextColor(design.buttonColor || design.primaryColor),
                       borderRadius: `${design.borderRadius}px`,
                       fontFamily: design.buttonFontData
                         ? `'${design.buttonFontName}', system-ui, sans-serif`
@@ -1351,8 +1352,12 @@ function DesignPreview({ name, logo, design }: { name: string; logo?: string; de
         {/* Footer */}
         <div className="bg-white border-t border-slate-200 px-3 py-2.5 flex items-center justify-between">
           <span className="text-[10px] text-slate-300">← Zurück</span>
-          <button className="px-3 py-1.5 text-[10px] text-white font-semibold shadow-sm"
-            style={{ backgroundColor: design.primaryColor, borderRadius: br }}>Weiter →</button>
+          <button className="px-3 py-1.5 text-[10px] font-semibold shadow-sm"
+            style={{
+              backgroundColor: design.buttonColor || design.primaryColor,
+              color: design.buttonTextColor || readableTextColor(design.buttonColor || design.primaryColor),
+              borderRadius: br,
+            }}>Weiter →</button>
         </div>
       </div>
 

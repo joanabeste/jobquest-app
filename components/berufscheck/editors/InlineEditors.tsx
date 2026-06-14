@@ -12,7 +12,7 @@ import { InlineFrageEditor, InlineErgebnisfrageEditor } from './OptionEditors';
 // ── Inline style helpers ──────────────────────────────────────────────────────
 export type FieldRefs = React.MutableRefObject<Record<string, HTMLInputElement | HTMLTextAreaElement | null>>;
 
-const inlineBase = 'w-full bg-transparent outline-none border-b-2 border-transparent hover:border-slate-200 focus:border-violet-500 transition-colors py-1 placeholder:text-slate-300';
+const inlineBase = 'w-full bg-transparent outline-none border-b-2 border-transparent hover:border-slate-200 focus:border-ci transition-colors py-1 placeholder:text-slate-300';
 export const inlineLarge = `${inlineBase} text-xl font-bold text-slate-900`;
 export const inlineMed = `${inlineBase} text-base font-semibold text-slate-800`;
 export const inlineSmall = `${inlineBase} text-sm text-slate-600`;
@@ -20,7 +20,7 @@ export const inlineTextarea = `${inlineBase} resize-none leading-relaxed`;
 
 export function InlineLabel({ children }: { children: React.ReactNode }) {
   return (
-    <span className="block text-[9px] uppercase tracking-widest text-violet-400 opacity-0 group-focus-within:opacity-100 transition-opacity mb-0.5">
+    <span className="block text-[9px] uppercase tracking-widest text-ci-ink opacity-0 group-focus-within:opacity-100 transition-opacity mb-0.5">
       {children}
     </span>
   );
@@ -30,7 +30,7 @@ export function BlockTypeTag({ label }: { label: string }) {
 }
 export function PreviewHint() {
   return (
-    <p className="mt-3 text-[10px] text-violet-400 flex items-center gap-1 opacity-60">
+    <p className="mt-3 text-[10px] text-ci-ink flex items-center gap-1 opacity-60">
       <MousePointer2 size={10} /> Klicken zum Bearbeiten
     </p>
   );
@@ -49,7 +49,7 @@ export function CfgField({ label, hint, children }: { label: string; hint?: stri
 export function CfgInput({ value, onChange, placeholder, type = 'text' }: { value: string | number; onChange: (v: string) => void; placeholder?: string; type?: string }) {
   return (
     <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
-      className="w-full px-2.5 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-violet-300 bg-white" />
+      className="w-full px-2.5 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-ci bg-white" />
   );
 }
 
@@ -98,12 +98,12 @@ function InlineIntroEditor({ block, onChange, fieldRefs }: { block: IntroBlock; 
         <InlineLabel>Button-Text</InlineLabel>
         <input ref={(el) => { fieldRefs.current['buttonText'] = el; }}
           value={block.buttonText} onChange={(e) => u({ buttonText: e.target.value })}
-          placeholder="Jetzt starten" className={`${inlineSmall} font-semibold text-violet-700`} />
+          placeholder="Jetzt starten" className={`${inlineSmall} font-semibold text-ci-ink`} />
       </div>
       <div className="pt-3 border-t border-slate-100">
         <p className="text-[10px] uppercase tracking-widest text-slate-400 mb-2">Hintergrundbild-URL (optional)</p>
         <input value={block.imageUrl ?? ''} onChange={(e) => u({ imageUrl: e.target.value || undefined })}
-          placeholder="https://…" className="w-full px-2.5 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-violet-300 bg-white" />
+          placeholder="https://…" className="w-full px-2.5 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-ci bg-white" />
       </div>
     </div>
   );
@@ -131,7 +131,7 @@ function InlineVornameEditor({ block, onChange, fieldRefs }: { block: VornameBlo
         <InlineLabel>Button-Text</InlineLabel>
         <input ref={(el) => { fieldRefs.current['buttonText'] = el; }}
           value={block.buttonText} onChange={(e) => u({ buttonText: e.target.value })}
-          placeholder="Weiter" className={`${inlineSmall} font-semibold text-violet-700`} />
+          placeholder="Weiter" className={`${inlineSmall} font-semibold text-ci-ink`} />
       </div>
     </div>
   );
@@ -170,7 +170,7 @@ function InlineSelbsteinschaetzungEditor({ block, dimensions, onChange, fieldRef
         </div>
         <CfgField label="Berufsfeld" hint="Slider-Wert als Punktzahl">
           <select value={block.sliderDimensionId ?? ''} onChange={(e) => u({ sliderDimensionId: e.target.value || undefined })}
-            className="w-full px-2.5 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-violet-300 bg-white">
+            className="w-full px-2.5 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-ci bg-white">
             <option value="">— Kein Berufsfeld —</option>
             {dimensions.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
           </select>
@@ -202,7 +202,7 @@ function InlineTextBlockEditor({ block, onChange, fieldRefs }: { block: TextBloc
         <InlineLabel>Button-Text</InlineLabel>
         <input ref={(el) => { fieldRefs.current['buttonText'] = el; }}
           value={block.buttonText} onChange={(e) => u({ buttonText: e.target.value })}
-          placeholder="Weiter" className={`${inlineSmall} font-semibold text-violet-700`} />
+          placeholder="Weiter" className={`${inlineSmall} font-semibold text-ci-ink`} />
       </div>
     </div>
   );
@@ -232,12 +232,12 @@ function InlineLeadBlockEditor({ block, company, onChange, fieldRefs }: {
         <InlineLabel>Button-Text</InlineLabel>
         <input ref={(el) => { fieldRefs.current['buttonText'] = el; }}
           value={block.buttonText} onChange={(e) => u({ buttonText: e.target.value })}
-          placeholder="Ergebnis anzeigen" className={`${inlineSmall} font-semibold text-violet-700`} />
+          placeholder="Ergebnis anzeigen" className={`${inlineSmall} font-semibold text-ci-ink`} />
       </div>
       <div className="flex items-center justify-between py-2.5 border-t border-slate-100">
         <span className="text-sm text-slate-600">Telefonnummer anzeigen</span>
         <button onClick={() => u({ showPhone: !block.showPhone })}
-          className={`relative w-9 h-5 rounded-full transition-colors ${block.showPhone ? 'bg-violet-600' : 'bg-slate-300'}`}>
+          className={`relative w-9 h-5 rounded-full transition-colors ${block.showPhone ? 'bg-ci' : 'bg-slate-300'}`}>
           <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${block.showPhone ? 'translate-x-4' : 'translate-x-0.5'}`} />
         </button>
       </div>
@@ -274,7 +274,7 @@ function InlineErgebnisEditor({ block, onChange, fieldRefs }: { block: ErgebnisB
       <div className="flex items-center justify-between py-2.5 border-t border-slate-100">
         <span className="text-sm text-slate-600">Berufsfeld-Balken anzeigen</span>
         <button onClick={() => u({ showDimensionBars: !block.showDimensionBars })}
-          className={`relative w-9 h-5 rounded-full transition-colors ${block.showDimensionBars ? 'bg-violet-600' : 'bg-slate-300'}`}>
+          className={`relative w-9 h-5 rounded-full transition-colors ${block.showDimensionBars ? 'bg-ci' : 'bg-slate-300'}`}>
           <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${block.showDimensionBars ? 'translate-x-4' : 'translate-x-0.5'}`} />
         </button>
       </div>
@@ -292,7 +292,7 @@ function InlineButtonEditor({ block, onChange, fieldRefs }: { block: ButtonBlock
         <InlineLabel>Button-Text</InlineLabel>
         <input ref={(el) => { fieldRefs.current['text'] = el; }}
           value={block.text} onChange={(e) => u({ text: e.target.value })}
-          placeholder="Mehr erfahren" className={`${inlineMed} text-violet-700`} />
+          placeholder="Mehr erfahren" className={`${inlineMed} text-ci-ink`} />
       </div>
       <div className="group">
         <InlineLabel>URL / Link</InlineLabel>
@@ -306,7 +306,7 @@ function InlineButtonEditor({ block, onChange, fieldRefs }: { block: ButtonBlock
           {(['primary', 'secondary'] as const).map((s) => (
             <button key={s} onClick={() => u({ style: s })}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
-                block.style === s ? 'bg-violet-600 text-white border-violet-600' : 'bg-white text-slate-600 border-slate-200 hover:border-violet-300'
+                block.style === s ? 'bg-ci text-ci-on border-ci' : 'bg-white text-slate-600 border-slate-200 hover:border-ci'
               }`}>
               {block.style === s && <Check size={11} />}
               {s === 'primary' ? 'Primär' : 'Sekundär'}

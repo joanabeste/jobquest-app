@@ -200,7 +200,7 @@ export function ImageBlockEditor({ props, onChange }: {
         <div className="flex gap-1.5 flex-wrap">
           {IMAGE_SIZES.map((sz) => (
             <button key={sz.val} type="button" onClick={() => onChange({ size: sz.val })}
-              className={`px-2.5 py-1 text-xs rounded-lg border transition-colors ${imgSize === sz.val ? 'bg-violet-600 text-white border-violet-600' : 'border-slate-200 text-slate-600 hover:border-slate-300'}`}>
+              className={`px-2.5 py-1 text-xs rounded-lg border transition-colors ${imgSize === sz.val ? 'bg-ci text-ci-on border-ci' : 'border-slate-200 text-slate-600 hover:border-slate-300'}`}>
               {sz.label}
             </button>
           ))}
@@ -209,7 +209,7 @@ export function ImageBlockEditor({ props, onChange }: {
       {(props.src as string) && (
         <div className="flex items-center gap-2">
           <button type="button" onClick={() => setCropOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-200 text-slate-600 hover:border-violet-400 hover:text-violet-600 transition-colors">
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-200 text-slate-600 hover:border-ci hover:text-ci-ink transition-colors">
             <Crop size={11} /> Bild zuschneiden
           </button>
           {hasCrop && (

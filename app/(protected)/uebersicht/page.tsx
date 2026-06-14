@@ -229,7 +229,7 @@ export default function UebersichtPage() {
             </>
           )}
           <button onClick={handleSave} disabled={saving || slugStatus === 'taken' || slugStatus === 'invalid' || slugStatus === 'checking'}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-violet-600 hover:bg-violet-700 disabled:opacity-50 rounded-xl transition-colors">
+            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-ci-on bg-ci hover:bg-ci-hover disabled:opacity-50 rounded-xl transition-colors">
             {saved ? <CheckCircle size={14} /> : <Save size={14} />}
             {saved ? 'Gespeichert' : saving ? 'Speichert…' : 'Speichern'}
           </button>
@@ -306,7 +306,7 @@ export default function UebersichtPage() {
                 ? 'border-red-300 text-red-700 focus:border-red-500'
                 : slugStatus === 'available'
                 ? 'border-emerald-300 text-slate-800 focus:border-emerald-500'
-                : 'border-slate-300 text-slate-800 focus:border-violet-500'
+                : 'border-slate-300 text-slate-800 focus:border-ci'
             }`}
           />
           {slugStatus === 'checking' && <span className="text-[11px] text-slate-400 flex-shrink-0">prüfe…</span>}
@@ -342,7 +342,7 @@ export default function UebersichtPage() {
       {/* General settings */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 mb-6">
         <h2 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
-          <Globe size={16} className="text-violet-600" /> Inhalt
+          <Globe size={16} className="text-ci-ink" /> Inhalt
         </h2>
         <div className="space-y-4">
           <div>
@@ -371,7 +371,7 @@ export default function UebersichtPage() {
             ) : (
               <button type="button"
                 onClick={() => setMediaPickerFor({ type: 'jobquest', contentId: '__header__' })}
-                className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 text-xs text-slate-500 border border-dashed border-slate-200 rounded-lg hover:border-violet-300 hover:text-violet-600 transition-colors">
+                className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 text-xs text-slate-500 border border-dashed border-slate-200 rounded-lg hover:border-ci hover:text-ci-ink transition-colors">
                 <ImageIcon size={12} /> Bild aus Mediathek wahlen
               </button>
             )}
@@ -385,7 +385,7 @@ export default function UebersichtPage() {
         <p className="text-xs text-slate-400 mb-4">JobQuests und Berufschecks erscheinen in getrennten Bereichen mit eigenen Texten.</p>
         <div className="grid sm:grid-cols-2 gap-5">
           <div className="space-y-3">
-            <p className="text-xs font-semibold uppercase tracking-wider text-violet-600">JobQuests</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-ci-ink">JobQuests</p>
             <div>
               <label className="block text-xs font-medium text-slate-600 mb-1">Überschrift</label>
               <input value={config.questsHeadline ?? ''}
@@ -403,7 +403,7 @@ export default function UebersichtPage() {
             </div>
           </div>
           <div className="space-y-3">
-            <p className="text-xs font-semibold uppercase tracking-wider text-violet-600">Berufschecks</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-ci-ink">Berufschecks</p>
             <div>
               <label className="block text-xs font-medium text-slate-600 mb-1">Überschrift</label>
               <input value={config.checksHeadline ?? ''}
@@ -476,12 +476,12 @@ export default function UebersichtPage() {
                       <div className="flex flex-wrap gap-1.5">
                         <button type="button"
                           onClick={() => setCropper({ type: item.type, contentId: item.contentId, src: effective })}
-                          className="flex items-center gap-1 px-2.5 py-1 text-[11px] rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-violet-300 hover:text-violet-700 transition-colors">
+                          className="flex items-center gap-1 px-2.5 py-1 text-[11px] rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-ci hover:text-ci-ink transition-colors">
                           <Crop size={11} /> Zuschneiden
                         </button>
                         <button type="button"
                           onClick={() => setMediaPickerFor({ type: item.type, contentId: item.contentId })}
-                          className="flex items-center gap-1 px-2.5 py-1 text-[11px] rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-violet-300 hover:text-violet-700 transition-colors">
+                          className="flex items-center gap-1 px-2.5 py-1 text-[11px] rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-ci hover:text-ci-ink transition-colors">
                           <ImageIcon size={11} /> {isOverride ? 'Anderes Bild' : 'Eigenes Bild'}
                         </button>
                         {isOverride && (
@@ -496,7 +496,7 @@ export default function UebersichtPage() {
                     ) : (
                       <button type="button"
                         onClick={() => setMediaPickerFor({ type: item.type, contentId: item.contentId })}
-                        className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs text-slate-500 border border-dashed border-slate-200 rounded-lg hover:border-violet-300 hover:text-violet-600 transition-colors">
+                        className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs text-slate-500 border border-dashed border-slate-200 rounded-lg hover:border-ci hover:text-ci-ink transition-colors">
                         <ImageIcon size={12} /> Titelbild wahlen
                       </button>
                     )}
@@ -514,16 +514,16 @@ export default function UebersichtPage() {
             <div className="grid sm:grid-cols-2 gap-2">
               {availableQuests.map((q) => (
                 <button key={q.id} type="button" onClick={() => addItem('jobquest', q.id)}
-                  className="flex items-center gap-2 p-2 text-left border border-slate-200 rounded-lg hover:border-violet-400 hover:bg-violet-50 transition-colors">
-                  <Plus size={14} className="text-violet-600 flex-shrink-0" />
+                  className="flex items-center gap-2 p-2 text-left border border-slate-200 rounded-lg hover:border-ci hover:bg-ci-soft transition-colors">
+                  <Plus size={14} className="text-ci-ink flex-shrink-0" />
                   <span className="text-sm text-slate-700 truncate flex-1">{q.title}</span>
                   <span className="text-[10px] text-slate-400">JobQuest</span>
                 </button>
               ))}
               {availableChecks.map((c) => (
                 <button key={c.id} type="button" onClick={() => addItem('berufscheck', c.id)}
-                  className="flex items-center gap-2 p-2 text-left border border-slate-200 rounded-lg hover:border-violet-400 hover:bg-violet-50 transition-colors">
-                  <Plus size={14} className="text-violet-600 flex-shrink-0" />
+                  className="flex items-center gap-2 p-2 text-left border border-slate-200 rounded-lg hover:border-ci hover:bg-ci-soft transition-colors">
+                  <Plus size={14} className="text-ci-ink flex-shrink-0" />
                   <span className="text-sm text-slate-700 truncate flex-1">{c.title}</span>
                   <span className="text-[10px] text-slate-400">Berufscheck</span>
                 </button>

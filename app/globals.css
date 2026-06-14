@@ -4,6 +4,18 @@
 
 :root {
   --font-geist-sans: 'Geist', system-ui, sans-serif;
+
+  /* Corporate-Identity-Farben. Default = JobQuest-Indigo (greift für SSR,
+     Pre-Login-Seiten und solange der CiThemeProvider noch nicht gesetzt hat).
+     Im eingeloggten Dashboard überschreibt der CiThemeProvider --ci-primary
+     und --ci-on-primary (Auto-Kontrast) pro Unternehmen. */
+  --ci-primary: #3A22E0;
+  --ci-on-primary: #ffffff;
+  --ci-primary-hover: #2A14B8;
+  --ci-primary-soft: color-mix(in srgb, var(--ci-primary) 10%, white);
+  /* Abgedunkelte, immer auf hellen Flächen lesbare Markenfarbe (Text/Icons
+     auf --ci-primary-soft oder weiß). Default = indigo-deep #2A14B8. */
+  --ci-ink: #2A14B8;
 }
 
 * {
@@ -64,7 +76,12 @@ body {
 
 @layer components {
   .btn-primary {
-    @apply inline-flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+    background: var(--ci-primary);
+    color: var(--ci-on-primary);
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: var(--ci-primary-hover);
   }
 
   .btn-secondary {
@@ -76,12 +93,19 @@ body {
   }
 
   .input-field {
-    @apply w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-violet-400 focus:border-violet-300 transition-all;
+    @apply w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white placeholder:text-slate-400 focus:outline-none transition-all;
+  }
+  .input-field:focus {
+    border-color: var(--ci-primary);
+    box-shadow: 0 0 0 1px var(--ci-primary);
   }
 
   /* Compact inputs inside list-item editors (dialog lines, options, fields) */
   .mini-input {
-    @apply px-2 py-1 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-violet-400;
+    @apply px-2 py-1 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none;
+  }
+  .mini-input:focus {
+    box-shadow: 0 0 0 1px var(--ci-primary);
   }
 
   .label {
@@ -123,7 +147,9 @@ body {
 }
 
 .chat-bubble-right {
-  @apply bg-violet-600 text-white rounded-2xl rounded-tr-sm px-4 py-3 max-w-xs shadow-sm;
+  @apply rounded-2xl rounded-tr-sm px-4 py-3 max-w-xs shadow-sm;
+  background: var(--ci-primary);
+  color: var(--ci-on-primary);
 }
 
 /* Toast animation */

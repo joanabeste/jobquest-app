@@ -51,7 +51,11 @@ export default function DashboardPage() {
       [questConfig, questList] as const,
       [checkConfig, checkList] as const,
       [formConfig, formList] as const,
-    ] as const).filter(([cfg]) => plan[cfg.planLimit] > 0);
+    ] as const)
+      .filter(([cfg]) => plan[cfg.planLimit] > 0)
+      // Content types that already have items come first; empty ones move to
+      // the back. Stable sort keeps the original order within each group.
+      .sort(([, a], [, b]) => (a.items.length > 0 ? 0 : 1) - (b.items.length > 0 ? 0 : 1));
   }, [plan, questList, checkList, formList]);
 
   const defaultTab: ContentTypeKey = visibleConfigs[0]?.[0].key ?? 'jobquests';

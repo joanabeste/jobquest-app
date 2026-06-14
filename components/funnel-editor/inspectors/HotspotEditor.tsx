@@ -208,10 +208,10 @@ export function HotspotEditor({ props, onChange }: {
               <button
                 type="button"
                 onClick={() => setIconPickerOpen((o) => !o)}
-                className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg border border-slate-200 bg-white text-[11px] text-slate-600 hover:border-violet-300 transition-colors"
+                className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg border border-slate-200 bg-white text-[11px] text-slate-600 hover:border-ci transition-colors"
               >
                 {isIconName(selected.icon)
-                  ? (() => { const Ic = DECISION_ICONS[selected.icon!]; return <Ic size={13} className="text-violet-500" />; })()
+                  ? (() => { const Ic = DECISION_ICONS[selected.icon!]; return <Ic size={13} className="text-ci-ink" />; })()
                   : isEmoji(selected.icon)
                     ? <span className="text-base leading-none">{selected.icon}</span>
                     : <Smile size={13} className="text-slate-400" />

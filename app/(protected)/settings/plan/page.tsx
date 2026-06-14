@@ -34,7 +34,7 @@ export default function SettingsPlanPage() {
   }, []);
 
   const items = [
-    { label: 'JobQuests', current: usage.jobQuests, max: plan.maxJobQuests, icon: FileText, color: '#7c3aed' },
+    { label: 'JobQuests', current: usage.jobQuests, max: plan.maxJobQuests, icon: FileText, color: '#3A22E0' },
     { label: 'Berufschecks', current: usage.berufschecks, max: plan.maxBerufschecks, icon: CheckSquare, color: '#6366f1' },
     { label: 'Formulare', current: usage.formulare, max: plan.maxFormulare, icon: ClipboardList, color: '#10b981' },
   ].filter((i) => i.max > 0);

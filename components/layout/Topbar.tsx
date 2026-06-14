@@ -65,8 +65,8 @@ export default function Topbar() {
           <img src={company.logo} alt={company.name}
             className="h-8 w-auto max-w-[140px] rounded-lg object-contain flex-shrink-0" />
         ) : (
-          <div className="w-8 h-8 rounded-lg bg-violet-600 flex items-center justify-center flex-shrink-0">
-            <span className="text-white font-bold text-sm">J</span>
+          <div className="w-8 h-8 rounded-lg bg-ci flex items-center justify-center flex-shrink-0">
+            <span className="text-ci-on font-bold text-sm">J</span>
           </div>
         )}
         <span className="font-semibold text-slate-900 truncate">
@@ -81,7 +81,7 @@ export default function Topbar() {
           return (
             <Link key={href} href={href}
               className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                active ? 'bg-violet-50 text-violet-700' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                active ? 'bg-ci-soft text-ci-ink' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
               }`}>
               <Icon size={15} />
               <span className="hidden sm:block">{label}</span>
@@ -95,8 +95,8 @@ export default function Topbar() {
       <div className="relative" ref={menuRef}>
         <button onClick={() => setMenuOpen(!menuOpen)}
           className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors">
-          <div className="w-6 h-6 rounded-full bg-violet-100 flex items-center justify-center">
-            <span className="text-violet-700 text-xs font-semibold">
+          <div className="w-6 h-6 rounded-full bg-ci-soft flex items-center justify-center">
+            <span className="text-ci-ink text-xs font-semibold">
               {currentMember?.name?.charAt(0).toUpperCase() || company?.contactName?.charAt(0).toUpperCase() || 'U'}
             </span>
           </div>
@@ -113,8 +113,8 @@ export default function Topbar() {
             {/* Account info */}
             <div className="px-4 py-3 border-b border-slate-100">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center flex-shrink-0">
-                  <span className="text-violet-700 text-sm font-bold">
+                <div className="w-10 h-10 rounded-full bg-ci-soft flex items-center justify-center flex-shrink-0">
+                  <span className="text-ci-ink text-sm font-bold">
                     {currentMember?.name?.charAt(0).toUpperCase() || 'U'}
                   </span>
                 </div>
@@ -135,7 +135,7 @@ export default function Topbar() {
                 <div className="flex items-center justify-between px-4 pt-2 pb-1">
                   <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Einstellungen</p>
                   <Link href="/settings" onClick={() => setMenuOpen(false)}
-                    className="text-[10px] text-violet-600 hover:text-violet-700 font-medium flex items-center gap-0.5">
+                    className="text-[10px] text-ci-ink hover:opacity-80 font-medium flex items-center gap-0.5">
                     Alle <ChevronRight size={10} />
                   </Link>
                 </div>
@@ -143,8 +143,8 @@ export default function Topbar() {
                 {can('edit_company') && (
                   <Link href="/settings/company" onClick={() => setMenuOpen(false)}
                     className="flex items-center gap-3 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors group">
-                    <div className="w-7 h-7 rounded-lg bg-violet-50 flex items-center justify-center flex-shrink-0 group-hover:bg-violet-100 transition-colors">
-                      <Building2 size={13} className="text-violet-600" />
+                    <div className="w-7 h-7 rounded-lg bg-ci-soft flex items-center justify-center flex-shrink-0 transition-colors">
+                      <Building2 size={13} className="text-ci-ink" />
                     </div>
                     <span className="font-medium">Firmenprofil</span>
                   </Link>

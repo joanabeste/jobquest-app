@@ -42,17 +42,13 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-slate-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-jq-cloud via-white to-jq-paper-2 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-violet-600 flex items-center justify-center shadow-lg shadow-violet-200">
-              <span className="text-white font-bold text-lg">J</span>
-            </div>
-            <span className="text-2xl font-bold text-slate-900">JobQuest</span>
-          </div>
-          <p className="text-slate-500 text-sm mt-1">Digitales Ausbildungsmarketing</p>
+          <img src="/brand/jobquest-logo.png" alt="JobQuest"
+            className="h-20 w-auto mx-auto rounded-2xl shadow-lg" />
+          <p className="text-slate-500 text-sm mt-3">Digitales Ausbildungsmarketing</p>
         </div>
 
         <div className="card p-8">
@@ -118,12 +114,12 @@ export default function LoginPage() {
           </form>
 
           <div className="mt-6 flex flex-col items-center gap-2 text-sm text-slate-500">
-            <Link href="/forgot-password" className="text-violet-600 hover:text-violet-700 font-medium">
+            <Link href="/forgot-password" className="text-jq-indigo hover:text-jq-indigo-deep font-medium">
               Passwort vergessen?
             </Link>
             <span>
               Noch kein Account?{' '}
-              <Link href="/register" className="text-violet-600 hover:text-violet-700 font-medium">
+              <Link href="/register" className="text-jq-indigo hover:text-jq-indigo-deep font-medium">
                 Jetzt registrieren
               </Link>
             </span>

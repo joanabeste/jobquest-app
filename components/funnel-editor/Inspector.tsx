@@ -69,7 +69,7 @@ export default function Inspector({ node, isLocked, onUpdate, onDelete, onDuplic
           <p className="flex-1 text-sm font-semibold text-slate-800 truncate">{label}</p>
           <div className="flex items-center gap-0.5 flex-shrink-0">
             {isLocked ? (
-              <span className="flex items-center gap-1 px-2 py-1 bg-violet-50 rounded-lg text-[10px] font-medium text-violet-600">
+              <span className="flex items-center gap-1 px-2 py-1 bg-ci-soft rounded-lg text-[10px] font-medium text-ci-ink">
                 <Lock size={10} /> Gesperrt
               </span>
             ) : (
@@ -140,7 +140,7 @@ function TabBtn({ active, onClick, children }: { active: boolean; onClick: () =>
   return (
     <button onClick={onClick}
       className={`flex-1 py-2 text-xs font-medium transition-colors border-b-2 ${
-        active ? 'border-violet-500 text-violet-700' : 'border-transparent text-slate-500 hover:text-slate-700'
+        active ? 'border-ci-ink text-ci-ink' : 'border-transparent text-slate-500 hover:text-slate-700'
       }`}>
       {children}
     </button>
@@ -211,9 +211,9 @@ function PageSettingsEditor({ currentPage, pages, onUpdate }: { currentPage?: Fu
           {!sequentialNextId && <option value="">— Letzter Schritt —</option>}
         </select>
         {isCustom && (
-          <p className="text-[10px] text-violet-600 mt-1.5 flex items-center gap-1">
+          <p className="text-[10px] text-ci-ink mt-1.5 flex items-center gap-1">
             Benutzerdefinierte Reihenfolge aktiv
-            <button onClick={() => onUpdate?.({ nextPageId: undefined })} className="underline hover:text-violet-800">
+            <button onClick={() => onUpdate?.({ nextPageId: undefined })} className="underline hover:text-ci-ink">
               zurücksetzen
             </button>
           </p>
@@ -242,7 +242,7 @@ function PageSettingsEditor({ currentPage, pages, onUpdate }: { currentPage?: Fu
                 ))}
               </select>
               {visibleIf && sourceBlock && (
-                <div className="mt-2 pl-2 border-l-2 border-violet-200 space-y-1">
+                <div className="mt-2 pl-2 border-l-2 border-ci space-y-1">
                   <p className="text-[10px] font-semibold text-slate-500">Antwort eine von:</p>
                   {sourceBlock.options.map((opt) => {
                     const checked = visibleIf.equals.includes(opt.id);
@@ -257,7 +257,7 @@ function PageSettingsEditor({ currentPage, pages, onUpdate }: { currentPage?: Fu
                               : visibleIf.equals.filter((v) => v !== opt.id);
                             onUpdate?.({ visibleIf: { ...visibleIf, equals: next } });
                           }}
-                          className="accent-violet-600"
+                          className="accent-ci"
                         />
                         <span>{opt.text}</span>
                       </label>
@@ -451,7 +451,7 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars, speaker
             <div className="flex gap-1.5 flex-wrap">
               {DURATIONS.map((d) => (
                 <button key={d.val} type="button" onClick={() => onChange({ duration: d.val })}
-                  className={`px-2.5 py-1 text-xs rounded-lg border transition-colors ${dur === d.val ? 'bg-violet-600 text-white border-violet-600' : 'border-slate-200 text-slate-600 hover:border-slate-300'}`}>
+                  className={`px-2.5 py-1 text-xs rounded-lg border transition-colors ${dur === d.val ? 'bg-ci text-ci-on border-ci' : 'border-slate-200 text-slate-600 hover:border-slate-300'}`}>
                   {d.label}
                 </button>
               ))}
@@ -518,9 +518,9 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars, speaker
                 <input value={(props.thankYouButtonUrl as string) ?? ''} onChange={(e) => onChange({ thankYouButtonUrl: e.target.value })} className="input-field text-sm" placeholder="https://..." />
               </Field>
             )}
-            <a href="/settings/company" target="_blank" className="flex items-center gap-1.5 mt-3 px-3 py-2 text-[11px] text-violet-600 bg-violet-50 rounded-lg hover:bg-violet-100 transition-colors">
+            <a href="/settings/company" target="_blank" className="flex items-center gap-1.5 mt-3 px-3 py-2 text-[11px] text-ci-ink bg-ci-soft rounded-lg hover:bg-ci-soft transition-colors">
               <span>Globale Erfolgsseite (Berufe, Links, etc.) in den Firmeneinstellungen anpassen</span>
-              <span className="ml-auto text-violet-400">&rarr;</span>
+              <span className="ml-auto text-ci-ink">&rarr;</span>
             </a>
           </Section>
           <LeadFieldBuilder fields={fields} onChange={(f) => onChange({ fields: f })} />
@@ -633,7 +633,7 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars, speaker
               onClick={() => onChange({
                 statements: [...stmts, { id: crypto.randomUUID(), text: '', dimensionId: '', points: 2 }],
               })}
-              className="mt-2 w-full px-3 py-1.5 text-xs font-medium text-violet-600 bg-violet-50 rounded-lg hover:bg-violet-100 transition-colors"
+              className="mt-2 w-full px-3 py-1.5 text-xs font-medium text-ci-ink bg-ci-soft rounded-lg hover:bg-ci-soft transition-colors"
             >
               + Aussage hinzufugen
             </button>
@@ -650,7 +650,7 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars, speaker
           <Section label="Verhalten" collapsible defaultOpen={true}>
             <Field label="Button-Text"><input value={(props.buttonText as string) ?? ''} onChange={(e) => onChange({ buttonText: e.target.value })} className="input-field text-sm" /></Field>
             <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" checked={!!(props.showPhone)} onChange={(e) => onChange({ showPhone: e.target.checked })} className="accent-violet-600" />
+              <input type="checkbox" checked={!!(props.showPhone)} onChange={(e) => onChange({ showPhone: e.target.checked })} className="accent-ci" />
               <span className="text-xs text-slate-700">Telefon-Feld anzeigen</span>
             </label>
           </Section>
@@ -674,9 +674,9 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars, speaker
                 <input value={(props.thankYouButtonUrl as string) ?? ''} onChange={(e) => onChange({ thankYouButtonUrl: e.target.value })} className="input-field text-sm" placeholder="https://..." />
               </Field>
             )}
-            <a href="/settings/company" target="_blank" className="flex items-center gap-1.5 mt-3 px-3 py-2 text-[11px] text-violet-600 bg-violet-50 rounded-lg hover:bg-violet-100 transition-colors">
+            <a href="/settings/company" target="_blank" className="flex items-center gap-1.5 mt-3 px-3 py-2 text-[11px] text-ci-ink bg-ci-soft rounded-lg hover:bg-ci-soft transition-colors">
               <span>Globale Erfolgsseite (Berufe, Links, etc.) in den Firmeneinstellungen anpassen</span>
-              <span className="ml-auto text-violet-400">&rarr;</span>
+              <span className="ml-auto text-ci-ink">&rarr;</span>
             </a>
           </Section>
         </div>
@@ -779,9 +779,9 @@ function BlockPropsEditor({ node, props, onChange, pages, availableVars, speaker
                 <input value={(props.thankYouButtonUrl as string) ?? ''} onChange={(e) => onChange({ thankYouButtonUrl: e.target.value })} className="input-field text-sm" placeholder="https://..." />
               </Field>
             )}
-            <a href="/settings/company" target="_blank" className="flex items-center gap-1.5 mt-3 px-3 py-2 text-[11px] text-violet-600 bg-violet-50 rounded-lg hover:bg-violet-100 transition-colors">
+            <a href="/settings/company" target="_blank" className="flex items-center gap-1.5 mt-3 px-3 py-2 text-[11px] text-ci-ink bg-ci-soft rounded-lg hover:bg-ci-soft transition-colors">
               <span>Globale Erfolgsseite (Berufe, Links, etc.) in den Firmeneinstellungen anpassen</span>
-              <span className="ml-auto text-violet-400">&rarr;</span>
+              <span className="ml-auto text-ci-ink">&rarr;</span>
             </a>
           </Section>
           <LeadFieldBuilder fields={fcFields} onChange={(f) => onChange({ fields: f })} />

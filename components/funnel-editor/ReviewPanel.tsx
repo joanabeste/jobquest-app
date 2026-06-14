@@ -148,7 +148,7 @@ export default function ReviewPanel({
       <div className="flex-shrink-0 px-3 py-3 border-b border-slate-100">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
-            <MessageSquare size={14} className="text-violet-600" />
+            <MessageSquare size={14} className="text-ci-ink" />
             <h2 className="text-sm font-semibold text-slate-800">Review</h2>
           </div>
           <button
@@ -190,13 +190,13 @@ export default function ReviewPanel({
               onChange={(e) => setNewText(e.target.value)}
               placeholder={placeholder}
               rows={2}
-              className="w-full text-[12px] text-slate-700 px-2 py-1.5 border border-slate-200 rounded-lg resize-none focus:outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-200"
+              className="w-full text-[12px] text-slate-700 px-2 py-1.5 border border-slate-200 rounded-lg resize-none focus:outline-none focus:border-ci focus:ring-1 focus:ring-ci"
             />
             <div className="flex justify-end">
               <button
                 onClick={handleCreate}
                 disabled={!newText.trim() || busy}
-                className="px-3 py-1 text-[11px] font-semibold rounded-md bg-violet-600 text-white hover:bg-violet-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed transition-colors"
+                className="px-3 py-1 text-[11px] font-semibold rounded-md bg-ci text-ci-on hover:bg-ci-hover disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed transition-colors"
               >
                 Kommentieren
               </button>
@@ -315,7 +315,7 @@ function ThreadItem({
       {showPageLabel && (
         <button
           onClick={() => onFocusBlock(root.pageId, root.blockId ?? null)}
-          className="text-[10px] font-medium text-violet-600 hover:text-violet-800 hover:underline"
+          className="text-[10px] font-medium text-ci-ink hover:text-ci-ink hover:underline"
         >
           → {blockLabel(pages, root.pageId, root.blockId)}
         </button>
@@ -345,7 +345,7 @@ function ThreadItem({
             placeholder="Antworten…"
             rows={2}
             autoFocus
-            className="w-full text-[12px] text-slate-700 px-2 py-1.5 border border-slate-200 rounded-lg resize-none focus:outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-200"
+            className="w-full text-[12px] text-slate-700 px-2 py-1.5 border border-slate-200 rounded-lg resize-none focus:outline-none focus:border-ci focus:ring-1 focus:ring-ci"
           />
           <div className="flex justify-end gap-1">
             <button
@@ -357,7 +357,7 @@ function ThreadItem({
             <button
               onClick={onSubmitReply}
               disabled={!replyText.trim() || busy}
-              className="px-3 py-1 text-[11px] font-semibold rounded-md bg-violet-600 text-white hover:bg-violet-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed transition-colors"
+              className="px-3 py-1 text-[11px] font-semibold rounded-md bg-ci text-ci-on hover:bg-ci-hover disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed transition-colors"
             >
               Antworten
             </button>
@@ -401,7 +401,7 @@ function CommentBubble({ comment, currentUser, onReply, onToggleStatus, onDelete
         {onReply && (
           <button
             onClick={onReply}
-            className="text-[10px] text-slate-500 hover:text-violet-700 font-medium"
+            className="text-[10px] text-slate-500 hover:text-ci-ink font-medium"
           >
             Antworten
           </button>

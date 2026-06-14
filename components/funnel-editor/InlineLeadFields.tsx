@@ -136,7 +136,7 @@ function CheckboxEditor({ value, onChange, editorRef }: CheckboxEditorProps) {
         suppressContentEditableWarning
         onInput={() => { if (editorRef.current) onChange(editorRef.current.innerHTML); detectMention(); }}
         onKeyDown={handleKeyDown}
-        className="flex-1 text-xs text-slate-700 outline-none leading-relaxed [&_a]:underline [&_a]:text-violet-500 [&_strong]:font-semibold min-h-[1em]"
+        className="flex-1 text-xs text-slate-700 outline-none leading-relaxed [&_a]:underline [&_a]:text-ci-ink [&_strong]:font-semibold min-h-[1em]"
       />
       {showMention && mentionPos && filtered.length > 0 && typeof document !== 'undefined' &&
         createPortal(
@@ -151,9 +151,9 @@ function CheckboxEditor({ value, onChange, editorRef }: CheckboxEditorProps) {
               <button
                 key={v.key}
                 onMouseDown={(e) => { e.preventDefault(); applyMention(v.key); }}
-                className={`w-full flex items-center gap-3 px-3 py-2 text-left transition-colors ${i === mentionIdx ? 'bg-violet-50' : 'hover:bg-slate-50'}`}
+                className={`w-full flex items-center gap-3 px-3 py-2 text-left transition-colors ${i === mentionIdx ? 'bg-ci-soft' : 'hover:bg-slate-50'}`}
               >
-                <span className="text-violet-600 font-mono text-xs font-semibold">@{v.key}</span>
+                <span className="text-ci-ink font-mono text-xs font-semibold">@{v.key}</span>
                 <span className="text-xs text-slate-400">{v.label}</span>
               </button>
             ))}
@@ -208,7 +208,7 @@ function FieldToolbar({
         title={required ? 'Pflichtfeld (klicken zum Deaktivieren)' : 'Optional (klicken zum Aktivieren)'}
       >
         {required
-          ? <><Lock size={10} className="text-violet-500" /><span className="text-[10px] text-violet-500 font-medium">Pflicht</span></>
+          ? <><Lock size={10} className="text-ci-ink" /><span className="text-[10px] text-ci-ink font-medium">Pflicht</span></>
           : <><LockOpen size={10} className="text-slate-400" /><span className="text-[10px] text-slate-400">Optional</span></>
         }
       </button>
@@ -318,7 +318,7 @@ export default function InlineLeadFields({ fields, onChange }: Props) {
                 onClick={() => !isActive && setSelectedFieldId(f.id)}
                 className={`flex items-start gap-2.5 w-full px-3 py-2.5 border-2 transition-all
                   ${isActive
-                    ? 'border-violet-400 bg-violet-50/40 shadow-sm shadow-violet-100 cursor-default'
+                    ? 'border-ci-ink bg-ci-soft shadow-sm cursor-default'
                     : 'border-slate-200 bg-white hover:border-slate-300 cursor-pointer'
                   }`}
                 style={{ borderRadius: radius }}
@@ -332,7 +332,7 @@ export default function InlineLeadFields({ fields, onChange }: Props) {
                   />
                 ) : (
                   <span
-                    className="text-xs text-slate-400 leading-relaxed [&_a]:underline [&_a]:text-violet-400 [&_a]:pointer-events-none [&_strong]:font-semibold"
+                    className="text-xs text-slate-400 leading-relaxed [&_a]:underline [&_a]:text-ci-ink [&_a]:pointer-events-none [&_strong]:font-semibold"
                     dangerouslySetInnerHTML={{
                       __html: highlightVars(applyPreviewVars(sanitizeHtml(f.label), previewVars)) + (f.required ? ' <span class="text-rose-400 ml-0.5">*</span>' : ''),
                     }}
@@ -387,7 +387,7 @@ export default function InlineLeadFields({ fields, onChange }: Props) {
               className={`flex items-center gap-2 w-full px-3 border-2 text-sm transition-all cursor-pointer
                 ${f.type === 'textarea' ? 'py-2 min-h-[72px] items-start' : 'py-2.5'}
                 ${isActive
-                  ? 'border-violet-400 bg-violet-50/40 shadow-sm shadow-violet-100'
+                  ? 'border-ci-ink bg-ci-soft shadow-sm'
                   : 'border-slate-200 bg-white hover:border-slate-300'
                 }`}
               style={{ borderRadius: radius }}
@@ -417,7 +417,7 @@ export default function InlineLeadFields({ fields, onChange }: Props) {
                   value={(f.options ?? []).join('\n')}
                   onChange={(e) => update(f.id, { options: e.target.value.split('\n') })}
                   rows={3}
-                  className="w-full text-xs text-slate-600 bg-white border border-slate-200 rounded-lg px-2 py-1.5 outline-none focus:border-violet-300 resize-none placeholder:text-slate-300"
+                  className="w-full text-xs text-slate-600 bg-white border border-slate-200 rounded-lg px-2 py-1.5 outline-none focus:border-ci resize-none placeholder:text-slate-300"
                   placeholder={'Option 1\nOption 2\nOption 3'}
                 />
               </div>
@@ -428,7 +428,7 @@ export default function InlineLeadFields({ fields, onChange }: Props) {
 
       <button
         onClick={addField}
-        className="w-full flex items-center justify-center gap-1.5 py-2 border-2 border-dashed border-slate-200 text-xs text-slate-400 font-medium hover:border-violet-300 hover:text-violet-500 hover:bg-violet-50/40 transition-all rounded-xl"
+        className="w-full flex items-center justify-center gap-1.5 py-2 border-2 border-dashed border-slate-200 text-xs text-slate-400 font-medium hover:border-ci hover:text-ci-ink hover:bg-ci-soft transition-all rounded-xl"
       >
         <Plus size={11} /> Feld hinzufügen
       </button>

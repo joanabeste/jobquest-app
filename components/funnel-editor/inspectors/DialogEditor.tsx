@@ -74,9 +74,9 @@ export function DialogEditor({ props, onChange, variables = [], speakers, onSpea
       <Field label="Titel (optional)"><VarInput value={(props.title as string) ?? ''} onChange={(v) => onChange({ title: v })} variables={variables} /></Field>
 
       {onSpeakersChange && blockSpeakers.length > 0 && (
-        <div className="border border-violet-100 bg-violet-50/40 rounded-xl p-2.5 space-y-2">
+        <div className="border border-ci bg-ci-soft/40 rounded-xl p-2.5 space-y-2">
           <div className="flex items-baseline justify-between">
-            <p className="text-[10px] uppercase tracking-wider font-semibold text-violet-700">Sprecher in dieser Quest</p>
+            <p className="text-[10px] uppercase tracking-wider font-semibold text-ci-ink">Sprecher in dieser Quest</p>
           </div>
           <p className="text-[10px] text-slate-500 leading-snug">Anzeigename und Profilbild wirken in <strong>allen Chats</strong> der ganzen Quest.</p>
           <div className="space-y-2">
@@ -86,12 +86,12 @@ export function DialogEditor({ props, onChange, variables = [], speakers, onSpea
               const initial = (ov?.displayName?.trim() || s).charAt(0).toUpperCase();
               const hasOverride = !!(ov && (ov.displayName?.trim() || ov.avatarUrl));
               return (
-                <div key={s} className="bg-white rounded-lg p-2 border border-violet-100/70 space-y-1.5">
+                <div key={s} className="bg-white rounded-lg p-2 border border-ci/70 space-y-1.5">
                   <div className="flex items-center gap-2">
                     {previewAvatar ? (
                       <img src={previewAvatar} alt="" className="w-7 h-7 rounded-full object-cover flex-shrink-0 border border-slate-200" />
                     ) : (
-                      <div className="w-7 h-7 rounded-full bg-violet-100 flex items-center justify-center text-[11px] font-semibold text-violet-700 flex-shrink-0">{initial || '?'}</div>
+                      <div className="w-7 h-7 rounded-full bg-ci-soft flex items-center justify-center text-[11px] font-semibold text-ci-ink flex-shrink-0">{initial || '?'}</div>
                     )}
                     <p className="flex-1 text-[12px] font-medium text-slate-700 truncate" title={s}>{s}</p>
                     {hasOverride && (
@@ -140,7 +140,7 @@ export function DialogEditor({ props, onChange, variables = [], speakers, onSpea
               ],
             });
           }}
-            className="flex items-center gap-1 text-[10px] text-violet-600 hover:text-violet-700 font-medium">
+            className="flex items-center gap-1 text-[10px] text-ci-ink hover:text-ci-ink font-medium">
             <Plus size={11} /> Zeile
           </button>
         </div>
@@ -182,7 +182,7 @@ export function DialogEditor({ props, onChange, variables = [], speakers, onSpea
           <div className="flex items-center justify-between mb-2">
             <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Antwortoptionen</p>
             <button onClick={() => onChange({ choices: [...choices, { id: crypto.randomUUID(), text: '', reaction: '' }] })}
-              className="flex items-center gap-1 text-[10px] text-violet-600 hover:text-violet-700 font-medium">
+              className="flex items-center gap-1 text-[10px] text-ci-ink hover:text-ci-ink font-medium">
               <Plus size={11} /> Option
             </button>
           </div>
@@ -213,7 +213,7 @@ export function DialogEditor({ props, onChange, variables = [], speakers, onSpea
               onClick={() => hasInput
                 ? onChange({ input: undefined })
                 : onChange({ input: { placeholder: 'Vorname', captures: 'vorname', followUpText: '' } })}
-              className={`text-[10px] font-medium px-2 py-0.5 rounded-full transition-colors ${hasInput ? 'bg-violet-100 text-violet-700 hover:bg-red-50 hover:text-red-600' : 'text-slate-400 hover:text-violet-600'}`}
+              className={`text-[10px] font-medium px-2 py-0.5 rounded-full transition-colors ${hasInput ? 'bg-ci-soft text-ci-ink hover:bg-red-50 hover:text-red-600' : 'text-slate-400 hover:text-ci-ink'}`}
             >
               {hasInput ? '× Entfernen' : '+ Hinzufügen'}
             </button>
@@ -231,7 +231,7 @@ export function DialogEditor({ props, onChange, variables = [], speakers, onSpea
                 placeholder="Platzhalter…"
               />
               {input?.captures && (
-                <p className="text-[10px] text-violet-500 pl-0.5">Antwort wird als <span className="font-mono">@{input.captures}</span> verfügbar</p>
+                <p className="text-[10px] text-ci-ink pl-0.5">Antwort wird als <span className="font-mono">@{input.captures}</span> verfügbar</p>
               )}
               <VarTextarea value={input?.followUpText ?? ''} onChange={(v) => onChange({ input: { ...input, followUpText: v } })}
                 rows={2} className="w-full mini-input resize-none" placeholder="Reaktion des Sprechers nach Eingabe (optional)…" variables={variables} />

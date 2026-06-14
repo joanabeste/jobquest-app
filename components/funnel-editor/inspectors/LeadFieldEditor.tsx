@@ -91,7 +91,7 @@ export function LeadFieldEditor({ field, allFields, onChange, onBack }: {
             type="checkbox"
             checked={field.required}
             onChange={(e) => onChange({ required: e.target.checked })}
-            className="accent-violet-600"
+            className="accent-ci"
           />
           <span className="text-xs text-slate-700">Pflichtfeld</span>
         </label>

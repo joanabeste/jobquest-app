@@ -95,8 +95,8 @@ function PageNode({ data, selected }: NodeProps<Node<PageNodeData>>) {
     <div
       className={`bg-white rounded-2xl border transition-all select-none overflow-hidden ${
         selected
-          ? 'border-violet-400 shadow-lg shadow-violet-100 ring-2 ring-violet-200'
-          : 'border-slate-200 shadow-md hover:shadow-lg hover:border-violet-300'
+          ? 'border-ci-ink shadow-lg ring-2 ring-ci'
+          : 'border-slate-200 shadow-md hover:shadow-lg hover:border-ci'
       }`}
       style={{ width: 252, height: nodeH }}
     >
@@ -114,7 +114,7 @@ function PageNode({ data, selected }: NodeProps<Node<PageNodeData>>) {
         style={{ height: NODE_HEADER_H, background: 'linear-gradient(to bottom, #fafafa, #ffffff)' }}
       >
         <div className="flex items-center gap-2">
-          <span className="w-6 h-6 rounded-lg bg-violet-600 text-white text-[11px] flex items-center justify-center font-bold flex-shrink-0 shadow-sm">
+          <span className="w-6 h-6 rounded-lg bg-ci text-ci-on text-[11px] flex items-center justify-center font-bold flex-shrink-0 shadow-sm">
             {pageIndex + 1}
           </span>
           <span className="text-[13px] font-semibold text-slate-800 truncate leading-tight">
@@ -564,7 +564,7 @@ export default function FlowView({ doc, onSelectPage, onUpdatePage, onUpdateDeci
           <Panel position="bottom-center">
             <button
               onClick={onAddPage}
-              className="flex items-center gap-1.5 px-4 py-2 bg-white rounded-xl shadow-md border border-slate-200 text-[12px] font-semibold text-slate-600 hover:bg-violet-50 hover:text-violet-700 hover:border-violet-300 hover:shadow-violet-100 transition-all"
+              className="flex items-center gap-1.5 px-4 py-2 bg-white rounded-xl shadow-md border border-slate-200 text-[12px] font-semibold text-slate-600 hover:bg-ci-soft hover:text-ci-ink hover:border-ci transition-all"
             >
               <Plus size={13} /> Neue Seite
             </button>

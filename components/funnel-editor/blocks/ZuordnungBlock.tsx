@@ -144,7 +144,7 @@ export default function ZuordnungBlock({
               itemClass += correct ? 'bg-emerald-50 border-emerald-300 text-emerald-800' : 'bg-red-50 border-red-300 text-red-800';
             } else if (isSelected) {
               itemClass += 'border-2 shadow-sm ';
-              itemClass += color ? `${color.bg} ${color.border} ${color.text}` : 'bg-violet-50 border-violet-400 text-violet-800';
+              itemClass += color ? `${color.bg} ${color.border} ${color.text}` : 'bg-ci-soft border-ci-ink text-ci-ink';
             } else if (isMatchedRight && color) {
               itemClass += `${color.bg} ${color.border} ${color.text}`;
             } else {
@@ -183,7 +183,7 @@ export default function ZuordnungBlock({
             } else if (color) {
               itemClass += `${color.bg} ${color.border} ${color.text} cursor-pointer`;
             } else if (isTarget) {
-              itemClass += 'bg-white border-slate-300 text-slate-700 hover:border-violet-300 hover:bg-violet-50 cursor-pointer';
+              itemClass += 'bg-white border-slate-300 text-slate-700 hover:border-ci hover:bg-ci-soft cursor-pointer';
             } else {
               itemClass += 'bg-white border-slate-200 text-slate-600 cursor-pointer hover:border-slate-300';
             }

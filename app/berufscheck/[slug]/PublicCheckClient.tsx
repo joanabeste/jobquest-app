@@ -8,6 +8,7 @@ import { funnelStorage } from '@/lib/funnel-storage';
 import { FunnelDoc } from '@/lib/funnel-types';
 import FunnelPlayer from '@/components/funnel-editor/FunnelPlayer';
 import { fontFamilyFor } from '@/lib/fonts';
+import { readableTextColor } from '@/lib/contrast';
 import { stripNamePlaceholder } from '@/lib/funnel-variables';
 import { useSlugRedirect } from '@/lib/use-slug-redirect';
 import {
@@ -97,6 +98,10 @@ export default function BerufsCheckPlayer() {
 
   const design = company.corporateDesign ?? DEFAULT_CORPORATE_DESIGN;
   const primary = design.primaryColor;
+  // Button-Hintergrund kann via buttonColor abweichen; Textfarbe automatisch
+  // lesbar (Override gewinnt).
+  const btnBg = design.buttonColor || primary;
+  const btnText = design.buttonTextColor || readableTextColor(btnBg);
   const br = `${design.borderRadius ?? 12}px`;
 
   const hfName = design.headingFontName ?? 'system';
@@ -154,9 +159,9 @@ export default function BerufsCheckPlayer() {
     design.headingFontData ? `@font-face{font-family:'${hfName}';src:url('${design.headingFontData}')}` : '',
     design.bodyFontData && bfName !== hfName ? `@font-face{font-family:'${bfName}';src:url('${design.bodyFontData}')}` : '',
     `.bc-player{font-family:${bodyFont};color:${design.textColor ?? '#1e293b'};letter-spacing:${(design.bodyLetterSpacing ?? 0) / 1000}em}`,
-    `.bc-btn-primary{background:${primary};color:#fff;border-radius:${br}}`,
+    `.bc-btn-primary{background:${btnBg};color:${btnText};border-radius:${br}}`,
     `.bc-btn-primary:hover{opacity:0.9}`,
-    `.bc-btn-secondary{background:transparent;color:${primary};border:2px solid ${primary};border-radius:${br}}`,
+    `.bc-btn-secondary{background:transparent;color:${btnBg};border:2px solid ${btnBg};border-radius:${br}}`,
     `.bc-card{border-radius:${br}}`,
     `.bc-option{border-radius:${br};border:2px solid #e2e8f0}`,
     `.bc-option:hover{border-color:${primary}}`,

@@ -61,7 +61,7 @@ export function BlocksPanel({
       <div className="p-2 border-t border-slate-100 relative">
         <button
           onClick={() => setShowAddMenu((v) => !v)}
-          className="w-full flex items-center justify-center gap-1.5 py-2 px-3 text-xs font-medium text-violet-600 bg-violet-50 hover:bg-violet-100 rounded-lg transition-colors"
+          className="w-full flex items-center justify-center gap-1.5 py-2 px-3 text-xs font-medium text-ci-ink bg-ci-soft hover:bg-ci-soft rounded-lg transition-colors"
         >
           <Plus size={14} /> Block hinzufügen
         </button>
@@ -110,7 +110,7 @@ function BlockListItem({
     <div
       onClick={onSelect}
       className={`group rounded-lg border cursor-pointer transition-all ${
-        selected ? 'border-violet-300 bg-violet-50' : 'border-transparent hover:border-slate-200 hover:bg-slate-50'
+        selected ? 'border-ci bg-ci-soft' : 'border-transparent hover:border-slate-200 hover:bg-slate-50'
       }`}
     >
       <div className="flex items-center gap-1.5 px-2 py-1.5">
@@ -185,7 +185,7 @@ export function DimensionsPanel({ dimensions, onChange }: {
                   <input
                     value={dim.name}
                     onChange={(e) => updateDim(dim.id, { name: e.target.value })}
-                    className="flex-1 text-xs font-medium text-slate-800 bg-transparent border-b border-slate-300 focus:border-violet-400 outline-none py-0.5"
+                    className="flex-1 text-xs font-medium text-slate-800 bg-transparent border-b border-slate-300 focus:border-ci outline-none py-0.5"
                     placeholder="Berufsfeld"
                   />
                   <button onClick={() => deleteDim(dim.id)} className="p-0.5 rounded hover:bg-red-100 transition-colors flex-shrink-0">
@@ -195,7 +195,7 @@ export function DimensionsPanel({ dimensions, onChange }: {
                 <input
                   value={dim.description ?? ''}
                   onChange={(e) => updateDim(dim.id, { description: e.target.value })}
-                  className="w-full text-xs text-slate-500 bg-transparent border-b border-slate-200 focus:border-violet-300 outline-none py-0.5"
+                  className="w-full text-xs text-slate-500 bg-transparent border-b border-slate-200 focus:border-ci outline-none py-0.5"
                   placeholder="Beschreibung (optional)"
                 />
               </div>
@@ -204,7 +204,7 @@ export function DimensionsPanel({ dimensions, onChange }: {
         )}
       </div>
       <div className="p-2 border-t border-slate-100">
-        <button onClick={addDimension} className="w-full flex items-center justify-center gap-1.5 py-2 px-3 text-xs font-medium text-violet-600 bg-violet-50 hover:bg-violet-100 rounded-lg transition-colors">
+        <button onClick={addDimension} className="w-full flex items-center justify-center gap-1.5 py-2 px-3 text-xs font-medium text-ci-ink bg-ci-soft hover:bg-ci-soft rounded-lg transition-colors">
           <Plus size={14} /> Berufsfeld hinzufügen
         </button>
       </div>

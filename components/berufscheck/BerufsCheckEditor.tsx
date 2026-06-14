@@ -121,7 +121,7 @@ export function BerufsCheckEditorClient({ checkId }: { checkId: string }) {
   if (!check) {
     return (
       <div className="h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-violet-600 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-ci border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -151,10 +151,10 @@ export function BerufsCheckEditorClient({ checkId }: { checkId: string }) {
               onChange={(e) => updateCheck({ title: e.target.value })}
               onBlur={() => setTitleEditing(false)}
               onKeyDown={(e) => e.key === 'Enter' && setTitleEditing(false)}
-              className="text-sm font-semibold text-slate-900 bg-transparent border-b border-violet-400 outline-none w-full max-w-xs"
+              className="text-sm font-semibold text-slate-900 bg-transparent border-b border-ci outline-none w-full max-w-xs"
             />
           ) : (
-            <button onClick={() => setTitleEditing(true)} className="text-sm font-semibold text-slate-900 hover:text-violet-600 transition-colors truncate block max-w-xs text-left">
+            <button onClick={() => setTitleEditing(true)} className="text-sm font-semibold text-slate-900 hover:text-ci-ink transition-colors truncate block max-w-xs text-left">
               {check.title}
             </button>
           )}
@@ -175,7 +175,7 @@ export function BerufsCheckEditorClient({ checkId }: { checkId: string }) {
             onClick={handlePublish}
             disabled={publishing}
             className={`flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
-              check.status === 'published' ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-violet-600 text-white hover:bg-violet-700'
+              check.status === 'published' ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-ci text-ci-on hover:bg-ci-hover'
             }`}
           >
             <Globe size={14} /> {check.status === 'published' ? 'Veröffentlicht' : 'Veröffentlichen'}
@@ -186,10 +186,10 @@ export function BerufsCheckEditorClient({ checkId }: { checkId: string }) {
       <div className="flex flex-1 overflow-hidden">
         <aside className="w-56 bg-white border-r border-slate-200 flex flex-col flex-shrink-0 overflow-hidden">
           <div className="flex border-b border-slate-200">
-            <button onClick={() => setActivePanel('blocks')} className={`flex-1 py-2.5 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors ${activePanel === 'blocks' ? 'text-violet-600 border-b-2 border-violet-600' : 'text-slate-500 hover:text-slate-700'}`}>
+            <button onClick={() => setActivePanel('blocks')} className={`flex-1 py-2.5 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors ${activePanel === 'blocks' ? 'text-ci-ink border-b-2 border-ci-ink' : 'text-slate-500 hover:text-slate-700'}`}>
               <List size={13} /> Blöcke
             </button>
-            <button onClick={() => setActivePanel('settings')} className={`flex-1 py-2.5 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors ${activePanel === 'settings' ? 'text-violet-600 border-b-2 border-violet-600' : 'text-slate-500 hover:text-slate-700'}`}>
+            <button onClick={() => setActivePanel('settings')} className={`flex-1 py-2.5 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors ${activePanel === 'settings' ? 'text-ci-ink border-b-2 border-ci-ink' : 'text-slate-500 hover:text-slate-700'}`}>
               <Settings size={13} /> Berufsfelder
             </button>
           </div>

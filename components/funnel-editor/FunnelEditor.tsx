@@ -106,7 +106,7 @@ export default function FunnelEditor({
   if (loading || !initialDoc) {
     return (
       <div className="flex items-center justify-center h-[calc(100vh-3.5rem)] bg-slate-50">
-        <div className="w-8 h-8 rounded-full border-2 border-violet-600 border-t-transparent animate-spin" />
+        <div className="w-8 h-8 rounded-full border-2 border-ci border-t-transparent animate-spin" />
       </div>
     );
   }
@@ -602,7 +602,7 @@ function FunnelEditorInner({
           >
             <MessageSquare size={12} /> Review
             {openCommentCount > 0 && (
-              <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[14px] h-[14px] px-1 rounded-full bg-violet-600 text-white text-[9px] font-bold leading-none">
+              <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[14px] h-[14px] px-1 rounded-full bg-ci text-ci-on text-[9px] font-bold leading-none">
                 {openCommentCount > 9 ? '9+' : openCommentCount}
               </span>
             )}
@@ -614,7 +614,7 @@ function FunnelEditorInner({
           <>
             <div className="w-px h-5 bg-slate-200 flex-shrink-0" />
             <button onClick={() => contentType === 'quest' ? setShowGenerateModal(true) : setShowGenerateCheckModal(true)}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-semibold text-violet-600 hover:bg-violet-50 rounded-lg transition-colors flex-shrink-0 border border-violet-200">
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-semibold text-ci-ink hover:bg-ci-soft rounded-lg transition-colors flex-shrink-0 border border-ci">
               <Sparkles size={12} /> KI
             </button>
           </>
@@ -653,8 +653,8 @@ function FunnelEditorInner({
             saveStatus === 'saved'
               ? 'text-emerald-700 bg-emerald-50'
               : saveStatus === 'saving'
-              ? 'bg-violet-400 text-white cursor-wait'
-              : 'bg-violet-600 text-white hover:bg-violet-700 shadow-sm shadow-violet-200'
+              ? 'bg-ci text-ci-on cursor-wait'
+              : 'bg-ci text-ci-on hover:bg-ci-hover shadow-sm'
           }`}>
           {saveStatus === 'saved'
             ? <><Check size={13} /> Gespeichert</>

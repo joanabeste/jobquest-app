@@ -51,14 +51,14 @@ export function SwipeDeckEditor({ props, onChange, variables = [] }: {
       </Field>
 
       <label className="flex items-center gap-2 cursor-pointer">
-        <input type="checkbox" checked={allowSkip} onChange={(e) => onChange({ allowSkip: e.target.checked })} className="accent-violet-600" />
+        <input type="checkbox" checked={allowSkip} onChange={(e) => onChange({ allowSkip: e.target.checked })} className="accent-ci" />
         <span className="text-xs text-slate-700">&bdquo;Weiß nicht / überspringen&ldquo;-Button anzeigen</span>
       </label>
 
       <div className="pt-2 border-t border-slate-100">
         <div className="flex items-center justify-between mb-2">
           <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Karten ({cards.length})</p>
-          <button onClick={addCard} className="flex items-center gap-1 text-[10px] text-violet-600 font-medium">
+          <button onClick={addCard} className="flex items-center gap-1 text-[10px] text-ci-ink font-medium">
             <Plus size={11} /> Karte
           </button>
         </div>

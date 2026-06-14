@@ -172,10 +172,10 @@ export default function Canvas({
                   onClick={(e) => { e.stopPropagation(); onSetInsertTarget({ location: 'root', afterId: null }); }}
                   className="w-full p-12 text-center hover:bg-slate-50 transition-colors group cursor-pointer"
                 >
-                  <div className="w-10 h-10 rounded-xl bg-violet-100 group-hover:bg-violet-200 flex items-center justify-center mx-auto mb-3 transition-colors">
-                    <Plus size={18} className="text-violet-500 group-hover:text-violet-700" />
+                  <div className="w-10 h-10 rounded-xl bg-ci-soft group-hover:bg-ci-soft flex items-center justify-center mx-auto mb-3 transition-colors">
+                    <Plus size={18} className="text-ci-ink group-hover:text-ci-ink" />
                   </div>
-                  <p className="text-sm font-medium text-slate-500 group-hover:text-violet-700 transition-colors">Block hinzufügen</p>
+                  <p className="text-sm font-medium text-slate-500 group-hover:text-ci-ink transition-colors">Block hinzufügen</p>
                   <p className="text-xs text-slate-400 mt-1">Klicke, um den ersten Block einzufügen</p>
                 </button>
               )}
@@ -208,7 +208,7 @@ export default function Canvas({
               e.stopPropagation();
               onSetInsertTarget({ location: 'root', afterId: page.nodes.at(-1)?.id ?? null });
             }}
-            className="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold text-slate-500 hover:text-violet-700 bg-white hover:bg-violet-50 border border-slate-200 hover:border-violet-300 shadow-sm transition-all"
+            className="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold text-slate-500 hover:text-ci-ink bg-white hover:bg-ci-soft border border-slate-200 hover:border-ci shadow-sm transition-all"
           >
             <Plus size={13} /> Block hinzufügen
           </button>
@@ -418,7 +418,7 @@ function InsertZone({
     >
       {/* Always-visible faint line */}
       <div className={`absolute inset-x-4 top-1/2 -translate-y-1/2 h-px transition-colors ${
-        emphasis ? 'bg-violet-400' : 'bg-slate-200'
+        emphasis ? 'bg-ci' : 'bg-slate-200'
       }`} />
       {/* + button — faint by default, vivid on hover/active */}
       <button
@@ -427,8 +427,8 @@ function InsertZone({
           compact ? 'w-4 h-4' : 'w-5 h-5'
         } ${
           emphasis
-            ? 'bg-violet-600 text-white shadow-sm scale-105'
-            : 'bg-white border border-slate-200 text-slate-400 hover:border-violet-300 hover:text-violet-500'
+            ? 'bg-ci text-ci-on shadow-sm scale-105'
+            : 'bg-white border border-slate-200 text-slate-400 hover:border-ci hover:text-ci-ink'
         }`}
       >
         <Plus size={compact ? 8 : 9} />

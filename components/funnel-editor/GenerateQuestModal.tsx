@@ -216,7 +216,7 @@ export default function GenerateQuestModal({ onGenerate, onClose, showHeyflowImp
         <div className="px-6 pt-4 pb-0 border-b border-slate-100">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <Sparkles size={18} className="text-violet-500" />
+              <Sparkles size={18} className="text-ci-ink" />
               <h2 className="text-base font-semibold text-slate-900">KI JobQuest</h2>
             </div>
             {!loading && (
@@ -230,21 +230,21 @@ export default function GenerateQuestModal({ onGenerate, onClose, showHeyflowImp
               {hasExistingContent && (
                 <button
                   onClick={() => { setTab('refine'); setError(''); }}
-                  className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-b-2 transition-colors ${tab === 'refine' ? 'border-violet-500 text-violet-700' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+                  className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-b-2 transition-colors ${tab === 'refine' ? 'border-ci-ink text-ci-ink' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
                 >
                   <Wand2 size={12} /> Anpassen
                 </button>
               )}
               <button
                 onClick={() => { setTab('generate'); setError(''); }}
-                className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-b-2 transition-colors ${tab === 'generate' ? 'border-violet-500 text-violet-700' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+                className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-b-2 transition-colors ${tab === 'generate' ? 'border-ci-ink text-ci-ink' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
               >
                 <Sparkles size={12} /> Neu generieren
               </button>
               {showHeyflowImport && (
                 <button
                   onClick={() => { setTab('import'); setError(''); }}
-                  className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-b-2 transition-colors ${tab === 'import' ? 'border-violet-500 text-violet-700' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+                  className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-b-2 transition-colors ${tab === 'import' ? 'border-ci-ink text-ci-ink' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
                 >
                   <ArrowDownToLine size={12} /> Prototyp importieren
                 </button>
@@ -258,9 +258,9 @@ export default function GenerateQuestModal({ onGenerate, onClose, showHeyflowImp
           <div className="px-6 py-8 flex flex-col items-center gap-6">
             {/* Animated icon */}
             <div className="relative w-20 h-20">
-              <div className="absolute inset-0 rounded-full bg-violet-100 animate-ping opacity-40" />
-              <div className="relative w-20 h-20 rounded-full bg-violet-50 flex items-center justify-center">
-                <Sparkles size={32} className="text-violet-500" style={{ animation: 'spin 3s linear infinite' }} />
+              <div className="absolute inset-0 rounded-full bg-ci-soft animate-ping opacity-40" />
+              <div className="relative w-20 h-20 rounded-full bg-ci-soft flex items-center justify-center">
+                <Sparkles size={32} className="text-ci-ink" style={{ animation: 'spin 3s linear infinite' }} />
               </div>
             </div>
 
@@ -268,7 +268,7 @@ export default function GenerateQuestModal({ onGenerate, onClose, showHeyflowImp
             <div className="w-full">
               <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-violet-500 to-purple-500 rounded-full transition-all duration-500 ease-out"
+                  className="h-full bg-gradient-to-r from-ci to-purple-500 rounded-full transition-all duration-500 ease-out"
                   style={{ width: `${loadingProgress}%` }}
                 />
               </div>
@@ -315,7 +315,7 @@ export default function GenerateQuestModal({ onGenerate, onClose, showHeyflowImp
                     onChange={(e) => setRefineInstructions(e.target.value)}
                     placeholder="z.B. Fuege eine Szene im Labor hinzu, mache den Dialog mit Sarah laenger, aendere das Quiz zur Medikamentengabe..."
                     rows={5}
-                    className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:border-violet-400 focus:outline-none resize-none transition-colors"
+                    className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:border-ci focus:outline-none resize-none transition-colors"
                     autoFocus
                   />
                   <p className="text-[11px] text-slate-400 mt-1.5">Die KI passt die bestehende Quest nach deinen Wunschen an. Alles, was du nicht erwahnst, bleibt unverandert.</p>
@@ -333,7 +333,7 @@ export default function GenerateQuestModal({ onGenerate, onClose, showHeyflowImp
                     onChange={(e) => setHeyflowUrl(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleImport()}
                     placeholder="https://beispiel.de/mein-prototyp"
-                    className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:border-violet-400 focus:outline-none transition-colors"
+                    className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:border-ci focus:outline-none transition-colors"
                     autoFocus
                   />
                   <p className="text-[11px] text-slate-400 mt-1.5">Die KI liest den Prototyp-Inhalt und konvertiert ihn in eine interaktive JobQuest mit Dialogen, Quiz und Entscheidungen.</p>
@@ -351,7 +351,7 @@ export default function GenerateQuestModal({ onGenerate, onClose, showHeyflowImp
                     onChange={(e) => setBeruf(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleGenerate()}
                     placeholder="z.B. Pflegefachkraft, Softwareentwickler, Lagerist…"
-                    className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:border-violet-400 focus:outline-none transition-colors"
+                    className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:border-ci focus:outline-none transition-colors"
                     autoFocus
                   />
                   {companyJobs && companyJobs.length > 0 && !beruf.trim() && (
@@ -361,7 +361,7 @@ export default function GenerateQuestModal({ onGenerate, onClose, showHeyflowImp
                           key={job}
                           type="button"
                           onClick={() => setBeruf(job)}
-                          className="px-2.5 py-1 text-[11px] rounded-full bg-violet-50 text-violet-600 border border-violet-200 hover:bg-violet-100 transition-colors"
+                          className="px-2.5 py-1 text-[11px] rounded-full bg-ci-soft text-ci-ink border border-ci hover:bg-ci-soft transition-colors"
                         >
                           {job}
                         </button>
@@ -377,7 +377,7 @@ export default function GenerateQuestModal({ onGenerate, onClose, showHeyflowImp
                     onChange={(e) => setNotes(e.target.value)}
                     placeholder="z.B. Story soll in einem Krankenhaus spielen, Fokus auf Teamarbeit, 8 Seiten…"
                     rows={3}
-                    className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:border-violet-400 focus:outline-none resize-none transition-colors"
+                    className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:border-ci focus:outline-none resize-none transition-colors"
                   />
                 </div>
 
@@ -420,7 +420,7 @@ export default function GenerateQuestModal({ onGenerate, onClose, showHeyflowImp
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
                       disabled={uploadingImage}
-                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-dashed border-slate-300 text-xs text-slate-600 hover:bg-slate-50 hover:border-violet-400 transition-colors disabled:opacity-60"
+                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-dashed border-slate-300 text-xs text-slate-600 hover:bg-slate-50 hover:border-ci transition-colors disabled:opacity-60"
                     >
                       {uploadingImage ? <Sparkles size={13} className="animate-spin" /> : <Upload size={13} />}
                       {uploadingImage ? 'Wird hochgeladen…' : 'Hochladen'}
@@ -428,7 +428,7 @@ export default function GenerateQuestModal({ onGenerate, onClose, showHeyflowImp
                     <button
                       type="button"
                       onClick={() => setLibraryOpen(true)}
-                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-dashed border-slate-300 text-xs text-slate-600 hover:bg-slate-50 hover:border-violet-400 transition-colors"
+                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-dashed border-slate-300 text-xs text-slate-600 hover:bg-slate-50 hover:border-ci transition-colors"
                     >
                       <ImageIcon size={13} />
                       Aus Mediathek
@@ -459,7 +459,7 @@ export default function GenerateQuestModal({ onGenerate, onClose, showHeyflowImp
                 <button
                   onClick={handleRefine}
                   disabled={!refineInstructions.trim()}
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-violet-600 text-white rounded-xl hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-ci text-ci-on rounded-xl hover:bg-ci-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   <Wand2 size={14} /> Anpassen
                 </button>
@@ -467,7 +467,7 @@ export default function GenerateQuestModal({ onGenerate, onClose, showHeyflowImp
                 <button
                   onClick={handleImport}
                   disabled={!heyflowUrl.trim()}
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-violet-600 text-white rounded-xl hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-ci text-ci-on rounded-xl hover:bg-ci-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   <ArrowDownToLine size={14} /> Importieren
                 </button>
@@ -475,7 +475,7 @@ export default function GenerateQuestModal({ onGenerate, onClose, showHeyflowImp
                 <button
                   onClick={handleGenerate}
                   disabled={!beruf.trim()}
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-violet-600 text-white rounded-xl hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-ci text-ci-on rounded-xl hover:bg-ci-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   <Sparkles size={14} /> Generieren
                 </button>

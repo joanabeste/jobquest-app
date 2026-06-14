@@ -20,14 +20,14 @@ export function IconEmojiPicker({ value, onChange, onClose }: {
         <button
           type="button"
           onClick={() => setTab('icons')}
-          className={`flex-1 text-[11px] font-semibold py-1.5 rounded-lg transition-colors ${tab === 'icons' ? 'bg-violet-100 text-violet-700' : 'text-slate-500 hover:bg-slate-50'}`}
+          className={`flex-1 text-[11px] font-semibold py-1.5 rounded-lg transition-colors ${tab === 'icons' ? 'bg-ci-soft text-ci-ink' : 'text-slate-500 hover:bg-slate-50'}`}
         >
           Lucide Icons
         </button>
         <button
           type="button"
           onClick={() => setTab('emoji')}
-          className={`flex-1 text-[11px] font-semibold py-1.5 rounded-lg transition-colors ${tab === 'emoji' ? 'bg-violet-100 text-violet-700' : 'text-slate-500 hover:bg-slate-50'}`}
+          className={`flex-1 text-[11px] font-semibold py-1.5 rounded-lg transition-colors ${tab === 'emoji' ? 'bg-ci-soft text-ci-ink' : 'text-slate-500 hover:bg-slate-50'}`}
         >
           Emojis
         </button>
@@ -53,7 +53,7 @@ export function IconEmojiPicker({ value, onChange, onClose }: {
                 key={name}
                 type="button"
                 onClick={() => { onChange(name); onClose(); }}
-                className={`w-7 h-7 rounded-lg flex items-center justify-center hover:bg-violet-50 transition-colors ${value === name ? 'bg-violet-100 text-violet-600' : 'text-slate-500'}`}
+                className={`w-7 h-7 rounded-lg flex items-center justify-center hover:bg-ci-soft transition-colors ${value === name ? 'bg-ci-soft text-ci-ink' : 'text-slate-500'}`}
                 title={name}
               >
                 <Icon size={14} />
@@ -74,7 +74,7 @@ export function IconEmojiPicker({ value, onChange, onClose }: {
                     key={em}
                     type="button"
                     onClick={() => { onChange(em); onClose(); }}
-                    className={`w-7 h-7 text-base flex items-center justify-center rounded-lg hover:bg-violet-50 transition-colors ${value === em ? 'bg-violet-100' : ''}`}
+                    className={`w-7 h-7 text-base flex items-center justify-center rounded-lg hover:bg-ci-soft transition-colors ${value === em ? 'bg-ci-soft' : ''}`}
                     title={em}
                   >
                     {em}

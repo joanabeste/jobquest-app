@@ -44,7 +44,7 @@ export async function sendInviteEmail({
       <p>Hallo,</p>
       <p><strong>${invitedBy}</strong> hat dich eingeladen, dem Team von <strong>${companyName}</strong> auf JobQuest beizutreten.</p>
       <p>
-        <a href="${inviteLink}" style="display:inline-block;padding:12px 24px;background:#7c3aed;color:#fff;border-radius:8px;text-decoration:none;font-weight:600">
+        <a href="${inviteLink}" style="display:inline-block;padding:12px 24px;background:#3A22E0;color:#fff;border-radius:8px;text-decoration:none;font-weight:600">
           Einladung annehmen
         </a>
       </p>

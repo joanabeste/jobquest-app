@@ -378,7 +378,7 @@ export default function LeadsPage() {
                 placeholder="Name, E-Mail oder Titel suchen…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-9 pr-4 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-300 bg-white"
+                className="w-full pl-9 pr-4 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-ci bg-white"
               />
             </div>
             <div className="flex items-center gap-2 overflow-x-auto">
@@ -388,7 +388,7 @@ export default function LeadsPage() {
                   <button key={val} onClick={() => setSourceFilter(val)}
                     className={`px-2.5 sm:px-3 py-2 text-xs font-medium transition-colors whitespace-nowrap ${
                       sourceFilter === val
-                        ? 'bg-violet-600 text-white'
+                        ? 'bg-ci text-ci-on'
                         : 'text-slate-600 hover:bg-slate-50'
                     }`}>
                     {label}
@@ -400,9 +400,9 @@ export default function LeadsPage() {
 
           {/* Bulk action bar */}
           {selected.size > 0 && (
-            <div className="flex items-center gap-3 mb-3 px-4 py-2.5 bg-violet-50 border border-violet-200 rounded-xl text-sm">
-              <CheckSquare size={15} className="text-violet-600 flex-shrink-0" />
-              <span className="font-medium text-violet-700">{selected.size} ausgewahlt</span>
+            <div className="flex items-center gap-3 mb-3 px-4 py-2.5 bg-ci-soft border border-ci rounded-xl text-sm">
+              <CheckSquare size={15} className="text-ci-ink flex-shrink-0" />
+              <span className="font-medium text-ci-ink">{selected.size} ausgewahlt</span>
               <div className="flex-1" />
               <button
                 onClick={exportSelected}
@@ -419,7 +419,7 @@ export default function LeadsPage() {
               </button>
               <button
                 onClick={() => setSelected(new Set())}
-                className="p-1 text-violet-400 hover:text-violet-600 transition-colors"
+                className="p-1 text-ci-ink hover:text-ci-ink transition-colors"
               >
                 <X size={14} />
               </button>
@@ -437,7 +437,7 @@ export default function LeadsPage() {
                         type="checkbox"
                         checked={filtered.length > 0 && selected.size === filtered.length}
                         onChange={toggleSelectAll}
-                        className="rounded border-slate-300 text-violet-600 focus:ring-violet-500"
+                        className="rounded border-slate-300 text-ci-ink focus:ring-ci"
                       />
                     </th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500">Name</th>
@@ -452,13 +452,13 @@ export default function LeadsPage() {
                   {filtered.map((lead, i) => (
                     <tr key={lead.id}
                       onClick={() => setSelectedLead(lead)}
-                      className={`border-b border-slate-50 hover:bg-slate-50 transition-colors cursor-pointer ${selected.has(lead.id) ? 'bg-violet-50/50' : i % 2 !== 0 ? 'bg-slate-50/40' : ''}`}>
+                      className={`border-b border-slate-50 hover:bg-slate-50 transition-colors cursor-pointer ${selected.has(lead.id) ? 'bg-ci-soft' : i % 2 !== 0 ? 'bg-slate-50/40' : ''}`}>
                       <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
                         <input
                           type="checkbox"
                           checked={selected.has(lead.id)}
                           onChange={() => toggleSelect(lead.id)}
-                          className="rounded border-slate-300 text-violet-600 focus:ring-violet-500"
+                          className="rounded border-slate-300 text-ci-ink focus:ring-ci"
                         />
                       </td>
                       <td className="px-4 py-3 font-medium text-slate-900 whitespace-nowrap">
@@ -485,7 +485,7 @@ export default function LeadsPage() {
                       </td>
                       <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-2">
-                          <span className="text-xs text-violet-600 font-medium cursor-pointer" onClick={() => setSelectedLead(lead)}>Details</span>
+                          <span className="text-xs text-ci-ink font-medium cursor-pointer" onClick={() => setSelectedLead(lead)}>Details</span>
                           <button
                             onClick={() => setDeleteConfirmLead(lead)}
                             disabled={deletingId === lead.id}
@@ -611,7 +611,7 @@ function LeadDetailModal({ lead, onClose, onDelete, deleting }: {
               {lead.email && (
                 <div className="flex items-center gap-3">
                   <Mail size={14} className="text-slate-400 flex-shrink-0" />
-                  <a href={`mailto:${lead.email}`} className="text-sm text-violet-600 hover:underline truncate">
+                  <a href={`mailto:${lead.email}`} className="text-sm text-ci-ink hover:underline truncate">
                     {lead.email}
                   </a>
                   {lead.emailSent === true && (
@@ -696,7 +696,7 @@ function LeadDetailModal({ lead, onClose, onDelete, deleting }: {
                       </div>
                       <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
                         <div className="h-full rounded-full transition-all duration-500"
-                          style={{ width: `${pct}%`, background: dim.color ?? '#7c3aed' }} />
+                          style={{ width: `${pct}%`, background: dim.color ?? '#3A22E0' }} />
                       </div>
                     </div>
                   );

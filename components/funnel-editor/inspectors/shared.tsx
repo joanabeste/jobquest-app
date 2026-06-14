@@ -65,7 +65,7 @@ export function ImageUploadField({ label, value, onChange, cropAspect, cropTitle
       <button
         type="button"
         onClick={() => setPickerOpen(true)}
-        className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-dashed border-slate-300 text-xs text-slate-600 hover:bg-slate-50 hover:border-violet-400 transition-colors"
+        className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-dashed border-slate-300 text-xs text-slate-600 hover:bg-slate-50 hover:border-ci transition-colors"
       >
         {value ? <Upload size={12} /> : <ImageIcon size={12} />}
         {value ? 'Bild ändern' : 'Bild aus Mediathek wählen'}
@@ -74,7 +74,7 @@ export function ImageUploadField({ label, value, onChange, cropAspect, cropTitle
         <button
           type="button"
           onClick={() => setCropping({ src: value })}
-          className="w-full flex items-center justify-center gap-1.5 mt-1 px-3 py-1.5 rounded-lg border border-slate-200 text-[11px] text-slate-600 hover:bg-slate-50 hover:border-violet-400 transition-colors"
+          className="w-full flex items-center justify-center gap-1.5 mt-1 px-3 py-1.5 rounded-lg border border-slate-200 text-[11px] text-slate-600 hover:bg-slate-50 hover:border-ci transition-colors"
         >
           <Crop size={11} /> Ausschnitt anpassen
         </button>

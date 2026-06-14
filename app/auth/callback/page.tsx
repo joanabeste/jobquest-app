@@ -117,7 +117,7 @@ export default function AuthCallbackPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50">
       <div className="flex items-center gap-3 text-slate-400">
-        <div className="w-5 h-5 rounded-full border-2 border-slate-200 border-t-violet-500 animate-spin" />
+        <div className="w-5 h-5 rounded-full border-2 border-slate-200 border-t-jq-indigo animate-spin" />
         <span className="text-sm">Wird verifiziert…</span>
       </div>
     </div>

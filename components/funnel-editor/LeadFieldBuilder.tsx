@@ -124,7 +124,7 @@ export default function LeadFieldBuilder({ fields, onChange }: LeadFieldBuilderP
                     className="flex-shrink-0 p-0.5 rounded hover:bg-slate-100 transition-colors"
                   >
                     {f.required
-                      ? <Lock size={11} className="text-violet-600" />
+                      ? <Lock size={11} className="text-ci-ink" />
                       : <LockOpen size={11} className="text-slate-300" />
                     }
                   </button>
@@ -146,7 +146,7 @@ export default function LeadFieldBuilder({ fields, onChange }: LeadFieldBuilderP
                       <input
                         value={f.placeholder ?? ''}
                         onChange={(e) => updateField(f.id, { placeholder: e.target.value })}
-                        className="w-full px-2 py-1 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:border-violet-300 placeholder:text-slate-300"
+                        className="w-full px-2 py-1 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:border-ci placeholder:text-slate-300"
                         placeholder="Platzhalter (optional)"
                       />
                     )}
@@ -158,7 +158,7 @@ export default function LeadFieldBuilder({ fields, onChange }: LeadFieldBuilderP
                           value={(f.options ?? []).join('\n')}
                           onChange={(e) => updateField(f.id, { options: e.target.value.split('\n') })}
                           rows={3}
-                          className="w-full px-2 py-1 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:border-violet-300 resize-none placeholder:text-slate-300"
+                          className="w-full px-2 py-1 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:border-ci resize-none placeholder:text-slate-300"
                           placeholder={'Option 1\nOption 2\nOption 3'}
                         />
                       </div>
@@ -174,7 +174,7 @@ export default function LeadFieldBuilder({ fields, onChange }: LeadFieldBuilderP
       {/* Add field */}
       <button
         onClick={addField}
-        className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-xl border border-dashed border-slate-200 text-[11px] text-slate-400 font-medium hover:border-violet-300 hover:text-violet-600 hover:bg-violet-50 transition-colors"
+        className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-xl border border-dashed border-slate-200 text-[11px] text-slate-400 font-medium hover:border-ci hover:text-ci-ink hover:bg-ci-soft transition-colors"
       >
         <Plus size={11} /> Feld hinzufügen
       </button>

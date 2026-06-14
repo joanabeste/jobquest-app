@@ -31,7 +31,7 @@ export function DecisionEditor({ props, onChange, pages, variables = [] }: {
         <div className="flex items-center justify-between mb-2">
           <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Optionen</p>
           <button onClick={() => onChange({ options: [...options, { id: crypto.randomUUID(), text: 'Option', reaction: '' }] })}
-            className="flex items-center gap-1 text-[10px] text-violet-600 font-medium"><Plus size={11} /> Option</button>
+            className="flex items-center gap-1 text-[10px] text-ci-ink font-medium"><Plus size={11} /> Option</button>
         </div>
         <div className="space-y-2">
           {options.map((o, i) => {
@@ -43,11 +43,11 @@ export function DecisionEditor({ props, onChange, pages, variables = [] }: {
                   <button
                     type="button"
                     onClick={() => setPickerOpen(pickerOpen === o.id ? null : o.id)}
-                    className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center border border-slate-200 bg-white hover:border-violet-300 transition-colors"
+                    className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center border border-slate-200 bg-white hover:border-ci transition-colors"
                     title="Icon oder Emoji wählen"
                   >
                     {IconComp
-                      ? <IconComp size={14} className="text-violet-500" />
+                      ? <IconComp size={14} className="text-ci-ink" />
                       : isEmoji(o.emoji)
                         ? <span className="text-base leading-none">{o.emoji}</span>
                         : <Smile size={14} className="text-slate-400" />

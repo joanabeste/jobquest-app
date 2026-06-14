@@ -298,7 +298,7 @@ export default function StatistikenPage() {
                 {questRows.map(({ quest, kpis: k, leads: leadCount }) => (
                   <tr key={quest.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-5 py-3 font-medium text-slate-900">
-                      <Link href={`/jobquest/${quest.id}/stats`} className="hover:text-violet-600">
+                      <Link href={`/jobquest/${quest.id}/stats`} className="hover:text-ci-ink">
                         {quest.title}
                       </Link>
                     </td>
@@ -313,7 +313,7 @@ export default function StatistikenPage() {
                     <td className="px-3 py-3 text-right tabular-nums">{leadCount}</td>
                     <td className="px-3 py-3 text-right">
                       <Link href={`/jobquest/${quest.id}/stats`}
-                        className="inline-flex items-center text-slate-400 hover:text-violet-600">
+                        className="inline-flex items-center text-slate-400 hover:text-ci-ink">
                         <ChevronRight size={16} />
                       </Link>
                     </td>
@@ -360,7 +360,7 @@ export default function StatistikenPage() {
                 {checkRows.map(({ check, kpis: k, leads: leadCount }) => (
                   <tr key={check.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-5 py-3 font-medium text-slate-900">
-                      <Link href={`/berufscheck/${check.id}/stats`} className="hover:text-violet-600">
+                      <Link href={`/berufscheck/${check.id}/stats`} className="hover:text-ci-ink">
                         {check.title}
                       </Link>
                     </td>
@@ -375,7 +375,7 @@ export default function StatistikenPage() {
                     <td className="px-3 py-3 text-right tabular-nums">{leadCount}</td>
                     <td className="px-3 py-3 text-right">
                       <Link href={`/berufscheck/${check.id}/stats`}
-                        className="inline-flex items-center text-slate-400 hover:text-violet-600">
+                        className="inline-flex items-center text-slate-400 hover:text-ci-ink">
                         <ChevronRight size={16} />
                       </Link>
                     </td>
@@ -422,7 +422,7 @@ export default function StatistikenPage() {
                 {formRows.map(({ form, kpis: k, leads: leadCount }) => (
                   <tr key={form.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-5 py-3 font-medium text-slate-900">
-                      <Link href={`/formular/${form.id}/stats`} className="hover:text-violet-600">
+                      <Link href={`/formular/${form.id}/stats`} className="hover:text-ci-ink">
                         {form.title}
                       </Link>
                     </td>
@@ -437,7 +437,7 @@ export default function StatistikenPage() {
                     <td className="px-3 py-3 text-right tabular-nums">{leadCount}</td>
                     <td className="px-3 py-3 text-right">
                       <Link href={`/formular/${form.id}/stats`}
-                        className="inline-flex items-center text-slate-400 hover:text-violet-600">
+                        className="inline-flex items-center text-slate-400 hover:text-ci-ink">
                         <ChevronRight size={16} />
                       </Link>
                     </td>

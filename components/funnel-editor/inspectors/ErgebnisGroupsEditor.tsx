@@ -91,7 +91,7 @@ export function ErgebnisGroupsEditor({ props, onChange, pages }: {
             type="checkbox"
             checked={props.showDimensionBars !== false}
             onChange={(e) => onChange({ showDimensionBars: e.target.checked })}
-            className="accent-violet-600"
+            className="accent-ci"
           />
           <span className="text-xs text-slate-700">Dimensions-Balken anzeigen</span>
         </label>
@@ -99,7 +99,7 @@ export function ErgebnisGroupsEditor({ props, onChange, pages }: {
         <div className="pt-2 border-t border-slate-100">
           <div className="flex items-center justify-between mb-2">
             <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Gruppen ({groups.length})</p>
-            <button onClick={addGroup} className="flex items-center gap-1 text-[10px] text-violet-600 font-medium">
+            <button onClick={addGroup} className="flex items-center gap-1 text-[10px] text-ci-ink font-medium">
               <Plus size={11} /> Gruppe
             </button>
           </div>
@@ -143,7 +143,7 @@ export function ErgebnisGroupsEditor({ props, onChange, pages }: {
                                   : g.dimensionIds.filter((d) => d !== dim.id);
                                 patchGroup(g.id, { dimensionIds: next });
                               }}
-                              className="accent-violet-600"
+                              className="accent-ci"
                             />
                             <span style={{ color: dim.color }}>{dim.name}</span>
                           </label>
@@ -157,7 +157,7 @@ export function ErgebnisGroupsEditor({ props, onChange, pages }: {
                       type="checkbox"
                       checked={g.showBars}
                       onChange={(e) => patchGroup(g.id, { showBars: e.target.checked })}
-                      className="accent-violet-600"
+                      className="accent-ci"
                     />
                     <span className="text-xs text-slate-700">Balken anzeigen</span>
                   </label>
@@ -197,7 +197,7 @@ export function ErgebnisGroupsEditor({ props, onChange, pages }: {
                           ))}
                         </select>
                         {g.visibleIf && (
-                          <div className="space-y-1 pl-2 border-l-2 border-violet-200">
+                          <div className="space-y-1 pl-2 border-l-2 border-ci">
                             <p className="text-[10px] font-semibold text-slate-500">Wenn Antwort eine von:</p>
                             {(filterBlocks.find((b) => b.id === g.visibleIf!.sourceBlockId)?.options ?? []).map((opt) => {
                               const checked = g.visibleIf!.equals.includes(opt.id);
@@ -212,7 +212,7 @@ export function ErgebnisGroupsEditor({ props, onChange, pages }: {
                                         : g.visibleIf!.equals.filter((v) => v !== opt.id);
                                       patchGroup(g.id, { visibleIf: { ...g.visibleIf!, equals: next } });
                                     }}
-                                    className="accent-violet-600"
+                                    className="accent-ci"
                                   />
                                   <span>{opt.text}</span>
                                 </label>
@@ -338,7 +338,7 @@ function SuggestionList({ group, onChange }: { group: Group; onChange: (s: Sugge
                 ))}
                 <button
                   onClick={() => patch(sug.id, { links: [...(sug.links ?? []), { id: uid(), label: 'Link', url: '', icon: 'link' }] })}
-                  className="text-[10px] text-violet-600 font-medium flex items-center gap-1"
+                  className="text-[10px] text-ci-ink font-medium flex items-center gap-1"
                 >
                   <Plus size={9} /> Link
                 </button>
@@ -347,7 +347,7 @@ function SuggestionList({ group, onChange }: { group: Group; onChange: (s: Sugge
           </div>
         </details>
       ))}
-      <button onClick={add} className="text-[10px] text-violet-600 font-medium flex items-center gap-1">
+      <button onClick={add} className="text-[10px] text-ci-ink font-medium flex items-center gap-1">
         <Plus size={11} /> Vorschlag hinzufügen
       </button>
     </div>

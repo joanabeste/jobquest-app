@@ -116,7 +116,7 @@ export default function ReviewLinksModal({ funnelDocId, onClose }: ReviewLinksMo
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 flex-shrink-0">
           <div className="flex items-center gap-2">
-            <Link2 size={16} className="text-violet-600" />
+            <Link2 size={16} className="text-ci-ink" />
             <h2 className="text-sm font-semibold text-slate-800">Externe Review-Links</h2>
           </div>
           <button onClick={onClose} className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-700">
@@ -133,7 +133,7 @@ export default function ReviewLinksModal({ funnelDocId, onClose }: ReviewLinksMo
               value={label}
               onChange={(e) => setLabel(e.target.value)}
               placeholder="z.B. Externe Agentur · Stakeholder XYZ"
-              className="w-full text-[12px] text-slate-700 px-2.5 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-200"
+              className="w-full text-[12px] text-slate-700 px-2.5 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:border-ci focus:ring-1 focus:ring-ci"
             />
           </div>
           <div className="flex items-center gap-3">
@@ -142,7 +142,7 @@ export default function ReviewLinksModal({ funnelDocId, onClose }: ReviewLinksMo
               <select
                 value={expiresInDays === null ? 'none' : String(expiresInDays)}
                 onChange={(e) => setExpiresInDays(e.target.value === 'none' ? null : parseInt(e.target.value, 10))}
-                className="w-full text-[12px] text-slate-700 px-2.5 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-200"
+                className="w-full text-[12px] text-slate-700 px-2.5 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:border-ci focus:ring-1 focus:ring-ci"
               >
                 {EXPIRY_OPTIONS.map((o) => (
                   <option key={String(o.value)} value={o.value === null ? 'none' : String(o.value)}>{o.label}</option>
@@ -154,7 +154,7 @@ export default function ReviewLinksModal({ funnelDocId, onClose }: ReviewLinksMo
                 type="checkbox"
                 checked={canComment}
                 onChange={(e) => setCanComment(e.target.checked)}
-                className="accent-violet-600"
+                className="accent-ci"
               />
               Darf kommentieren
             </label>
@@ -162,7 +162,7 @@ export default function ReviewLinksModal({ funnelDocId, onClose }: ReviewLinksMo
           <button
             onClick={handleCreate}
             disabled={!label.trim() || creating}
-            className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] font-semibold rounded-lg bg-violet-600 text-white hover:bg-violet-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed transition-colors"
+            className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-[12px] font-semibold rounded-lg bg-ci text-ci-on hover:bg-ci-hover disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed transition-colors"
           >
             {creating ? <><Loader2 size={12} className="animate-spin" /> Erstelle…</> : <><Plus size={12} /> Link erstellen</>}
           </button>

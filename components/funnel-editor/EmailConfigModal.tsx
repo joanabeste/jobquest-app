@@ -144,7 +144,7 @@ export default function EmailConfigModal({ initial, onSave, onClose, availableVa
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 flex-shrink-0">
           <div className="flex items-center gap-2.5">
-            <Mail className="w-5 h-5 text-violet-600" />
+            <Mail className="w-5 h-5 text-ci-ink" />
             <h2 className="text-base font-semibold text-slate-900">E-Mail-Einstellungen</h2>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors text-slate-400 hover:text-slate-600">
@@ -157,7 +157,7 @@ export default function EmailConfigModal({ initial, onSave, onClose, availableVa
 
           {/* ── Bestätigungs-E-Mail ─────────────────────────────────────── */}
           <Section
-            icon={<Mail className="w-4 h-4 text-violet-500" />}
+            icon={<Mail className="w-4 h-4 text-ci-ink" />}
             title="Bestätigungs-E-Mail"
             subtitle="Wird nach dem Absenden an die Bewerberin / den Bewerber geschickt"
             open={confirmOpen}
@@ -220,7 +220,7 @@ export default function EmailConfigModal({ initial, onSave, onClose, availableVa
 
           {/* ── Benachrichtigungs-E-Mail ─────────────────────────────────── */}
           <Section
-            icon={<Bell className="w-4 h-4 text-violet-500" />}
+            icon={<Bell className="w-4 h-4 text-ci-ink" />}
             title="Benachrichtigungs-E-Mail"
             subtitle="Wird intern verschickt, wenn ein neuer Lead eingeht"
             open={notifOpen}
@@ -303,7 +303,7 @@ function AttachmentField({
       {/* Uploaded file chip */}
       {attachment?.url ? (
         <div className="flex items-center gap-2 px-2.5 py-1.5 bg-slate-50 rounded-lg border border-slate-200">
-          <FileText size={13} className="text-violet-500 flex-shrink-0" />
+          <FileText size={13} className="text-ci-ink flex-shrink-0" />
           <span className="text-xs text-slate-700 flex-1 truncate">{attachment.filename || 'Anhang'}</span>
           <button type="button" onClick={onClear} className="text-slate-400 hover:text-slate-600 p-0.5 rounded">
             <X size={12} />
@@ -365,7 +365,7 @@ function TestEmailRow({
           type="button"
           onClick={onSend}
           disabled={state.status === 'sending'}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-violet-50 text-violet-700 hover:bg-violet-100 disabled:opacity-50 transition-colors whitespace-nowrap"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-ci-soft text-ci-ink hover:bg-ci-soft disabled:opacity-50 transition-colors whitespace-nowrap"
         >
           <Send size={12} className={state.status === 'sending' ? 'animate-pulse' : ''} />
           {state.status === 'sending' ? 'Sende…' : label}
@@ -416,7 +416,7 @@ function ToggleRow({ label, checked, onChange }: { label: string; checked: boole
     <label className="flex items-center justify-between cursor-pointer">
       <span className="text-sm text-slate-700">{label}</span>
       <button role="switch" aria-checked={checked} onClick={() => onChange(!checked)}
-        className={`relative inline-flex w-10 h-6 rounded-full transition-colors ${checked ? 'bg-violet-600' : 'bg-slate-200'}`}>
+        className={`relative inline-flex w-10 h-6 rounded-full transition-colors ${checked ? 'bg-ci' : 'bg-slate-200'}`}>
         <span className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${checked ? 'translate-x-4' : 'translate-x-0'}`} />
       </button>
     </label>
@@ -432,7 +432,7 @@ function BodyModeToggle({ mode, onChange }: { mode: 'html' | 'text'; onChange: (
     <div className="inline-flex rounded-lg border border-slate-200 overflow-hidden text-xs mb-1.5">
       {(['text', 'html'] as const).map((m) => (
         <button key={m} onClick={() => onChange(m)}
-          className={`px-3 py-1 font-medium transition-colors ${mode === m ? 'bg-violet-600 text-white' : 'bg-white text-slate-600 hover:bg-slate-50'}`}>
+          className={`px-3 py-1 font-medium transition-colors ${mode === m ? 'bg-ci text-ci-on' : 'bg-white text-slate-600 hover:bg-slate-50'}`}>
           {m === 'text' ? 'Visuell' : 'HTML'}
         </button>
       ))}

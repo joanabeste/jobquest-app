@@ -32,13 +32,13 @@ export default function BlockPanel({ contentType, onInsertBlock }: BlockPanelPro
                   <button
                     key={block.type}
                     onClick={() => onInsertBlock(block.type, getDefaultProps(block.type))}
-                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-violet-50 transition-colors text-left group mb-0.5"
+                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-ci-soft transition-colors text-left group mb-0.5"
                     title={block.description}
                   >
                     <div className={`w-6 h-6 rounded flex items-center justify-center flex-shrink-0 ${meta?.bg ?? 'bg-slate-100'}`}>
                       {Icon && <Icon size={11} className={meta?.color ?? 'text-slate-500'} />}
                     </div>
-                    <span className="text-xs text-slate-600 group-hover:text-violet-700 font-medium truncate">{block.label}</span>
+                    <span className="text-xs text-slate-600 group-hover:text-ci-ink font-medium truncate">{block.label}</span>
                   </button>
                 );
               })}

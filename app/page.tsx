@@ -76,9 +76,8 @@ export default function Home() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50">
       <div className="flex flex-col items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-violet-600 flex items-center justify-center animate-pulse">
-          <span className="text-white font-bold text-lg">J</span>
-        </div>
+        <img src="/brand/jq-mark-indigo.png" alt="JobQuest"
+          className="w-12 h-12 object-contain animate-pulse" />
         <p className="text-slate-500 text-sm">Laden…</p>
       </div>
     </div>

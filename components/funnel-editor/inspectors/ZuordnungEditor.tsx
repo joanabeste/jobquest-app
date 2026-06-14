@@ -40,7 +40,7 @@ export function ZuordnungEditor({ props, onChange, variables = [] }: {
           <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Paare</p>
           <button
             onClick={() => onChange({ pairs: [...pairs, { id: crypto.randomUUID(), left: 'Begriff', right: 'Erklärung' }] })}
-            className="flex items-center gap-1 text-[10px] text-violet-600 font-medium"
+            className="flex items-center gap-1 text-[10px] text-ci-ink font-medium"
           >
             <Plus size={11} /> Paar
           </button>

@@ -70,7 +70,7 @@ export function FrageEditor({ props, onChange, variables = [] }: { props: Record
           <div className="flex items-center justify-between mb-2">
             <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Optionen</p>
             <button onClick={() => onChange({ options: [...options, { id: crypto.randomUUID(), text: 'Option', scores: {} }] })}
-              className="flex items-center gap-1 text-[10px] text-violet-600 font-medium"><Plus size={11} /> Option</button>
+              className="flex items-center gap-1 text-[10px] text-ci-ink font-medium"><Plus size={11} /> Option</button>
           </div>
           <div className="space-y-2">
             {options.map((o, i) => (
@@ -96,7 +96,7 @@ export function FrageEditor({ props, onChange, variables = [] }: { props: Record
         </div>
       )}
       <label className="flex items-center gap-2 cursor-pointer pt-1">
-        <input type="checkbox" checked={allowSkip} onChange={(e) => onChange({ allowSkip: e.target.checked })} className="accent-violet-600" />
+        <input type="checkbox" checked={allowSkip} onChange={(e) => onChange({ allowSkip: e.target.checked })} className="accent-ci" />
         <span className="text-xs text-slate-700">&bdquo;Weiß nicht / überspringen&ldquo;-Option zeigen</span>
       </label>
     </div>
@@ -112,7 +112,7 @@ export function ErgebnisfrageEditor({ props, onChange, variables = [] }: { props
         <div className="flex items-center justify-between mb-2">
           <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Optionen</p>
           <button onClick={() => onChange({ options: [...options, { id: crypto.randomUUID(), text: 'Option', scores: {} }] })}
-            className="flex items-center gap-1 text-[10px] text-violet-600 font-medium"><Plus size={11} /> Option</button>
+            className="flex items-center gap-1 text-[10px] text-ci-ink font-medium"><Plus size={11} /> Option</button>
         </div>
         <div className="space-y-1.5">
           {options.map((o, i) => (

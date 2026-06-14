@@ -75,15 +75,11 @@ export default function AcceptInvitePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-slate-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-jq-cloud via-white to-jq-paper-2 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-violet-600 flex items-center justify-center shadow-lg shadow-violet-200">
-              <span className="text-white font-bold text-lg">J</span>
-            </div>
-            <span className="text-2xl font-bold text-slate-900">JobQuest</span>
-          </div>
+          <img src="/brand/jobquest-logo.png" alt="JobQuest"
+            className="h-20 w-auto mx-auto rounded-2xl shadow-lg" />
         </div>
 
         <div className="card p-8">

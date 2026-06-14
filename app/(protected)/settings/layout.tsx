@@ -64,14 +64,14 @@ export default function SettingsLayout({ children }: { children: ReactNode }) {
                 href={href}
                 className={`flex items-center gap-2 md:gap-3 px-3 py-2 md:py-2.5 rounded-xl transition-colors group whitespace-nowrap ${
                   active
-                    ? 'bg-violet-50 text-violet-700'
+                    ? 'bg-ci-soft text-ci-ink'
                     : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                 }`}
               >
                 <div className={`w-7 h-7 md:w-8 md:h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors ${
-                  active ? 'bg-violet-100' : 'bg-slate-100 group-hover:bg-slate-200'
+                  active ? 'bg-ci-soft' : 'bg-slate-100 group-hover:bg-slate-200'
                 }`}>
-                  <Icon size={15} className={active ? 'text-violet-600' : 'text-slate-500'} />
+                  <Icon size={15} className={active ? 'text-ci-ink' : 'text-slate-500'} />
                 </div>
                 <span className="text-sm font-medium">{label}</span>
               </Link>

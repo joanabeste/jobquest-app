@@ -283,7 +283,7 @@ export default function GenerateCheckModal({ onGenerate, onClose, showHeyflowImp
         <div className="px-6 pt-4 pb-0 border-b border-slate-100">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <Sparkles size={18} className="text-violet-500" />
+              <Sparkles size={18} className="text-ci-ink" />
               <h2 className="text-base font-semibold text-slate-900">KI Berufscheck</h2>
             </div>
             {!loading && (
@@ -297,21 +297,21 @@ export default function GenerateCheckModal({ onGenerate, onClose, showHeyflowImp
               {hasExistingContent && (
                 <button
                   onClick={() => { setTab('refine'); setError(''); }}
-                  className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-b-2 transition-colors ${tab === 'refine' ? 'border-violet-500 text-violet-700' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+                  className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-b-2 transition-colors ${tab === 'refine' ? 'border-ci-ink text-ci-ink' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
                 >
                   <Wand2 size={12} /> Anpassen
                 </button>
               )}
               <button
                 onClick={() => { setTab('generate'); setError(''); }}
-                className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-b-2 transition-colors ${tab === 'generate' ? 'border-violet-500 text-violet-700' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+                className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-b-2 transition-colors ${tab === 'generate' ? 'border-ci-ink text-ci-ink' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
               >
                 <Sparkles size={12} /> Neu generieren
               </button>
               {showHeyflowImport && (
                 <button
                   onClick={() => { setTab('import'); setError(''); }}
-                  className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-b-2 transition-colors ${tab === 'import' ? 'border-violet-500 text-violet-700' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+                  className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-b-2 transition-colors ${tab === 'import' ? 'border-ci-ink text-ci-ink' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
                 >
                   <ArrowDownToLine size={12} /> Prototyp importieren
                 </button>
@@ -323,15 +323,15 @@ export default function GenerateCheckModal({ onGenerate, onClose, showHeyflowImp
         {loading ? (
           <div className="px-6 py-8 flex flex-col items-center gap-6">
             <div className="relative w-20 h-20">
-              <div className="absolute inset-0 rounded-full bg-violet-100 animate-ping opacity-40" />
-              <div className="relative w-20 h-20 rounded-full bg-violet-50 flex items-center justify-center">
-                <Sparkles size={32} className="text-violet-500" style={{ animation: 'spin 3s linear infinite' }} />
+              <div className="absolute inset-0 rounded-full bg-ci-soft animate-ping opacity-40" />
+              <div className="relative w-20 h-20 rounded-full bg-ci-soft flex items-center justify-center">
+                <Sparkles size={32} className="text-ci-ink" style={{ animation: 'spin 3s linear infinite' }} />
               </div>
             </div>
             <div className="w-full">
               <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-violet-500 to-purple-500 rounded-full transition-all duration-500 ease-out"
+                  className="h-full bg-gradient-to-r from-ci to-purple-500 rounded-full transition-all duration-500 ease-out"
                   style={{ width: `${loadingProgress}%` }}
                 />
               </div>
@@ -361,7 +361,7 @@ export default function GenerateCheckModal({ onGenerate, onClose, showHeyflowImp
                     onChange={(e) => setRefineInstructions(e.target.value)}
                     placeholder="z.B. Fuege mehr Swipe-Karten hinzu, aendere die Dimensionen, passe die Berufsvorschlage an..."
                     rows={5}
-                    className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:border-violet-400 focus:outline-none resize-none transition-colors"
+                    className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:border-ci focus:outline-none resize-none transition-colors"
                     autoFocus
                   />
                   <p className="text-[11px] text-slate-400 mt-1.5">Die KI passt den bestehenden Berufscheck nach deinen Wunschen an. Alles, was du nicht erwahnst, bleibt unverandert.</p>
@@ -378,7 +378,7 @@ export default function GenerateCheckModal({ onGenerate, onClose, showHeyflowImp
                     onChange={(e) => setHeyflowUrl(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleImportHeyflow()}
                     placeholder="https://beispiel.de/mein-berufscheck"
-                    className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:border-violet-400 focus:outline-none transition-colors"
+                    className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:border-ci focus:outline-none transition-colors"
                     autoFocus
                   />
                   <p className="text-[11px] text-slate-400 mt-1.5">Die KI liest den Prototyp-Inhalt und konvertiert ihn in einen interaktiven Berufscheck mit Swipe-Karten, Selbsteinschatzung und Ergebnis.</p>
@@ -392,20 +392,20 @@ export default function GenerateCheckModal({ onGenerate, onClose, showHeyflowImp
                 <button
                   type="button"
                   onClick={() => { setImportOpen(true); setImportInfo(null); }}
-                  className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-xs font-medium rounded-xl border border-dashed border-violet-300 text-violet-700 bg-violet-50/40 hover:bg-violet-50 transition-colors"
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-xs font-medium rounded-xl border border-dashed border-ci text-ci-ink bg-ci-soft hover:bg-ci-soft transition-colors"
                 >
                   <Globe size={13} /> Berufe & Studiengänge von Website importieren
                 </button>
               ) : (
-                <div className="rounded-xl border border-violet-200 bg-violet-50/40 p-3 space-y-2">
+                <div className="rounded-xl border border-ci bg-ci-soft p-3 space-y-2">
                   <div className="flex items-center justify-between">
-                    <p className="text-xs font-semibold text-violet-700 flex items-center gap-1.5">
+                    <p className="text-xs font-semibold text-ci-ink flex items-center gap-1.5">
                       <Globe size={12} /> Von Website importieren
                     </p>
                     <button
                       type="button"
                       onClick={() => { setImportOpen(false); setImportUrl(''); setImportInfo(null); }}
-                      className="text-violet-400 hover:text-violet-700"
+                      className="text-ci-ink hover:text-ci-ink"
                     >
                       <X size={12} />
                     </button>
@@ -417,14 +417,14 @@ export default function GenerateCheckModal({ onGenerate, onClose, showHeyflowImp
                       onChange={(e) => setImportUrl(e.target.value)}
                       onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleImportFromWebsite(); } }}
                       placeholder="https://www.firma.de/karriere"
-                      className="flex-1 px-3 py-2 text-xs border border-slate-200 rounded-lg focus:border-violet-400 focus:outline-none"
+                      className="flex-1 px-3 py-2 text-xs border border-slate-200 rounded-lg focus:border-ci focus:outline-none"
                       disabled={importing}
                     />
                     <button
                       type="button"
                       onClick={handleImportFromWebsite}
                       disabled={!importUrl.trim() || importing}
-                      className="px-3 rounded-lg bg-violet-600 text-white text-xs font-medium hover:bg-violet-700 disabled:opacity-50 flex items-center gap-1"
+                      className="px-3 rounded-lg bg-ci text-ci-on text-xs font-medium hover:bg-ci-hover disabled:opacity-50 flex items-center gap-1"
                     >
                       {importing ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
                       {importing ? 'Lädt…' : 'Importieren'}
@@ -449,12 +449,12 @@ export default function GenerateCheckModal({ onGenerate, onClose, showHeyflowImp
                   <button
                     type="button"
                     onClick={() => setBerufe(companyJobs.map((j) => j.title).filter((t) => !berufe.includes(t)))}
-                    className="w-full mb-2 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-xl border border-dashed border-violet-300 text-violet-600 bg-violet-50/40 hover:bg-violet-50 transition-colors"
+                    className="w-full mb-2 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-xl border border-dashed border-ci text-ci-ink bg-ci-soft hover:bg-ci-soft transition-colors"
                   >
                     <Sparkles size={12} /> {companyJobs.length} Berufe aus Firmenprofil übernehmen
                     {(() => {
                       const groups = new Set(companyJobs.map((j) => j.group).filter(Boolean) as string[]);
-                      return groups.size > 0 ? <span className="text-violet-400">({groups.size} Gruppen)</span> : null;
+                      return groups.size > 0 ? <span className="text-ci-ink">({groups.size} Gruppen)</span> : null;
                     })()}
                   </button>
                 )}
@@ -465,19 +465,19 @@ export default function GenerateCheckModal({ onGenerate, onClose, showHeyflowImp
                     onChange={(e) => setBerufInput(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); commitBeruf(); } }}
                     placeholder="z.B. Industriemechaniker"
-                    className="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-xl focus:border-violet-400 focus:outline-none"
+                    className="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-xl focus:border-ci focus:outline-none"
                   />
                   <button onClick={commitBeruf}
-                    className="px-3 rounded-xl bg-violet-50 text-violet-600 hover:bg-violet-100 transition-colors">
+                    className="px-3 rounded-xl bg-ci-soft text-ci-ink hover:bg-ci-soft transition-colors">
                     <Plus size={14} />
                   </button>
                 </div>
                 {berufe.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mt-2">
                     {berufe.map((b) => (
-                      <span key={b} className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-full bg-violet-50 text-violet-700 border border-violet-200">
+                      <span key={b} className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-full bg-ci-soft text-ci-ink border border-ci">
                         {b}
-                        <button onClick={() => setBerufe(berufe.filter((x) => x !== b))} className="hover:text-violet-900">
+                        <button onClick={() => setBerufe(berufe.filter((x) => x !== b))} className="hover:text-ci-ink">
                           <X size={11} />
                         </button>
                       </span>
@@ -499,7 +499,7 @@ export default function GenerateCheckModal({ onGenerate, onClose, showHeyflowImp
                     onChange={(e) => setStudiumInput(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); commitStudium(); } }}
                     placeholder="z.B. B.Eng. Mechatronik"
-                    className="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-xl focus:border-violet-400 focus:outline-none"
+                    className="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-xl focus:border-ci focus:outline-none"
                   />
                   <button onClick={commitStudium}
                     className="px-3 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors">
@@ -530,7 +530,7 @@ export default function GenerateCheckModal({ onGenerate, onClose, showHeyflowImp
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="z.B. Fokus auf Praxis, Standort Espelkamp, eher jüngere Zielgruppe…"
                   rows={3}
-                  className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:border-violet-400 focus:outline-none resize-none"
+                  className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:border-ci focus:outline-none resize-none"
                 />
               </div>
 
@@ -576,7 +576,7 @@ export default function GenerateCheckModal({ onGenerate, onClose, showHeyflowImp
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={uploadingImage}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-dashed border-slate-300 text-xs text-slate-600 hover:bg-slate-50 hover:border-violet-400 transition-colors disabled:opacity-60"
+                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-dashed border-slate-300 text-xs text-slate-600 hover:bg-slate-50 hover:border-ci transition-colors disabled:opacity-60"
                   >
                     {uploadingImage ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
                     {uploadingImage ? 'Wird hochgeladen…' : 'Hochladen'}
@@ -584,7 +584,7 @@ export default function GenerateCheckModal({ onGenerate, onClose, showHeyflowImp
                   <button
                     type="button"
                     onClick={() => setLibraryOpen(true)}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-dashed border-slate-300 text-xs text-slate-600 hover:bg-slate-50 hover:border-violet-400 transition-colors"
+                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl border border-dashed border-slate-300 text-xs text-slate-600 hover:bg-slate-50 hover:border-ci transition-colors"
                   >
                     <ImageIcon size={13} />
                     Aus Mediathek
@@ -610,7 +610,7 @@ export default function GenerateCheckModal({ onGenerate, onClose, showHeyflowImp
                 <button
                   onClick={handleRefine}
                   disabled={!refineInstructions.trim()}
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-violet-600 text-white rounded-xl hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-ci text-ci-on rounded-xl hover:bg-ci-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   <Wand2 size={14} /> Anpassen
                 </button>
@@ -618,7 +618,7 @@ export default function GenerateCheckModal({ onGenerate, onClose, showHeyflowImp
                 <button
                   onClick={handleImportHeyflow}
                   disabled={!heyflowUrl.trim()}
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-violet-600 text-white rounded-xl hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-ci text-ci-on rounded-xl hover:bg-ci-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   <ArrowDownToLine size={14} /> Importieren
                 </button>
@@ -626,7 +626,7 @@ export default function GenerateCheckModal({ onGenerate, onClose, showHeyflowImp
                 <button
                   onClick={handleGenerate}
                   disabled={berufe.length === 0 && images.length === 0}
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-violet-600 text-white rounded-xl hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-ci text-ci-on rounded-xl hover:bg-ci-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   <Sparkles size={14} /> Generieren
                 </button>

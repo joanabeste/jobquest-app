@@ -84,7 +84,7 @@ function ToolBtn({ active, onClick, title, children }: {
       onMouseDown={(e) => { e.preventDefault(); onClick(); }}
       title={title}
       className={`p-1.5 rounded transition-colors ${
-        active ? 'bg-violet-100 text-violet-700' : 'text-slate-500 hover:bg-slate-100'
+        active ? 'bg-ci-soft text-ci-ink' : 'text-slate-500 hover:bg-slate-100'
       }`}
     >
       {children}
@@ -222,7 +222,7 @@ function RichEd({ v, up, cl, ph }: {
               onMouseDown={e => { e.preventDefault(); applyPreset(p); }}
               title={p.label === 'N' ? 'Normal' : p.label}
               className={`px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors ${
-                isPresetActive(p) ? 'bg-violet-100 text-violet-700' : 'text-slate-500 hover:bg-slate-100'
+                isPresetActive(p) ? 'bg-ci-soft text-ci-ink' : 'text-slate-500 hover:bg-slate-100'
               }`}
             >{p.label}</button>
           ))}
@@ -252,9 +252,9 @@ function RichEd({ v, up, cl, ph }: {
             <button
               key={va.key}
               onMouseDown={() => insertVar(va.key)}
-              className="w-full flex items-center gap-3 px-3 py-2 hover:bg-violet-50 transition-colors text-left"
+              className="w-full flex items-center gap-3 px-3 py-2 hover:bg-ci-soft transition-colors text-left"
             >
-              <span className="text-violet-600 font-mono text-xs font-semibold">@{va.key}</span>
+              <span className="text-ci-ink font-mono text-xs font-semibold">@{va.key}</span>
               <span className="text-xs text-slate-400">{va.label}</span>
             </button>
           ))}
@@ -296,7 +296,7 @@ function StaticFieldRows({ fields, br }: { fields: LeadFieldDef[]; br: string })
         <label key={f.id} className="flex items-start gap-3">
           <input type="checkbox" disabled className="mt-0.5 flex-shrink-0 opacity-40" />
           <span
-            className="text-xs text-slate-500 leading-relaxed [&_a]:underline [&_a]:text-violet-500"
+            className="text-xs text-slate-500 leading-relaxed [&_a]:underline [&_a]:text-ci-ink"
             dangerouslySetInnerHTML={{ __html: sanitizeHtml(f.label) + (f.required ? ' *' : '') }}
           />
         </label>
@@ -553,8 +553,8 @@ export default function BlockPreview({ node, onUpdate, speakerOverrides }: {
                     );
                   }
                   return (
-                    <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center flex-shrink-0 mt-auto">
-                      <span className="text-sm font-bold text-violet-600">{displayNameFor(l.speaker)?.[0]?.toUpperCase()}</span>
+                    <div className="w-10 h-10 rounded-full bg-ci-soft flex items-center justify-center flex-shrink-0 mt-auto">
+                      <span className="text-sm font-bold text-ci-ink">{displayNameFor(l.speaker)?.[0]?.toUpperCase()}</span>
                     </div>
                   );
                 })()}
@@ -597,7 +597,7 @@ export default function BlockPreview({ node, onUpdate, speakerOverrides }: {
                 return (
                   <div key={o.id} className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col items-center gap-2.5 text-center shadow-sm">
                     {IconComp
-                      ? <IconComp size={28} className="text-violet-500" />
+                      ? <IconComp size={28} className="text-ci-ink" />
                       : showEmoji
                         ? <span className="text-3xl leading-none">{o.emoji}</span>
                         : null
@@ -674,7 +674,7 @@ export default function BlockPreview({ node, onUpdate, speakerOverrides }: {
     case 'quest_spinner':
       return (
         <div className="py-14 flex flex-col items-center gap-5 text-center">
-          <div className="w-14 h-14 rounded-full border-[5px] border-slate-200 border-t-violet-500 animate-spin" />
+          <div className="w-14 h-14 rounded-full border-[5px] border-slate-200 border-t-ci animate-spin" />
           <p className="text-base font-medium text-slate-700">{(p.text as string) || 'Einen Moment…'}</p>
         </div>
       );

@@ -33,7 +33,7 @@ export function FormStepEditor({ props, onChange, variables = [] }: { props: Rec
       <div>
         <div className="flex items-center justify-between mb-2">
           <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Felder ({fields.length})</p>
-          <button onClick={addField} className="flex items-center gap-1 text-[10px] text-violet-600 font-medium"><Plus size={11} /> Feld</button>
+          <button onClick={addField} className="flex items-center gap-1 text-[10px] text-ci-ink font-medium"><Plus size={11} /> Feld</button>
         </div>
         <div className="space-y-2">
           {fields.map((f) => (
@@ -44,7 +44,7 @@ export function FormStepEditor({ props, onChange, variables = [] }: { props: Rec
                   {FIELD_TYPES.map((t) => <option key={t} value={t}>{FIELD_LABELS[t]}</option>)}
                 </select>
                 <label className="flex items-center gap-1 text-[10px] text-slate-500 flex-shrink-0">
-                  <input type="checkbox" checked={f.required} onChange={(e) => updateField(f.id, { required: e.target.checked })} className="accent-violet-600" />
+                  <input type="checkbox" checked={f.required} onChange={(e) => updateField(f.id, { required: e.target.checked })} className="accent-ci" />
                   Pflicht
                 </label>
                 <button onClick={() => removeField(f.id)} className="p-0.5 rounded hover:bg-red-100 text-slate-400 hover:text-red-500"><X size={12} /></button>
@@ -62,7 +62,7 @@ export function FormStepEditor({ props, onChange, variables = [] }: { props: Rec
                     </div>
                   ))}
                   <button onClick={() => updateField(f.id, { options: [...(f.options ?? []), `Option ${(f.options ?? []).length + 1}`] })}
-                    className="text-[10px] text-violet-600 font-medium flex items-center gap-1"><Plus size={10} /> Option</button>
+                    className="text-[10px] text-ci-ink font-medium flex items-center gap-1"><Plus size={10} /> Option</button>
                 </div>
               )}
             </div>

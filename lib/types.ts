@@ -141,10 +141,10 @@ export interface CorporateDesign {
 }
 
 export const DEFAULT_CORPORATE_DESIGN: CorporateDesign = {
-  primaryColor: '#7c3aed',
-  accentColor: '#f59e0b',
+  primaryColor: '#3A22E0',   // JobQuest Indigo
+  accentColor: '#FF6B4A',    // JobQuest Coral
   textColor: '#1e293b',
-  headingColor: '#0f172a',
+  headingColor: '#15123A',   // JobQuest Ink
   borderRadius: 12,
   headingFontName: 'system',
   headingFontSize: 22,
@@ -519,8 +519,8 @@ export const BLOCK_LABELS: Record<BerufsCheckBlockType, string> = {
 };
 
 export const DIMENSION_COLORS = [
-  '#7c3aed', '#2563eb', '#059669', '#d97706', '#dc2626',
-  '#7c3aed', '#0891b2', '#65a30d', '#ea580c', '#9333ea',
+  '#3A22E0', '#2563eb', '#059669', '#d97706', '#dc2626',
+  '#3A22E0', '#0891b2', '#65a30d', '#ea580c', '#9333ea',
 ];
 
 // ─── Formular ────────────────────────────────────────────────────────────────
