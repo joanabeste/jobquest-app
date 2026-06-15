@@ -6,6 +6,7 @@ import { formPageStorage, formSubmissionStorage, companyStorage } from '@/lib/st
 import { funnelStorage } from '@/lib/funnel-storage';
 import { FunnelDoc } from '@/lib/funnel-types';
 import FunnelPlayer from '@/components/funnel-editor/FunnelPlayer';
+import { BrandedLoadingScreen } from '@/components/BrandedLoadingScreen';
 import {
   FormPage, Company, FormContentBlock, FormStep, FormField,
   DEFAULT_CORPORATE_DESIGN,
@@ -386,7 +387,12 @@ function ThankYou({ headline, text }: { headline: string; text: string }) {
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 
-export default function FormularPage() {
+interface PublicFormProps {
+  /** Serverseitig vorab gereichte Marken-Infos für den Ladescreen (Logo + CI). */
+  brand?: { logo?: string; primary?: string };
+}
+
+export default function FormularPage({ brand }: PublicFormProps = {}) {
   const { slug } = useParams<{ slug: string }>();
   const [formPage, setFormPage] = useState<FormPage | null>(null);
   const [company, setCompany] = useState<Company | null>(null);
@@ -411,13 +417,14 @@ export default function FormularPage() {
     load();
   }, [slug]);
 
-  if (redirecting) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="w-8 h-8 rounded-full border-2 border-slate-300 border-t-transparent animate-spin" />
-      </div>
-    );
-  }
+  const loadingScreen = (
+    <BrandedLoadingScreen
+      logoUrl={company?.logo ?? brand?.logo}
+      accentColor={company?.corporateDesign?.primaryColor ?? brand?.primary}
+    />
+  );
+
+  if (redirecting) return loadingScreen;
 
   if (notFound) {
     return (
@@ -430,13 +437,7 @@ export default function FormularPage() {
     );
   }
 
-  if (!formPage || !company || funnelDoc === undefined) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="w-8 h-8 rounded-full border-2 border-slate-300 border-t-transparent animate-spin" />
-      </div>
-    );
-  }
+  if (!formPage || !company || funnelDoc === undefined) return loadingScreen;
 
   // If a FunnelDoc exists, render with FunnelPlayer
   if (funnelDoc) {

@@ -17,7 +17,12 @@ interface ResolvedItem {
   cardImage?: string;
 }
 
-export default function ShowcaseClient() {
+interface ShowcaseProps {
+  /** Serverseitig vorab gereichte Marken-Infos für den Ladescreen (Logo + CI). */
+  brand?: { logo?: string; primary?: string };
+}
+
+export default function ShowcaseClient({ brand }: ShowcaseProps = {}) {
   const { slug } = useParams<{ slug: string }>();
   const [company, setCompany] = useState<Company | null>(null);
   const [itemsState, setItemsState] = useState<
@@ -90,7 +95,9 @@ export default function ShowcaseClient() {
       <div className="min-h-screen bg-slate-50">
         <header className="bg-white border-b border-slate-200">
           <div className="max-w-5xl mx-auto px-4 md:px-6 py-6 flex items-center gap-4">
-            <div className="h-12 w-12 rounded-xl bg-slate-200 animate-pulse flex-shrink-0" />
+            {brand?.logo
+              ? <img src={brand.logo} alt="" className="h-12 w-12 object-contain flex-shrink-0" />
+              : <div className="h-12 w-12 rounded-xl bg-slate-200 animate-pulse flex-shrink-0" />}
             <div className="flex-1 space-y-2">
               <div className="h-3 w-16 rounded bg-slate-200 animate-pulse" />
               <div className="h-4 w-40 rounded bg-slate-200 animate-pulse" />

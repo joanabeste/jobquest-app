@@ -1,37 +1,25 @@
 import type { Metadata } from 'next';
-import { createAdminClient } from '@/lib/supabase/admin';
-import { companyFromDb } from '@/lib/supabase/mappers';
+import { loadPublishedContentWithCompany } from '@/lib/load-public-company';
 import PublicFormClient from './PublicFormClient';
 
 interface Props {
   params: Promise<{ slug: string }>;
 }
 
+// Identischer Select in generateMetadata + Page → React cache() dedupt die Query.
+const FORM_SELECT = 'title, company_id';
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const supabase = createAdminClient();
+  const data = await loadPublishedContentWithCompany('form_pages', slug, FORM_SELECT);
 
-  const { data: formRow } = await supabase
-    .from('form_pages')
-    .select('title, company_id')
-    .eq('slug', slug)
-    .eq('status', 'published')
-    .is('deleted_at', null)
-    .single();
+  if (!data) return { title: 'Formular nicht gefunden' };
+  const formTitle = data.row.title as string;
+  if (!data.company) return { title: formTitle };
 
-  if (!formRow) return { title: 'Formular nicht gefunden' };
-
-  const { data: companyRow } = await supabase
-    .from('companies')
-    .select('*')
-    .eq('id', formRow.company_id)
-    .single();
-
-  if (!companyRow) return { title: formRow.title };
-
-  const company = companyFromDb(companyRow);
-  const title = `${formRow.title} – ${company.name}`;
-  const description = `${formRow.title} von ${company.name}`;
+  const company = data.company;
+  const title = `${formTitle} – ${company.name}`;
+  const description = `${formTitle} von ${company.name}`;
 
   const favicon = company.corporateDesign?.faviconUrl ?? company.logo;
   return {
@@ -54,6 +42,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default function PublicFormPage() {
-  return <PublicFormClient />;
+export default async function PublicFormPage({ params }: Props) {
+  const { slug } = await params;
+  const data = await loadPublishedContentWithCompany('form_pages', slug, FORM_SELECT);
+  const co = data?.company;
+  return <PublicFormClient brand={{ logo: co?.logo, primary: co?.corporateDesign?.primaryColor }} />;
 }

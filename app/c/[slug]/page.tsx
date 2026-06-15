@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
-import { createAdminClient } from '@/lib/supabase/admin';
-import { companyFromDb } from '@/lib/supabase/mappers';
+import { loadCompanyBySlug } from '@/lib/load-public-company';
 import ShowcaseClient from './ShowcaseClient';
 
 interface Props {
@@ -9,17 +8,9 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const supabase = createAdminClient();
+  const company = await loadCompanyBySlug(slug);
 
-  const { data: companyRow } = await supabase
-    .from('companies')
-    .select('*')
-    .eq('slug', slug)
-    .single();
-
-  if (!companyRow) return { title: 'Übersicht nicht gefunden' };
-
-  const company = companyFromDb(companyRow);
+  if (!company) return { title: 'Übersicht nicht gefunden' };
   if (!company.showcase?.enabled) return { title: 'Übersicht nicht gefunden' };
 
   const title = company.showcase.headline
@@ -49,6 +40,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default function ShowcasePage() {
-  return <ShowcaseClient />;
+export default async function ShowcasePage({ params }: Props) {
+  const { slug } = await params;
+  const company = await loadCompanyBySlug(slug);
+  return <ShowcaseClient brand={{ logo: company?.logo, primary: company?.corporateDesign?.primaryColor }} />;
 }

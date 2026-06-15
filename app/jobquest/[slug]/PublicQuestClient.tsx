@@ -8,9 +8,15 @@ import { FunnelDoc } from '@/lib/funnel-types';
 import { JobQuest, Company } from '@/lib/types';
 import QuestPlayer from '@/components/quest/QuestPlayer';
 import FunnelPlayer from '@/components/funnel-editor/FunnelPlayer';
+import { BrandedLoadingScreen } from '@/components/BrandedLoadingScreen';
 import { useSlugRedirect } from '@/lib/use-slug-redirect';
 
-export default function PublicQuestClient() {
+interface PublicQuestProps {
+  /** Serverseitig vorab gereichte Marken-Infos für den Ladescreen (Logo + CI). */
+  brand?: { logo?: string; primary?: string };
+}
+
+export default function PublicQuestClient({ brand }: PublicQuestProps = {}) {
   const { slug } = useParams<{ slug: string }>();
   const [quest, setQuest] = useState<JobQuest | null>(null);
   const [company, setCompany] = useState<Company | null>(null);
@@ -33,13 +39,14 @@ export default function PublicQuestClient() {
     load();
   }, [slug]);
 
-  if (redirecting) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="w-8 h-8 border-2 border-violet-600 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
+  const loadingScreen = (
+    <BrandedLoadingScreen
+      logoUrl={company?.logo ?? brand?.logo}
+      accentColor={company?.corporateDesign?.primaryColor ?? brand?.primary}
+    />
+  );
+
+  if (redirecting) return loadingScreen;
 
   if (notFound) {
     return (
@@ -51,18 +58,7 @@ export default function PublicQuestClient() {
     );
   }
 
-  if (!quest || !company || funnelDoc === undefined) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-violet-600 flex items-center justify-center animate-pulse">
-            <span className="text-white font-bold text-lg">J</span>
-          </div>
-          <p className="text-slate-400 text-sm">Laden…</p>
-        </div>
-      </div>
-    );
-  }
+  if (!quest || !company || funnelDoc === undefined) return loadingScreen;
 
   if (funnelDoc) {
     return <FunnelPlayer doc={funnelDoc} company={company} contentDbId={quest.id} />;

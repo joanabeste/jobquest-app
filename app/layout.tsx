@@ -24,6 +24,19 @@ export const metadata: Metadata = {
   metadataBase: resolveAppUrl(),
   title: 'JobQuest – Digitales Ausbildungsmarketing',
   description: 'Interaktive Berufserkundungsreisen für Unternehmen erstellen und veröffentlichen.',
+  // JobQuest-Default-Favicon für alle Seiten ohne eigenes CI (Dashboard, Auth,
+  // Review …). Öffentliche Funnel-Seiten überschreiben `icons` in ihrem eigenen
+  // generateMetadata() mit dem Firmenlogo — config-basierte Metadaten der tieferen
+  // Route gewinnen, deshalb bewusst KEIN file-based app/icon.png (das hätte
+  // Vorrang und würde das Firmen-Favicon aushebeln).
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/icon.png', type: 'image/png', sizes: '512x512' },
+    ],
+    shortcut: '/favicon.ico',
+    apple: '/apple-icon.png',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

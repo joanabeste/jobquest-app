@@ -7,6 +7,7 @@ import { careerCheckStorage, companyStorage } from '@/lib/storage';
 import { funnelStorage } from '@/lib/funnel-storage';
 import { FunnelDoc } from '@/lib/funnel-types';
 import FunnelPlayer from '@/components/funnel-editor/FunnelPlayer';
+import { BrandedLoadingScreen } from '@/components/BrandedLoadingScreen';
 import { fontFamilyFor } from '@/lib/fonts';
 import { readableTextColor, readableAccentColor } from '@/lib/contrast';
 import { stripNamePlaceholder } from '@/lib/funnel-variables';
@@ -56,7 +57,12 @@ function computeScores(
 }
 
 // ── Main player ───────────────────────────────────────────────────────────────
-export default function BerufsCheckPlayer() {
+interface PublicCheckProps {
+  /** Serverseitig vorab gereichte Marken-Infos für den Ladescreen (Logo + CI). */
+  brand?: { logo?: string; primary?: string };
+}
+
+export default function BerufsCheckPlayer({ brand }: PublicCheckProps = {}) {
   const { slug } = useParams<{ slug: string }>();
   const [check, setCheck] = useState<CareerCheck | null>(null);
   const [company, setCompany] = useState<Company | null>(null);
@@ -87,9 +93,15 @@ export default function BerufsCheckPlayer() {
     load();
   }, [slug]);
 
-  if (redirecting) return <Loading />;
+  const loadingScreen = (
+    <BrandedLoadingScreen
+      logoUrl={company?.logo ?? brand?.logo}
+      accentColor={company?.corporateDesign?.primaryColor ?? brand?.primary}
+    />
+  );
+  if (redirecting) return loadingScreen;
   if (notFound) return <NotFound />;
-  if (!check || !company || funnelDoc === undefined) return <Loading />;
+  if (!check || !company || funnelDoc === undefined) return loadingScreen;
 
   // If a FunnelDoc exists, render with FunnelPlayer
   if (funnelDoc) {
@@ -651,10 +663,3 @@ function NotFound() {
   );
 }
 
-function Loading() {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50">
-      <div className="w-8 h-8 border-2 border-violet-600 border-t-transparent rounded-full animate-spin" />
-    </div>
-  );
-}

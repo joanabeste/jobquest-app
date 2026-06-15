@@ -1,36 +1,24 @@
 import type { Metadata } from 'next';
-import { createAdminClient } from '@/lib/supabase/admin';
-import { companyFromDb } from '@/lib/supabase/mappers';
+import { loadPublishedContentWithCompany } from '@/lib/load-public-company';
 import PublicCheckClient from './PublicCheckClient';
 
 interface Props {
   params: Promise<{ slug: string }>;
 }
 
+// Identischer Select in generateMetadata + Page → React cache() dedupt die Query.
+const CHECK_SELECT = 'title, company_id';
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const supabase = createAdminClient();
+  const data = await loadPublishedContentWithCompany('career_checks', slug, CHECK_SELECT);
 
-  const { data: checkRow } = await supabase
-    .from('career_checks')
-    .select('title, company_id')
-    .eq('slug', slug)
-    .eq('status', 'published')
-    .is('deleted_at', null)
-    .single();
+  if (!data) return { title: 'Berufscheck nicht gefunden' };
+  const checkTitle = data.row.title as string;
+  if (!data.company) return { title: checkTitle };
 
-  if (!checkRow) return { title: 'Berufscheck nicht gefunden' };
-
-  const { data: companyRow } = await supabase
-    .from('companies')
-    .select('*')
-    .eq('id', checkRow.company_id)
-    .single();
-
-  if (!companyRow) return { title: checkRow.title };
-
-  const company = companyFromDb(companyRow);
-  const title = `${checkRow.title} – ${company.name}`;
+  const company = data.company;
+  const title = `${checkTitle} – ${company.name}`;
   const description = `Finde heraus, welcher Beruf zu dir passt! Berufscheck von ${company.name}.`;
 
   const favicon = company.corporateDesign?.faviconUrl ?? company.logo;
@@ -54,6 +42,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default function PublicCheckPage() {
-  return <PublicCheckClient />;
+export default async function PublicCheckPage({ params }: Props) {
+  const { slug } = await params;
+  const data = await loadPublishedContentWithCompany('career_checks', slug, CHECK_SELECT);
+  const co = data?.company;
+  return <PublicCheckClient brand={{ logo: co?.logo, primary: co?.corporateDesign?.primaryColor }} />;
 }

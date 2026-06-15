@@ -125,6 +125,13 @@ body {
   }
 }
 
+/* Sanftes Einblenden — genutzt via `animate-[fadeIn_…]` (z. B. Ladescreens,
+   Ergebnis-Modals). Vorher referenziert, aber nie definiert → war ein No-op. */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
 /* Quest Player Animations */
 @keyframes slideIn {
   from {

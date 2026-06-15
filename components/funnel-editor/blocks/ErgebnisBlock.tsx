@@ -101,13 +101,9 @@ interface Props {
 const ICONS = { video: Video, doc: FileText, apply: Send, link: ExternalLink } as const;
 
 export default function ErgebnisBlock({
-  headline, subtext, layout, showDimensionBars, groups, dimensions, scores, maxScores, answers, primary, buttonBg, buttonText, markedSuggestions, onToggleMarkedSuggestion, br,
+  headline, subtext, layout, showDimensionBars, groups, dimensions, scores, maxScores, answers, primary, markedSuggestions, onToggleMarkedSuggestion, br,
   onNext, continueLabel,
 }: Props) {
-  // Tab-pill colouring: mirror the CD button so the label contrast stays correct
-  // when the user picks a light primary (yellow/white).
-  const pillBg = buttonBg || primary;
-  const pillText = buttonText || '#ffffff';
   const markedIds = new Set((markedSuggestions ?? []).map((s) => s.id));
   const hasMarked = markedIds.size > 0;
   const resolvedContinueLabel = continueLabel && continueLabel !== 'Weiter'
@@ -164,7 +160,8 @@ export default function ErgebnisBlock({
             />
           </div>
 
-          {/* ── Desktop: tabs + bars + 3-col suggestions grid ── */}
+          {/* ── Desktop: ranked overview bar-chart (alle Bereiche auf einen Blick,
+                klickbar als Selector) + Detail-Bars + 3-col suggestions grid ── */}
           <div className="hidden md:block">
             {(() => {
               // Rank groups by match-percent so the strongest match opens first
@@ -174,41 +171,52 @@ export default function ErgebnisBlock({
                 .sort((a, b) => b.pct - a.pct);
               const activeIdx = Math.min(activeTab, rankedDesktop.length - 1);
               const active = rankedDesktop[activeIdx];
+              const hasOverview = rankedDesktop.length > 1;
+              const accent = readableAccentColor(primary);
+              const activeGroupDims = active
+                ? dimensions.filter((d) => active.g.dimensionIds.includes(d.id))
+                : [];
+              // Mit mehreren Gruppen zeigt die Overview-Bar-Chart bereits jeden
+              // Bereichs-Match. Die per-Dimension-Bars darunter sind dann nur noch
+              // sinnvoll, wenn eine Gruppe tatsächlich mehrere Dimensionen
+              // aufschlüsselt — sonst dupliziert ein Einzelbalken die Chart-Zeile.
+              const showGroupBars = !hasOverview || activeGroupDims.length > 1;
               return (
                 <>
-                  {rankedDesktop.length > 1 && (
-                    <div className="pb-2 mb-4">
-                      <div className="flex gap-2 flex-wrap justify-center">
-                        {rankedDesktop.map(({ g, pct }, i) => {
-                          const isActive = i === activeIdx;
-                          return (
-                            <button
-                              key={g.id}
-                              type="button"
-                              onClick={() => setActiveTab(i)}
-                              className="px-5 py-2.5 rounded-full text-sm font-semibold whitespace-nowrap transition-all flex items-center gap-2"
-                              style={isActive
-                                ? { background: pillBg, color: pillText }
-                                : { background: '#f1f5f9', color: '#64748b' }}
-                            >
-                              <span>{g.label}</span>
-                              <span
-                                className="text-xs font-bold px-2 py-0.5 rounded-full"
-                                style={isActive
-                                  ? { background: 'rgba(255,255,255,0.22)', color: pillText }
-                                  : { background: '#fff', color: pillBg }}
-                              >
-                                {pct}%
-                              </span>
-                            </button>
-                          );
-                        })}
+                  {hasOverview && (
+                    <div className="mb-7 md:mb-9 md:max-w-2xl md:mx-auto">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-3 text-center">
+                        Deine Übereinstimmung im Überblick
+                      </p>
+                      <div className="space-y-1">
+                        {rankedDesktop.map(({ g, pct }, i) => (
+                          <OverviewRow
+                            key={g.id}
+                            label={g.label}
+                            pct={pct}
+                            rank={i}
+                            isActive={i === activeIdx}
+                            onClick={() => setActiveTab(i)}
+                            primary={primary}
+                            delay={300 + i * 120}
+                          />
+                        ))}
                       </div>
+                      <p className="text-xs text-slate-400 text-center mt-3">
+                        Tippe einen Bereich an, um passende Berufe zu sehen.
+                      </p>
                     </div>
                   )}
                   {active && (
                     <div key={active.g.id}>
-                      <GroupBars group={active.g} dimensions={dimensions} scores={scores} maxScores={maxScores} primary={primary} />
+                      {hasOverview && (
+                        <h3 className="fp-heading text-lg md:text-xl font-bold text-center mb-5">
+                          Passende Berufe für <span style={{ color: accent }}>{active.g.label}</span>
+                        </h3>
+                      )}
+                      {showGroupBars && (
+                        <GroupBars group={active.g} dimensions={dimensions} scores={scores} maxScores={maxScores} primary={primary} />
+                      )}
                       <GroupSuggestions group={active.g} dimensions={dimensions} scores={scores} primary={primary} br={br} markedIds={markedIds} onToggleMarked={onToggleMarkedSuggestion} />
                     </div>
                   )}
@@ -471,6 +479,52 @@ function MobileAccordion({ groups, dimensions, scores, maxScores, primary, br, m
         </div>
       )}
     </>
+  );
+}
+
+/**
+ * Eine Zeile der Übersichts-Bar-Chart auf Desktop: Rang-Badge + Bereichsname +
+ * animierter Balken + Prozentwert. Klickbar — wählt den Bereich aus, dessen
+ * Berufe darunter erscheinen. Der Top-Treffer wird durch volle Balken-Deckkraft
+ * und ein eingefärbtes Rang-Badge hervorgehoben.
+ */
+function OverviewRow({ label, pct, rank, isActive, onClick, primary, delay }: {
+  label: string;
+  pct: number;
+  rank: number;
+  isActive: boolean;
+  onClick: () => void;
+  primary: string;
+  delay: number;
+}) {
+  const animPct = useAnimatedValue(pct, delay, 900);
+  const isTop = rank === 0;
+  const accent = readableAccentColor(primary);
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={isActive}
+      className="w-full text-left rounded-xl px-3 py-2.5 transition-colors hover:bg-slate-50"
+      style={isActive ? { background: primary + '12', boxShadow: `inset 0 0 0 1.5px ${primary}59` } : undefined}
+    >
+      <div className="flex items-center gap-2.5 mb-1.5">
+        <span
+          className="flex items-center justify-center w-5 h-5 rounded-full text-[11px] font-bold flex-shrink-0"
+          style={isTop ? { background: primary, color: readableTextColor(primary) } : { background: '#e2e8f0', color: '#64748b' }}
+        >
+          {rank + 1}
+        </span>
+        <span className="flex-1 text-sm font-semibold text-slate-900 truncate">{label}</span>
+        <span className="text-sm font-bold tabular-nums flex-shrink-0" style={{ color: accent }}>{animPct}%</span>
+      </div>
+      <div className="h-2.5 rounded-full overflow-hidden ml-[1.875rem]" style={{ background: '#f1f5f9' }}>
+        <div
+          className="h-full rounded-full"
+          style={{ width: `${animPct}%`, background: primary, opacity: isTop || isActive ? 1 : 0.5 }}
+        />
+      </div>
+    </button>
   );
 }
 

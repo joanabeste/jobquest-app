@@ -1,41 +1,28 @@
 import type { Metadata } from 'next';
-import { createAdminClient } from '@/lib/supabase/admin';
-import { companyFromDb } from '@/lib/supabase/mappers';
+import { loadPublishedContentWithCompany } from '@/lib/load-public-company';
 import PublicQuestClient from './PublicQuestClient';
 
 interface Props {
   params: Promise<{ slug: string }>;
 }
 
+// Identischer Select in generateMetadata + Page → React cache() dedupt die Query.
+const QUEST_SELECT = 'title, company_id, slug, card_image';
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const supabase = createAdminClient();
+  const data = await loadPublishedContentWithCompany('job_quests', slug, QUEST_SELECT);
 
-  // Fetch quest by slug
-  const { data: questRow } = await supabase
-    .from('job_quests')
-    .select('title, company_id, slug, card_image')
-    .eq('slug', slug)
-    .eq('status', 'published')
-    .is('deleted_at', null)
-    .single();
-
-  if (!questRow) {
+  if (!data) {
     return { title: 'JobQuest nicht gefunden' };
   }
+  const questRow = data.row as { title: string; card_image?: string | null };
 
-  // Fetch company
-  const { data: companyRow } = await supabase
-    .from('companies')
-    .select('*')
-    .eq('id', questRow.company_id)
-    .single();
-
-  if (!companyRow) {
+  if (!data.company) {
     return { title: questRow.title };
   }
 
-  const company = companyFromDb(companyRow);
+  const company = data.company;
   const title = `${questRow.title} – ${company.name}`;
   const description = company.description
     ? `Erlebe einen virtuellen Arbeitstag bei ${company.name}. ${company.description.slice(0, 140)}`
@@ -83,6 +70,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default function PublicQuestPage() {
-  return <PublicQuestClient />;
+export default async function PublicQuestPage({ params }: Props) {
+  const { slug } = await params;
+  const data = await loadPublishedContentWithCompany('job_quests', slug, QUEST_SELECT);
+  const co = data?.company;
+  return <PublicQuestClient brand={{ logo: co?.logo, primary: co?.corporateDesign?.primaryColor }} />;
 }
